@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 import secrets
 import os
@@ -80,28 +81,40 @@ def startup_db_seed():
         db.add(shift)
 
     # 3. Super Admin (Management Authority - Configured via .env)
-    superadmin = db.query(models.User).filter(models.User.username == settings.SUPERADMIN_USERNAME).first()
+    superadmin_user = settings.SUPERADMIN_USERNAME.strip()
+    superadmin = db.query(models.User).filter(func.lower(models.User.username) == superadmin_user.lower()).first()
     if not superadmin:
         superadmin = models.User(
-            username=settings.SUPERADMIN_USERNAME,
+            username=superadmin_user,
             password_hash=hash_password(settings.SUPERADMIN_PASSWORD),
-            full_name=settings.SUPERADMIN_NAME,
+            full_name=settings.SUPERADMIN_NAME.strip(),
             role="SUPER_ADMIN",
             is_active=True
         )
         db.add(superadmin)
+    else:
+        # Sync configured password & display name from environment
+        superadmin.password_hash = hash_password(settings.SUPERADMIN_PASSWORD)
+        superadmin.full_name = settings.SUPERADMIN_NAME.strip()
+        superadmin.is_active = True
 
     # 4. Admin (Principal / Sadr Ustadh - Configured via .env)
-    admin = db.query(models.User).filter(models.User.username == settings.ADMIN_USERNAME).first()
+    admin_user = settings.ADMIN_USERNAME.strip()
+    admin = db.query(models.User).filter(func.lower(models.User.username) == admin_user.lower()).first()
     if not admin:
         admin = models.User(
-            username=settings.ADMIN_USERNAME,
+            username=admin_user,
             password_hash=hash_password(settings.ADMIN_PASSWORD),
-            full_name=settings.ADMIN_NAME,
+            full_name=settings.ADMIN_NAME.strip(),
             role="ADMIN",
             is_active=True
         )
         db.add(admin)
+    else:
+        # Sync configured password & display name from environment
+        admin.password_hash = hash_password(settings.ADMIN_PASSWORD)
+        admin.full_name = settings.ADMIN_NAME.strip()
+        admin.is_active = True
 
     # 5. Default Madrasa Whitelisted IPs (Configured via .env)
     existing_ips = db.query(models.AllowedIP).all()
@@ -204,11 +217,12 @@ def unified_login(payload: schemas.UnifiedLoginRequest, db: Session = Depends(ge
     username = payload.username.strip()
     password = payload.password.strip()
 
-    user = db.query(models.User).filter(models.User.username == username).first()
+    # Case-insensitive username lookup (prevents mobile phone auto-capitalization errors)
+    user = db.query(models.User).filter(func.lower(models.User.username) == username.lower()).first()
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password"
+            detail="Invalid username or password. Please check your credentials."
         )
 
     if not user.is_active:
