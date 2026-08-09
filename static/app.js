@@ -1096,13 +1096,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const btnRestoreDeviceKey = document.getElementById('btnRestoreDeviceKey');
+    const terminalHardwareBadge = document.getElementById('terminalHardwareBadge');
+
+    function updateTerminalHardwareBadge() {
+        if (!terminalHardwareBadge) return;
+        const currentKey = localStorage.getItem('device_key') || '';
+        const isCorrupt = currentKey.includes('INVALID') || currentKey.includes('CORRUPTED') || currentKey.includes('ROGUE');
+
+        if (isCorrupt) {
+            terminalHardwareBadge.className = 'text-rose-300 font-bold flex items-center gap-1.5 bg-rose-950/60 border border-rose-800/60 px-2.5 py-1 rounded-xl animate-pulse';
+            terminalHardwareBadge.innerHTML = `<i data-lucide="shield-alert" class="w-3.5 h-3.5 text-rose-400"></i> Unrecognized Phone (Punching Blocked)`;
+        } else {
+            terminalHardwareBadge.className = 'text-emerald-300 font-medium flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-800/40 px-2.5 py-1 rounded-xl';
+            terminalHardwareBadge.innerHTML = `<i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-400"></i> Registered Device`;
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    if (window.location.pathname.includes('/ustadh') || document.getElementById('ustadhActionCard')) {
+        updateTerminalHardwareBadge();
+    }
+
     if (btnCorruptDeviceKey) {
         btnCorruptDeviceKey.addEventListener('click', async () => {
-            const confirmed = await confirmAction("Simulate Unregistered Phone", "Are you sure you want to corrupt your stored device token to simulate an unrecognized mobile device?", "Yes, Simulate");
+            const confirmed = await confirmAction("Simulate Unregistered Phone", "Are you sure you want to simulate an unrecognized/rogue mobile device? Attendance clock-in and clock-out will be blocked.", "Yes, Simulate");
             if (confirmed) {
                 localStorage.setItem('device_key', "USTADH-DEV-INVALID-CORRUPTED-KEY");
-                showToast("Device key corrupted. Next clock-in will trigger unregistered device alert.", "warning");
+                updateTerminalHardwareBadge();
+                showToast("Simulating Unrecognized Device. Next Clock In/Out will be blocked.", "warning");
             }
+        });
+    }
+
+    if (btnRestoreDeviceKey) {
+        btnRestoreDeviceKey.addEventListener('click', () => {
+            localStorage.removeItem('device_key');
+            window.getOrCreateDeviceKey();
+            updateTerminalHardwareBadge();
+            showToast("Authorized mobile device pairing restored successfully.", "success");
         });
     }
 
@@ -1134,7 +1166,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
 
                 if (!res.ok) {
-                    // Polite toast message (No raw technical error codes)
+                    if (res.status === 403 && (data.detail || '').includes("Device not recognized")) {
+                        if (window.Swal) {
+                            Swal.fire({
+                                title: "Device Not Recognized",
+                                text: "This mobile phone is not recognized for your Ustadh account. Attendance clock in is blocked. Please contact the Principal Admin to authorize this device.",
+                                icon: "error",
+                                background: "#070d1e",
+                                color: "#f8fafc",
+                                confirmButtonColor: "#e11d48",
+                                confirmButtonText: "Understood",
+                                customClass: {
+                                    popup: 'rounded-3xl border border-rose-800/50 shadow-2xl p-6'
+                                }
+                            });
+                        }
+                    }
                     showToast(data.detail || "Clock-In Failed", "error");
                     return;
                 }
@@ -1176,6 +1223,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
 
                 if (!res.ok) {
+                    if (res.status === 403 && (data.detail || '').includes("Device not recognized")) {
+                        if (window.Swal) {
+                            Swal.fire({
+                                title: "Device Not Recognized",
+                                text: "This mobile phone is not recognized for your Ustadh account. Attendance clock out is blocked. Please contact the Principal Admin to authorize this device.",
+                                icon: "error",
+                                background: "#070d1e",
+                                color: "#f8fafc",
+                                confirmButtonColor: "#e11d48",
+                                confirmButtonText: "Understood",
+                                customClass: {
+                                    popup: 'rounded-3xl border border-rose-800/50 shadow-2xl p-6'
+                                }
+                            });
+                        }
+                    }
                     showToast(data.detail || "Clock-Out Failed", "error");
                     return;
                 }

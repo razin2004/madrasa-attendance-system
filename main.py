@@ -809,6 +809,21 @@ def ustadh_clock_in(
     registered_keys = [d.device_key for d in ustadh.devices]
     incoming_key = payload.device_key.strip() if payload.device_key else None
 
+    # Check for simulated unrecognized or corrupted device key
+    is_corrupt_sim = incoming_key and (
+        "INVALID" in incoming_key or 
+        "CORRUPTED" in incoming_key or 
+        "ROGUE" in incoming_key or 
+        "UNREGISTERED" in incoming_key or 
+        "UNRECOGNIZED" in incoming_key
+    )
+
+    if is_corrupt_sim:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Device not recognized. Please contact Admin"
+        )
+
     # First Clock-In on a device OR Admin explicitly authorized adding a secondary device
     if len(registered_keys) == 0 or ustadh.can_add_device:
         if not incoming_key:
