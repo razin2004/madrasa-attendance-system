@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ustadh Portal - Thandorappara Juma Masjid</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        masjid: {
+                            50: '#f0f4ff',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#070d1e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .mosque-bg {
+            background-color: #060b18;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.4) 0px, transparent 60%),
+                radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.95) 0px, transparent 60%),
+                url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%231e3a8a' fill-opacity='0.08' fill-rule='evenodd'%3E%3Cpath d='M0 0h40v40H0V0zm40 40h40v40H40V40zm0-40h2l-2 2V0zm0 4l4-4h2l-6 6V4zm0 4l8-8h2L40 10V8zm0 4L52 0h2L40 14v-2zm0 4L56 0h2L40 18v-2zm0 4L60 0h2L40 22v-2zm0 4L64 0h2L40 26v-2zm0 4L68 0h2L40 30v-2zm0 4L72 0h2L40 34v-2zm0 4L76 0h2L40 38v-2zm0 4L80 0v2L42 40h-2zm4 0L80 4v2L46 40h-2zm4 0L80 8v2L50 40h-2zm4 0l26-26v2L54 40h-2zm4 0l22-22v2L58 40h-2zm4 0l18-18v2L62 40h-2zm4 0l14-14v2L66 40h-2zm4 0l10-10v2L70 40h-2zm4 0l6-6v2L74 40h-2zm4 0l2-2v2L78 40h-2z'/%3E%3C/g%3E%3C/svg%3E");
+            background-attachment: fixed;
+        }
+        .glass-panel {
+            background: rgba(11, 20, 44, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+        .glow-emerald {
+            box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.45);
+        }
+        .glow-rose {
+            box-shadow: 0 0 35px -5px rgba(244, 63, 94, 0.45);
+        }
+        .slide-panel {
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ustadh-nav-active {
+            background: linear-gradient(135deg, #1e40af, #2563eb);
+            color: #ffffff;
+            border-left: 4px solid #60a5fa;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+        .ustadh-nav-inactive {
+            color: #94a3b8;
+            border-left: 4px solid transparent;
+        }
+        .ustadh-nav-inactive:hover {
+            background: rgba(30, 58, 138, 0.25);
+            color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="min-h-full font-sans antialiased mosque-bg text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
+
+    <!-- Top Sticky Header -->
+    <header class="w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <!-- Hamburger Button for Sliding Drawer -->
+                <button type="button" id="btnToggleUstadhDrawer" onclick="toggleUstadhNavDrawer()" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-900/40 border border-blue-400/30">
+                        <i data-lucide="book-open" class="w-4.5 h-4.5"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-sm sm:text-base leading-tight text-white">Thandorappara Juma Masjid</h1>
+                        <p class="text-[11px] text-blue-300 font-medium hidden sm:block">Ustadh Attendance Portal</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="text-xs font-semibold text-emerald-400 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="ustadhNameDisplay">Ustadh Bilal (Online)</span>
+                </div>
+
+                <div class="h-5 w-px bg-slate-800 hidden sm:block"></div>
+
+                <div class="text-right text-[11px] hidden sm:block">
+                    <div id="liveClock" class="font-mono font-bold text-white text-xs">00:00 AM</div>
+                    <div id="liveDate" class="text-slate-400">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Body with Slide-In Navigation Drawer & Full-Screen Slide Content Stage -->
+    <div class="flex-1 max-w-7xl w-full mx-auto flex relative">
+
+        <!-- Off-Canvas Sliding Left Navigation Drawer Backdrop -->
+        <div id="ustadhNavDrawerBackdrop" onclick="toggleUstadhNavDrawer()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden transition-opacity duration-300 opacity-0"></div>
+
+        <!-- Off-Canvas Sliding Left Navigation Drawer -->
+        <aside id="ustadhNavDrawer" class="fixed top-0 bottom-0 left-0 w-72 sm:w-80 bg-slate-950/95 border-r border-slate-800 z-50 p-5 flex flex-col justify-between transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl">
+            <div class="space-y-6">
+                <!-- Drawer Header -->
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
+                            <i data-lucide="book-open" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-sm">Ustadh Menu</h3>
+                            <p class="text-[11px] text-slate-400">Daily Attendance Portal</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="toggleUstadhNavDrawer()" class="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 border border-slate-800">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Sliding Navigation Items -->
+                <nav class="space-y-1.5 text-xs font-semibold">
+                    <button type="button" onclick="selectUstadhPanel('clock')" id="ustadhNavItemClock" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition ustadh-nav-active text-left">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        <div class="flex-1">
+                            <div>Clock In / Out Terminal</div>
+                            <span class="text-[10px] text-slate-300 font-normal">Daily Shift Attendance</span>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="selectUstadhPanel('leave')" id="ustadhNavItemLeave" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition ustadh-nav-inactive text-left">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <div class="flex-1">
+                            <div>Leave Applications</div>
+                            <span class="text-[10px] text-slate-400 font-normal">Apply & Track Status</span>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="selectUstadhPanel('history')" id="ustadhNavItemHistory" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition ustadh-nav-inactive text-left">
+                        <i data-lucide="history" class="w-4 h-4"></i>
+                        <div class="flex-1">
+                            <div>Attendance Records</div>
+                            <span class="text-[10px] text-slate-400 font-normal">Your Personal Log Sheet</span>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="selectUstadhPanel('sandbox')" id="ustadhNavItemSandbox" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition ustadh-nav-inactive text-left">
+                        <i data-lucide="sliders" class="w-4 h-4"></i>
+                        <div class="flex-1">
+                            <div>Developer Sandbox</div>
+                            <span class="text-[10px] text-slate-400 font-normal">Simulate Network & Time</span>
+                        </div>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Drawer Footer with Full-Width Logout Button with Confirmation -->
+            <div class="pt-4 border-t border-slate-800/80 space-y-3">
+                <button id="btnUstadhLogout" type="button" onclick="confirmAndLogout()" class="w-full py-3 px-4 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/50 text-rose-300 font-bold text-xs transition flex items-center justify-center gap-2 shadow active:scale-95">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span>Sign Out of Portal</span>
+                </button>
+                <div class="text-[11px] text-slate-500 text-center">
+                    <p>Thandorappara Juma Masjid</p>
+                    <p class="text-[10px]">Ustadh Mobile Terminal v4.4.0</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Sliding Stage Container (Full-Screen Responsive) -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 w-full max-w-full overflow-hidden">
+
+            <!-- Quick Navigation Pills Bar -->
+            <div class="flex overflow-x-auto gap-2 pb-2 scrollbar-none text-xs font-semibold">
+                <button type="button" onclick="selectUstadhPanel('clock')" id="ustadhQuickPillClock" class="px-4 py-2.5 rounded-xl bg-blue-600 text-white shadow flex-shrink-0 flex items-center gap-1.5">
+                    <i data-lucide="clock" class="w-3.5 h-3.5"></i> <span>Clock Terminal</span>
+                </button>
+                <button type="button" onclick="selectUstadhPanel('leave')" id="ustadhQuickPillLeave" class="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex-shrink-0 flex items-center gap-1.5">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span>Leaves</span>
+                </button>
+                <button type="button" onclick="selectUstadhPanel('history')" id="ustadhQuickPillHistory" class="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex-shrink-0 flex items-center gap-1.5">
+                    <i data-lucide="history" class="w-3.5 h-3.5"></i> <span>History</span>
+                </button>
+                <button type="button" onclick="selectUstadhPanel('sandbox')" id="ustadhQuickPillSandbox" class="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex-shrink-0 flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-3.5 h-3.5"></i> <span>Sandbox</span>
+                </button>
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- SLIDING PANEL 1: CLOCK IN / OUT TERMINAL -->
+            <!-- ============================================================== -->
+            <section id="panelUstadhClock" class="slide-panel space-y-6">
+                <!-- Islamic Greeting Hero Banner inside Clock Panel -->
+                <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-blue-600/30 relative overflow-hidden shadow-2xl">
+                    <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-blue-600/10 rounded-full blur-2xl pointer-events-none"></div>
+                    
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="space-y-1.5">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-xs font-semibold">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-300"></i>
+                                <span>Thandorappara Juma Masjid Madrasa</span>
+                            </div>
+                            <h2 id="greetingHeader" class="text-xl sm:text-2xl font-bold text-white tracking-wide">Asalamu Alaikum, Ustadh Bilal!</h2>
+                            <p id="subGreetingText" class="text-xs sm:text-sm text-slate-300">Shift Schedule: Standard Madrasa Day Shift (08:00 AM - 04:00 PM)</p>
+                        </div>
+
+                        <div id="attendanceStateBadge" class="px-4 py-2 rounded-2xl text-xs font-bold bg-slate-900/90 text-slate-300 border border-slate-700 shadow-inner self-start sm:self-center">
+                            Status: NOT CLOCKED IN
+                        </div>
+                    </div>
+
+                    <!-- Shift Timing & Network Guard Badges -->
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3 text-center text-xs">
+                        <div class="bg-slate-900/70 rounded-2xl p-3 border border-slate-800 flex items-center justify-between px-4">
+                            <span class="text-slate-400 font-medium">Assigned Shift:</span>
+                            <span class="font-bold text-white font-mono">08:00 AM - 04:00 PM</span>
+                        </div>
+                        <div class="bg-slate-900/70 rounded-2xl p-3 border border-slate-800 flex items-center justify-between px-4">
+                            <span class="text-slate-400 font-medium">Network Guard:</span>
+                            <span class="font-bold text-emerald-400 font-mono flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Madrasa WiFi Protected
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clock Action Terminal Card -->
+                <div id="ustadhActionCard" class="glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                    <div class="border-b border-slate-800 pb-4">
+                        <h3 class="font-bold text-white text-base sm:text-lg flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-blue-400"></i>
+                            Attendance Punch Terminal
+                        </h3>
+                        <p class="text-xs text-slate-400">Tap below to record your arrival or departure</p>
+                    </div>
+
+                    <!-- Big Touch-Optimized Clock Action Buttons -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button id="btnClockIn" type="button" class="w-full py-6 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition duration-200 shadow-xl glow-emerald flex items-center justify-center gap-4 active:scale-95">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-700/60 flex items-center justify-center shadow-inner">
+                                <i data-lucide="log-in" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-lg font-extrabold tracking-wide">CLOCK IN</div>
+                                <div class="text-xs text-emerald-100 font-normal">Begin Morning Shift</div>
+                            </div>
+                        </button>
+
+                        <button id="btnClockOut" type="button" disabled class="w-full py-6 px-6 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-pink-600 hover:from-rose-500 hover:to-pink-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition duration-200 shadow-xl glow-rose flex items-center justify-center gap-4 active:scale-95">
+                            <div class="w-12 h-12 rounded-2xl bg-rose-700/60 flex items-center justify-center shadow-inner">
+                                <i data-lucide="log-out" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-lg font-extrabold tracking-wide">CLOCK OUT</div>
+                                <div class="text-xs text-rose-100 font-normal">Conclude Shift</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="text-center pt-2">
+                        <p class="text-xs text-slate-400 flex items-center justify-center gap-1.5 font-medium">
+                            <i data-lucide="wifi" class="w-4 h-4 text-blue-400"></i>
+                            Verified on Madrasa Authorized WiFi Network
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- SLIDING PANEL 2: LEAVE APPLICATIONS -->
+            <!-- ============================================================== -->
+            <section id="panelUstadhLeave" class="slide-panel space-y-6 hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Apply Form -->
+                    <div class="lg:col-span-5 glass-panel rounded-3xl p-6 shadow-2xl space-y-4">
+                        <div class="border-b border-slate-800 pb-3">
+                            <h3 class="font-bold text-white text-base flex items-center gap-2">
+                                <i data-lucide="calendar-plus" class="w-5 h-5 text-amber-400"></i>
+                                Submit Leave Request
+                            </h3>
+                            <p class="text-xs text-slate-400">Sent directly to Principal Sadr Ustadh</p>
+                        </div>
+
+                        <form id="submitLeaveForm" class="space-y-3.5">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Start Date</label>
+                                    <input type="date" id="leaveStartDate" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">End Date</label>
+                                    <input type="date" id="leaveEndDate" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Reason for Leave</label>
+                                <textarea id="leaveReason" rows="3" placeholder="e.g. Medical emergency, Family function, Personal leave..." required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2 active:scale-95">
+                                <i data-lucide="send" class="w-4 h-4"></i> Submit Application
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Leave History List -->
+                    <div class="lg:col-span-7 glass-panel rounded-3xl p-6 shadow-2xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-bold text-white text-base flex items-center gap-2">
+                                <i data-lucide="file-check" class="w-5 h-5 text-blue-400"></i>
+                                Leave History & Decision Status
+                            </h3>
+                            <button onclick="fetchUstadhLeaves()" type="button" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium">
+                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Refresh
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto border border-slate-800 rounded-2xl max-h-80">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] sticky top-0">
+                                    <tr>
+                                        <th class="py-3 px-4">Date Duration</th>
+                                        <th class="py-3 px-4">Reason</th>
+                                        <th class="py-3 px-4">Decision Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ustadhLeavesTableBody" class="divide-y divide-slate-800 text-slate-300">
+                                    <tr><td colspan="3" class="py-4 text-center text-slate-500 italic">No leave applications found.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- SLIDING PANEL 3: PERSONAL ATTENDANCE HISTORY -->
+            <!-- ============================================================== -->
+            <section id="panelUstadhHistory" class="slide-panel space-y-6 hidden">
+                <div id="ustadhLogsCard" class="glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <h2 class="font-bold text-white text-base sm:text-lg flex items-center gap-2">
+                                <i data-lucide="history" class="w-5 h-5 text-blue-400"></i>
+                                Your Personal Attendance Sheet
+                            </h2>
+                            <p class="text-xs text-slate-400">Complete log of all arrival timestamps, punctuality metrics, and shift departures</p>
+                        </div>
+                        <button id="btnRefreshLogs" type="button" class="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
+                            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto border border-slate-800 rounded-2xl max-h-96">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] sticky top-0">
+                                <tr>
+                                    <th class="py-3 px-4">Clock In</th>
+                                    <th class="py-3 px-4">Late Metric</th>
+                                    <th class="py-3 px-4">Clock Out</th>
+                                    <th class="py-3 px-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody" class="divide-y divide-slate-800 text-slate-300">
+                                <tr>
+                                    <td colspan="4" class="py-4 text-center text-slate-500 italic">No attendance records.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- SLIDING PANEL 4: DEVELOPER SANDBOX & SIMULATOR -->
+            <!-- ============================================================== -->
+            <section id="panelUstadhSandbox" class="slide-panel space-y-6 hidden">
+                <div class="glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <h2 class="font-bold text-white text-base sm:text-lg flex items-center gap-2">
+                                <i data-lucide="sliders" class="w-5 h-5 text-indigo-400"></i>
+                                Developer Testing Sandbox & Simulator
+                            </h2>
+                            <p class="text-xs text-slate-400">Test shift timestamps, WiFi IP verification, and device security alerts</p>
+                        </div>
+                        <span class="text-xs text-indigo-300 bg-indigo-950/40 border border-indigo-800/40 px-3 py-1 rounded-full font-medium">
+                            Testing Mode
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                        <!-- Simulate Shift Time -->
+                        <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                            <label class="block text-xs font-semibold text-slate-300">1. Simulate Shift Timestamp</label>
+                            <input type="datetime-local" id="overrideTimePicker" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+                            <div class="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                                <button type="button" onclick="setSimulatedTime('08:00')" class="p-2 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-800/40 text-emerald-300 rounded-xl text-center font-medium transition">
+                                    08:00 AM (On-Time)
+                                </button>
+                                <button type="button" onclick="setSimulatedTime('08:35')" class="p-2 bg-amber-950/60 hover:bg-amber-900 border border-amber-800/40 text-amber-300 rounded-xl text-center font-medium transition">
+                                    08:35 AM (Late In)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Simulate Network IP -->
+                        <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                            <label class="block text-xs font-semibold text-slate-300">2. Simulate Connection IP</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="simulatedIpInput" placeholder="e.g. 192.168.1.100" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+                                <button id="btnApplySimulatedIp" type="button" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition">
+                                    Set
+                                </button>
+                                <button id="btnResetIp" type="button" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Simulate Unregistered Device Key -->
+                        <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                            <label class="block text-xs font-semibold text-slate-300">3. Device Lock Alert Test</label>
+                            <button id="btnCorruptDeviceKey" type="button" class="w-full py-2.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-800/50 text-rose-300 font-bold rounded-xl transition flex items-center justify-center gap-2">
+                                <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                Simulate Unrecognized Phone
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800/80 py-3.5 bg-slate-950/90 text-center text-xs text-slate-500 mt-auto">
+        Thandorappara Juma Masjid &bull; Ustadh Portal
+    </footer>
+
+    <script src="/static/app.js?v=4.4.0"></script>
+    <script>
+        // Sliding Drawer Toggle for Ustadh
+        function toggleUstadhNavDrawer() {
+            const drawer = document.getElementById('ustadhNavDrawer');
+            const backdrop = document.getElementById('ustadhNavDrawerBackdrop');
+            if (drawer && backdrop) {
+                if (drawer.classList.contains('-translate-x-full')) {
+                    drawer.classList.remove('-translate-x-full');
+                    backdrop.classList.remove('hidden');
+                    setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+                } else {
+                    drawer.classList.add('-translate-x-full');
+                    backdrop.classList.add('opacity-0');
+                    setTimeout(() => backdrop.classList.add('hidden'), 300);
+                }
+            }
+        }
+
+        // Sliding Panel Selector for Ustadh
+        function selectUstadhPanel(panelKey) {
+            const panels = {
+                clock: document.getElementById('panelUstadhClock'),
+                leave: document.getElementById('panelUstadhLeave'),
+                history: document.getElementById('panelUstadhHistory'),
+                sandbox: document.getElementById('panelUstadhSandbox'),
+            };
+
+            const navItems = {
+                clock: document.getElementById('ustadhNavItemClock'),
+                leave: document.getElementById('ustadhNavItemLeave'),
+                history: document.getElementById('ustadhNavItemHistory'),
+                sandbox: document.getElementById('ustadhNavItemSandbox'),
+            };
+
+            const quickPills = {
+                clock: document.getElementById('ustadhQuickPillClock'),
+                leave: document.getElementById('ustadhQuickPillLeave'),
+                history: document.getElementById('ustadhQuickPillHistory'),
+                sandbox: document.getElementById('ustadhQuickPillSandbox'),
+            };
+
+            Object.keys(panels).forEach(key => {
+                if (panels[key]) panels[key].classList.add('hidden');
+                if (navItems[key]) {
+                    navItems[key].className = "w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition ustadh-nav-inactive text-left";
+                }
+                if (quickPills[key]) {
+                    quickPills[key].className = "px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex-shrink-0 flex items-center gap-1.5";
+                }
+            });
+
+            if (panels[panelKey]) panels[panelKey].classList.remove('hidden');
+            if (navItems[panelKey]) {
+                navItems[panelKey].className = "w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition ustadh-nav-active text-left";
+            }
+            if (quickPills[panelKey]) {
+                quickPills[panelKey].className = "px-4 py-2.5 rounded-xl bg-blue-600 text-white shadow flex-shrink-0 flex items-center gap-1.5";
+            }
+
+            // Close drawer if open on mobile
+            const drawer = document.getElementById('ustadhNavDrawer');
+            if (drawer && !drawer.classList.contains('-translate-x-full')) {
+                toggleUstadhNavDrawer();
+            }
+
+            lucide.createIcons();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
