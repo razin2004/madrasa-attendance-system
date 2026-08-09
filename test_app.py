@@ -110,13 +110,23 @@ def test_leave_management_workflow():
 
 def test_device_recognition_and_clockin_protection():
     client.post("/api/admin/ustadhs/reset-device", json={"username": "ustadh_tariq"})
-    u_res = client.post("/api/login", json={"username": "ustadh_tariq", "password": "tariqpassword123"})
-    ustadh_id = u_res.json()["user"]["id"]
 
     registered_phone_key = "USTADH-DEV-PHONE-TARIQ-01"
     unregistered_phone_key = "USTADH-DEV-PHONE-ROGUE-99"
 
-    # 1. Attempt Clock-In outside Madrasa WiFi -> Blocked by IP guard
+    # 1. Login with the registered phone key — auto-registers the device (new flow)
+    login_res = client.post("/api/login", json={
+        "username": "ustadh_tariq",
+        "password": "tariqpassword123",
+        "device_key": registered_phone_key
+    })
+    assert login_res.status_code == 200
+    login_data = login_res.json()
+    assert login_data["device_status"] in ("newly_registered", "registered")
+    assert login_data["active_device_key"] == registered_phone_key
+    ustadh_id = login_data["user"]["id"]
+
+    # 2. Attempt Clock-In outside Madrasa WiFi -> Blocked by IP guard
     blocked_wifi = client.post("/api/ustadh/clock-in", json={
         "ustadh_id": ustadh_id,
         "device_key": registered_phone_key,
@@ -125,7 +135,7 @@ def test_device_recognition_and_clockin_protection():
     assert blocked_wifi.status_code == 403
     assert "Please connect to the Madrasa WiFi" in blocked_wifi.json()["detail"]
 
-    # 2. First Clock-In from registered_phone_key on allowed WiFi -> Registers device & succeeds
+    # 3. Clock-In from registered device on allowed WiFi -> Success
     clock_in_res = client.post("/api/ustadh/clock-in", json={
         "ustadh_id": ustadh_id,
         "device_key": registered_phone_key,
@@ -136,7 +146,7 @@ def test_device_recognition_and_clockin_protection():
     assert clock_in_res.json()["log"]["is_late_in"] is True
     assert clock_in_res.json()["log"]["late_minutes"] == 25
 
-    # 3. Attempt Clock-Out from an UNRECOGNIZED device key -> Blocked by Device Lock
+    # 4. Attempt Clock-Out from an UNRECOGNIZED device key -> Blocked by Device Lock
     blocked_dev = client.post("/api/ustadh/clock-out", json={
         "ustadh_id": ustadh_id,
         "device_key": unregistered_phone_key,
@@ -146,7 +156,7 @@ def test_device_recognition_and_clockin_protection():
     assert blocked_dev.status_code == 403
     assert "Device not recognized" in blocked_dev.json()["detail"]
 
-    # 4. Clock-Out with the registered device key -> Success
+    # 5. Clock-Out with the registered device key -> Success
     clock_out_res = client.post("/api/ustadh/clock-out", json={
         "ustadh_id": ustadh_id,
         "device_key": registered_phone_key,
@@ -307,6 +317,71 @@ def test_multi_session_daily_limit_and_roster_history():
     assert hist_month.status_code == 200
     assert len(hist_month.json()["records"]) >= 3
 
+def test_two_device_registration_and_third_device_blocking():
+    # 1. Create a fresh Ustadh
+    res = client.post("/api/admin/ustadhs/create", json={
+        "full_name": "Ustadh Zayd",
+        "username": "ustadh_zayd",
+        "password": "zaydpassword123",
+        "shift_id": 1
+    })
+    assert res.status_code == 200
+    zayd_id = res.json()["ustadh"]["id"]
+
+    dev_1 = "USTADH-DEV-ZAYD-PHONE-01"
+    dev_2 = "USTADH-DEV-ZAYD-LAPTOP-02"
+    dev_3 = "USTADH-DEV-ZAYD-UNAUTH-03"
+
+    # Device 1 logs in -> Auto-registered (1/2)
+    l1 = client.post("/api/login", json={"username": "ustadh_zayd", "password": "zaydpassword123", "device_key": dev_1})
+    assert l1.status_code == 200
+    assert l1.json()["device_status"] == "newly_registered"
+    assert l1.json()["active_device_key"] == dev_1
+    assert l1.json()["registered_device_count"] == 1
+
+    # Device 1 clocks in & out -> Success
+    c1_in = client.post("/api/ustadh/clock-in", json={"ustadh_id": zayd_id, "device_key": dev_1, "custom_ip": "192.168.1.100"})
+    assert c1_in.status_code == 200
+    c1_out = client.post("/api/ustadh/clock-out", json={"ustadh_id": zayd_id, "device_key": dev_1, "custom_ip": "192.168.1.100"})
+    assert c1_out.status_code == 200
+
+    # Device 2 logs in -> Auto-registered (2/2)
+    l2 = client.post("/api/login", json={"username": "ustadh_zayd", "password": "zaydpassword123", "device_key": dev_2})
+    assert l2.status_code == 200
+    assert l2.json()["device_status"] == "newly_registered"
+    assert l2.json()["active_device_key"] == dev_2
+    assert l2.json()["registered_device_count"] == 2
+
+    # Device 2 clocks in & out -> Success
+    c2_in = client.post("/api/ustadh/clock-in", json={"ustadh_id": zayd_id, "device_key": dev_2, "custom_ip": "192.168.1.100"})
+    assert c2_in.status_code == 200
+    c2_out = client.post("/api/ustadh/clock-out", json={"ustadh_id": zayd_id, "device_key": dev_2, "custom_ip": "192.168.1.100"})
+    assert c2_out.status_code == 200
+
+    # Device 3 logs in -> 2 devices already registered! Returns 'unregistered'
+    l3 = client.post("/api/login", json={"username": "ustadh_zayd", "password": "zaydpassword123", "device_key": dev_3})
+    assert l3.status_code == 200
+    assert l3.json()["device_status"] == "unregistered"
+    assert l3.json()["active_device_key"] is None
+    assert l3.json()["registered_device_count"] == 2
+
+    # Device 3 attempts clock-in -> Blocked with 403 Forbidden!
+    c3_in = client.post("/api/ustadh/clock-in", json={"ustadh_id": zayd_id, "device_key": dev_3, "custom_ip": "192.168.1.100"})
+    assert c3_in.status_code == 403
+    assert "Device not recognized" in c3_in.json()["detail"]
+
+    # Device 3 attempts clock-out -> Blocked with 403 Forbidden!
+    c3_out = client.post("/api/ustadh/clock-out", json={"ustadh_id": zayd_id, "device_key": dev_3, "custom_ip": "192.168.1.100"})
+    assert c3_out.status_code == 403
+    assert "Device not recognized" in c3_out.json()["detail"]
+
+    # Device 1 and Device 2 can still login and be recognized as 'registered'
+    l1_again = client.post("/api/login", json={"username": "ustadh_zayd", "password": "zaydpassword123", "device_key": dev_1})
+    assert l1_again.json()["device_status"] == "registered"
+
+    l2_again = client.post("/api/login", json={"username": "ustadh_zayd", "password": "zaydpassword123", "device_key": dev_2})
+    assert l2_again.json()["device_status"] == "registered"
+
 if __name__ == "__main__":
     print("Running setup_module...")
     setup_module(None)
@@ -322,5 +397,7 @@ if __name__ == "__main__":
     test_multi_ip_whitelist_management()
     print("Running test_multi_session_daily_limit_and_roster_history...")
     test_multi_session_daily_limit_and_roster_history()
+    print("Running test_two_device_registration_and_third_device_blocking...")
+    test_two_device_registration_and_third_device_blocking()
     print("\n[SUCCESS] ALL THANDORAPPARA JUMA MASJID 3-TIER MULTI-IP & MULTI-SESSION TESTS PASSED SUCCESSFULLY!")
 

@@ -259,29 +259,66 @@ def unified_login(payload: schemas.UnifiedLoginRequest, db: Session = Depends(ge
             }
         }
 
-    # 3. Ustadh (Staff) Role Routing (No device restriction on login)
+    # 3. Ustadh (Staff) Role Routing
     if user.role == "USTADH":
         shift = user.shift if user.shift else db.query(models.MadrasaShift).first()
 
-        # Check device status against registered devices
+        # Retrieve the device key sent from the browser's localStorage
         device_key_sent = payload.device_key.strip() if payload.device_key else None
         registered_devices = db.query(models.DeviceKey).filter(models.DeviceKey.user_id == user.id).all()
         registered_keys = [d.device_key for d in registered_devices]
-        primary_key = registered_keys[0] if registered_keys else None
 
-        if not registered_devices:
-            device_status = "new_device"  # No device registered yet - first time
+        # Skip corrupt / simulated unregistered keys
+        is_corrupt_sim = device_key_sent and (
+            "INVALID" in device_key_sent or
+            "CORRUPTED" in device_key_sent or
+            "ROGUE" in device_key_sent or
+            "UNREGISTERED" in device_key_sent or
+            "UNRECOGNIZED" in device_key_sent
+        )
+
+        active_device_key = None
+
+        if is_corrupt_sim:
+            # Simulated bad device — reject silently, show warning on frontend
+            device_status = "unregistered"
+            active_device_key = None
+
         elif device_key_sent and device_key_sent in registered_keys:
-            device_status = "registered"  # Current device is authorized
+            # Already registered device — authorized
+            device_status = "registered"
+            active_device_key = device_key_sent
+
+        elif len(registered_devices) < 2:
+            # Under 2-device limit — auto-register this device now at login
+            if not device_key_sent:
+                device_key_sent = f"USTADH-DEV-{secrets.token_urlsafe(24)}"
+
+            device_count = len(registered_devices) + 1
+            new_device = models.DeviceKey(
+                user_id=user.id,
+                device_key=device_key_sent,
+                device_name=f"Registered Device #{device_count}"
+            )
+            db.add(new_device)
+            db.commit()
+            db.refresh(user)
+
+            device_status = "newly_registered"
+            active_device_key = device_key_sent
+
         else:
-            device_status = "unregistered"  # Device not in authorized list
+            # 2 devices already registered — this 3rd device is blocked
+            device_status = "unregistered"
+            active_device_key = None
 
         return {
             "message": f"Asalamu Alaikum, {user.full_name}",
             "role": "USTADH",
             "redirect_url": "/ustadh",
             "device_status": device_status,
-            "registered_device_key": primary_key,
+            "active_device_key": active_device_key,
+            "registered_device_count": len(db.query(models.DeviceKey).filter(models.DeviceKey.user_id == user.id).all()),
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -860,31 +897,26 @@ def ustadh_clock_in(
             detail="Device not recognized. Please contact Admin"
         )
 
-    # First Clock-In on a device OR Admin explicitly authorized adding a secondary device
-    if len(registered_keys) == 0 or ustadh.can_add_device:
+    if incoming_key and incoming_key in registered_keys:
+        active_device_key = incoming_key
+    elif len(registered_keys) < 2:
         if not incoming_key:
             incoming_key = f"USTADH-DEV-{secrets.token_urlsafe(24)}"
-
         device_count = len(registered_keys) + 1
         new_device = models.DeviceKey(
             user_id=ustadh.id,
             device_key=incoming_key,
-            device_name=f"Registered Mobile Device #{device_count}"
+            device_name=f"Registered Device #{device_count}"
         )
         db.add(new_device)
-        ustadh.can_add_device = False
         db.commit()
         db.refresh(ustadh)
-        registered_keys.append(incoming_key)
         active_device_key = incoming_key
     else:
-        # Enforce device locking against registered devices
-        if not incoming_key or incoming_key not in registered_keys:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Device not recognized. Please contact Admin"
-            )
-        active_device_key = incoming_key
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Device not recognized. This device is not authorized for your account. Please contact the Principal Admin."
+        )
 
     # Determine Clock-In timestamp
     if payload.override_time:

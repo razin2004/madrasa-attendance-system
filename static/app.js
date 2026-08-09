@@ -283,42 +283,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Handle Ustadh device status at login time
                 if (data.role === 'USTADH') {
                     const deviceStatus = data.device_status;
-                    const registeredKey = data.registered_device_key;
+                    const activeKey = data.active_device_key;
 
-                    if (deviceStatus === 'registered') {
-                        // Current device is authorized — store key and proceed normally
-                        if (registeredKey) localStorage.setItem('device_key', registeredKey);
-                        showToast(data.message, "success");
-                        setTimeout(() => { window.location.href = data.redirect_url; }, 600);
+                    if (deviceStatus === 'registered' || deviceStatus === 'newly_registered') {
+                        // Device is authorized (either already registered or just registered now)
+                        if (activeKey) localStorage.setItem('device_key', activeKey);
+                        sessionStorage.removeItem('device_warning');
 
-                    } else if (deviceStatus === 'new_device') {
-                        // First time — no device registered yet; generate & store this device
-                        let key = localStorage.getItem('device_key');
-                        if (!key) {
-                            key = "USTADH-DEV-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                            localStorage.setItem('device_key', key);
-                        }
-                        showToast(data.message + " — This device will be registered on first clock-in.", "success");
-                        setTimeout(() => { window.location.href = data.redirect_url; }, 800);
+                        const isNew = deviceStatus === 'newly_registered';
+                        const devCount = data.registered_device_count || 1;
+                        const msg = isNew
+                            ? `${data.message} — Device registered (${devCount}/2 devices authorized).`
+                            : data.message;
+                        showToast(msg, "success");
+                        setTimeout(() => { window.location.href = data.redirect_url; }, 700);
 
                     } else if (deviceStatus === 'unregistered') {
-                        // Device not recognized — show warning and allow to proceed but alert on dashboard
+                        // 2 devices already used — this device is blocked
                         sessionStorage.setItem('device_warning', 'true');
-                        if (registeredKey) sessionStorage.setItem('registered_device_key', registeredKey);
+                        sessionStorage.removeItem('registered_device_key');
 
                         if (window.Swal) {
                             await Swal.fire({
-                                title: '⚠️ Unrecognized Device',
-                                html: `<p style="font-size:13px;color:#cbd5e1">This device is <strong style="color:#f87171">not registered</strong> to your account.<br><br>You can sign in, but you <strong>cannot clock in or out</strong> from this device.<br><br>Please use your registered phone, or contact the Principal Admin to update your device.</p>`,
-                                icon: 'warning',
+                                title: '🚫 Device Not Authorized',
+                                html: `<p style="font-size:13px;color:#cbd5e1">This device is <strong style="color:#f87171">not registered</strong> to your account.<br><br><strong>Maximum 2 devices</strong> are already linked to your account.<br><br>You can sign in to view your schedule, but you <strong>cannot clock in or out</strong> from this device.<br><br>Contact the <strong>Principal Admin</strong> to reset your device registration.</p>`,
+                                icon: 'error',
                                 background: '#070d1e',
                                 color: '#f8fafc',
-                                confirmButtonColor: '#2563eb',
+                                confirmButtonColor: '#e11d48',
                                 confirmButtonText: 'Understood — Continue',
                                 backdrop: 'rgba(7, 13, 30, 0.85)',
                                 customClass: {
-                                    popup: 'rounded-3xl border border-amber-700/50 shadow-2xl p-6',
-                                    title: 'text-base font-bold text-amber-300',
+                                    popup: 'rounded-3xl border border-rose-700/50 shadow-2xl p-6',
+                                    title: 'text-base font-bold text-rose-300',
                                     confirmButton: 'rounded-xl px-6 py-2.5 font-bold text-sm'
                                 }
                             });
