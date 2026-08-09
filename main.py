@@ -263,10 +263,25 @@ def unified_login(payload: schemas.UnifiedLoginRequest, db: Session = Depends(ge
     if user.role == "USTADH":
         shift = user.shift if user.shift else db.query(models.MadrasaShift).first()
 
+        # Check device status against registered devices
+        device_key_sent = payload.device_key.strip() if payload.device_key else None
+        registered_devices = db.query(models.DeviceKey).filter(models.DeviceKey.user_id == user.id).all()
+        registered_keys = [d.device_key for d in registered_devices]
+        primary_key = registered_keys[0] if registered_keys else None
+
+        if not registered_devices:
+            device_status = "new_device"  # No device registered yet - first time
+        elif device_key_sent and device_key_sent in registered_keys:
+            device_status = "registered"  # Current device is authorized
+        else:
+            device_status = "unregistered"  # Device not in authorized list
+
         return {
             "message": f"Asalamu Alaikum, {user.full_name}",
             "role": "USTADH",
             "redirect_url": "/ustadh",
+            "device_status": device_status,
+            "registered_device_key": primary_key,
             "user": {
                 "id": user.id,
                 "username": user.username,

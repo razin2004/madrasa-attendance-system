@@ -280,17 +280,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUser = data.user;
                 sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
 
-                // Silent device key storage for Ustadh role
-                if (data.role === 'USTADH' && currentUser.device_key) {
-                    localStorage.setItem('device_key', currentUser.device_key);
+                // Handle Ustadh device status at login time
+                if (data.role === 'USTADH') {
+                    const deviceStatus = data.device_status;
+                    const registeredKey = data.registered_device_key;
+
+                    if (deviceStatus === 'registered') {
+                        // Current device is authorized — store key and proceed normally
+                        if (registeredKey) localStorage.setItem('device_key', registeredKey);
+                        showToast(data.message, "success");
+                        setTimeout(() => { window.location.href = data.redirect_url; }, 600);
+
+                    } else if (deviceStatus === 'new_device') {
+                        // First time — no device registered yet; generate & store this device
+                        let key = localStorage.getItem('device_key');
+                        if (!key) {
+                            key = "USTADH-DEV-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                            localStorage.setItem('device_key', key);
+                        }
+                        showToast(data.message + " — This device will be registered on first clock-in.", "success");
+                        setTimeout(() => { window.location.href = data.redirect_url; }, 800);
+
+                    } else if (deviceStatus === 'unregistered') {
+                        // Device not recognized — show warning and allow to proceed but alert on dashboard
+                        sessionStorage.setItem('device_warning', 'true');
+                        if (registeredKey) sessionStorage.setItem('registered_device_key', registeredKey);
+
+                        if (window.Swal) {
+                            await Swal.fire({
+                                title: '⚠️ Unrecognized Device',
+                                html: `<p style="font-size:13px;color:#cbd5e1">This device is <strong style="color:#f87171">not registered</strong> to your account.<br><br>You can sign in, but you <strong>cannot clock in or out</strong> from this device.<br><br>Please use your registered phone, or contact the Principal Admin to update your device.</p>`,
+                                icon: 'warning',
+                                background: '#070d1e',
+                                color: '#f8fafc',
+                                confirmButtonColor: '#2563eb',
+                                confirmButtonText: 'Understood — Continue',
+                                backdrop: 'rgba(7, 13, 30, 0.85)',
+                                customClass: {
+                                    popup: 'rounded-3xl border border-amber-700/50 shadow-2xl p-6',
+                                    title: 'text-base font-bold text-amber-300',
+                                    confirmButton: 'rounded-xl px-6 py-2.5 font-bold text-sm'
+                                }
+                            });
+                        }
+                        setTimeout(() => { window.location.href = data.redirect_url; }, 200);
+                    }
+                } else {
+                    showToast(data.message, "success");
+                    setTimeout(() => { window.location.href = data.redirect_url; }, 600);
                 }
-
-                showToast(data.message, "success");
-
-                // Role-based redirect
-                setTimeout(() => {
-                    window.location.href = data.redirect_url;
-                }, 600);
 
             } catch (err) {
                 showToast("Network error during sign in.", "error");
@@ -1104,19 +1142,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!terminalHardwareBadge) return;
         const currentKey = localStorage.getItem('device_key') || '';
         const isCorrupt = currentKey.includes('INVALID') || currentKey.includes('CORRUPTED') || currentKey.includes('ROGUE');
+        const deviceWarning = sessionStorage.getItem('device_warning') === 'true';
 
-        if (isCorrupt) {
+        if (isCorrupt || deviceWarning) {
             terminalHardwareBadge.className = 'text-rose-300 font-bold flex items-center gap-1.5 bg-rose-950/60 border border-rose-800/60 px-2.5 py-1 rounded-xl animate-pulse';
-            terminalHardwareBadge.innerHTML = `<i data-lucide="shield-alert" class="w-3.5 h-3.5 text-rose-400"></i> Unrecognized Phone (Punching Blocked)`;
+            terminalHardwareBadge.innerHTML = `<i data-lucide="shield-alert" class="w-3.5 h-3.5 text-rose-400"></i> Unrecognized Device — Clock-In Blocked`;
+        } else if (!currentKey) {
+            terminalHardwareBadge.className = 'text-amber-300 font-medium flex items-center gap-1.5 bg-amber-950/40 border border-amber-800/40 px-2.5 py-1 rounded-xl';
+            terminalHardwareBadge.innerHTML = `<i data-lucide="smartphone" class="w-3.5 h-3.5 text-amber-400"></i> New Device — Will Register on First Clock-In`;
         } else {
             terminalHardwareBadge.className = 'text-emerald-300 font-medium flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-800/40 px-2.5 py-1 rounded-xl';
-            terminalHardwareBadge.innerHTML = `<i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-400"></i> Registered Device`;
+            terminalHardwareBadge.innerHTML = `<i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-400"></i> Registered Device — Authorized`;
         }
         if (window.lucide) lucide.createIcons();
     }
 
     if (window.location.pathname.includes('/ustadh') || document.getElementById('ustadhActionCard')) {
         updateTerminalHardwareBadge();
+        // Show persistent banner if device is unregistered (set during login)
+        if (sessionStorage.getItem('device_warning') === 'true') {
+            showToast("⚠️ Unrecognized device — You cannot clock in or out from this phone.", "warning");
+        }
     }
 
     if (btnCorruptDeviceKey) {
@@ -1131,11 +1177,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btnRestoreDeviceKey) {
-        btnRestoreDeviceKey.addEventListener('click', () => {
-            localStorage.removeItem('device_key');
-            window.getOrCreateDeviceKey();
-            updateTerminalHardwareBadge();
-            showToast("Authorized mobile device pairing restored successfully.", "success");
+        btnRestoreDeviceKey.addEventListener('click', async () => {
+            // Try to restore the actual registered device key from login session
+            const savedRegisteredKey = sessionStorage.getItem('registered_device_key');
+            if (savedRegisteredKey) {
+                // Restore the real registered key from the server
+                localStorage.setItem('device_key', savedRegisteredKey);
+                sessionStorage.removeItem('device_warning');
+                updateTerminalHardwareBadge();
+                showToast("✅ Restored to your registered Madrasa device. Clock-In is now enabled.", "success");
+            } else {
+                // No server-registered key — check if there's a locally stored valid key
+                const existingKey = localStorage.getItem('device_key');
+                if (!existingKey || existingKey.includes('INVALID') || existingKey.includes('CORRUPTED') || existingKey.includes('ROGUE')) {
+                    // Generate a fresh key (first-time device)
+                    const newKey = "USTADH-DEV-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                    localStorage.setItem('device_key', newKey);
+                    sessionStorage.removeItem('device_warning');
+                    updateTerminalHardwareBadge();
+                    showToast("Device key reset. This device will register on next clock-in.", "info");
+                } else {
+                    sessionStorage.removeItem('device_warning');
+                    updateTerminalHardwareBadge();
+                    showToast("Device key is already valid.", "success");
+                }
+            }
         });
     }
 
