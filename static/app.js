@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnUstadhLogout) btnUstadhLogout.addEventListener('click', window.handleLogout);
 
     // ===================================================================
-    // 3. SUPER ADMIN DASHBOARD LOGIC (MULTI-IP & ADMINS)
+    // 3. SUPER ADMIN DASHBOARD LOGIC (MULTI-IP, ADMINS, AUDIT)
     // ===================================================================
     const allowedIpsTableBody = document.getElementById('allowedIpsTableBody');
     const totalAllowedIpsBadge = document.getElementById('totalAllowedIpsBadge');
@@ -321,46 +321,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const newAdminPassword = document.getElementById('newAdminPassword');
     const adminsTableBody = document.getElementById('adminsTableBody');
     const btnRefreshAdmins = document.getElementById('btnRefreshAdmins');
-    const btnRefreshMasterAudit = document.getElementById('btnRefreshMasterAudit');
 
-    if (window.location.pathname.includes('/superadmin') || allowedIpsTableBody) {
-        loadSuperAdminAllowedIps();
-        loadSuperAdminAdminsList();
-        loadSuperAdminMasterAudit();
-    }
-
-    async function loadSuperAdminAllowedIps() {
-        if (!allowedIpsTableBody) return;
+    window.loadSuperAdminAllowedIps = async function() {
+        const tableBody = document.getElementById('allowedIpsTableBody');
+        const badge = document.getElementById('totalAllowedIpsBadge');
+        if (!tableBody) return;
         try {
             const res = await fetch('/api/superadmin/ips');
             if (!res.ok) return;
             const ips = await res.json();
 
-            if (totalAllowedIpsBadge) {
-                totalAllowedIpsBadge.textContent = `${ips.length} Active IP(s)`;
+            if (badge) {
+                badge.textContent = `${ips.length} Active IP(s)`;
             }
 
             if (ips.length === 0) {
-                allowedIpsTableBody.innerHTML = `<tr><td colspan="3" class="py-3 text-center text-slate-500 italic">No whitelisted IPs.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 italic">No whitelisted networks configured.</td></tr>`;
                 return;
             }
 
-            allowedIpsTableBody.innerHTML = ips.map(ip => `
+            tableBody.innerHTML = ips.map(ip => `
                 <tr class="hover:bg-slate-900/50 transition">
-                    <td class="py-2.5 px-3 font-mono font-bold text-emerald-400">${ip.ip_address}</td>
-                    <td class="py-2.5 px-3 text-slate-300">${ip.description}</td>
-                    <td class="py-2.5 px-3 text-right">
-                        <button onclick="superAdminDeleteIp(${ip.id})" class="px-2 py-1 bg-rose-950/70 hover:bg-rose-900 text-rose-300 border border-rose-800/40 rounded text-[10px] font-medium transition">
+                    <td class="py-2.5 px-4 font-mono font-bold text-emerald-400">${ip.ip_address}</td>
+                    <td class="py-2.5 px-4 text-slate-300">${ip.description}</td>
+                    <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Whitelisted</span></td>
+                    <td class="py-2.5 px-4 text-right">
+                        <button onclick="superAdminDeleteIp(${ip.id})" class="px-2.5 py-1 bg-rose-950/70 hover:bg-rose-900 text-rose-300 border border-rose-800/40 rounded-lg text-[11px] font-medium transition">
                             Delete
                         </button>
                     </td>
                 </tr>
             `).join('');
 
+            if (window.lucide) lucide.createIcons();
+
         } catch (e) {
             console.error("Error loading allowed IPs", e);
         }
-    }
+    };
 
     if (addIpForm) {
         addIpForm.addEventListener('submit', async (e) => {
@@ -385,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     showToast(data.message, "success");
                     addIpForm.reset();
-                    loadSuperAdminAllowedIps();
+                    window.loadSuperAdminAllowedIps();
                 } else {
                     showToast(data.detail || "Failed to add IP", "error");
                 }
@@ -402,26 +400,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(`/api/superadmin/ips/${ipId}`, { method: 'DELETE' });
                 const data = await res.json();
                 showToast(data.message, "info");
-                loadSuperAdminAllowedIps();
+                window.loadSuperAdminAllowedIps();
             } catch (e) {
                 showToast("Error deleting IP", "error");
             }
         }
     };
 
-    async function loadSuperAdminAdminsList() {
-        if (!adminsTableBody) return;
+    window.loadSuperAdminAdminsList = async function() {
+        const tableBody = document.getElementById('adminsTableBody');
+        if (!tableBody) return;
         try {
             const res = await fetch('/api/superadmin/admins');
             if (!res.ok) return;
             const admins = await res.json();
 
             if (admins.length === 0) {
-                adminsTableBody.innerHTML = `<tr><td colspan="4" class="py-3 text-center text-slate-500 italic">No Admin accounts provisioned.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 italic">No Principal Admin accounts provisioned.</td></tr>`;
                 return;
             }
 
-            adminsTableBody.innerHTML = admins.map(a => {
+            tableBody.innerHTML = admins.map(a => {
                 const statusBadge = a.is_active
                     ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Active</span>`
                     : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Blocked</span>`;
@@ -431,11 +430,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 return `
                     <tr class="hover:bg-slate-900/50 transition">
-                        <td class="py-2 px-3 font-semibold text-white">${a.full_name}</td>
-                        <td class="py-2 px-3 font-mono text-slate-300">${a.username}</td>
-                        <td class="py-2 px-3">${statusBadge}</td>
-                        <td class="py-2 px-3">
-                            <button onclick="superAdminToggleBlock(${a.id})" class="px-2 py-1 ${btnColor} border rounded text-[11px] font-medium transition">
+                        <td class="py-2.5 px-4 font-semibold text-white">${a.full_name}</td>
+                        <td class="py-2.5 px-4 font-mono text-slate-300">${a.username}</td>
+                        <td class="py-2.5 px-4">${statusBadge}</td>
+                        <td class="py-2.5 px-4 text-right">
+                            <button onclick="superAdminToggleBlock(${a.id})" class="px-2.5 py-1 ${btnColor} border rounded-lg text-[11px] font-medium transition">
                                 ${btnText}
                             </button>
                         </td>
@@ -443,19 +442,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
 
+            if (window.lucide) lucide.createIcons();
+
         } catch (e) {
             console.error("Error loading admins", e);
         }
-    }
+    };
 
     if (createAdminForm) {
         createAdminForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const fullName = newAdminFullName.value.trim();
-            const username = newAdminUsername.value.trim();
-            const password = newAdminPassword.value.trim();
+            const fullName = newAdminFullName ? newAdminFullName.value.trim() : '';
+            const username = newAdminUsername ? newAdminUsername.value.trim() : '';
+            const password = newAdminPassword ? newAdminPassword.value.trim() : '';
 
-            showToast("Creating Admin account...", "info");
+            showToast("Creating Principal Admin account...", "info");
 
             try {
                 const res = await fetch('/api/superadmin/admins/create', {
@@ -467,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     showToast(data.message, "success");
                     createAdminForm.reset();
-                    loadSuperAdminAdminsList();
+                    window.loadSuperAdminAdminsList();
                 } else {
                     showToast(data.detail || "Failed to create Admin", "error");
                 }
@@ -488,14 +489,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 showToast(data.message, "info");
-                loadSuperAdminAdminsList();
+                window.loadSuperAdminAdminsList();
             } catch (e) {
                 showToast("Error updating Admin status", "error");
             }
         }
     };
 
-    if (btnRefreshAdmins) btnRefreshAdmins.addEventListener('click', loadSuperAdminAdminsList);
+    if (btnRefreshAdmins) btnRefreshAdmins.addEventListener('click', window.loadSuperAdminAdminsList);
 
     // ===================================================================
     // 3. TODAY'S LIVE STAFF ROSTER & HISTORICAL LOG EXPLORER (SHARED)
@@ -781,56 +782,56 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===================================================================
-    // 4. SUPER ADMIN MASTER AUDIT & ADMIN MANAGEMENT
+    // 4. SUPER ADMIN MASTER AUDIT & DIRECTORIES
     // ===================================================================
     const auditUstadhsTableBody = document.getElementById('auditUstadhsTableBody');
     const auditLeavesTableBody = document.getElementById('auditLeavesTableBody');
 
     window.loadSuperAdminMasterAudit = async function() {
-        if (!auditUstadhsTableBody && !auditLeavesTableBody) return;
+        const uTable = document.getElementById('auditUstadhsTableBody');
+        const lTable = document.getElementById('auditLeavesTableBody');
+        if (!uTable && !lTable) return;
         try {
             const res = await fetch('/api/superadmin/audit/all');
             if (!res.ok) return;
             const data = await res.json();
 
-            if (auditUstadhsTableBody) {
-                auditUstadhsTableBody.innerHTML = data.ustadhs.length ? data.ustadhs.map(u => `
-                    <tr class="hover:bg-slate-900/50">
-                        <td class="py-2.5 px-3 font-semibold text-white">${u.full_name}</td>
-                        <td class="py-2.5 px-3 font-mono text-slate-300">${u.username}</td>
-                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">${u.device_count} Device(s) Locked</span></td>
+            if (uTable) {
+                uTable.innerHTML = data.ustadhs.length ? data.ustadhs.map(u => `
+                    <tr class="hover:bg-slate-900/50 transition">
+                        <td class="py-3 px-4 font-semibold text-white">${u.full_name}</td>
+                        <td class="py-3 px-4 font-mono text-slate-300">${u.username}</td>
+                        <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">${u.device_count} Device(s) Locked</span></td>
                     </tr>
-                `).join('') : `<tr><td colspan="3" class="py-3 text-center text-slate-500 italic">No Ustadh profiles found.</td></tr>`;
+                `).join('') : `<tr><td colspan="3" class="py-4 text-center text-slate-500 italic">No Ustadh profiles found.</td></tr>`;
             }
 
-            if (auditLeavesTableBody) {
-                auditLeavesTableBody.innerHTML = data.leaves.length ? data.leaves.map(l => {
+            if (lTable) {
+                lTable.innerHTML = data.leaves.length ? data.leaves.map(l => {
                     const statusBadge = l.status === 'APPROVED' 
-                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Approved</span>`
+                        ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Approved</span>`
                         : (l.status === 'REJECTED' 
-                            ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Declined</span>`
-                            : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Pending</span>`);
+                            ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Declined</span>`
+                            : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Pending</span>`);
 
                     return `
-                        <tr class="hover:bg-slate-900/50">
-                            <td class="py-2.5 px-3 font-semibold text-white">${l.ustadh_name}</td>
-                            <td class="py-2.5 px-3 font-mono text-slate-300">${l.start_date} to ${l.end_date}</td>
-                            <td class="py-2.5 px-3 text-slate-300">${l.reason}</td>
-                            <td class="py-2.5 px-3">${statusBadge}</td>
-                            <td class="py-2.5 px-3 text-slate-400 text-[11px]">${l.reviewed_at ? new Date(l.reviewed_at).toLocaleDateString() : '--'}</td>
+                        <tr class="hover:bg-slate-900/50 transition">
+                            <td class="py-3 px-4 font-semibold text-white">${l.ustadh_name}</td>
+                            <td class="py-3 px-4 font-mono text-slate-300">${l.start_date} to ${l.end_date}</td>
+                            <td class="py-3 px-4 text-slate-300">${l.reason}</td>
+                            <td class="py-3 px-4">${statusBadge}</td>
+                            <td class="py-3 px-4 text-slate-400 text-xs">${l.reviewed_at ? new Date(l.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '--'}</td>
                         </tr>
                     `;
-                }).join('') : `<tr><td colspan="5" class="py-3 text-center text-slate-500 italic">No leave applications recorded.</td></tr>`;
+                }).join('') : `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No leave applications recorded.</td></tr>`;
             }
+
+            if (window.lucide) lucide.createIcons();
 
         } catch (e) {
             console.error("Error loading master audit", e);
         }
     };
-
-    if (auditUstadhsTableBody || auditLeavesTableBody) {
-        window.loadSuperAdminMasterAudit();
-    }
 
     // ===================================================================
     // 5. PRINCIPAL ADMIN USTADHS & LEAVE WORKFLOWS
@@ -1406,8 +1407,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
 
-        } catch (e) {
-            console.error("Error loading Ustadh leaves", e);
+    // ===================================================================
+    // 6. GLOBAL DASHBOARD INITIALIZERS ON PAGE LOAD
+    // ===================================================================
+
+    // Super Admin Console Initialization
+    if (window.location.pathname.includes('/superadmin') || document.getElementById('panelSuperAdminAttendance')) {
+        const saNameEl = document.getElementById('superadminNameDisplay');
+        if (saNameEl && currentUser) {
+            saNameEl.textContent = currentUser.full_name || currentUser.username;
         }
+        if (window.loadSuperAdminAllowedIps) window.loadSuperAdminAllowedIps();
+        if (window.loadSuperAdminAdminsList) window.loadSuperAdminAdminsList();
+        if (window.loadSuperAdminMasterAudit) window.loadSuperAdminMasterAudit();
+        if (window.loadTodayRoster) window.loadTodayRoster();
+        if (window.loadAttendanceHistory) window.loadAttendanceHistory();
+    }
+
+    // Principal Admin Console Initialization
+    if ((window.location.pathname.includes('/admin') && !window.location.pathname.includes('/superadmin')) || document.getElementById('adminUstadhTableBody')) {
+        const adminNameEl = document.getElementById('adminNameDisplay');
+        if (adminNameEl && currentUser) {
+            adminNameEl.textContent = currentUser.full_name || currentUser.username;
+        }
+        if (window.loadTodayRoster) window.loadTodayRoster();
+        if (window.loadAttendanceHistory) window.loadAttendanceHistory();
+        if (window.loadAdminUstadhsList) window.loadAdminUstadhsList();
+        if (window.loadAdminLeavesList) window.loadAdminLeavesList();
+    }
+
+    // Ustadh Portal Initialization
+    if (window.location.pathname.includes('/ustadh') || document.getElementById('ustadhActionCard')) {
+        if (typeof fetchUstadhAttendanceLogs === 'function') fetchUstadhAttendanceLogs();
+        if (typeof fetchUstadhLeaves === 'function') fetchUstadhLeaves();
+        if (typeof updateTerminalHardwareBadge === 'function') updateTerminalHardwareBadge();
+    }
+
+    // Final Lucide Icon Render
+    if (window.lucide) {
+        lucide.createIcons();
     }
 });
