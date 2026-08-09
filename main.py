@@ -102,20 +102,7 @@ def startup_db_seed():
         )
         db.add(admin)
 
-    # 5. Default Ustadh (Ustadh Bilal: ustadh_bilal / bilal123)
-    ustadh = db.query(models.User).filter(models.User.username == "ustadh_bilal").first()
-    if not ustadh:
-        ustadh = models.User(
-            username="ustadh_bilal",
-            password_hash=hash_password("bilal123"),
-            full_name="Ustadh Bilal Al-Mansoor",
-            role="USTADH",
-            is_active=True,
-            shift_id=shift.id if shift else None
-        )
-        db.add(ustadh)
-
-    # 6. Default Madrasa Whitelisted IPs
+    # 5. Default Madrasa Whitelisted IPs
     existing_ips = db.query(models.AllowedIP).all()
     if not existing_ips:
         default_ips = [

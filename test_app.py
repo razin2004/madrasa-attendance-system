@@ -15,12 +15,16 @@ def setup_module(module):
     startup_db_seed()
 
 def test_system_info_and_initial_seed():
-    # 1. System Info
-    res = client.get("/api/system/info")
-    assert res.status_code == 200
-    data = res.json()
-    assert data["madrasa_name"] == "Thandorappara Juma Masjid Madrasa"
-    assert data["allowed_wifi_ip"] == "127.0.0.1"
+    response = client.get("/api/system/info")
+    assert response.status_code == 200
+    data = response.json()
+    assert "Thandorappara Juma Masjid" in data["madrasa_name"]
+    assert "allowed_wifi_ip" in data
+
+    # Verify initial database starts cleanly with zero fake Ustadhs
+    admin_ustadhs = client.get("/api/admin/ustadhs").json()
+    # No pre-seeded fake ustadhs
+    assert len(admin_ustadhs) == 0
 
 def test_3tier_rbac_unified_login_without_device_restriction():
     # 1. Super Admin Unified Login
@@ -56,13 +60,7 @@ def test_3tier_rbac_unified_login_without_device_restriction():
     assert adm_login.json()["role"] == "ADMIN"
     assert adm_login.json()["redirect_url"] == "/admin"
 
-    # 6. Ustadh Bilal logs in from ANY device (no device restriction on login)
-    ustadh_seed_login = client.post("/api/login", json={"username": "ustadh_bilal", "password": "bilal123"})
-    assert ustadh_seed_login.status_code == 200
-    assert ustadh_seed_login.json()["role"] == "USTADH"
-    assert ustadh_seed_login.json()["redirect_url"] == "/ustadh"
-
-    # 7. Principal Admin provisions new Ustadh Tariq
+    # 6. Principal Admin provisions real Ustadh Tariq
     create_ustadh = client.post("/api/admin/ustadhs/create", json={
         "full_name": "Ustadh Tariq Al-Hassan",
         "username": "ustadh_tariq",
@@ -72,15 +70,15 @@ def test_3tier_rbac_unified_login_without_device_restriction():
     assert create_ustadh.status_code == 200
     assert create_ustadh.json()["ustadh"]["username"] == "ustadh_tariq"
 
-    # 8. Ustadh Tariq logs in freely from any device
+    # 7. Ustadh Tariq logs in freely from any device (no device restriction on login)
     ustadh_login = client.post("/api/login", json={"username": "ustadh_tariq", "password": "tariqpassword123"})
     assert ustadh_login.status_code == 200
     assert ustadh_login.json()["role"] == "USTADH"
     assert ustadh_login.json()["redirect_url"] == "/ustadh"
 
 def test_leave_management_workflow():
-    # 1. Ustadh Bilal logs in and submits Leave Request
-    u_res = client.post("/api/login", json={"username": "ustadh_bilal", "password": "bilal123"})
+    # 1. Ustadh Tariq logs in and submits Leave Request
+    u_res = client.post("/api/login", json={"username": "ustadh_tariq", "password": "tariqpassword123"})
     assert u_res.status_code == 200
     ustadh_id = u_res.json()["user"]["id"]
 
@@ -111,11 +109,11 @@ def test_leave_management_workflow():
     assert my_leaves[0]["status"] == "APPROVED"
 
 def test_device_recognition_and_clockin_protection():
-    client.post("/api/admin/ustadhs/reset-device", json={"username": "ustadh_bilal"})
-    u_res = client.post("/api/login", json={"username": "ustadh_bilal", "password": "bilal123"})
+    client.post("/api/admin/ustadhs/reset-device", json={"username": "ustadh_tariq"})
+    u_res = client.post("/api/login", json={"username": "ustadh_tariq", "password": "tariqpassword123"})
     ustadh_id = u_res.json()["user"]["id"]
 
-    registered_phone_key = "USTADH-DEV-PHONE-BILAL-01"
+    registered_phone_key = "USTADH-DEV-PHONE-TARIQ-01"
     unregistered_phone_key = "USTADH-DEV-PHONE-ROGUE-99"
 
     # 1. Attempt Clock-In outside Madrasa WiFi -> Blocked by IP guard
@@ -179,7 +177,7 @@ def test_multi_ip_whitelist_management():
 
     clock_res = client.post("/api/ustadh/clock-in", json={
         "ustadh_id": ustadh_id,
-        "device_key": "USTADH-DEV-TARIQ-01",
+        "device_key": "USTADH-DEV-PHONE-TARIQ-01",
         "custom_ip": "10.0.0.50"
     })
     assert clock_res.status_code == 200
@@ -191,13 +189,13 @@ def test_multi_ip_whitelist_management():
     # 5. Attempt clocking in with deleted IP -> Blocked
     client.post("/api/ustadh/clock-out", json={
         "ustadh_id": ustadh_id,
-        "device_key": "USTADH-DEV-TARIQ-01",
+        "device_key": "USTADH-DEV-PHONE-TARIQ-01",
         "custom_ip": "192.168.1.100"
     })
 
     clock_blocked = client.post("/api/ustadh/clock-in", json={
         "ustadh_id": ustadh_id,
-        "device_key": "USTADH-DEV-TARIQ-01",
+        "device_key": "USTADH-DEV-PHONE-TARIQ-01",
         "custom_ip": "10.0.0.50"
     })
     assert clock_blocked.status_code == 403

@@ -129,17 +129,9 @@
                         </button>
                     </div>
 
-                    <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-emerald-300 flex items-center gap-1.5">
-                                <i data-lucide="user" class="w-4 h-4"></i> Ustadh (Staff Member)
-                            </span>
-                            <span class="text-[10px] bg-emerald-950 border border-emerald-800/50 text-emerald-300 px-2 py-0.5 rounded-full font-mono">Tier 3</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400">Ustadh mobile clock-in/out, WiFi verification & leave applications.</p>
-                        <button type="button" onclick="fillCredentials('ustadh_bilal', 'bilal123', 'USTADH'); togglePresetDrawer();" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition flex items-center justify-center gap-1.5 shadow">
-                            Auto-Fill Ustadh Bilal
-                        </button>
+                    <div class="bg-emerald-950/20 p-3 rounded-2xl border border-emerald-800/30 text-[11px] text-emerald-300 flex items-center gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                        <span>Staff Ustadhs sign in using their unique credentials created by the Principal Admin.</span>
                     </div>
                 </div>
             </div>
@@ -185,7 +177,7 @@
                         <label class="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
                             <i data-lucide="user-check" class="w-3.5 h-3.5 text-blue-400"></i> Username
                         </label>
-                        <input type="text" id="loginUsernameInput" placeholder="e.g. ustadh_bilal, admin, superadmin" required class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition shadow-inner">
+                        <input type="text" id="loginUsernameInput" placeholder="e.g. your_username, admin, superadmin" required class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition shadow-inner">
                     </div>
 
                     <div>
@@ -208,15 +200,12 @@
                 <!-- 1-Click Fast Presets Quick Bar on Card -->
                 <div class="pt-2 border-t border-slate-800/80 space-y-1.5">
                     <p class="text-[10px] text-slate-400 text-center font-medium">Quick 1-Click Presets:</p>
-                    <div class="grid grid-cols-3 gap-1.5 text-[10px] font-semibold">
-                        <button type="button" onclick="fillCredentials('superadmin', 'superadmin123', 'SUPER_ADMIN')" class="p-1.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/40 text-amber-300 transition text-center">
+                    <div class="grid grid-cols-2 gap-2 text-[10px] font-semibold">
+                        <button type="button" onclick="fillCredentials('superadmin', 'superadmin123', 'SUPER_ADMIN')" class="p-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/40 text-amber-300 transition text-center">
                             Super Admin
                         </button>
-                        <button type="button" onclick="fillCredentials('admin', 'admin123', 'ADMIN')" class="p-1.5 rounded-xl bg-blue-950/40 hover:bg-blue-900/60 border border-blue-800/40 text-blue-300 transition text-center">
-                            Principal
-                        </button>
-                        <button type="button" onclick="fillCredentials('ustadh_bilal', 'bilal123', 'USTADH')" class="p-1.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/40 text-emerald-300 transition text-center">
-                            Ustadh Bilal
+                        <button type="button" onclick="fillCredentials('admin', 'admin123', 'ADMIN')" class="p-2 rounded-xl bg-blue-950/40 hover:bg-blue-900/60 border border-blue-800/40 text-blue-300 transition text-center">
+                            Principal Admin
                         </button>
                     </div>
                 </div>
