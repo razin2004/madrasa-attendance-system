@@ -1407,6 +1407,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
 
+        } catch (err) {
+            if (ustadhLeavesTableBody) {
+                ustadhLeavesTableBody.innerHTML = `<tr><td colspan="3" class="py-2 text-center text-rose-400 italic text-[10px]">Error loading leave history.</td></tr>`;
+            }
+        }
+    }
+
     // ===================================================================
     // 6. GLOBAL DASHBOARD INITIALIZERS ON PAGE LOAD
     // ===================================================================
