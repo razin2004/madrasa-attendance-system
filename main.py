@@ -58,12 +58,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def startup_db_seed():
     db = next(get_db())
     
-    # 1. System Settings (Default Madrasa WiFi IP: 127.0.0.1)
+    # 1. System Settings (Dynamic from config / environment)
     sys_setting = db.query(models.SystemSetting).first()
+    first_wifi_ip = settings.ALLOWED_WIFI_IPS.split(",")[0].strip() if settings.ALLOWED_WIFI_IPS else "127.0.0.1"
     if not sys_setting:
         sys_setting = models.SystemSetting(
-            madrasa_name="Thandorappara Juma Masjid Madrasa",
-            allowed_wifi_ip="127.0.0.1"
+            madrasa_name=settings.MADRASA_NAME,
+            allowed_wifi_ip=first_wifi_ip
         )
         db.add(sys_setting)
 
@@ -78,36 +79,42 @@ def startup_db_seed():
         )
         db.add(shift)
 
-    # 3. Super Admin (Management Authority: superadmin / superadmin123)
-    superadmin = db.query(models.User).filter(models.User.username == "superadmin").first()
+    # 3. Super Admin (Management Authority - Configured via .env)
+    superadmin = db.query(models.User).filter(models.User.username == settings.SUPERADMIN_USERNAME).first()
     if not superadmin:
         superadmin = models.User(
-            username="superadmin",
-            password_hash=hash_password("superadmin123"),
-            full_name="Masjid Management Committee",
+            username=settings.SUPERADMIN_USERNAME,
+            password_hash=hash_password(settings.SUPERADMIN_PASSWORD),
+            full_name=settings.SUPERADMIN_NAME,
             role="SUPER_ADMIN",
             is_active=True
         )
         db.add(superadmin)
 
-    # 4. Admin (Principal / Sadr Ustadh: admin / admin123)
-    admin = db.query(models.User).filter(models.User.username == "admin").first()
+    # 4. Admin (Principal / Sadr Ustadh - Configured via .env)
+    admin = db.query(models.User).filter(models.User.username == settings.ADMIN_USERNAME).first()
     if not admin:
         admin = models.User(
-            username="admin",
-            password_hash=hash_password("admin123"),
-            full_name="Principal Sadr Ustadh",
+            username=settings.ADMIN_USERNAME,
+            password_hash=hash_password(settings.ADMIN_PASSWORD),
+            full_name=settings.ADMIN_NAME,
             role="ADMIN",
             is_active=True
         )
         db.add(admin)
 
-    # 5. Default Madrasa Whitelisted IPs
+    # 5. Default Madrasa Whitelisted IPs (Configured via .env)
     existing_ips = db.query(models.AllowedIP).all()
     if not existing_ips:
+        ip_list = [ip.strip() for ip in settings.ALLOWED_WIFI_IPS.split(",") if ip.strip()]
+        if not ip_list:
+            ip_list = ["127.0.0.1"]
         default_ips = [
-            models.AllowedIP(ip_address="127.0.0.1", description="Localhost / Management PC"),
-            models.AllowedIP(ip_address="192.168.1.100", description="Main Campus WiFi Router")
+            models.AllowedIP(
+                ip_address=ip, 
+                description="Localhost / Management PC" if ip == "127.0.0.1" else "Madrasa WiFi Network"
+            )
+            for ip in ip_list
         ]
         db.add_all(default_ips)
 
