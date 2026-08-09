@@ -497,86 +497,343 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnRefreshAdmins) btnRefreshAdmins.addEventListener('click', loadSuperAdminAdminsList);
 
-    // Master View-Only Audit
-    const totalUstadhCount = document.getElementById('totalUstadhCount');
-    const totalLeaveCount = document.getElementById('totalLeaveCount');
-    const totalAttendanceCount = document.getElementById('totalAttendanceCount');
+    // ===================================================================
+    // 3. TODAY'S LIVE STAFF ROSTER & HISTORICAL LOG EXPLORER (SHARED)
+    // ===================================================================
+
+    // Load Today's Live Roster for Admin & Super Admin
+    window.loadTodayRoster = async function() {
+        try {
+            const res = await fetch('/api/attendance/today');
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // 1. Update Today's Date Badges
+            const dateLabelAdmin = document.getElementById('todayRosterDateLabel');
+            const dateLabelSA = document.getElementById('todayRosterDateLabelSA');
+            if (dateLabelAdmin) dateLabelAdmin.textContent = `${data.formatted_date} (${data.total_ustadhs} Ustadhs)`;
+            if (dateLabelSA) dateLabelSA.textContent = `${data.formatted_date} (${data.total_ustadhs} Ustadhs)`;
+
+            // 2. Update Live Status Counters (Admin & Super Admin)
+            const elements = {
+                statClockedInToday: data.clocked_in_count,
+                statClockedOutToday: data.clocked_out_count,
+                statOnLeaveToday: data.on_leave_count,
+                statNotClockedInToday: data.not_clocked_in_count,
+                statClockedInTodaySA: data.clocked_in_count,
+                statClockedOutTodaySA: data.clocked_out_count,
+                statOnLeaveTodaySA: data.on_leave_count,
+                statNotClockedInTodaySA: data.not_clocked_in_count,
+            };
+            Object.entries(elements).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            });
+
+            // 3. Render Today's Roster Table Rows
+            const tableBodies = [
+                document.getElementById('todayRosterTableBody'),
+                document.getElementById('todayRosterTableBodySA')
+            ];
+
+            const rosterHtml = data.roster.length === 0 
+                ? `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No Ustadh profiles configured.</td></tr>`
+                : data.roster.map(u => {
+                    let statusBadge = '';
+                    if (u.status === 'CLOCKED_IN') {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 w-fit">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Clocked In
+                        </span>`;
+                    } else if (u.status === 'CLOCKED_OUT') {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 flex items-center gap-1.5 w-fit">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Clocked Out
+                        </span>`;
+                    } else if (u.status === 'ON_LEAVE') {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 w-fit">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> On Leave
+                        </span>`;
+                    } else {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5 w-fit">
+                            <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Not Clocked In
+                        </span>`;
+                    }
+
+                    const punchBadge = `<span class="px-2 py-0.5 rounded-lg text-xs font-mono font-bold ${u.total_punches_today >= 3 ? 'bg-purple-950 text-purple-300 border border-purple-800/60' : (u.total_punches_today > 0 ? 'bg-blue-950 text-blue-300 border border-blue-800/60' : 'bg-slate-900 text-slate-400')}">
+                        ${u.total_punches_today} / ${u.max_punches_per_day} Punches
+                    </span>`;
+
+                    let sessionDetailsHtml = '';
+                    if (u.status === 'ON_LEAVE') {
+                        sessionDetailsHtml = `<span class="text-xs text-amber-300 italic">Approved Leave: ${u.leave_reason || 'Personal'}</span>`;
+                    } else if (u.punches && u.punches.length > 0) {
+                        sessionDetailsHtml = `<div class="space-y-1 text-[11px]">` + u.punches.map(p => {
+                            const inLate = p.is_late ? `<span class="text-amber-400 text-[10px] font-semibold">(Late +${p.late_minutes}m)</span>` : '';
+                            const outEarly = p.is_early ? `<span class="text-rose-400 text-[10px] font-semibold">(Early -${p.early_minutes}m)</span>` : '';
+                            return `<div class="flex items-center gap-2 font-mono">
+                                <span class="text-slate-400 font-bold">S${p.session_number}:</span>
+                                <span class="text-white">${p.clock_in_time}</span>
+                                ${inLate}
+                                <span class="text-slate-500">&rarr;</span>
+                                <span class="${p.clock_out_time ? 'text-blue-300' : 'text-emerald-400 font-bold'}">${p.clock_out_time || 'Active Session'}</span>
+                                ${outEarly}
+                                <span class="text-slate-500 text-[10px]">(${p.duration})</span>
+                            </div>`;
+                        }).join('') + `</div>`;
+                    } else {
+                        sessionDetailsHtml = `<span class="text-xs text-slate-500 italic">No punches recorded today.</span>`;
+                    }
+
+                    return `
+                        <tr class="hover:bg-slate-900/50 transition">
+                            <td class="py-3 px-4">
+                                <div class="font-bold text-white">${u.full_name}</div>
+                                <div class="text-[11px] font-mono text-slate-400">${u.username}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="text-slate-300 font-medium">${u.shift_name}</div>
+                                <div class="text-[10px] font-mono text-slate-400">${u.shift_times}</div>
+                            </td>
+                            <td class="py-3 px-4">${statusBadge}</td>
+                            <td class="py-3 px-4">${punchBadge}</td>
+                            <td class="py-3 px-4">${sessionDetailsHtml}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            tableBodies.forEach(tb => {
+                if (tb) tb.innerHTML = rosterHtml;
+            });
+
+            // 4. Populate Ustadh Filter Dropdowns
+            const ustadhSelects = [
+                document.getElementById('historyUstadhSelect'),
+                document.getElementById('historyUstadhSelectSA')
+            ];
+
+            ustadhSelects.forEach(select => {
+                if (select && select.options.length <= 1) {
+                    const currentVal = select.value;
+                    select.innerHTML = `<option value="">All Ustadhs</option>` + data.roster.map(u => 
+                        `<option value="${u.ustadh_id}">${u.full_name} (${u.username})</option>`
+                    ).join('');
+                    select.value = currentVal;
+                }
+            });
+
+        } catch (e) {
+            console.error("Error loading today roster", e);
+        }
+    };
+
+    // Load Filtered Historical Attendance Logs
+    window.loadAttendanceHistory = async function() {
+        const isSuperAdminPage = !!document.getElementById('panelSuperAdminAttendance');
+        const ustadhSelect = document.getElementById(isSuperAdminPage ? 'historyUstadhSelectSA' : 'historyUstadhSelect');
+        const monthInput = document.getElementById(isSuperAdminPage ? 'historyMonthInputSA' : 'historyMonthInput');
+        const dateInput = document.getElementById(isSuperAdminPage ? 'historyDateInputSA' : 'historyDateInput');
+
+        const ustadhId = ustadhSelect ? ustadhSelect.value : '';
+        const month = monthInput ? monthInput.value : '';
+        const date = dateInput ? dateInput.value : '';
+
+        const params = new URLSearchParams();
+        if (ustadhId) params.append('ustadh_id', ustadhId);
+        if (date) params.append('date', date);
+        else if (month) params.append('month', month);
+
+        try {
+            const res = await fetch(`/api/attendance/history?${params.toString()}`);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // Update Summary Stats
+            const prefix = isSuperAdminPage ? 'SA' : '';
+            const statTotal = document.getElementById(`statHistoryTotal${prefix}`);
+            const statCompleted = document.getElementById(`statHistoryCompleted${prefix}`);
+            const statLate = document.getElementById(`statHistoryLate${prefix}`);
+            const statEarly = document.getElementById(`statHistoryEarly${prefix}`);
+            const statPunctuality = document.getElementById(`statHistoryPunctuality${prefix}`);
+
+            if (statTotal) statTotal.textContent = data.summary.total_records;
+            if (statCompleted) statCompleted.textContent = data.summary.total_completed_shifts;
+            if (statLate) statLate.textContent = data.summary.total_late_arrivals;
+            if (statEarly) statEarly.textContent = data.summary.total_early_departures;
+            if (statPunctuality) statPunctuality.textContent = `${data.summary.on_time_percentage}%`;
+
+            // Render Table
+            const tableBody = document.getElementById(isSuperAdminPage ? 'historyAttendanceTableBodySA' : 'historyAttendanceTableBody');
+            if (tableBody) {
+                if (data.records.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-slate-500 italic">No attendance records matching the selected filters.</td></tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = data.records.map(r => {
+                    const lateBadge = r.is_late 
+                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Late (+${r.late_minutes}m)</span>`
+                        : `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400">On Time</span>`;
+
+                    const earlyBadge = r.clock_out 
+                        ? (r.is_early 
+                            ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Early (-${r.early_minutes}m)</span>`
+                            : `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400">Full Shift</span>`)
+                        : `<span class="text-slate-500 text-xs italic">Active</span>`;
+
+                    const statusBadge = r.status === 'CLOCKED_IN'
+                        ? `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">Clocked In</span>`
+                        : `<span class="px-2 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">Completed</span>`;
+
+                    return `
+                        <tr class="hover:bg-slate-900/50 transition">
+                            <td class="py-2.5 px-3 font-semibold text-white">${r.ustadh_name}</td>
+                            <td class="py-2.5 px-3 font-mono text-slate-300">${r.date_formatted}</td>
+                            <td class="py-2.5 px-3 font-mono font-bold text-white">${r.clock_in}</td>
+                            <td class="py-2.5 px-3">${lateBadge}</td>
+                            <td class="py-2.5 px-3 font-mono text-slate-300">${r.clock_out || '--'}</td>
+                            <td class="py-2.5 px-3">${earlyBadge}</td>
+                            <td class="py-2.5 px-3 font-mono text-slate-400 text-[11px]">${r.ip}</td>
+                            <td class="py-2.5 px-3">${statusBadge}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+        } catch (e) {
+            console.error("Error loading attendance history", e);
+        }
+    };
+
+    // Filter Preset Helpers for Admin
+    window.setHistoryFilterPreset = function(preset) {
+        const monthInput = document.getElementById('historyMonthInput');
+        const dateInput = document.getElementById('historyDateInput');
+        const todayStr = new Date().toISOString().split('T')[0];
+        const monthStr = todayStr.substring(0, 7);
+
+        if (preset === 'today') {
+            if (dateInput) dateInput.value = todayStr;
+            if (monthInput) monthInput.value = '';
+        } else if (preset === 'this_month') {
+            if (monthInput) monthInput.value = monthStr;
+            if (dateInput) dateInput.value = '';
+        } else {
+            if (monthInput) monthInput.value = '';
+            if (dateInput) dateInput.value = '';
+        }
+        window.loadAttendanceHistory();
+    };
+
+    window.resetHistoryFilters = function() {
+        const ustadhSelect = document.getElementById('historyUstadhSelect');
+        const monthInput = document.getElementById('historyMonthInput');
+        const dateInput = document.getElementById('historyDateInput');
+        if (ustadhSelect) ustadhSelect.value = '';
+        if (monthInput) monthInput.value = '';
+        if (dateInput) dateInput.value = '';
+        window.loadAttendanceHistory();
+    };
+
+    // Filter Preset Helpers for Super Admin
+    window.setHistoryFilterPresetSA = function(preset) {
+        const monthInput = document.getElementById('historyMonthInputSA');
+        const dateInput = document.getElementById('historyDateInputSA');
+        const todayStr = new Date().toISOString().split('T')[0];
+        const monthStr = todayStr.substring(0, 7);
+
+        if (preset === 'today') {
+            if (dateInput) dateInput.value = todayStr;
+            if (monthInput) monthInput.value = '';
+        } else if (preset === 'this_month') {
+            if (monthInput) monthInput.value = monthStr;
+            if (dateInput) dateInput.value = '';
+        } else {
+            if (monthInput) monthInput.value = '';
+            if (dateInput) dateInput.value = '';
+        }
+        window.loadAttendanceHistory();
+    };
+
+    window.resetHistoryFiltersSA = function() {
+        const ustadhSelect = document.getElementById('historyUstadhSelectSA');
+        const monthInput = document.getElementById('historyMonthInputSA');
+        const dateInput = document.getElementById('historyDateInputSA');
+        if (ustadhSelect) ustadhSelect.value = '';
+        if (monthInput) monthInput.value = '';
+        if (dateInput) dateInput.value = '';
+        window.loadAttendanceHistory();
+    };
+
+    // Attach Filter Event Listeners
+    ['historyUstadhSelect', 'historyMonthInput', 'historyDateInput', 
+     'historyUstadhSelectSA', 'historyMonthInputSA', 'historyDateInputSA'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                window.loadAttendanceHistory();
+            });
+        }
+    });
+
+    // Auto load on Admin & Super Admin pages
+    if (document.getElementById('todayRosterTableBody') || document.getElementById('todayRosterTableBodySA')) {
+        window.loadTodayRoster();
+        window.loadAttendanceHistory();
+    }
+
+    // ===================================================================
+    // 4. SUPER ADMIN MASTER AUDIT & ADMIN MANAGEMENT
+    // ===================================================================
     const auditUstadhsTableBody = document.getElementById('auditUstadhsTableBody');
     const auditLeavesTableBody = document.getElementById('auditLeavesTableBody');
-    const auditAttendanceTableBody = document.getElementById('auditAttendanceTableBody');
 
-    async function loadSuperAdminMasterAudit() {
-        if (!auditUstadhsTableBody) return;
+    window.loadSuperAdminMasterAudit = async function() {
+        if (!auditUstadhsTableBody && !auditLeavesTableBody) return;
         try {
             const res = await fetch('/api/superadmin/audit/all');
             if (!res.ok) return;
             const data = await res.json();
 
-            if (totalUstadhCount) totalUstadhCount.textContent = data.total_ustadhs;
-            if (totalLeaveCount) totalLeaveCount.textContent = data.total_leave_requests;
-            if (totalAttendanceCount) totalAttendanceCount.textContent = data.total_attendance_records;
-
-            auditUstadhsTableBody.innerHTML = data.ustadhs.length ? data.ustadhs.map(u => `
-                <tr class="hover:bg-slate-900/50">
-                    <td class="py-2 px-3 font-semibold text-white">${u.full_name}</td>
-                    <td class="py-2 px-3 font-mono text-slate-300">${u.username}</td>
-                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300">${u.device_count} Device(s)</span></td>
-                </tr>
-            `).join('') : `<tr><td colspan="3" class="py-3 text-center text-slate-500 italic">No Ustadh profiles found.</td></tr>`;
-
-            auditLeavesTableBody.innerHTML = data.leaves.length ? data.leaves.map(l => {
-                const statusBadge = l.status === 'APPROVED' 
-                    ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300">Approved</span>`
-                    : (l.status === 'REJECTED' 
-                        ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-300">Declined</span>`
-                        : `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300">Pending</span>`);
-
-                return `
+            if (auditUstadhsTableBody) {
+                auditUstadhsTableBody.innerHTML = data.ustadhs.length ? data.ustadhs.map(u => `
                     <tr class="hover:bg-slate-900/50">
-                        <td class="py-2 px-3 font-semibold text-white">${l.ustadh_name}</td>
-                        <td class="py-2 px-3 font-mono text-slate-300">${l.start_date} to ${l.end_date}</td>
-                        <td class="py-2 px-3 text-slate-300">${l.reason}</td>
-                        <td class="py-2 px-3">${statusBadge}</td>
+                        <td class="py-2.5 px-3 font-semibold text-white">${u.full_name}</td>
+                        <td class="py-2.5 px-3 font-mono text-slate-300">${u.username}</td>
+                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">${u.device_count} Device(s) Locked</span></td>
                     </tr>
-                `;
-            }).join('') : `<tr><td colspan="4" class="py-3 text-center text-slate-500 italic">No leave applications.</td></tr>`;
+                `).join('') : `<tr><td colspan="3" class="py-3 text-center text-slate-500 italic">No Ustadh profiles found.</td></tr>`;
+            }
 
-            auditAttendanceTableBody.innerHTML = data.attendance_logs.length ? data.attendance_logs.map(a => {
-                const clockInStr = new Date(a.clock_in).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-                const clockOutStr = a.clock_out ? new Date(a.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
+            if (auditLeavesTableBody) {
+                auditLeavesTableBody.innerHTML = data.leaves.length ? data.leaves.map(l => {
+                    const statusBadge = l.status === 'APPROVED' 
+                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Approved</span>`
+                        : (l.status === 'REJECTED' 
+                            ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Declined</span>`
+                            : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Pending</span>`);
 
-                const lateBadge = a.is_late 
-                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">Late (+${a.late_minutes}m)</span>`
-                    : `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400">On Time</span>`;
-
-                const earlyBadge = a.clock_out 
-                    ? (a.is_early 
-                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300">Early (-${a.early_minutes}m)</span>`
-                        : `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400">Full Shift</span>`)
-                    : `<span class="text-slate-500">Active</span>`;
-
-                return `
-                    <tr class="hover:bg-slate-900/50 transition">
-                        <td class="py-2.5 px-3 font-semibold text-white">${a.ustadh_name}</td>
-                        <td class="py-2.5 px-3 font-mono">${clockInStr}</td>
-                        <td class="py-2.5 px-3">${lateBadge}</td>
-                        <td class="py-2.5 px-3 font-mono">${clockOutStr}</td>
-                        <td class="py-2.5 px-3">${earlyBadge}</td>
-                        <td class="py-2.5 px-3 font-mono text-slate-400">${a.ip}</td>
-                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300">${a.status}</span></td>
-                    </tr>
-                `;
-            }).join('') : `<tr><td colspan="7" class="py-4 text-center text-slate-500 italic">No attendance records today.</td></tr>`;
+                    return `
+                        <tr class="hover:bg-slate-900/50">
+                            <td class="py-2.5 px-3 font-semibold text-white">${l.ustadh_name}</td>
+                            <td class="py-2.5 px-3 font-mono text-slate-300">${l.start_date} to ${l.end_date}</td>
+                            <td class="py-2.5 px-3 text-slate-300">${l.reason}</td>
+                            <td class="py-2.5 px-3">${statusBadge}</td>
+                            <td class="py-2.5 px-3 text-slate-400 text-[11px]">${l.reviewed_at ? new Date(l.reviewed_at).toLocaleDateString() : '--'}</td>
+                        </tr>
+                    `;
+                }).join('') : `<tr><td colspan="5" class="py-3 text-center text-slate-500 italic">No leave applications recorded.</td></tr>`;
+            }
 
         } catch (e) {
             console.error("Error loading master audit", e);
         }
+    };
+
+    if (auditUstadhsTableBody || auditLeavesTableBody) {
+        window.loadSuperAdminMasterAudit();
     }
 
-    if (btnRefreshMasterAudit) btnRefreshMasterAudit.addEventListener('click', loadSuperAdminMasterAudit);
-
     // ===================================================================
-    // 4. ADMIN (PRINCIPAL) DASHBOARD LOGIC
+    // 5. PRINCIPAL ADMIN USTADHS & LEAVE WORKFLOWS
     // ===================================================================
     const createUstadhForm = document.getElementById('createUstadhForm');
     const newUstadhFullName = document.getElementById('newUstadhFullName');
@@ -587,14 +844,108 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnRefreshUstadhs = document.getElementById('btnRefreshUstadhs');
     const adminLeavesTableBody = document.getElementById('adminLeavesTableBody');
     const btnRefreshLeaves = document.getElementById('btnRefreshLeaves');
-    const adminAttendanceTableBody = document.getElementById('adminAttendanceTableBody');
-    const btnRefreshAttendance = document.getElementById('btnRefreshAttendance');
 
-    if (window.location.pathname.includes('/admin') || adminUstadhTableBody) {
-        loadAdminUstadhsList();
-        loadAdminLeavesList();
-        loadAdminAttendanceSheet();
-    }
+    window.loadAdminUstadhsList = async function() {
+        if (!adminUstadhTableBody) return;
+        try {
+            const res = await fetch('/api/admin/ustadhs');
+            if (!res.ok) return;
+            const ustadhs = await res.json();
+
+            if (ustadhs.length === 0) {
+                adminUstadhTableBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No Ustadh profiles provisioned yet.</td></tr>`;
+                return;
+            }
+
+            adminUstadhTableBody.innerHTML = ustadhs.map(u => {
+                const deviceCountBadge = u.registered_device_count > 0
+                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${u.registered_device_count} Device(s) Locked</span>`
+                    : `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400">0 Devices (1st Login Pending)</span>`;
+
+                const multiDeviceBadge = u.can_add_device
+                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse">2nd Device Authorized</span>`
+                    : `<span class="text-slate-500 text-[11px]">Standard Device Mode</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-900/50 transition">
+                        <td class="py-2.5 px-3">
+                            <div class="font-bold text-white">${u.full_name}</div>
+                            <div class="text-[10px] text-slate-400">${u.shift_times}</div>
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-slate-300">${u.username}</td>
+                        <td class="py-2.5 px-3">${deviceCountBadge}</td>
+                        <td class="py-2.5 px-3">${multiDeviceBadge}</td>
+                        <td class="py-2.5 px-3 text-right flex items-center justify-end gap-1.5">
+                            <button onclick="adminResetUstadhDevice('${u.username}')" class="px-2.5 py-1 bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800/60 rounded text-[11px] font-medium transition">
+                                Reset Phone
+                            </button>
+                            <button onclick="adminAllowAdditionalDevice('${u.username}')" class="px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800/60 rounded text-[11px] font-medium transition">
+                                + Add Phone
+                            </button>
+                            <button onclick="adminDeleteUstadh(${u.id}, '${u.full_name}')" class="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 rounded text-[11px] font-medium transition">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (e) {
+            console.error("Error loading Ustadhs", e);
+        }
+    };
+
+    window.adminResetUstadhDevice = async function(username) {
+        const confirmed = await confirmAction("Reset Device Bindings", `Are you sure you want to clear registered devices for '${username}'? Next login will pair to their new phone.`, "Yes, Reset");
+        if (confirmed) {
+            try {
+                const res = await fetch('/api/admin/ustadhs/reset-device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username })
+                });
+                const data = await res.json();
+                showToast(data.message, "info");
+                window.loadAdminUstadhsList();
+            } catch (e) {
+                showToast("Failed to reset device", "error");
+            }
+        }
+    };
+
+    window.adminAllowAdditionalDevice = async function(username) {
+        const confirmed = await confirmAction("Authorize Secondary Device", `Are you sure you want to authorize Ustadh '${username}' to pair a 2nd device on their next clock-in?`, "Yes, Authorize");
+        if (confirmed) {
+            try {
+                const res = await fetch('/api/admin/ustadhs/allow-device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username })
+                });
+                const data = await res.json();
+                showToast(data.message, "success");
+                window.loadAdminUstadhsList();
+            } catch (e) {
+                showToast("Failed to authorize device", "error");
+            }
+        }
+    };
+
+    window.adminDeleteUstadh = async function(ustadhId, fullName) {
+        const confirmed = await confirmAction("Confirm Deletion", `Are you sure you want to delete the Ustadh profile for '${fullName}'?`, "Yes, Delete");
+        if (confirmed) {
+            try {
+                const res = await fetch(`/api/admin/ustadhs/${ustadhId}`, { method: 'DELETE' });
+                const data = await res.json();
+                showToast(data.message, "info");
+                window.loadAdminUstadhsList();
+            } catch (e) {
+                showToast("Failed to delete Ustadh profile", "error");
+            }
+        }
+    };
+
+    if (btnRefreshUstadhs) btnRefreshUstadhs.addEventListener('click', window.loadAdminUstadhsList);
 
     if (createUstadhForm) {
         createUstadhForm.addEventListener('submit', async (e) => {
@@ -616,7 +967,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     showToast(data.message, "success");
                     createUstadhForm.reset();
-                    loadAdminUstadhsList();
+                    window.loadAdminUstadhsList();
                 } else {
                     showToast(data.detail || "Failed to create Ustadh", "error");
                 }
@@ -626,107 +977,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function loadAdminUstadhsList() {
-        if (!adminUstadhTableBody) return;
-        try {
-            const res = await fetch('/api/admin/ustadhs');
-            if (!res.ok) return;
-            const ustadhs = await res.json();
-
-            if (ustadhs.length === 0) {
-                adminUstadhTableBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No Ustadh profiles provisioned yet.</td></tr>`;
-                return;
-            }
-
-            adminUstadhTableBody.innerHTML = ustadhs.map(u => {
-                const deviceCountBadge = u.registered_device_count > 0
-                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${u.registered_device_count} Device(s) Registered</span>`
-                    : `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400">0 Devices (1st Login Pending)</span>`;
-
-                const multiDeviceBadge = u.can_add_device
-                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse">2nd Device Authorized</span>`
-                    : `<span class="text-slate-500 text-[11px]">Standard Device Mode</span>`;
-
-                return `
-                    <tr class="hover:bg-slate-900/50 transition">
-                        <td class="py-2.5 px-3 font-semibold text-white">${u.full_name}</td>
-                        <td class="py-2.5 px-3 font-mono text-slate-300">${u.username}</td>
-                        <td class="py-2.5 px-3">${deviceCountBadge}</td>
-                        <td class="py-2.5 px-3">${multiDeviceBadge}</td>
-                        <td class="py-2.5 px-3 flex items-center gap-1.5">
-                            <button onclick="adminResetUstadhDevice('${u.username}')" class="px-2.5 py-1 bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800/60 rounded text-[11px] font-medium transition">
-                                Reset Phone
-                            </button>
-                            <button onclick="adminAllowAdditionalDevice('${u.username}')" class="px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800/60 rounded text-[11px] font-medium transition">
-                                + Add Phone
-                            </button>
-                            <button onclick="adminDeleteUstadh(${u.id}, '${u.full_name}')" class="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 rounded text-[11px] font-medium transition">
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-        } catch (e) {
-            console.error("Error loading Ustadhs", e);
-        }
-    }
-
-    window.adminResetUstadhDevice = async function(username) {
-        const confirmed = await confirmAction("Reset Device Bindings", `Are you sure you want to clear registered devices for '${username}'? Next login will pair to their new phone.`, "Yes, Reset");
-        if (confirmed) {
-            try {
-                const res = await fetch('/api/admin/ustadhs/reset-device', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: username })
-                });
-                const data = await res.json();
-                showToast(data.message, "info");
-                loadAdminUstadhsList();
-            } catch (e) {
-                showToast("Failed to reset device", "error");
-            }
-        }
-    };
-
-    window.adminAllowAdditionalDevice = async function(username) {
-        const confirmed = await confirmAction("Authorize Secondary Device", `Are you sure you want to authorize Ustadh '${username}' to pair a 2nd device on their next clock-in?`, "Yes, Authorize");
-        if (confirmed) {
-            try {
-                const res = await fetch('/api/admin/ustadhs/allow-device', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: username })
-                });
-                const data = await res.json();
-                showToast(data.message, "success");
-                loadAdminUstadhsList();
-            } catch (e) {
-                showToast("Failed to authorize device", "error");
-            }
-        }
-    };
-
-    window.adminDeleteUstadh = async function(ustadhId, fullName) {
-        const confirmed = await confirmAction("Confirm Deletion", `Are you sure you want to delete the Ustadh profile for '${fullName}'?`, "Yes, Delete");
-        if (confirmed) {
-            try {
-                const res = await fetch(`/api/admin/ustadhs/${ustadhId}`, { method: 'DELETE' });
-                const data = await res.json();
-                showToast(data.message, "info");
-                loadAdminUstadhsList();
-            } catch (e) {
-                showToast("Failed to delete Ustadh profile", "error");
-            }
-        }
-    };
-
-    if (btnRefreshUstadhs) btnRefreshUstadhs.addEventListener('click', loadAdminUstadhsList);
-
-    // Leave Review Panel
-    async function loadAdminLeavesList() {
+    // Leave Requests Review
+    window.loadAdminLeavesList = async function() {
         if (!adminLeavesTableBody) return;
         try {
             const res = await fetch('/api/admin/leaves');
@@ -746,11 +998,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">Pending Review</span>`);
 
                 const actionButtons = l.status === 'PENDING' ? `
-                    <div class="flex items-center gap-1.5">
-                        <button onclick="adminReviewLeave(${l.id}, 'APPROVED')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-semibold transition shadow">
+                    <div class="flex items-center justify-end gap-1.5">
+                        <button onclick="adminReviewLeave(${l.id}, 'APPROVED')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold transition shadow">
                             Accept
                         </button>
-                        <button onclick="adminReviewLeave(${l.id}, 'REJECTED')" class="px-2 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 rounded text-[10px] font-semibold transition">
+                        <button onclick="adminReviewLeave(${l.id}, 'REJECTED')" class="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 rounded text-[10px] font-bold transition">
                             Decline
                         </button>
                     </div>
@@ -758,11 +1010,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 return `
                     <tr class="hover:bg-slate-900/50 transition">
-                        <td class="py-2 px-3 font-semibold text-white">${l.ustadh_name}</td>
-                        <td class="py-2 px-3 font-mono text-slate-300">${l.start_date} to ${l.end_date}</td>
-                        <td class="py-2 px-3 text-slate-300">${l.reason}</td>
-                        <td class="py-2 px-3">${statusBadge}</td>
-                        <td class="py-2 px-3">${actionButtons}</td>
+                        <td class="py-2.5 px-3 font-semibold text-white">${l.ustadh_name}</td>
+                        <td class="py-2.5 px-3 font-mono text-slate-300">${l.start_date} to ${l.end_date}</td>
+                        <td class="py-2.5 px-3 text-slate-300">${l.reason}</td>
+                        <td class="py-2.5 px-3">${statusBadge}</td>
+                        <td class="py-2.5 px-3 text-right">${actionButtons}</td>
                     </tr>
                 `;
             }).join('');
@@ -770,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error("Error loading leaves", e);
         }
-    }
+    };
 
     window.adminReviewLeave = async function(leaveId, decision) {
         const actionText = decision === 'APPROVED' ? "Accept" : "Decline";
@@ -784,61 +1036,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 showToast(data.message, decision === 'APPROVED' ? "success" : "info");
-                loadAdminLeavesList();
+                window.loadAdminLeavesList();
             } catch (e) {
                 showToast("Failed to process leave decision", "error");
             }
         }
     };
 
-    if (btnRefreshLeaves) btnRefreshLeaves.addEventListener('click', loadAdminLeavesList);
+    if (btnRefreshLeaves) btnRefreshLeaves.addEventListener('click', window.loadAdminLeavesList);
 
-    // Attendance Sheet
-    async function loadAdminAttendanceSheet() {
-        if (!adminAttendanceTableBody) return;
-        try {
-            const res = await fetch('/api/admin/attendance');
-            if (!res.ok) return;
-            const logs = await res.json();
-
-            if (logs.length === 0) {
-                adminAttendanceTableBody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500 italic">No attendance records today.</td></tr>`;
-                return;
-            }
-
-            adminAttendanceTableBody.innerHTML = logs.map(l => {
-                const clockInStr = new Date(l.clock_in_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-                const clockOutStr = l.clock_out_time ? new Date(l.clock_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
-
-                const lateBadge = l.is_late_in 
-                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Late (+${l.late_minutes}m)</span>`
-                    : `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400">On Time</span>`;
-
-                const earlyBadge = l.clock_out_time 
-                    ? (l.is_early_out 
-                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Early (-${l.early_minutes}m)</span>`
-                        : `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400">Full Shift</span>`)
-                    : `<span class="text-slate-500">Active</span>`;
-
-                return `
-                    <tr class="hover:bg-slate-900/50 transition">
-                        <td class="py-2.5 px-3 font-semibold text-white">${l.ustadh_name}</td>
-                        <td class="py-2.5 px-3 font-mono">${clockInStr}</td>
-                        <td class="py-2.5 px-3">${lateBadge}</td>
-                        <td class="py-2.5 px-3 font-mono">${clockOutStr}</td>
-                        <td class="py-2.5 px-3">${earlyBadge}</td>
-                        <td class="py-2.5 px-3 font-mono text-slate-400">${l.ip_address}</td>
-                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300">${l.status}</span></td>
-                    </tr>
-                `;
-            }).join('');
-
-        } catch (e) {
-            console.error("Error loading attendance sheet", e);
-        }
-    }
-
-    if (btnRefreshAttendance) btnRefreshAttendance.addEventListener('click', loadAdminAttendanceSheet);
+    if (adminUstadhTableBody) window.loadAdminUstadhsList();
+    if (adminLeavesTableBody) window.loadAdminLeavesList();
 
     // ===================================================================
     // 5. USTADH (MOBILE PORTAL) LOGIC
@@ -988,17 +1196,39 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) return;
             const data = await res.json();
 
+            const sessionBadge = document.getElementById('todaySessionCounterBadge');
+            if (sessionBadge) {
+                if (data.today_punches_count >= 3 && !data.is_currently_clocked_in) {
+                    sessionBadge.className = 'px-3.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-800/80 text-purple-300 text-xs font-bold self-start sm:self-center';
+                    sessionBadge.textContent = 'Daily Limit Reached (3 of 3 Sessions Used)';
+                } else {
+                    sessionBadge.className = 'px-3.5 py-1.5 rounded-xl bg-blue-950/60 border border-blue-800/50 text-blue-300 text-xs font-bold self-start sm:self-center';
+                    sessionBadge.textContent = `Sessions: ${data.today_punches_count} / 3 Used (${data.remaining_sessions_today} Remaining)`;
+                }
+            }
+
             if (attendanceStateBadge) {
                 if (data.is_currently_clocked_in) {
-                    if (btnClockIn) btnClockIn.disabled = true;
-                    if (btnClockOut) btnClockOut.disabled = false;
+                    if (btnClockIn) {
+                        btnClockIn.disabled = true;
+                    }
+                    if (btnClockOut) {
+                        btnClockOut.disabled = false;
+                    }
                     attendanceStateBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-                    attendanceStateBadge.textContent = 'Status: CLOCKED IN';
+                    attendanceStateBadge.textContent = 'Status: CLOCKED IN (Active Shift)';
                 } else {
-                    if (btnClockIn) btnClockIn.disabled = false;
                     if (btnClockOut) btnClockOut.disabled = true;
-                    attendanceStateBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700';
-                    attendanceStateBadge.textContent = 'Status: NOT CLOCKED IN';
+                    
+                    if (data.today_punches_count >= 3) {
+                        if (btnClockIn) btnClockIn.disabled = true;
+                        attendanceStateBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-purple-900/40 text-purple-300 border border-purple-700/50';
+                        attendanceStateBadge.textContent = 'Status: 3 SESSIONS COMPLETED TODAY';
+                    } else {
+                        if (btnClockIn) btnClockIn.disabled = false;
+                        attendanceStateBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+                        attendanceStateBadge.textContent = `Status: NOT CLOCKED IN (Session ${data.today_punches_count + 1} Ready)`;
+                    }
                 }
             }
 

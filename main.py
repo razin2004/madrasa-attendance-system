@@ -6,6 +6,7 @@ import secrets
 import os
 import hashlib
 from datetime import datetime, time, timedelta, date
+import calendar
 from typing import Optional, List
 
 from config import settings
@@ -585,6 +586,19 @@ def review_leave_request(payload: schemas.LeaveReviewRequest, db: Session = Depe
     action_text = "Approved" if leave.status == "APPROVED" else "Declined"
     return {"message": f"Leave request for {leave.ustadh.full_name if leave.ustadh else 'Ustadh'} has been {action_text}.", "status": leave.status}
 
+
+def get_ustadh_punches_for_date(db: Session, ustadh_id: int, target_date):
+    """Helper: Query all attendance punches for a specific Ustadh on a given calendar date."""
+    start_of_day = datetime.combine(target_date, time.min)
+    end_of_day = datetime.combine(target_date, time.max)
+    return db.query(models.AttendanceLog).filter(
+        models.AttendanceLog.ustadh_id == ustadh_id,
+        models.AttendanceLog.clock_in_time >= start_of_day,
+        models.AttendanceLog.clock_in_time <= end_of_day
+    ).order_by(models.AttendanceLog.clock_in_time.asc()).all()
+
+
+# Backward-compatible Admin Attendance Log List
 @app.get("/api/admin/attendance")
 def get_admin_attendance_logs(db: Session = Depends(get_db)):
     logs = db.query(models.AttendanceLog).order_by(models.AttendanceLog.id.desc()).all()
@@ -607,7 +621,188 @@ def get_admin_attendance_logs(db: Session = Depends(get_db)):
 
 
 # ===================================================================
-# USTADH (STAFF) ENDPOINTS: CLOCK-IN / OUT & LEAVE SUBMISSION
+# TODAY'S LIVE STAFF ATTENDANCE ROSTER (SUPER ADMIN & ADMIN)
+# ===================================================================
+@app.get("/api/attendance/today")
+@app.get("/api/admin/attendance/today")
+@app.get("/api/superadmin/attendance/today")
+def get_today_attendance_roster(db: Session = Depends(get_db)):
+    today_date = datetime.now().date()
+    start_of_day = datetime.combine(today_date, time.min)
+    end_of_day = datetime.combine(today_date, time.max)
+
+    ustadhs = db.query(models.User).filter(models.User.role == "USTADH").order_by(models.User.full_name.asc()).all()
+    today_logs = db.query(models.AttendanceLog).filter(
+        models.AttendanceLog.clock_in_time >= start_of_day,
+        models.AttendanceLog.clock_in_time <= end_of_day
+    ).order_by(models.AttendanceLog.clock_in_time.asc()).all()
+
+    today_leaves = db.query(models.LeaveRequest).filter(
+        models.LeaveRequest.status == "APPROVED",
+        models.LeaveRequest.start_date <= today_date,
+        models.LeaveRequest.end_date >= today_date
+    ).all()
+
+    leaves_by_ustadh = {l.ustadh_id: l for l in today_leaves}
+
+    logs_by_ustadh = {}
+    for log in today_logs:
+        logs_by_ustadh.setdefault(log.ustadh_id, []).append(log)
+
+    roster = []
+    clocked_in_count = 0
+    clocked_out_count = 0
+    on_leave_count = 0
+    not_clocked_in_count = 0
+
+    for u in ustadhs:
+        u_logs = logs_by_ustadh.get(u.id, [])
+        u_leave = leaves_by_ustadh.get(u.id)
+
+        has_active_clock_in = any(l.status == "CLOCKED_IN" for l in u_logs)
+        punches = []
+        for idx, l in enumerate(u_logs, 1):
+            clock_in_formatted = l.clock_in_time.strftime("%I:%M %p")
+            clock_out_formatted = l.clock_out_time.strftime("%I:%M %p") if l.clock_out_time else None
+            
+            duration_str = None
+            if l.clock_out_time:
+                diff_sec = int((l.clock_out_time - l.clock_in_time).total_seconds())
+                hrs = diff_sec // 3600
+                mins = (diff_sec % 3600) // 60
+                duration_str = f"{hrs}h {mins}m" if hrs > 0 else f"{mins}m"
+            else:
+                duration_str = "Active Session"
+
+            punches.append({
+                "session_number": idx,
+                "clock_in_time": clock_in_formatted,
+                "clock_out_time": clock_out_formatted,
+                "duration": duration_str,
+                "is_late": l.is_late_in,
+                "late_minutes": l.late_minutes,
+                "is_early": l.is_early_out,
+                "early_minutes": l.early_minutes,
+                "status": l.status,
+                "ip_address": l.ip_address
+            })
+
+        if has_active_clock_in:
+            status_code = "CLOCKED_IN"
+            clocked_in_count += 1
+        elif u_leave:
+            status_code = "ON_LEAVE"
+            on_leave_count += 1
+        elif len(u_logs) > 0:
+            status_code = "CLOCKED_OUT"
+            clocked_out_count += 1
+        else:
+            status_code = "NOT_CLOCKED_IN"
+            not_clocked_in_count += 1
+
+        roster.append({
+            "ustadh_id": u.id,
+            "username": u.username,
+            "full_name": u.full_name,
+            "shift_name": u.shift.name if u.shift else "Default Shift",
+            "shift_times": f"{u.shift.start_time.strftime('%I:%M %p')} - {u.shift.end_time.strftime('%I:%M %p')}" if u.shift else "08:00 AM - 04:00 PM",
+            "status": status_code,
+            "total_punches_today": len(u_logs),
+            "max_punches_per_day": 3,
+            "punches": punches,
+            "leave_reason": u_leave.reason if u_leave else None
+        })
+
+    return {
+        "date": today_date.isoformat(),
+        "formatted_date": today_date.strftime("%A, %d %B %Y"),
+        "total_ustadhs": len(ustadhs),
+        "clocked_in_count": clocked_in_count,
+        "clocked_out_count": clocked_out_count,
+        "on_leave_count": on_leave_count,
+        "not_clocked_in_count": not_clocked_in_count,
+        "roster": roster
+    }
+
+
+# ===================================================================
+# HISTORICAL ATTENDANCE EXPLORER (FILTER BY USTADH, MONTH, DATE)
+# ===================================================================
+@app.get("/api/attendance/history")
+@app.get("/api/admin/attendance/history")
+@app.get("/api/superadmin/attendance/history")
+def get_attendance_history(
+    ustadh_id: Optional[int] = None,
+    month: Optional[str] = None,
+    date: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.AttendanceLog)
+
+    if ustadh_id:
+        query = query.filter(models.AttendanceLog.ustadh_id == ustadh_id)
+
+    if date:
+        try:
+            d = datetime.strptime(date.strip(), "%Y-%m-%d").date()
+            s_day = datetime.combine(d, time.min)
+            e_day = datetime.combine(d, time.max)
+            query = query.filter(models.AttendanceLog.clock_in_time >= s_day, models.AttendanceLog.clock_in_time <= e_day)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Expected YYYY-MM-DD")
+    elif month:
+        try:
+            m_dt = datetime.strptime(month.strip(), "%Y-%m")
+            _, last_day = calendar.monthrange(m_dt.year, m_dt.month)
+            s_month = datetime(m_dt.year, m_dt.month, 1, 0, 0, 0)
+            e_month = datetime(m_dt.year, m_dt.month, last_day, 23, 59, 59)
+            query = query.filter(models.AttendanceLog.clock_in_time >= s_month, models.AttendanceLog.clock_in_time <= e_month)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid month format. Expected YYYY-MM")
+
+    records = query.order_by(models.AttendanceLog.clock_in_time.desc()).all()
+
+    total_records = len(records)
+    total_completed = sum(1 for r in records if r.status == "CLOCKED_OUT")
+    total_late = sum(1 for r in records if r.is_late_in)
+    total_early = sum(1 for r in records if r.is_early_out)
+
+    return {
+        "filters": {
+            "ustadh_id": ustadh_id,
+            "month": month,
+            "date": date
+        },
+        "summary": {
+            "total_records": total_records,
+            "total_completed_shifts": total_completed,
+            "total_late_arrivals": total_late,
+            "total_early_departures": total_early,
+            "on_time_percentage": round(((total_records - total_late) / total_records * 100) if total_records > 0 else 100, 1)
+        },
+        "records": [
+            {
+                "id": r.id,
+                "ustadh_id": r.ustadh_id,
+                "ustadh_name": r.ustadh.full_name if r.ustadh else "Unknown Ustadh",
+                "date": r.clock_in_time.strftime("%Y-%m-%d"),
+                "date_formatted": r.clock_in_time.strftime("%a, %d %b %Y"),
+                "clock_in": r.clock_in_time.strftime("%I:%M %p"),
+                "clock_out": r.clock_out_time.strftime("%I:%M %p") if r.clock_out_time else None,
+                "is_late": r.is_late_in,
+                "late_minutes": r.late_minutes,
+                "is_early": r.is_early_out,
+                "early_minutes": r.early_minutes,
+                "ip": r.ip_address,
+                "status": r.status
+            }
+            for r in records
+        ]
+    }
+
+
+# ===================================================================
+# USTADH (STAFF) ENDPOINTS: CLOCK-IN / OUT (MAX 3 SESSIONS/DAY)
 # ===================================================================
 
 @app.post("/api/ustadh/clock-in")
@@ -616,7 +811,7 @@ def ustadh_clock_in(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    # 1. Dynamic IP Whitelist Check (Checks against SystemSettings)
+    # 1. Dynamic IP Whitelist Check
     client_ip = verify_madrasa_wifi(request, db, payload.custom_ip)
 
     # 2. Fetch Ustadh & Validate / Register Device Key
@@ -653,18 +848,6 @@ def ustadh_clock_in(
             )
         active_device_key = incoming_key
 
-    # Check active clock-in status
-    active_log = db.query(models.AttendanceLog).filter(
-        models.AttendanceLog.ustadh_id == ustadh.id,
-        models.AttendanceLog.status == "CLOCKED_IN"
-    ).first()
-
-    if active_log:
-        raise HTTPException(
-            status_code=400,
-            detail="You are already clocked in for today's shift."
-        )
-
     # Determine Clock-In timestamp
     if payload.override_time:
         try:
@@ -674,7 +857,28 @@ def ustadh_clock_in(
     else:
         clock_in_dt = datetime.now()
 
-    # 3. Shift Time Logic (Late In)
+    # Query today's punches for this Ustadh
+    today_punches = get_ustadh_punches_for_date(db, ustadh.id, clock_in_dt.date())
+
+    # Check if already clocked in for an active session
+    active_log = next((p for p in today_punches if p.status == "CLOCKED_IN"), None)
+    if active_log:
+        session_num = len(today_punches)
+        raise HTTPException(
+            status_code=400,
+            detail=f"You are currently clocked in for Session {session_num}. Please clock out before starting your next session."
+        )
+
+    # Enforce Maximum 3 Sessions Per Day
+    if len(today_punches) >= 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Daily punch limit reached. Maximum 3 clock-in/out sessions allowed per day."
+        )
+
+    session_number = len(today_punches) + 1
+
+    # Shift Time Logic (Late In)
     shift = ustadh.shift if ustadh.shift else db.query(models.MadrasaShift).first()
     shift_start_time = shift.start_time if shift else time(8, 0, 0)
     shift_start_dt = datetime.combine(clock_in_dt.date(), shift_start_time)
@@ -702,10 +906,12 @@ def ustadh_clock_in(
     db.commit()
     db.refresh(log)
 
-    status_msg = f"Asalamu Alaikum, {ustadh.full_name}! Attendance marked successfully. {'[LATE IN: ' + str(late_minutes) + ' mins]' if is_late else '[ON TIME]'}"
+    status_msg = f"Asalamu Alaikum, {ustadh.full_name}! Session {session_number} of 3 started. {'[LATE IN: ' + str(late_minutes) + ' mins]' if is_late else '[ON TIME]'}"
 
     return {
         "message": status_msg,
+        "session_number": session_number,
+        "remaining_sessions_today": 3 - session_number,
         "log": {
             "id": log.id,
             "ustadh_id": log.ustadh_id,
@@ -746,7 +952,7 @@ def ustadh_clock_out(
     if not log:
         raise HTTPException(
             status_code=400,
-            detail="No active clock-in record found for today's shift."
+            detail="No active clock-in record found to clock out from."
         )
 
     if payload.override_time:
@@ -781,10 +987,15 @@ def ustadh_clock_out(
     db.commit()
     db.refresh(log)
 
-    status_msg = f"Shift concluded. JazakAllah Khair! {'[EARLY OUT: ' + str(early_minutes) + ' mins]' if is_early else '[NORMAL DEPARTURE]'}"
+    today_punches = get_ustadh_punches_for_date(db, ustadh.id, clock_out_dt.date())
+    session_number = len(today_punches)
+
+    status_msg = f"Session {session_number} of 3 concluded. JazakAllah Khair! {'[EARLY OUT: ' + str(early_minutes) + ' mins]' if is_early else '[NORMAL DEPARTURE]'}"
 
     return {
         "message": status_msg,
+        "session_number": session_number,
+        "remaining_sessions_today": max(0, 3 - session_number),
         "log": {
             "id": log.id,
             "ustadh_id": log.ustadh_id,
@@ -810,9 +1021,16 @@ def get_ustadh_attendance(ustadh_id: int, db: Session = Depends(get_db)):
         models.AttendanceLog.status == "CLOCKED_IN"
     ).first()
 
+    today_date = datetime.now().date()
+    today_punches = get_ustadh_punches_for_date(db, ustadh_id, today_date)
+
     return {
         "ustadh_id": ustadh_id,
         "is_currently_clocked_in": active_log is not None,
+        "active_log_id": active_log.id if active_log else None,
+        "today_punches_count": len(today_punches),
+        "max_punches_per_day": 3,
+        "remaining_sessions_today": max(0, 3 - len(today_punches)),
         "logs": [
             {
                 "id": l.id,

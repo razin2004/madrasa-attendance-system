@@ -2,7 +2,7 @@
 <html lang="en" class="h-full bg-slate-950 text-slate-100">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Super Admin Console - Thandorappara Juma Masjid</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -70,24 +70,24 @@
         }
     </style>
 </head>
-<body class="min-h-full font-sans antialiased mosque-bg text-slate-100 flex flex-col select-none overflow-x-hidden">
+<body class="min-h-full font-sans antialiased mosque-bg text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
 
-    <!-- Top Sticky Header -->
+    <!-- Top Sticky Header (Clean Layout) -->
     <header class="w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <!-- Hamburger Button for Sliding Drawer (Mobile & Desktop) -->
-                <button type="button" id="btnToggleSuperAdminDrawer" onclick="toggleNavDrawer()" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <!-- Hamburger Button for Sliding Drawer -->
+                <button type="button" id="btnToggleDrawer" onclick="toggleNavDrawer()" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition">
                     <i data-lucide="menu" class="w-5 h-5"></i>
                 </button>
 
                 <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-700 flex items-center justify-center text-white shadow-lg shadow-amber-950/50 border border-amber-500/40">
-                        <i data-lucide="crown" class="w-4.5 h-4.5"></i>
+                    <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-900/40 border border-blue-400/30">
+                        <i data-lucide="shield" class="w-4.5 h-4.5"></i>
                     </div>
                     <div>
                         <h1 class="font-bold text-sm sm:text-base leading-tight text-white">Thandorappara Juma Masjid</h1>
-                        <p class="text-[11px] text-amber-300 font-medium hidden sm:block">Super Admin Management Console</p>
+                        <p class="text-[11px] text-blue-300 font-medium hidden sm:block">Super Admin Management Console</p>
                     </div>
                 </div>
             </div>
@@ -113,12 +113,12 @@
                 <!-- Drawer Header -->
                 <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-2xl bg-amber-600/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-                            <i data-lucide="shield" class="w-5 h-5"></i>
+                        <div class="w-10 h-10 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
+                            <i data-lucide="layout-grid" class="w-5 h-5"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold text-white text-sm">Navigation Menu</h3>
-                            <p class="text-[11px] text-slate-400">Super Admin Controls</p>
+                            <h3 class="font-bold text-white text-sm">Management Menu</h3>
+                            <p class="text-[11px] text-slate-400">Governance & Master Controls</p>
                         </div>
                     </div>
                     <button type="button" onclick="toggleNavDrawer()" class="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 border border-slate-800">
@@ -128,35 +128,35 @@
 
                 <!-- Sliding Navigation Items -->
                 <nav class="space-y-1.5 text-xs font-semibold">
-                    <button type="button" onclick="selectSuperAdminPanel('wifi')" id="navItemWifi" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition nav-item-active text-left">
+                    <button type="button" onclick="selectSuperAdminPanel('attendance')" id="navItemAttendance" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition nav-item-active text-left">
+                        <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                        <div class="flex-1">
+                            <div>Live Attendance & Logs</div>
+                            <span class="text-[10px] text-slate-300 font-normal">Today's Staff Roster & Filters</span>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="selectSuperAdminPanel('wifi')" id="navItemWifi" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition nav-item-inactive text-left">
                         <i data-lucide="wifi" class="w-4 h-4"></i>
                         <div class="flex-1">
-                            <div>Allowed WiFi IPs</div>
-                            <span class="text-[10px] text-slate-300 font-normal font-mono">Multi-Network Whitelist</span>
+                            <div>Madrasa WiFi Whitelist</div>
+                            <span class="text-[10px] text-slate-400 font-normal">Multi-IP Network Guard</span>
                         </div>
                     </button>
 
                     <button type="button" onclick="selectSuperAdminPanel('admins')" id="navItemAdmins" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition nav-item-inactive text-left">
                         <i data-lucide="user-check" class="w-4 h-4"></i>
                         <div class="flex-1">
-                            <div>Principal Admins</div>
-                            <span class="text-[10px] text-slate-400 font-normal">Manage & Block Admins</span>
-                        </div>
-                    </button>
-
-                    <button type="button" onclick="selectSuperAdminPanel('attendance')" id="navItemAttendance" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition nav-item-inactive text-left">
-                        <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-                        <div class="flex-1">
-                            <div>Master Attendance Logs</div>
-                            <span class="text-[10px] text-slate-400 font-normal">All Shifts & Timestamps</span>
+                            <div>Principal Admin Accounts</div>
+                            <span class="text-[10px] text-slate-400 font-normal">Provision & Block / Activate</span>
                         </div>
                     </button>
 
                     <button type="button" onclick="selectSuperAdminPanel('leaves')" id="navItemLeaves" class="w-full py-3 px-3.5 rounded-xl flex items-center gap-3 transition nav-item-inactive text-left">
                         <i data-lucide="calendar" class="w-4 h-4"></i>
                         <div class="flex-1">
-                            <div>Master Leaves Audit</div>
-                            <span class="text-[10px] text-slate-400 font-normal">Review Ustadh Leaves</span>
+                            <div>Master Leave Directory</div>
+                            <span class="text-[10px] text-slate-400 font-normal">View All Staff Leave History</span>
                         </div>
                     </button>
 
@@ -170,7 +170,7 @@
                 </nav>
             </div>
 
-            <!-- Drawer Footer with Full-Width Logout Button -->
+            <!-- Drawer Footer with Full-Width Logout Button with Confirmation -->
             <div class="pt-4 border-t border-slate-800/80 space-y-3">
                 <button id="btnSuperAdminLogout" type="button" onclick="confirmAndLogout()" class="w-full py-3 px-4 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/50 text-rose-300 font-bold text-xs transition flex items-center justify-center gap-2 shadow active:scale-95">
                     <i data-lucide="log-out" class="w-4 h-4"></i>
@@ -178,7 +178,7 @@
                 </button>
                 <div class="text-[11px] text-slate-500 text-center">
                     <p>Thandorappara Juma Masjid</p>
-                    <p class="text-[10px]">Management Security v4.3.0</p>
+                    <p class="text-[10px]">Management Security v4.5.0</p>
                 </div>
             </div>
         </aside>
@@ -188,14 +188,14 @@
 
             <!-- Mobile Quick Pills Bar -->
             <div class="flex sm:hidden overflow-x-auto gap-2 pb-2 scrollbar-none text-xs font-semibold">
-                <button type="button" onclick="selectSuperAdminPanel('wifi')" id="quickPillWifi" class="px-3.5 py-2 rounded-xl bg-blue-600 text-white shadow flex-shrink-0 flex items-center gap-1.5">
+                <button type="button" onclick="selectSuperAdminPanel('attendance')" id="quickPillAttendance" class="px-3.5 py-2 rounded-xl bg-blue-600 text-white shadow flex-shrink-0 flex items-center gap-1.5">
+                    <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i> Attendance
+                </button>
+                <button type="button" onclick="selectSuperAdminPanel('wifi')" id="quickPillWifi" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex-shrink-0 flex items-center gap-1.5">
                     <i data-lucide="wifi" class="w-3.5 h-3.5"></i> WiFi IPs
                 </button>
                 <button type="button" onclick="selectSuperAdminPanel('admins')" id="quickPillAdmins" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex-shrink-0 flex items-center gap-1.5">
                     <i data-lucide="user-check" class="w-3.5 h-3.5"></i> Admins
-                </button>
-                <button type="button" onclick="selectSuperAdminPanel('attendance')" id="quickPillAttendance" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex-shrink-0 flex items-center gap-1.5">
-                    <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i> Attendance
                 </button>
                 <button type="button" onclick="selectSuperAdminPanel('leaves')" id="quickPillLeaves" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex-shrink-0 flex items-center gap-1.5">
                     <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Leaves
@@ -203,9 +203,205 @@
             </div>
 
             <!-- ============================================================== -->
-            <!-- SLIDING PANEL 1: ALLOWED WIFI IPS -->
+            <!-- SLIDING PANEL 1: LIVE ATTENDANCE & HISTORICAL EXPLORER -->
             <!-- ============================================================== -->
-            <section id="panelSuperAdminWifi" class="slide-panel space-y-5">
+            <section id="panelSuperAdminAttendance" class="slide-panel space-y-6">
+                
+                <!-- Attendance Sub-Tabs Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="switchSuperAdminAttendanceView('today')" id="subTabSuperAdminAttendanceToday" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs shadow flex items-center gap-1.5">
+                            <i data-lucide="radio" class="w-3.5 h-3.5 text-emerald-300 animate-pulse"></i>
+                            <span>Today's Live Staff Board</span>
+                        </button>
+                        <button type="button" onclick="switchSuperAdminAttendanceView('history')" id="subTabSuperAdminAttendanceHistory" class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-semibold text-xs flex items-center gap-1.5">
+                            <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                            <span>Historical Log Explorer</span>
+                        </button>
+                    </div>
+
+                    <button onclick="window.loadTodayRoster(); window.loadAttendanceHistory();" type="button" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium self-start sm:self-center">
+                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Refresh Board
+                    </button>
+                </div>
+
+                <!-- SUB-VIEW A: TODAY'S LIVE STAFF ATTENDANCE ROSTER -->
+                <div id="viewSuperAdminAttendanceToday" class="space-y-6">
+                    <!-- 4 Live Status Counters -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="glass-panel rounded-2xl p-4 border border-emerald-500/30">
+                            <span class="text-[11px] text-emerald-400 font-semibold block flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Clocked In (Live)
+                            </span>
+                            <span id="statClockedInTodaySA" class="text-2xl font-extrabold text-white font-mono">0</span>
+                            <span class="text-[10px] text-slate-400 block mt-0.5">Currently on duty</span>
+                        </div>
+
+                        <div class="glass-panel rounded-2xl p-4 border border-blue-500/30">
+                            <span class="text-[11px] text-blue-400 font-semibold block flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                                Clocked Out
+                            </span>
+                            <span id="statClockedOutTodaySA" class="text-2xl font-extrabold text-white font-mono">0</span>
+                            <span class="text-[10px] text-slate-400 block mt-0.5">Shifts completed</span>
+                        </div>
+
+                        <div class="glass-panel rounded-2xl p-4 border border-amber-500/30">
+                            <span class="text-[11px] text-amber-400 font-semibold block flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                                On Leave Today
+                            </span>
+                            <span id="statOnLeaveTodaySA" class="text-2xl font-extrabold text-white font-mono">0</span>
+                            <span class="text-[10px] text-slate-400 block mt-0.5">Approved leave</span>
+                        </div>
+
+                        <div class="glass-panel rounded-2xl p-4 border border-slate-700/50">
+                            <span class="text-[11px] text-slate-400 font-semibold block flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                                Not Clocked In
+                            </span>
+                            <span id="statNotClockedInTodaySA" class="text-2xl font-extrabold text-white font-mono">0</span>
+                            <span class="text-[10px] text-slate-400 block mt-0.5">Pending check-in</span>
+                        </div>
+                    </div>
+
+                    <!-- Live Ustadh Roster Table -->
+                    <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div>
+                                <h3 class="font-bold text-white text-base flex items-center gap-2">
+                                    <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+                                    All Ustadhs Today's Attendance Roster
+                                </h3>
+                                <p id="todayRosterDateLabelSA" class="text-xs text-slate-400">Loading today's status...</p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto border border-slate-800 rounded-2xl shadow-inner">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] sticky top-0">
+                                    <tr>
+                                        <th class="py-3 px-4">Ustadh Name</th>
+                                        <th class="py-3 px-4">Assigned Shift</th>
+                                        <th class="py-3 px-4">Today's Status</th>
+                                        <th class="py-3 px-4">Daily Punches (Max 3)</th>
+                                        <th class="py-3 px-4">Session Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="todayRosterTableBodySA" class="divide-y divide-slate-800 text-slate-300">
+                                    <tr><td colspan="5" class="py-4 text-center text-slate-500 italic">Loading today's staff roster...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-VIEW B: HISTORICAL ATTENDANCE EXPLORER WITH MULTI-FILTERS -->
+                <div id="viewSuperAdminAttendanceHistory" class="space-y-6 hidden">
+                    <!-- Interactive Filter Controls Card -->
+                    <div class="glass-panel rounded-3xl p-5 shadow-2xl space-y-4 border border-blue-900/40">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                                <i data-lucide="filter" class="w-4 h-4 text-indigo-400"></i>
+                                Filter Master Attendance Logs
+                            </h3>
+                            <button type="button" onclick="resetHistoryFiltersSA()" class="text-[11px] text-slate-400 hover:text-white font-medium">
+                                Reset Filters
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
+                            <!-- 1. Ustadh Filter Selector -->
+                            <div class="sm:col-span-4">
+                                <label class="block text-[11px] font-medium text-slate-300 mb-1">Select Ustadh</label>
+                                <select id="historyUstadhSelectSA" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+                                    <option value="">All Ustadhs</option>
+                                </select>
+                            </div>
+
+                            <!-- 2. Month Filter Picker -->
+                            <div class="sm:col-span-4">
+                                <label class="block text-[11px] font-medium text-slate-300 mb-1">Filter by Month</label>
+                                <input type="month" id="historyMonthInputSA" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-blue-500">
+                            </div>
+
+                            <!-- 3. Specific Date Picker -->
+                            <div class="sm:col-span-4">
+                                <label class="block text-[11px] font-medium text-slate-300 mb-1">Or Specific Date</label>
+                                <input type="date" id="historyDateInputSA" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- Quick Pill Preset Filters -->
+                        <div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                            <span class="text-slate-400 text-[11px]">Quick Jump:</span>
+                            <button type="button" onclick="setHistoryFilterPresetSA('today')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]">
+                                Today
+                            </button>
+                            <button type="button" onclick="setHistoryFilterPresetSA('this_month')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]">
+                                This Month
+                            </button>
+                            <button type="button" onclick="setHistoryFilterPresetSA('all')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]">
+                                All Time
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtered Summary Statistics Banner -->
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div class="bg-slate-900/80 rounded-2xl p-3.5 border border-slate-800 text-center">
+                            <span class="text-[10px] text-slate-400 block font-medium">Total Records</span>
+                            <span id="statHistoryTotalSA" class="text-xl font-bold text-white font-mono">0</span>
+                        </div>
+                        <div class="bg-slate-900/80 rounded-2xl p-3.5 border border-slate-800 text-center">
+                            <span class="text-[10px] text-slate-400 block font-medium">Completed</span>
+                            <span id="statHistoryCompletedSA" class="text-xl font-bold text-blue-400 font-mono">0</span>
+                        </div>
+                        <div class="bg-slate-900/80 rounded-2xl p-3.5 border border-slate-800 text-center">
+                            <span class="text-[10px] text-slate-400 block font-medium">Late Arrivals</span>
+                            <span id="statHistoryLateSA" class="text-xl font-bold text-amber-400 font-mono">0</span>
+                        </div>
+                        <div class="bg-slate-900/80 rounded-2xl p-3.5 border border-slate-800 text-center">
+                            <span class="text-[10px] text-slate-400 block font-medium">Early Outs</span>
+                            <span id="statHistoryEarlySA" class="text-xl font-bold text-rose-400 font-mono">0</span>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1 bg-slate-900/80 rounded-2xl p-3.5 border border-slate-800 text-center">
+                            <span class="text-[10px] text-slate-400 block font-medium">Punctuality</span>
+                            <span id="statHistoryPunctualitySA" class="text-xl font-bold text-emerald-400 font-mono">100%</span>
+                        </div>
+                    </div>
+
+                    <!-- Historical Log Table -->
+                    <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-4">
+                        <div class="overflow-x-auto border border-slate-800 rounded-2xl max-h-96 shadow-inner">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] sticky top-0">
+                                    <tr>
+                                        <th class="py-3 px-4">Ustadh Name</th>
+                                        <th class="py-3 px-4">Date</th>
+                                        <th class="py-3 px-4">Clock In</th>
+                                        <th class="py-3 px-4">Late Metric</th>
+                                        <th class="py-3 px-4">Clock Out</th>
+                                        <th class="py-3 px-4">Early Metric</th>
+                                        <th class="py-3 px-4">Connection IP</th>
+                                        <th class="py-3 px-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyAttendanceTableBodySA" class="divide-y divide-slate-800 text-slate-300">
+                                    <tr><td colspan="8" class="py-4 text-center text-slate-500 italic">No historical records matching filters.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- SLIDING PANEL 2: ALLOWED WIFI IPS -->
+            <!-- ============================================================== -->
+            <section id="panelSuperAdminWifi" class="slide-panel space-y-5 hidden">
                 <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-5">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                         <div>
@@ -248,11 +444,12 @@
                                 <tr>
                                     <th class="py-3 px-4">Authorized IP</th>
                                     <th class="py-3 px-4">Network Label</th>
-                                    <th class="py-3 px-4 text-right">Action</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="allowedIpsTableBody" class="divide-y divide-slate-800 text-slate-300">
-                                <tr><td colspan="3" class="py-4 text-center text-slate-500 italic">Loading whitelisted networks...</td></tr>
+                                <tr><td colspan="4" class="py-4 text-center text-slate-500 italic">Loading whitelisted networks...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -260,19 +457,19 @@
             </section>
 
             <!-- ============================================================== -->
-            <!-- SLIDING PANEL 2: PRINCIPAL ADMIN MANAGEMENT -->
+            <!-- SLIDING PANEL 3: PRINCIPAL ADMIN ACCOUNTS -->
             <!-- ============================================================== -->
             <section id="panelSuperAdminAdmins" class="slide-panel space-y-5 hidden">
                 <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-5">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                         <div>
                             <h2 class="font-bold text-white text-base sm:text-lg flex items-center gap-2">
-                                <i data-lucide="user-plus" class="w-5 h-5 text-amber-400"></i>
-                                Principal Admin Accounts
+                                <i data-lucide="user-check" class="w-5 h-5 text-indigo-400"></i>
+                                Principal Admin Accounts Management
                             </h2>
-                            <p class="text-xs text-slate-400">Create and toggle access permissions for Principal Admins</p>
+                            <p class="text-xs text-slate-400">Create Principal accounts and toggle access status (Block / Activate)</p>
                         </div>
-                        <button id="btnRefreshAdmins" type="button" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium">
+                        <button id="btnRefreshAdmins" type="button" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium self-start sm:self-center">
                             <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Refresh
                         </button>
                     </div>
@@ -281,32 +478,32 @@
                     <form id="createAdminForm" class="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
                         <div class="sm:col-span-4">
                             <label class="block text-[11px] font-medium text-slate-300 mb-1">Full Name</label>
-                            <input type="text" id="newAdminFullName" placeholder="e.g. Sadr Ustadh" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                            <input type="text" id="newAdminFullName" placeholder="e.g. Sadr Ustadh Ibrahim" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
                         </div>
                         <div class="sm:col-span-3">
                             <label class="block text-[11px] font-medium text-slate-300 mb-1">Username</label>
-                            <input type="text" id="newAdminUsername" placeholder="e.g. admin_vice" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                            <input type="text" id="newAdminUsername" placeholder="admin_ibrahim" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
                         </div>
                         <div class="sm:col-span-3">
                             <label class="block text-[11px] font-medium text-slate-300 mb-1">Password</label>
-                            <input type="password" id="newAdminPassword" placeholder="Minimum 6 chars" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                            <input type="password" id="newAdminPassword" placeholder="Minimum 6 chars" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
                         </div>
                         <div class="sm:col-span-2 flex items-end">
-                            <button type="submit" class="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow active:scale-95">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Create
+                            <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow active:scale-95">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Create
                             </button>
                         </div>
                     </form>
 
-                    <!-- Admins Table -->
-                    <div class="overflow-x-auto border border-slate-800 rounded-2xl">
+                    <!-- Admins List Table -->
+                    <div class="overflow-x-auto border border-slate-800 rounded-2xl shadow-inner">
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] sticky top-0">
                                 <tr>
                                     <th class="py-3 px-4">Admin Name</th>
                                     <th class="py-3 px-4">Username</th>
-                                    <th class="py-3 px-4">Status</th>
-                                    <th class="py-3 px-4">Action</th>
+                                    <th class="py-3 px-4">Access Status</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="adminsTableBody" class="divide-y divide-slate-800 text-slate-300">
@@ -318,46 +515,7 @@
             </section>
 
             <!-- ============================================================== -->
-            <!-- SLIDING PANEL 3: MASTER ATTENDANCE AUDIT -->
-            <!-- ============================================================== -->
-            <section id="panelSuperAdminAttendance" class="slide-panel space-y-5 hidden">
-                <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-                        <div>
-                            <h2 class="font-bold text-white text-base sm:text-lg flex items-center gap-2">
-                                <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
-                                Master Daily Attendance Sheet (<span id="totalAttendanceCount">0</span>)
-                            </h2>
-                            <p class="text-xs text-slate-400">Complete view of all clock-in timestamps, late metrics, and early departures</p>
-                        </div>
-                        <button onclick="loadSuperAdminMasterAudit()" type="button" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium">
-                            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Refresh
-                        </button>
-                    </div>
-
-                    <div class="overflow-x-auto border border-slate-800 rounded-2xl max-h-96">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] sticky top-0">
-                                <tr>
-                                    <th class="py-3 px-4">Ustadh</th>
-                                    <th class="py-3 px-4">Clock In</th>
-                                    <th class="py-3 px-4">Late Metric</th>
-                                    <th class="py-3 px-4">Clock Out</th>
-                                    <th class="py-3 px-4">Early Metric</th>
-                                    <th class="py-3 px-4">Connection IP</th>
-                                    <th class="py-3 px-4">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="auditAttendanceTableBody" class="divide-y divide-slate-800 text-slate-300">
-                                <tr><td colspan="7" class="py-4 text-center text-slate-500 italic">No attendance records.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ============================================================== -->
-            <!-- SLIDING PANEL 4: MASTER LEAVES AUDIT -->
+            <!-- SLIDING PANEL 4: MASTER LEAVES DIRECTORY -->
             <!-- ============================================================== -->
             <section id="panelSuperAdminLeaves" class="slide-panel space-y-5 hidden">
                 <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-4">
@@ -365,24 +523,28 @@
                         <div>
                             <h2 class="font-bold text-white text-base sm:text-lg flex items-center gap-2">
                                 <i data-lucide="calendar" class="w-5 h-5 text-amber-400"></i>
-                                Master Leave Applications (<span id="totalLeaveCount">0</span>)
+                                Master Staff Leave Directory
                             </h2>
-                            <p class="text-xs text-slate-400">Review all leave requests submitted across the madrasa</p>
+                            <p class="text-xs text-slate-400">Complete historical directory of all Ustadh leave requests and Principal review decisions</p>
                         </div>
+                        <button onclick="window.loadSuperAdminMasterAudit()" type="button" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium">
+                            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Refresh
+                        </button>
                     </div>
 
-                    <div class="overflow-x-auto border border-slate-800 rounded-2xl max-h-96">
+                    <div class="overflow-x-auto border border-slate-800 rounded-2xl max-h-96 shadow-inner">
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] sticky top-0">
                                 <tr>
-                                    <th class="py-3 px-4">Ustadh</th>
+                                    <th class="py-3 px-4">Ustadh Name</th>
                                     <th class="py-3 px-4">Date Range</th>
                                     <th class="py-3 px-4">Reason</th>
                                     <th class="py-3 px-4">Decision Status</th>
+                                    <th class="py-3 px-4">Reviewed Date</th>
                                 </tr>
                             </thead>
                             <tbody id="auditLeavesTableBody" class="divide-y divide-slate-800 text-slate-300">
-                                <tr><td colspan="4" class="py-4 text-center text-slate-500 italic">No leave applications.</td></tr>
+                                <tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No leave applications recorded.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -390,7 +552,7 @@
             </section>
 
             <!-- ============================================================== -->
-            <!-- SLIDING PANEL 5: USTADH PROFILES AUDIT -->
+            <!-- SLIDING PANEL 5: MASTER USTADH PROFILES -->
             <!-- ============================================================== -->
             <section id="panelSuperAdminUstadhs" class="slide-panel space-y-5 hidden">
                 <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-4">
@@ -398,23 +560,26 @@
                         <div>
                             <h2 class="font-bold text-white text-base sm:text-lg flex items-center gap-2">
                                 <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
-                                Ustadh Directory (<span id="totalUstadhCount">0</span>)
+                                Master Ustadh Profiles Directory
                             </h2>
-                            <p class="text-xs text-slate-400">Master register of all Ustadh staff and paired mobile devices</p>
+                            <p class="text-xs text-slate-400">View-only directory of all staff accounts and hardware device registration status</p>
                         </div>
+                        <button onclick="window.loadSuperAdminMasterAudit()" type="button" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium">
+                            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Refresh
+                        </button>
                     </div>
 
-                    <div class="overflow-x-auto border border-slate-800 rounded-2xl max-h-96">
+                    <div class="overflow-x-auto border border-slate-800 rounded-2xl max-h-96 shadow-inner">
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] sticky top-0">
                                 <tr>
                                     <th class="py-3 px-4">Ustadh Name</th>
                                     <th class="py-3 px-4">Username</th>
-                                    <th class="py-3 px-4">Paired Mobile Devices</th>
+                                    <th class="py-3 px-4">Registered Hardware</th>
                                 </tr>
                             </thead>
                             <tbody id="auditUstadhsTableBody" class="divide-y divide-slate-800 text-slate-300">
-                                <tr><td colspan="3" class="py-4 text-center text-slate-500 italic">No Ustadh profiles found.</td></tr>
+                                <tr><td colspan="3" class="py-4 text-center text-slate-500 italic">Loading staff profiles...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -429,7 +594,7 @@
         &copy; 2026 Thandorappara Juma Masjid &bull; Super Admin Console
     </footer>
 
-    <script src="/static/app.js?v=4.4.0"></script>
+    <script src="/static/app.js?v=4.5.0"></script>
     <script>
         // Sliding Drawer Toggle
         function toggleNavDrawer() {
@@ -448,28 +613,28 @@
             }
         }
 
-        // Sliding Panel Selector
+        // Sliding Panel Selector for Super Admin
         function selectSuperAdminPanel(panelKey) {
             const panels = {
+                attendance: document.getElementById('panelSuperAdminAttendance'),
                 wifi: document.getElementById('panelSuperAdminWifi'),
                 admins: document.getElementById('panelSuperAdminAdmins'),
-                attendance: document.getElementById('panelSuperAdminAttendance'),
                 leaves: document.getElementById('panelSuperAdminLeaves'),
                 ustadhs: document.getElementById('panelSuperAdminUstadhs'),
             };
 
             const navItems = {
+                attendance: document.getElementById('navItemAttendance'),
                 wifi: document.getElementById('navItemWifi'),
                 admins: document.getElementById('navItemAdmins'),
-                attendance: document.getElementById('navItemAttendance'),
                 leaves: document.getElementById('navItemLeaves'),
                 ustadhs: document.getElementById('navItemUstadhs'),
             };
 
             const quickPills = {
+                attendance: document.getElementById('quickPillAttendance'),
                 wifi: document.getElementById('quickPillWifi'),
                 admins: document.getElementById('quickPillAdmins'),
-                attendance: document.getElementById('quickPillAttendance'),
                 leaves: document.getElementById('quickPillLeaves'),
             };
 
@@ -497,6 +662,29 @@
                 toggleNavDrawer();
             }
 
+            lucide.createIcons();
+        }
+
+        // Attendance Sub-Tab Switcher (Today's Live Board vs Historical Explorer)
+        function switchSuperAdminAttendanceView(viewKey) {
+            const viewToday = document.getElementById('viewSuperAdminAttendanceToday');
+            const viewHistory = document.getElementById('viewSuperAdminAttendanceHistory');
+            const tabToday = document.getElementById('subTabSuperAdminAttendanceToday');
+            const tabHistory = document.getElementById('subTabSuperAdminAttendanceHistory');
+
+            if (viewKey === 'today') {
+                if (viewToday) viewToday.classList.remove('hidden');
+                if (viewHistory) viewHistory.classList.add('hidden');
+                if (tabToday) tabToday.className = "px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs shadow flex items-center gap-1.5";
+                if (tabHistory) tabHistory.className = "px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-semibold text-xs flex items-center gap-1.5";
+                if (window.loadTodayRoster) window.loadTodayRoster();
+            } else {
+                if (viewToday) viewToday.classList.add('hidden');
+                if (viewHistory) viewHistory.classList.remove('hidden');
+                if (tabToday) tabToday.className = "px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-semibold text-xs flex items-center gap-1.5";
+                if (tabHistory) tabHistory.className = "px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs shadow flex items-center gap-1.5";
+                if (window.loadAttendanceHistory) window.loadAttendanceHistory();
+            }
             lucide.createIcons();
         }
 

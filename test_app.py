@@ -203,6 +203,112 @@ def test_multi_ip_whitelist_management():
     assert clock_blocked.status_code == 403
     assert "Please connect to the Madrasa WiFi" in clock_blocked.json()["detail"]
 
+def test_multi_session_daily_limit_and_roster_history():
+    # Provision fresh Ustadh Omar
+    create_omar = client.post("/api/admin/ustadhs/create", json={
+        "full_name": "Ustadh Omar Farooq",
+        "username": "ustadh_omar",
+        "password": "omarpassword123",
+        "shift_id": 1
+    })
+    assert create_omar.status_code == 200
+    ustadh_id = create_omar.json()["ustadh"]["id"]
+    omar_key = "USTADH-DEV-OMAR-01"
+    target_date = "2026-08-10"
+
+    # Session 1: Clock In & Out
+    s1_in = client.post("/api/ustadh/clock-in", json={
+        "ustadh_id": ustadh_id,
+        "device_key": omar_key,
+        "override_time": f"{target_date}T08:00:00",
+        "custom_ip": "192.168.1.100"
+    })
+    assert s1_in.status_code == 200
+    assert s1_in.json()["session_number"] == 1
+    assert s1_in.json()["remaining_sessions_today"] == 2
+
+    s1_out = client.post("/api/ustadh/clock-out", json={
+        "ustadh_id": ustadh_id,
+        "device_key": omar_key,
+        "override_time": f"{target_date}T10:00:00",
+        "custom_ip": "192.168.1.100"
+    })
+    assert s1_out.status_code == 200
+    assert s1_out.json()["session_number"] == 1
+
+    # Session 2: Clock In & Out
+    s2_in = client.post("/api/ustadh/clock-in", json={
+        "ustadh_id": ustadh_id,
+        "device_key": omar_key,
+        "override_time": f"{target_date}T11:00:00",
+        "custom_ip": "192.168.1.100"
+    })
+    assert s2_in.status_code == 200
+    assert s2_in.json()["session_number"] == 2
+
+    s2_out = client.post("/api/ustadh/clock-out", json={
+        "ustadh_id": ustadh_id,
+        "device_key": omar_key,
+        "override_time": f"{target_date}T13:00:00",
+        "custom_ip": "192.168.1.100"
+    })
+    assert s2_out.status_code == 200
+    assert s2_out.json()["session_number"] == 2
+
+    # Session 3: Clock In & Out
+    s3_in = client.post("/api/ustadh/clock-in", json={
+        "ustadh_id": ustadh_id,
+        "device_key": omar_key,
+        "override_time": f"{target_date}T14:00:00",
+        "custom_ip": "192.168.1.100"
+    })
+    assert s3_in.status_code == 200
+    assert s3_in.json()["session_number"] == 3
+    assert s3_in.json()["remaining_sessions_today"] == 0
+
+    s3_out = client.post("/api/ustadh/clock-out", json={
+        "ustadh_id": ustadh_id,
+        "device_key": omar_key,
+        "override_time": f"{target_date}T16:00:00",
+        "custom_ip": "192.168.1.100"
+    })
+    assert s3_out.status_code == 200
+    assert s3_out.json()["session_number"] == 3
+
+    # Attempt Session 4 on same day -> Must fail with 400
+    s4_blocked = client.post("/api/ustadh/clock-in", json={
+        "ustadh_id": ustadh_id,
+        "device_key": omar_key,
+        "override_time": f"{target_date}T17:00:00",
+        "custom_ip": "192.168.1.100"
+    })
+    assert s4_blocked.status_code == 400
+    assert "Daily punch limit reached" in s4_blocked.json()["detail"]
+
+    # Test Today's Roster Endpoint
+    roster_res = client.get("/api/attendance/today")
+    assert roster_res.status_code == 200
+    r_data = roster_res.json()
+    assert r_data["total_ustadhs"] >= 2
+    assert "roster" in r_data
+
+    # Test Historical Attendance Explorer with Filters
+    hist_all = client.get("/api/attendance/history")
+    assert hist_all.status_code == 200
+    assert hist_all.json()["summary"]["total_records"] >= 3
+
+    hist_ustadh = client.get(f"/api/attendance/history?ustadh_id={ustadh_id}")
+    assert hist_ustadh.status_code == 200
+    assert len(hist_ustadh.json()["records"]) == 3
+
+    hist_date = client.get(f"/api/attendance/history?date={target_date}")
+    assert hist_date.status_code == 200
+    assert len(hist_date.json()["records"]) >= 3
+
+    hist_month = client.get("/api/attendance/history?month=2026-08")
+    assert hist_month.status_code == 200
+    assert len(hist_month.json()["records"]) >= 3
+
 if __name__ == "__main__":
     print("Running setup_module...")
     setup_module(None)
@@ -216,4 +322,7 @@ if __name__ == "__main__":
     test_device_recognition_and_clockin_protection()
     print("Running test_multi_ip_whitelist_management...")
     test_multi_ip_whitelist_management()
-    print("\n[SUCCESS] ALL THANDORAPPARA JUMA MASJID 3-TIER MULTI-IP TESTS PASSED SUCCESSFULLY!")
+    print("Running test_multi_session_daily_limit_and_roster_history...")
+    test_multi_session_daily_limit_and_roster_history()
+    print("\n[SUCCESS] ALL THANDORAPPARA JUMA MASJID 3-TIER MULTI-IP & MULTI-SESSION TESTS PASSED SUCCESSFULLY!")
+
