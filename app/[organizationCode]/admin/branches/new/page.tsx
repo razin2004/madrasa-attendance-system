@@ -17,10 +17,10 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
-import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
-import { useToast } from '@/components/feedback/toast-provider';
-import { getClientPublicIp } from '@/lib/client-location-ip';
+import { OrgAdminSidebar } from '../../../../../components/layout/org-admin-sidebar';
+import { OrgAdminMobileNav } from '../../../../../components/layout/org-admin-mobile-nav';
+import { useToast } from '../../../../../components/feedback/toast-provider';
+import { getClientPublicIp } from '../../../../../lib/client-location-ip';
 import styles from './BranchCreate.module.css';
 
 interface OrgBranding {

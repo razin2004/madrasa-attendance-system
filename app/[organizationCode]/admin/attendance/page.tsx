@@ -18,9 +18,9 @@ import {
   Loader2,
   X,
 } from 'lucide-react';
-import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
-import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
-import { useToast } from '@/components/feedback/toast-provider';
+import { OrgAdminSidebar } from '../../../../components/layout/org-admin-sidebar';
+import { OrgAdminMobileNav } from '../../../../components/layout/org-admin-mobile-nav';
+import { useToast } from '../../../../components/feedback/toast-provider';
 import styles from './AdminAttendance.module.css';
 
 interface DailyAttendanceItem {

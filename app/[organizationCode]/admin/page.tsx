@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useToast } from '@/components/feedback/toast-provider';
-import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
-import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { useToast } from '../../../components/feedback/toast-provider';
+import { OrgAdminSidebar } from '../../../components/layout/org-admin-sidebar';
+import { OrgAdminMobileNav } from '../../../components/layout/org-admin-mobile-nav';
 import styles from './AdminDashboard.module.css';
 import {
   Building2,
