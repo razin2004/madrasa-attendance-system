@@ -15,9 +15,9 @@ import {
   FileText,
   Loader2,
 } from 'lucide-react';
-import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
-import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
-import { useToast } from '@/components/feedback/toast-provider';
+import { OrgAdminSidebar } from '../../../../../components/layout/org-admin-sidebar';
+import { OrgAdminMobileNav } from '../../../../../components/layout/org-admin-mobile-nav';
+import { useToast } from '../../../../../components/feedback/toast-provider';
 import styles from './Corrections.module.css';
 
 interface CorrectionRequest {
