@@ -217,3 +217,25 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 480px) {
+  .headerBar {
+    padding: 10px 12px;
+  }
+  .contentBody {
+    padding: 12px 10px;
+  }
+  .greetingText {
+    font-size: 17px;
+  }
+  .dateSubtext {
+    font-size: 12px;
+  }
+  .dateBadge {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+  .metricCard {
+    padding: 12px 10px;
+  }
+}

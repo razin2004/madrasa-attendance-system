@@ -169,3 +169,38 @@
     margin-right: 16px;
   }
 }
+
+@media (max-width: 480px) {
+  .header {
+    padding: 12px 10px;
+  }
+
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin: 12px 10px 0 10px;
+  }
+
+  .metricCard {
+    padding: 10px;
+  }
+
+  .metricValue {
+    font-size: 20px;
+  }
+
+  .filterBar {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+
+  .tableCard {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+
+  .th, .td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}

@@ -224,16 +224,16 @@ export default function RegisterOrganizationPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
 
-      <main style={{ flex: 1, padding: '40px 0 80px 0' }}>
+      <main style={{ flex: 1, padding: '24px 0 60px 0' }}>
         <div className="container" style={{ maxWidth: '640px' }}>
           {/* Header Banner */}
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <div
               style={{
-                width: '56px',
-                height: '56px',
-                margin: '0 auto 16px auto',
-                borderRadius: '14px',
+                width: '44px',
+                height: '44px',
+                margin: '0 auto 12px auto',
+                borderRadius: '12px',
                 background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)',
                 display: 'flex',
                 alignItems: 'center',
@@ -241,56 +241,57 @@ export default function RegisterOrganizationPage() {
                 boxShadow: '0 8px 24px rgba(99, 102, 241, 0.35)',
               }}
             >
-              <Building2 size={28} color="#ffffff" />
+              <Building2 size={22} color="#ffffff" />
             </div>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.5px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px' }}>
               Register your Organization
             </h1>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-              Establish your organization identity on ShiftGuard. Multi-step onboarding with custom workspace routing.
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Establish your organization identity on ShiftGuard with custom workspace routing.
             </p>
           </div>
 
           {/* Wizard Step Progress Bar */}
-          <div style={{ marginBottom: '28px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '12px',
+                marginBottom: '8px',
               }}
             >
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                   color: currentStep >= 1 ? '#818cf8' : 'var(--text-muted)',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: 600,
                 }}
               >
                 <div
                   style={{
-                    width: '24px',
-                    height: '24px',
+                    width: '22px',
+                    height: '22px',
                     borderRadius: '50%',
                     backgroundColor: currentStep >= 1 ? '#4f46e5' : 'rgba(255,255,255,0.1)',
                     color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     fontWeight: 700,
+                    flexShrink: 0,
                   }}
                 >
                   1
                 </div>
-                <span>Org Details</span>
+                <span>Details</span>
               </div>
 
-              <div style={{ flex: 1, height: '2px', backgroundColor: 'rgba(255,255,255,0.1)', margin: '0 12px' }}>
+              <div style={{ flex: 1, height: '2px', backgroundColor: 'rgba(255,255,255,0.1)', margin: '0 8px' }}>
                 <div
                   style={{
                     height: '100%',
@@ -305,32 +306,33 @@ export default function RegisterOrganizationPage() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                   color: currentStep >= 2 ? '#818cf8' : 'var(--text-muted)',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: 600,
                 }}
               >
                 <div
                   style={{
-                    width: '24px',
-                    height: '24px',
+                    width: '22px',
+                    height: '22px',
                     borderRadius: '50%',
                     backgroundColor: currentStep >= 2 ? '#4f46e5' : 'rgba(255,255,255,0.1)',
                     color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     fontWeight: 700,
+                    flexShrink: 0,
                   }}
                 >
                   2
                 </div>
-                <span>Administrator</span>
+                <span>Admin</span>
               </div>
 
-              <div style={{ flex: 1, height: '2px', backgroundColor: 'rgba(255,255,255,0.1)', margin: '0 12px' }}>
+              <div style={{ flex: 1, height: '2px', backgroundColor: 'rgba(255,255,255,0.1)', margin: '0 8px' }}>
                 <div
                   style={{
                     height: '100%',
@@ -345,35 +347,36 @@ export default function RegisterOrganizationPage() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                   color: currentStep >= 3 ? '#818cf8' : 'var(--text-muted)',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: 600,
                 }}
               >
                 <div
                   style={{
-                    width: '24px',
-                    height: '24px',
+                    width: '22px',
+                    height: '22px',
                     borderRadius: '50%',
                     backgroundColor: currentStep >= 3 ? '#4f46e5' : 'rgba(255,255,255,0.1)',
                     color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     fontWeight: 700,
+                    flexShrink: 0,
                   }}
                 >
                   3
                 </div>
-                <span>Branding &amp; Submit</span>
+                <span>Submit</span>
               </div>
             </div>
           </div>
 
           {/* Registration Form Card */}
-          <div className="glass-card" style={{ padding: '36px 32px' }}>
+          <div className="glass-card" style={{ padding: '24px 18px' }}>
             {serverError && (
               <div
                 style={{
