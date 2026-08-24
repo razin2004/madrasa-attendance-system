@@ -230,6 +230,11 @@ export default function StaffDashboardPage() {
           if (data.organization) setOrgData(data.organization);
           setFetchError(null);
 
+          // Dispatch real-time security precheck status to header
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: data.evaluation.isReady }));
+          }
+
           // Section 1 & 2: Automatic Device Binding on First Login
           if (
             !data.evaluation.layer1Device.isVerified &&
@@ -259,6 +264,9 @@ export default function StaffDashboardPage() {
                 if (recheckRes.ok && recheckData.success) {
                   setPrecheck(recheckData.evaluation);
                   setTodayStatus(recheckData.todayStatus);
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: recheckData.evaluation.isReady }));
+                  }
                 }
               }
             } catch {
@@ -268,6 +276,9 @@ export default function StaffDashboardPage() {
         } else {
           setFetchError(data.error || 'Attendance verification could not be completed. Please try again.');
           toast.error(data.error || 'Precheck failed.');
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: false }));
+          }
         }
       } catch {
         setFetchError('Attendance verification could not be completed. Please try again.');

@@ -49,6 +49,19 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       .catch(() => {
         setIsPrecheckReady(false);
       });
+
+    // Real-time listener for precheck updates from staff dashboard / child pages
+    const handlePrecheckEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== undefined) {
+        setIsPrecheckReady(Boolean(customEvent.detail));
+      }
+    };
+
+    window.addEventListener('shiftguard_precheck_updated', handlePrecheckEvent);
+    return () => {
+      window.removeEventListener('shiftguard_precheck_updated', handlePrecheckEvent);
+    };
   }, [orgCode]);
 
   const handleToggleCollapse = () => {
