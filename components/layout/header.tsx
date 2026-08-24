@@ -13,7 +13,7 @@ export function Header() {
         zIndex: 100,
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        backgroundColor: 'rgba(3, 7, 18, 0.75)',
+        backgroundColor: 'rgba(3, 7, 18, 0.85)',
         borderBottom: '1px solid var(--border-subtle)',
       }}
     >
@@ -23,7 +23,9 @@ export function Header() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          height: '76px',
+          minHeight: '60px',
+          paddingTop: '8px',
+          paddingBottom: '8px',
         }}
       >
         {/* Brand Logo */}
@@ -32,32 +34,33 @@ export function Header() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '14px',
+            gap: '10px',
             textDecoration: 'none',
           }}
         >
           <div
             style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
               background: 'linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)',
+              boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)',
+              flexShrink: 0,
             }}
           >
-            <Shield size={24} color="#ffffff" />
+            <Shield size={20} color="#ffffff" />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span
                 style={{
-                  fontSize: '20px',
+                  fontSize: '17px',
                   fontWeight: 800,
-                  letterSpacing: '-0.5px',
+                  letterSpacing: '-0.4px',
                   color: '#ffffff',
                 }}
               >
@@ -65,37 +68,47 @@ export function Header() {
               </span>
               <span
                 style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
+                  fontSize: '9px',
+                  fontWeight: 800,
                   color: '#a5f3fc',
                   background: 'rgba(6, 182, 212, 0.15)',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
                   border: '1px solid rgba(6, 182, 212, 0.3)',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  letterSpacing: '0.4px',
                 }}
               >
-                ENTERPRISE 3.0
+                3.0
               </span>
             </div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              Workforce &amp; Attendance Infrastructure
+            <div
+              className="desktop-only-subtitle"
+              style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}
+            >
+              Workforce &amp; Attendance
             </div>
           </div>
         </Link>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link href="/login" className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <LogIn size={15} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Link
+            href="/login"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', fontSize: '12.5px' }}
+          >
+            <LogIn size={14} />
             <span>Sign In</span>
           </Link>
 
-          <Link href="/register" className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Building2 size={15} />
-            <span>Register Organization</span>
-            <ArrowRight size={14} />
+          <Link
+            href="/register"
+            className="btn btn-primary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', fontSize: '12.5px' }}
+          >
+            <Building2 size={14} />
+            <span>Register</span>
           </Link>
         </div>
       </div>

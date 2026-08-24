@@ -118,10 +118,88 @@
 
 @media (max-width: 768px) {
   .heroSection {
-    padding: 60px 0 40px 0;
+    padding: 44px 0 32px 0;
   }
+
   .ctaGroup {
     flex-direction: column;
     width: 100%;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroSection {
+    padding: 28px 0 20px 0;
+  }
+
+  .heroBadge {
+    padding: 4px 12px;
+    font-size: 11px;
+    margin-bottom: 14px;
+    gap: 5px;
+  }
+
+  .heroTitle {
+    font-size: 25px;
+    letter-spacing: -0.5px;
+    line-height: 1.22;
+    margin-bottom: 12px;
+  }
+
+  .heroSubtitle {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+
+  .ctaGroup {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .sectionHeader {
+    margin-bottom: 20px;
+  }
+
+  .sectionTitle {
+    font-size: 19px;
+    letter-spacing: -0.3px;
+  }
+
+  .sectionDescription {
+    font-size: 12.5px;
+    margin-top: 4px;
+  }
+
+  .featureGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .featureIconBox {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .howItWorksGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .stepCard {
+    padding: 14px 16px;
+    border-radius: var(--radius-md, 12px);
+  }
+
+  .stepNumber {
+    font-size: 10px;
+    padding: 2px 8px;
+    margin-bottom: 6px;
   }
 }
