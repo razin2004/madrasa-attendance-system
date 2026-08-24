@@ -37,13 +37,29 @@ export async function POST(
     const actorName = auth.session.user.name || auth.session.user.email;
     const oldIp = branch.publicIp;
 
-    // Deactivate previous active network identities for this branch
-    await prisma.branchNetworkIdentity.updateMany({
-      where: { branchId: branch.id, isActive: true },
-      data: { isActive: false },
+    // Check if current detectedPublicIp already exists in networkIdentities for this branch
+    const existingIdentity = await prisma.branchNetworkIdentity.findFirst({
+      where: { branchId: branch.id, publicIp: detectedPublicIp },
     });
 
-    // Update branch primary IP and add to Network Identities history
+    if (existingIdentity) {
+      await prisma.branchNetworkIdentity.update({
+        where: { id: existingIdentity.id },
+        data: { isActive: true },
+      });
+    } else {
+      await prisma.branchNetworkIdentity.create({
+        data: {
+          branchId: branch.id,
+          publicIp: detectedPublicIp,
+          source: 'CAPTURED',
+          capturedBy: actorName,
+          isActive: true,
+        },
+      });
+    }
+
+    // Update branch primary IP
     const updatedBranch = await prisma.branch.update({
       where: { id: branch.id },
       data: {
@@ -51,14 +67,6 @@ export async function POST(
         ipSource: 'CAPTURED',
         ipCapturedAt: new Date(),
         ipCapturedBy: actorName,
-        networkIdentities: {
-          create: {
-            publicIp: detectedPublicIp,
-            source: 'CAPTURED',
-            capturedBy: actorName,
-            isActive: true,
-          },
-        },
       },
       include: {
         networkIdentities: {

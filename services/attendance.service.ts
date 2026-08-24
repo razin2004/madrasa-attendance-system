@@ -191,16 +191,13 @@ export async function evaluateThreeLayerAttendance(
   const assignedActiveBranches = allAssignedBranches.filter((b) => b.status === 'ACTIVE');
   const hasInactiveBranchAssignment = allAssignedBranches.some((b) => b.status === 'INACTIVE');
 
-  // Match current request IP against assigned active branches
+  // Match current request IP against assigned active branches (IPv4 and IPv6 support)
   const matchingBranches = assignedActiveBranches.filter((branch) => {
-    if (branch.publicIp && branch.publicIp.trim()) {
-      if (branch.publicIp.trim() === cleanIp) return true;
-      // If branch has a primary publicIp, request IP must match publicIp or active identity aligned with publicIp
-      return branch.networkIdentities.some(
-        (n) => n.isActive && n.publicIp.trim() === cleanIp && n.publicIp.trim() === branch.publicIp?.trim()
-      );
-    }
-    return branch.networkIdentities.some((n) => n.isActive && n.publicIp.trim() === cleanIp);
+    const mainMatch = Boolean(branch.publicIp && branch.publicIp.trim() === cleanIp);
+    const identityMatch = branch.networkIdentities.some(
+      (n) => n.isActive && n.publicIp.trim() === cleanIp
+    );
+    return mainMatch || identityMatch;
   });
 
   let candidateBranch: typeof assignedActiveBranches[0] | null = null;

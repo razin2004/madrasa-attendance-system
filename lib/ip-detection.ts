@@ -59,6 +59,16 @@ export function isValidPublicIp(ip: string): boolean {
   if (!ip || typeof ip !== 'string') return false;
   const clean = ip.trim();
 
+  // IPv6 Support
+  if (clean.includes(':')) {
+    if (clean === '::1' || clean === '::ffff:127.0.0.1') return false;
+    // Exclude IPv6 Link-Local (fe80::/10) and Unique Local (fd00::/8, fc00::/7)
+    const lower = clean.toLowerCase();
+    if (lower.startsWith('fe80:') || lower.startsWith('fd') || lower.startsWith('fc')) return false;
+    // Valid public IPv6 format check
+    return /^([0-9a-fA-F]{1,4}:){1,7}[0-9a-fA-F]{1,4}$/.test(clean) || /^[0-9a-fA-F:]+$/.test(clean);
+  }
+
   const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
   const match = clean.match(ipv4Regex);
   if (!match) return false;
