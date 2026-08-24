@@ -278,30 +278,35 @@ export async function evaluateThreeLayerAttendance(
   // ---------------------------------------------------------------------------
   let targetBranch = candidateBranch;
 
-  if (!targetBranch && assignedActiveBranches.length > 0) {
-    if (coordinates && coordinates.latitude !== undefined && coordinates.longitude !== undefined) {
-      let closest = assignedActiveBranches[0];
-      let minDistance = Infinity;
-      for (const b of assignedActiveBranches) {
-        if (b.latitude !== null && b.longitude !== null) {
-          const d = isWithinGeofence(
-            coordinates.latitude,
-            coordinates.longitude,
-            b.latitude,
-            b.longitude,
-            b.geofenceRadiusMeters,
-            coordinates.accuracy
-          ).distanceMeters;
-          if (d < minDistance) {
-            minDistance = d;
-            closest = b;
-          }
+  // If physical GPS coordinates are provided, determine the assigned active branch physically closest to the staff member
+  if (coordinates && coordinates.latitude !== undefined && coordinates.longitude !== undefined && assignedActiveBranches.length > 0) {
+    let closestWithGps: typeof assignedActiveBranches[0] | null = null;
+    let minDistance = Infinity;
+
+    for (const b of assignedActiveBranches) {
+      if (b.latitude !== null && b.longitude !== null) {
+        const geoResult = isWithinGeofence(
+          coordinates.latitude,
+          coordinates.longitude,
+          b.latitude,
+          b.longitude,
+          b.geofenceRadiusMeters,
+          coordinates.accuracy
+        );
+        if (geoResult.distanceMeters < minDistance) {
+          minDistance = geoResult.distanceMeters;
+          closestWithGps = b;
         }
       }
-      targetBranch = closest;
-    } else {
-      targetBranch = assignedActiveBranches[0];
     }
+
+    if (closestWithGps) {
+      targetBranch = closestWithGps;
+    }
+  }
+
+  if (!targetBranch && assignedActiveBranches.length > 0) {
+    targetBranch = assignedActiveBranches.find((b) => b.latitude !== null && b.longitude !== null) || assignedActiveBranches[0];
   }
 
   let layer3: LayerStatus & {
