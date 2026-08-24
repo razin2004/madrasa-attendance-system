@@ -1,0 +1,187 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+}
+
+.header {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(13, 18, 31, 0.85);
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  gap: 16px;
+}
+
+.mainLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-bottom: 32px;
+}
+
+.heroClockCard {
+  padding: 32px 28px;
+  border-radius: var(--radius-lg, 20px);
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.85) 0%, rgba(11, 15, 25, 0.95) 100%);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.14));
+  box-shadow: var(--shadow-lg, 0 15px 35px -5px rgba(0, 0, 0, 0.5));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  min-height: 380px;
+}
+
+.liveClockDisplay {
+  font-family: var(--font-mono, monospace);
+  font-size: 38px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+  margin: 12px 0 4px 0;
+}
+
+.verificationGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.verificationCard {
+  padding: 16px 20px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.verificationVerified {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.verificationFailed {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.verificationWarning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.clockButton {
+  width: 100%;
+  max-width: 320px;
+  padding: 16px 28px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.clockButtonIn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+}
+
+.clockButtonIn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45);
+}
+
+.clockButtonOut {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.35);
+}
+
+.clockButtonOut:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.45);
+}
+
+.clockButtonDisabled {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-muted, #6b7280) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+.noScheduleBanner {
+  padding: 20px 24px;
+  border-radius: var(--radius-md, 12px);
+  background-color: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #fbbf24;
+  margin-bottom: 28px;
+}
+
+.quickActionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.quickTile {
+  padding: 20px;
+  border-radius: var(--radius-md, 14px);
+  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.quickTile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(31, 41, 55, 0.8);
+}
+
+.historyTableCard {
+  border-radius: var(--radius-md, 14px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+  overflow-x: auto;
+}
+
+@media (max-width: 900px) {
+  .mainLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

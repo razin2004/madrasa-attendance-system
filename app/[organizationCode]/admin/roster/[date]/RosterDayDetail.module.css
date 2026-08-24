@@ -1,0 +1,59 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: 80px;
+}
+
+.header {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: rgba(13, 18, 31, 0.85);
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.staffList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.staffCard {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--radius-md, 10px);
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 16px;
+  }
+  .staffCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

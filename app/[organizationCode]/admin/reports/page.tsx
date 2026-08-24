@@ -1,0 +1,163 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import {
+  BarChart3,
+  Calendar,
+  Clock,
+  FileText,
+  Users,
+  Building2,
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react';
+import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
+import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import styles from './ReportsHome.module.css';
+
+export default function ReportsDashboardPage() {
+  const params = useParams();
+  const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
+  const [orgData, setOrgData] = useState<any>(null);
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/org/${organizationCode}/branding`).then((r) => r.json()),
+      fetch(`/api/org/${organizationCode}/reports/dashboard`).then((r) => r.json()),
+    ])
+      .then(([metaRes, dashRes]) => {
+        if (metaRes.organization) setOrgData(metaRes.organization);
+        if (dashRes.success) setSummary(dashRes.summary);
+      })
+      .catch((err) => console.error('Error loading report dashboard:', err))
+      .finally(() => setLoading(false));
+  }, [organizationCode]);
+
+  return (
+    <div className={styles.pageContainer}>
+      <OrgAdminSidebar
+        organizationCode={organizationCode}
+        organizationName={orgData?.name || 'ShiftGuard'}
+        logoUrl={orgData?.logoUrl}
+      />
+
+      <div className={styles.mainContent}>
+        {/* Header */}
+        <header className={styles.header}>
+          <h1 className={styles.title}>Reports &amp; Analytics</h1>
+          <p className={styles.subtitle}>
+            Review attendance, workforce coverage, leave, and operational activity across your organization.
+          </p>
+        </header>
+
+        {/* Report Cards Grid */}
+        <div className={styles.cardsGrid}>
+          {/* Card 1: Daily Attendance Report */}
+          <div className={styles.reportCard}>
+            <div>
+              <div
+                className={styles.cardIconBox}
+                style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}
+              >
+                <Clock size={24} />
+              </div>
+              <h2 className={styles.cardTitle}>Daily Attendance Report</h2>
+              <p className={styles.cardDesc}>
+                View daily attendance across all staff members. Identifies Present, Partial, Holiday, Approved Leave, and Absent status with distinct Normal, Manual, and Adjusted sources.
+              </p>
+            </div>
+            <Link href={`/${organizationCode}/admin/reports/daily`} className={styles.cardLink}>
+              <span>Open Daily Report</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          {/* Card 2: Monthly Employee Attendance Report */}
+          <div className={styles.reportCard}>
+            <div>
+              <div
+                className={styles.cardIconBox}
+                style={{ background: 'rgba(129, 140, 248, 0.15)', color: '#818cf8' }}
+              >
+                <Calendar size={24} />
+              </div>
+              <h2 className={styles.cardTitle}>Employee Monthly Attendance Report</h2>
+              <p className={styles.cardDesc}>
+                Detailed monthly attendance log for individual staff members. Includes monthly metrics breakdown (Working days, Present, Leave types, Absences, Source metrics) and exports.
+              </p>
+            </div>
+            <Link href={`/${organizationCode}/admin/reports/monthly`} className={styles.cardLink}>
+              <span>Open Monthly Report</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+
+        {/* Live Metrics Overview */}
+        <div className={styles.metricsOverview}>
+          <h3 className={styles.metricsHeader}>
+            <BarChart3 size={18} color="#38bdf8" />
+            <span>Today&apos;s Live Attendance Overview ({summary?.todayDate || 'Today'})</span>
+          </h3>
+
+          {loading ? (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <Loader2 size={24} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 8px auto' }} />
+              <p style={{ fontSize: '13px', margin: 0 }}>Loading live metrics...</p>
+            </div>
+          ) : (
+            <div className={styles.metricsGrid}>
+              <div className={styles.metricBox}>
+                <div className={styles.metricLabel}>Total Staff Evaluated</div>
+                <div className={styles.metricVal}>{summary?.todayMetrics?.totalCount || 0}</div>
+              </div>
+
+              <div className={styles.metricBox}>
+                <div className={styles.metricLabel}>Present</div>
+                <div className={styles.metricVal} style={{ color: '#34d399' }}>
+                  {summary?.todayMetrics?.presentCount || 0}
+                </div>
+              </div>
+
+              <div className={styles.metricBox}>
+                <div className={styles.metricLabel}>Approved Leave</div>
+                <div className={styles.metricVal} style={{ color: '#38bdf8' }}>
+                  {summary?.todayMetrics?.leaveCount || 0}
+                </div>
+              </div>
+
+              <div className={styles.metricBox}>
+                <div className={styles.metricLabel}>Absent</div>
+                <div className={styles.metricVal} style={{ color: '#f87171' }}>
+                  {summary?.todayMetrics?.absentCount || 0}
+                </div>
+              </div>
+
+              <div className={styles.metricBox}>
+                <div className={styles.metricLabel}>Verified (Normal)</div>
+                <div className={styles.metricVal} style={{ color: '#34d399' }}>
+                  {summary?.todayMetrics?.sourceMetrics?.normalCount || 0}
+                </div>
+              </div>
+
+              <div className={styles.metricBox}>
+                <div className={styles.metricLabel}>Manual / Adjusted</div>
+                <div className={styles.metricVal} style={{ color: '#fbbf24' }}>
+                  {(summary?.todayMetrics?.sourceMetrics?.manualCount || 0) +
+                    (summary?.todayMetrics?.sourceMetrics?.adjustedCount || 0)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      <OrgAdminMobileNav organizationCode={organizationCode} />
+    </div>
+  );
+}

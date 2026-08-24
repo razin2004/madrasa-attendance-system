@@ -1,0 +1,171 @@
+.attendanceContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+  padding: 32px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.headerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.headerInfo h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.headerInfo p {
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  margin-top: 2px;
+}
+
+.monthPicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.monthSelect {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.summaryCard {
+  padding: 18px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryVal {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: var(--text-secondary, #9ca3af);
+  margin-top: 2px;
+}
+
+.desktopTableContainer {
+  display: block;
+  overflow-x: auto;
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+}
+
+.attendanceTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+
+  & th {
+    padding: 14px 16px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+    color: var(--text-muted, #6b7280);
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: left;
+  }
+
+  & td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  }
+}
+
+.statusPill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.present {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.partial {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.absent {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.leave {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+.holiday {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.offDuty {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted, #6b7280);
+}
+
+.mobileCardsList {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .attendanceContainer {
+    padding: 16px;
+  }
+  .headerBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .desktopTableContainer {
+    display: none;
+  }
+  .mobileCardsList {
+    display: flex;
+  }
+}

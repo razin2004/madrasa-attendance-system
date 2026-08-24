@@ -1,0 +1,23 @@
+{
+  "name": "ShiftGuard — Attendance & Rostering",
+  "short_name": "ShiftGuard",
+  "description": "Multi-Tenant Rostering & Three-Layer Attendance Verification SaaS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

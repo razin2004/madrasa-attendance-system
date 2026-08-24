@@ -1,0 +1,159 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: 80px;
+}
+
+.headerBar {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(13, 18, 31, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  margin-top: 2px;
+}
+
+.filterSearchRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.tabsGroup {
+  display: inline-flex;
+  padding: 4px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.tabButton {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.tabButtonActive {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+}
+
+.searchInputWrapper {
+  position: relative;
+  width: 300px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border-radius: var(--radius-md, 8px);
+  background-color: rgba(3, 7, 18, 0.6);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 11px;
+  top: 10px;
+  color: var(--text-muted, #6b7280);
+  pointer-events: none;
+}
+
+.tableDesktop {
+  display: block;
+}
+
+.cardsMobile {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobileCard {
+  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md, 12px);
+  padding: 20px;
+}
+
+.avatarBadge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .headerBar {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .tableDesktop {
+    display: none;
+  }
+  .cardsMobile {
+    display: flex;
+  }
+  .searchInputWrapper {
+    width: 100%;
+  }
+}

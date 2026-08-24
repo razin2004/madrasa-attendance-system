@@ -1,0 +1,699 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =========================================================================
+// Enums
+// =========================================================================
+
+enum OrganizationStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  SUB_ADMIN
+  STAFF
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum SecurityTokenType {
+  LOGIN_OTP
+  PASSWORD_RESET
+  INVITATION
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DeviceStatus {
+  NOT_REGISTERED
+  REGISTERED
+  RESET_REQUIRED
+}
+
+enum IdDocType {
+  AADHAAR
+  VOTER_ID
+  PASSPORT
+  DRIVING_LICENSE
+  OTHER
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AttendanceType {
+  CLOCK_IN
+  CLOCK_OUT
+}
+
+enum AttendanceVerificationStatus {
+  VERIFIED
+  REJECTED
+}
+
+enum AttendanceSource {
+  NORMAL
+  MANUAL
+  ADJUSTED
+}
+
+enum CorrectionRequestType {
+  MISSING_CLOCK_IN
+  MISSING_CLOCK_OUT
+  INCORRECT_CLOCK_IN
+  INCORRECT_CLOCK_OUT
+  MANUAL_ENTRY
+}
+
+enum CorrectionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  OTHER
+  DUTY
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+// =========================================================================
+// Models
+// =========================================================================
+
+model Organization {
+  id                String             @id @default(uuid())
+  organizationCode  String?            @unique // Unique URL-safe identifier e.g. "ACME01" assigned upon approval
+  name              String
+  phone             String?
+  contactPersonName String?
+  contactEmail      String?
+  logoUrl           String?
+  status            OrganizationStatus @default(PENDING)
+  rejectionReason   String?
+  reviewedBy        String?            // Super Admin user ID or name
+  reviewedAt        DateTime?
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  attendanceCorrectionWindowDays Int @default(5) // Default 5 days for staff attendance correction requests
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  // Relations
+  users             User[]
+  branches          Branch[]
+  staffProfiles     StaffProfile[]
+  shiftPatterns     ShiftPattern[]
+  attendanceRecords AttendanceRecord[]
+  correctionRequests AttendanceCorrectionRequest[]
+  adjustmentAudits  AttendanceAdjustmentAudit[]
+  leaveRequests     LeaveRequest[]
+  leaveBalances     LeaveBalance[]
+  auditLogs         AuditLog[]
+  emailLogs         EmailLog[]
+  securityTokens    SecurityToken[]
+
+  @@index([organizationCode])
+  @@index([status])
+  @@index([name])
+  @@index([contactEmail])
+  @@index([phone])
+  @@map("organizations")
+}
+
+model Branch {
+  id                     String       @id @default(uuid())
+  organizationId         String
+  name                   String
+  address                String
+  latitude               Float?
+  longitude              Float?
+  locationAccuracyMeters Float?
+  geofenceRadiusMeters   Int          @default(150)
+  publicIp               String?
+  ipSource               String       @default("CAPTURED") // "CAPTURED" | "MANUAL_OVERRIDE"
+  ipCapturedAt           DateTime?
+  ipCapturedBy           String?
+  locationCapturedAt     DateTime?
+  locationCapturedBy     String?
+  status                 BranchStatus @default(ACTIVE)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  // Relations
+  organization       Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  networkIdentities  BranchNetworkIdentity[]
+  staffAssignments   BranchStaffAssignment[]
+  attendanceRecords  AttendanceRecord[]
+  correctionRequests AttendanceCorrectionRequest[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@map("branches")
+}
+
+model BranchNetworkIdentity {
+  id             String    @id @default(uuid())
+  branchId       String
+  publicIp       String
+  isActive       Boolean   @default(true)
+  source         String    @default("CAPTURED") // "CAPTURED" | "MANUAL_OVERRIDE"
+  overrideReason String?
+  capturedAt     DateTime  @default(now())
+  capturedBy     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([branchId])
+  @@index([publicIp])
+  @@map("branch_network_identities")
+}
+
+model User {
+  id                 String     @id @default(uuid())
+  organizationId     String?    // Nullable for platform SUPER_ADMIN
+  name               String
+  email              String     @unique // Normalized lowercase or staff identifier
+  phone              String?
+  passwordHash       String
+  role               UserRole   @default(ORG_ADMIN)
+  status             UserStatus @default(ACTIVE)
+  mustChangePassword Boolean    @default(false)
+  lastLoginAt        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  // Relations
+  organization             Organization?                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staffProfile             StaffProfile?
+  sessions                 Session[]
+  securityTokens           SecurityToken[]
+  auditLogs                AuditLog[]                    @relation("ActorAuditLogs")
+  reviewedLeaves           LeaveRequest[]                @relation("ReviewedLeaves")
+  enteredLeaves            LeaveRequest[]                @relation("AdminEnteredLeaves")
+  reviewedCorrections      AttendanceCorrectionRequest[] @relation("ReviewedCorrections")
+  createdCorrections       AttendanceCorrectionRequest[] @relation("CreatedCorrections")
+  createdAttendanceRecords AttendanceRecord[]            @relation("AttendanceCreator")
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([organizationId, role])
+  @@index([organizationId, status])
+  @@map("users")
+}
+
+model StaffProfile {
+  id             String       @id @default(uuid())
+  userId         String       @unique
+  organizationId String
+  staffId        String       // e.g. "STF001" (unique per organization)
+  name           String
+  phone          String?
+  address        String
+  idDocType      IdDocType    @default(AADHAAR)
+  idDocLast4     String?      // Only last 4 digits (e.g. "5482")
+  idDocHash      String?      // Salted SHA-256 hash for intra-organization duplicate detection
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  user               User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization       Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branchAssignments  BranchStaffAssignment[]
+  devices            StaffDevice[]
+  shiftAssignments   ShiftAssignment[]
+  shiftOverrides     StaffShiftOverride[]
+  attendanceRecords  AttendanceRecord[]
+  correctionRequests AttendanceCorrectionRequest[]
+  adjustmentAudits   AttendanceAdjustmentAudit[]
+  leaveRequests      LeaveRequest[]
+  leaveBalances      LeaveBalance[]
+
+  @@unique([organizationId, staffId])
+  @@index([organizationId])
+  @@index([organizationId, idDocHash])
+}
+
+model BranchStaffAssignment {
+  id             String   @id @default(uuid())
+  staffProfileId String
+  branchId       String
+  assignedAt     DateTime @default(now())
+  assignedBy     String?
+
+  staffProfile StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([staffProfileId, branchId])
+  @@index([staffProfileId])
+  @@index([branchId])
+  @@map("branch_staff_assignments")
+}
+
+model StaffDevice {
+  id             String       @id @default(uuid())
+  staffProfileId String
+  secretHash     String?      // SHA-256 hash of device secret token
+  status         DeviceStatus @default(NOT_REGISTERED)
+  label          String?      // e.g. "Staff Mobile", "Chrome on Windows"
+  registeredAt   DateTime?
+  lastUsedAt     DateTime?
+  resetAt        DateTime?
+  resetBy        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  staffProfile StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@index([staffProfileId])
+  @@index([status])
+  @@map("staff_devices")
+}
+
+// =========================================================================
+// Phase 4: Shift & Roster Models
+// =========================================================================
+
+model ShiftPattern {
+  id                       String   @id @default(uuid())
+  organizationId           String
+  name                     String   // Unique per organization e.g. "General Staff", "Morning Shift"
+  description              String?
+  minimumStaffingThreshold Int      @default(1)
+  isActive                 Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  // Relations
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  weeklyDays   WeeklyShiftDay[]
+  assignments  ShiftAssignment[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([organizationId, isActive])
+  @@map("shift_patterns")
+}
+
+model WeeklyShiftDay {
+  id             String   @id @default(uuid())
+  shiftPatternId String
+  weekday        Weekday
+  isHoliday      Boolean  @default(false)
+  startTime      String?  // e.g. "07:00"
+  endTime        String?  // e.g. "17:00"
+  isOvernight    Boolean  @default(false) // True if endTime < startTime e.g. "22:00" -> "06:00"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  shiftPattern ShiftPattern @relation(fields: [shiftPatternId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftPatternId, weekday])
+  @@index([shiftPatternId])
+  @@map("weekly_shift_days")
+}
+
+model ShiftAssignment {
+  id             String    @id @default(uuid())
+  staffProfileId String
+  shiftPatternId String
+  effectiveFrom  DateTime  // Start date of assignment
+  effectiveTo    DateTime? // Optional end date
+  assignedBy     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  staffProfile StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  shiftPattern ShiftPattern @relation(fields: [shiftPatternId], references: [id], onDelete: Restrict)
+
+  @@index([staffProfileId])
+  @@index([staffProfileId, effectiveFrom])
+  @@index([shiftPatternId])
+  @@map("shift_assignments")
+}
+
+model StaffShiftOverride {
+  id             String   @id @default(uuid())
+  staffProfileId String
+  date           DateTime // Midnight-normalized target date (e.g. 2026-08-21)
+  isHoliday      Boolean  @default(false)
+  startTime      String?  // e.g. "07:00"
+  endTime        String?  // e.g. "13:00"
+  isOvernight    Boolean  @default(false)
+  reason         String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  staffProfile StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([staffProfileId, date])
+  @@index([staffProfileId, date])
+  @@map("staff_shift_overrides")
+}
+
+// =========================================================================
+// Phase 5: Attendance Verification & Time Tracking Models
+// =========================================================================
+
+model AttendanceRecord {
+  id                   String                       @id @default(uuid())
+  organizationId       String
+  staffProfileId       String
+  branchId             String?                      // Candidate branch verified against
+  type                 AttendanceType               // CLOCK_IN or CLOCK_OUT
+  verificationStatus   AttendanceVerificationStatus // VERIFIED or REJECTED
+  rejectionReason      String?                      // Explanation if any layer failed
+  source               AttendanceSource             @default(NORMAL) // NORMAL, MANUAL, ADJUSTED
+
+  // Manual Entry & Adjustment Details (Phase 7)
+  isManualEntry        Boolean                      @default(false)
+  manualReason         String?
+  createdById          String?
+  correctionRequestId  String?
+
+  // Three-Layer Audit Details
+  deviceStatus         DeviceStatus                 // Status of device at time of clock-in
+  deviceMatched        Boolean                      // Layer 1 result
+  deviceLabel          String?                      // e.g. "Chrome on Windows"
+
+  ipAddress            String                       // Request public IP
+  ipMatched            Boolean                      // Layer 2 result
+
+  latitude             Float?                       // Geolocation latitude
+  longitude            Float?                       // Geolocation longitude
+  locationAccuracy     Float?                       // Location accuracy in meters
+  distanceMeters       Float?                       // Calculated distance to branch
+  geofenceRadiusMeters Int?                         // Configured branch radius
+  geofenceMatched      Boolean                      // Layer 3 result
+
+  // Scheduled Shift Context & Time Tracking Snapshot
+  scheduledShiftName    String?
+  scheduledStartTime   String?                      // e.g. "08:00"
+  scheduledEndTime     String?                      // e.g. "17:00"
+  attendanceStartTime  DateTime?                    // Normalized attendance start timestamp (e.g. 08:00 AM for 07:55 AM clock-in)
+  lateMinutes          Int                          @default(0)
+  earlyDepartureMinutes Int                         @default(0)
+
+  timestamp            DateTime                     @default(now())
+  createdAt            DateTime                     @default(now())
+
+  // Relations
+  organization         Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staffProfile         StaffProfile                 @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  branch               Branch?                      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  creatorUser          User?                        @relation("AttendanceCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  correctionRequest    AttendanceCorrectionRequest? @relation("CorrectedAttendanceRecords", fields: [correctionRequestId], references: [id], onDelete: SetNull)
+  targetedByCorrections AttendanceCorrectionRequest[] @relation("CorrectionTargetRecord")
+  adjustmentAudits     AttendanceAdjustmentAudit[]
+
+  @@index([organizationId])
+  @@index([organizationId, timestamp])
+  @@index([organizationId, source])
+  @@index([organizationId, verificationStatus])
+  @@index([staffProfileId])
+  @@index([staffProfileId, timestamp])
+  @@index([branchId])
+  @@index([type])
+  @@index([source])
+  @@index([verificationStatus])
+  @@map("attendance_records")
+}
+
+// =========================================================================
+// Phase 6: Leave Management, Duty Leave & Staffing Models
+// =========================================================================
+
+model LeaveRequest {
+  id               String             @id @default(uuid())
+  organizationId   String
+  staffProfileId   String
+  type             LeaveType
+  startDate        DateTime           // Normalized midnight date e.g. 2026-08-12
+  endDate          DateTime           // Normalized midnight date e.g. 2026-08-14
+  daysCount        Int
+  reason           String
+  status           LeaveRequestStatus @default(PENDING)
+
+  // Reviewer & Manual Entry Details
+  reviewerUserId   String?
+  reviewedAt       DateTime?
+  reviewerComment  String?
+  isManualEntry    Boolean            @default(false)
+  enteredByAdminId String?
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  reviewerUser   User?        @relation("ReviewedLeaves", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+  enteredByAdmin User?        @relation("AdminEnteredLeaves", fields: [enteredByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([organizationId, status, startDate, endDate])
+  @@index([staffProfileId])
+  @@index([staffProfileId, status])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("leave_requests")
+}
+
+model LeaveBalance {
+  id             String    @id @default(uuid())
+  organizationId String
+  staffProfileId String
+  year           Int       // Calendar year e.g. 2026
+  leaveType      LeaveType
+  entitlement    Int       @default(12) // Default 12 days for Annual & Sick
+  used           Int       @default(0)  // Approved days deducted
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staffProfile StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([staffProfileId, year, leaveType])
+  @@index([organizationId])
+  @@index([staffProfileId])
+  @@index([year])
+  @@map("leave_balances")
+}
+
+// =========================================================================
+// Phase 7: Manual Attendance, Missing-Punch Corrections & Attendance Adjustments
+// =========================================================================
+
+model AttendanceCorrectionRequest {
+  id                 String                  @id @default(uuid())
+  organizationId     String
+  staffProfileId     String
+  branchId           String?
+  attendanceRecordId String?                 // Optional reference to existing AttendanceRecord being corrected
+  type               CorrectionRequestType
+  date               DateTime                // Normalized UTC Midnight date (e.g. 2026-08-15)
+  requestedClockIn   DateTime?
+  requestedClockOut  DateTime?
+  originalClockIn    DateTime?
+  originalClockOut   DateTime?
+  reason             String
+  status             CorrectionRequestStatus @default(PENDING)
+
+  // Reviewer details
+  reviewerUserId     String?
+  reviewedAt         DateTime?
+  reviewerComment    String?
+
+  // Creator
+  createdById        String?
+
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  // Relations
+  organization       Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staffProfile       StaffProfile                @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  branch             Branch?                     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  attendanceRecord   AttendanceRecord?           @relation("CorrectionTargetRecord", fields: [attendanceRecordId], references: [id], onDelete: SetNull)
+  reviewerUser       User?                       @relation("ReviewedCorrections", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+  createdByUser      User?                       @relation("CreatedCorrections", fields: [createdById], references: [id], onDelete: SetNull)
+  resultingRecords   AttendanceRecord[]          @relation("CorrectedAttendanceRecords")
+  adjustmentAudits   AttendanceAdjustmentAudit[]
+
+  @@index([organizationId])
+  @@index([staffProfileId])
+  @@index([staffProfileId, status])
+  @@index([date])
+  @@index([status])
+  @@map("attendance_correction_requests")
+}
+
+model AttendanceAdjustmentAudit {
+  id                 String                      @id @default(uuid())
+  organizationId     String
+  staffProfileId     String
+  attendanceRecordId String?
+  requestId          String?
+  previousClockIn    DateTime?
+  previousClockOut   DateTime?
+  newClockIn         DateTime?
+  newClockOut        DateTime?
+  reason             String
+  requesterUserId    String?
+  reviewerUserId     String?
+  requestedAt        DateTime?
+  reviewedAt         DateTime                    @default(now())
+  action             String                      // "CORRECTION_APPROVED" | "CORRECTION_REJECTED" | "MANUAL_ENTRY_CREATED" | "ADMIN_OVERRIDE"
+  createdAt          DateTime                    @default(now())
+
+  // Relations
+  organization       Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staffProfile       StaffProfile                @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  attendanceRecord   AttendanceRecord?           @relation(fields: [attendanceRecordId], references: [id], onDelete: SetNull)
+  request            AttendanceCorrectionRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([staffProfileId])
+  @@index([requestId])
+  @@index([attendanceRecordId])
+  @@map("attendance_adjustment_audits")
+}
+
+// =========================================================================
+// Platform Infrastructure Models
+// =========================================================================
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionToken])
+  @@index([userId])
+  @@map("sessions")
+}
+
+model SecurityToken {
+  id             String            @id @default(uuid())
+  userId         String?
+  organizationId String?
+  type           SecurityTokenType
+  tokenHash      String            @unique // SHA-256 hash of token/OTP code
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  attempts       Int               @default(0)
+  maxAttempts    Int               @default(5)
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+
+  // Relations
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId, type])
+  @@index([organizationId])
+  @@map("security_tokens")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String?
+  actorUserId    String?
+  action         String   // e.g. "LEAVE_REQUESTED", "LEAVE_APPROVED", "LEAVE_REJECTED", "MANUAL_LEAVE_CREATED"
+  entityType     String   // e.g. "Organization", "User", "Branch", "StaffProfile", "LeaveRequest", "LeaveBalance"
+  entityId       String?
+  metadata       Json?    // Safe metadata without sensitive secrets
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorUser    User?         @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([actorUserId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model EmailLog {
+  id                String      @id @default(uuid())
+  organizationId    String?
+  recipient         String      // Normalized email address
+  type              String      // Event type e.g. "LEAVE_REQUEST_SUBMITTED", "LEAVE_APPROVED", "LEAVE_REJECTED", "MANUAL_LEAVE_CREATED"
+  subject           String
+  status            EmailStatus @default(PENDING)
+  providerMessageId String?
+  failureReason     String?
+  createdAt         DateTime    @default(now())
+  sentAt            DateTime?
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([recipient])
+  @@index([type])
+  @@index([status])
+  @@map("email_logs")
+}

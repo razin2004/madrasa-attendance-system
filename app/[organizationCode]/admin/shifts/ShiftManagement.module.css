@@ -1,0 +1,164 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: 80px;
+}
+
+.header {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(13, 18, 31, 0.85);
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  gap: 16px;
+}
+
+.headerTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.headerSubtitle {
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  margin-top: 2px;
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.tabGroup {
+  display: inline-flex;
+  padding: 4px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.tabButton {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  transition: all 0.15s ease;
+}
+
+.tabButtonActive {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+}
+
+.patternGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
+}
+
+.patternCard {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md, 12px);
+  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.patternCard:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+}
+
+.patternCardInactive {
+  opacity: 0.65;
+}
+
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 14px 0;
+}
+
+.dayPill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 2px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dayPillWorking {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.dayPillOvernight {
+  background-color: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.dayPillHoliday {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted, #6b7280);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.timeTag {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.thresholdBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary, #9ca3af);
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .patternGrid {
+    grid-template-columns: 1fr;
+  }
+}

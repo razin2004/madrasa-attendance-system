@@ -1,0 +1,117 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: 80px;
+}
+
+.headerBar {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: rgba(13, 18, 31, 0.85);
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  margin-top: 2px;
+}
+
+.stepperContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding: 16px 20px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.stepNode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepCircle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #6b7280);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stepCircleActive {
+  background-color: #4f46e5;
+  color: #ffffff;
+}
+
+.stepLine {
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-subtle, rgba(255, 255, 255, 0.08));
+  margin: 0 8px;
+}
+
+.stepLineActive {
+  background-color: #4f46e5;
+}
+
+.dropzone {
+  border: 2px dashed var(--border-medium, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 10px);
+  padding: 32px 20px;
+  text-align: center;
+  background-color: rgba(13, 18, 31, 0.6);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.dropzone:hover {
+  border-color: #818cf8;
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+@media (max-width: 768px) {
+  .headerBar {
+    padding: 16px;
+  }
+  .stepperContainer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .stepLine {
+    display: none;
+  }
+}
