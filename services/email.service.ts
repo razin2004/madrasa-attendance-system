@@ -160,7 +160,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       finalSuccess = true;
       finalProvider = 'SMTP';
       finalMessageId = rSmtp.messageId;
-      console.log(`✉️ [SMTP DISPATCH SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${rSmtp.messageId}`);
+      console.log(`✉️ [SMTP DISPATCH SUCCESS] From: ${process.env.EMAIL_FROM || process.env.SMTP_USER || 'ShiftGuard'} | To: ${normalizedRecipient} | MessageID: ${rSmtp.messageId}`);
     } else {
       finalError = `SMTP failed: ${rSmtp.error}`;
 
