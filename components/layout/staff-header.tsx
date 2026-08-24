@@ -15,7 +15,7 @@ interface StaffHeaderProps {
 export function StaffHeader({
   organizationCode,
   staffName,
-  isPrecheckReady = true,
+  isPrecheckReady,
   onSignOut,
 }: StaffHeaderProps) {
   const pathname = usePathname();
@@ -42,16 +42,28 @@ export function StaffHeader({
       <div className={styles.headerActions}>
         <div
           className={`${styles.statusPill} ${
-            isPrecheckReady ? styles.ready : styles.failed
+            isPrecheckReady === true
+              ? styles.ready
+              : isPrecheckReady === false
+              ? styles.failed
+              : styles.checking
           }`}
           title={
-            isPrecheckReady
+            isPrecheckReady === true
               ? '3-Layer Security (Device, IP, Geofence) Verified'
-              : 'Security Verification Attention Required'
+              : isPrecheckReady === false
+              ? 'Security Verification Attention Required'
+              : 'Verifying Security Parameters...'
           }
         >
-          <Radio size={14} />
-          <span>{isPrecheckReady ? 'Security Ready' : 'Security Alert'}</span>
+          <Radio size={14} className={isPrecheckReady === undefined ? 'animate-spin' : ''} />
+          <span>
+            {isPrecheckReady === true
+              ? 'Security Verified'
+              : isPrecheckReady === false
+              ? 'Security Alert'
+              : 'Verifying Security...'}
+          </span>
         </div>
 
         <button

@@ -17,14 +17,39 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [staffInfo, setStaffInfo] = useState<{ name: string; email: string } | null>(null);
+  const [isPrecheckReady, setIsPrecheckReady] = useState<boolean | undefined>(undefined);
 
-  // Restore sidebar state from localStorage
+  // Restore sidebar state from localStorage & fetch precheck status
   useEffect(() => {
     const saved = localStorage.getItem('shiftguard_staff_sidebar_collapsed');
     if (saved === 'true') {
       setIsCollapsed(true);
     }
-  }, []);
+
+    if (!orgCode) return;
+
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.user) {
+          setStaffInfo({ name: data.user.name || 'Staff Member', email: data.user.email || '' });
+        }
+      })
+      .catch(() => {});
+
+    fetch(`/api/org/${orgCode}/attendance/precheck`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.evaluation) {
+          setIsPrecheckReady(Boolean(data.evaluation.isReady));
+        } else {
+          setIsPrecheckReady(false);
+        }
+      })
+      .catch(() => {
+        setIsPrecheckReady(false);
+      });
+  }, [orgCode]);
 
   const handleToggleCollapse = () => {
     setIsCollapsed((prev) => {
@@ -70,6 +95,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         <StaffHeader
           organizationCode={orgCode}
           staffName={staffInfo?.name}
+          isPrecheckReady={isPrecheckReady}
           onSignOut={() => setShowSignOutModal(true)}
         />
 
