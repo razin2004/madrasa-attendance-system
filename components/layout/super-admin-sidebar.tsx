@@ -85,8 +85,11 @@ export function SuperAdminSidebar({
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
+        left: 0,
+        bottom: 0,
+        zIndex: 100,
         flexShrink: 0,
       }}
       className="super-admin-desktop-sidebar"
@@ -99,6 +102,7 @@ export function SuperAdminSidebar({
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
+          flexShrink: 0,
         }}
       >
         <div
@@ -133,8 +137,18 @@ export function SuperAdminSidebar({
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <nav style={{ padding: '20px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      {/* Navigation Links (Independently Scrollable) */}
+      <nav
+        style={{
+          padding: '16px 12px',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          overflowY: 'auto',
+          minHeight: 0,
+        }}
+      >
         <div
           style={{
             fontSize: '11px',
@@ -202,12 +216,14 @@ export function SuperAdminSidebar({
         })}
       </nav>
 
-      {/* Admin User Footer & Logout */}
+      {/* Admin User Footer & Logout (Fixed at Bottom) */}
       <div
         style={{
           padding: '16px',
           borderTop: '1px solid var(--border-subtle)',
-          backgroundColor: 'rgba(7, 9, 14, 0.6)',
+          backgroundColor: 'rgba(7, 9, 14, 0.95)',
+          flexShrink: 0,
+          marginTop: 'auto',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>

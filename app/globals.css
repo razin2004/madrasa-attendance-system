@@ -629,6 +629,30 @@ input[type="button"]:active:not(:disabled) {
   }
 }
 
+/* Desktop Fixed Sidebar Layout & Independent Content Scroll */
+@media (min-width: 769px) {
+  .org-admin-desktop-sidebar,
+  .super-admin-desktop-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    width: 280px !important;
+    z-index: 100 !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  aside.org-admin-desktop-sidebar + div,
+  aside.super-admin-desktop-sidebar + div {
+    margin-left: 280px !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+}
+
 /* Mobile Micro Typography & Responsive Container Helpers */
 @media (max-width: 640px) {
   html, body {
