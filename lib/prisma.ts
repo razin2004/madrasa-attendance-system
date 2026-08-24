@@ -7,15 +7,18 @@ if (dbUrl && !dbUrl.includes('connection_limit')) {
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    datasources: {
-      db: {
-        url: dbUrl || undefined,
-      },
+const options: any = {
+  log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+};
+
+if (dbUrl) {
+  options.datasources = {
+    db: {
+      url: dbUrl,
     },
-    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
-  });
+  };
+}
+
+export const prisma = globalForPrisma.prisma || new PrismaClient(options);
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
