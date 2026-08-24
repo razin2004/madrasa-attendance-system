@@ -773,38 +773,64 @@ export async function cancelStaffLeaveRequest(params: {
   staffProfileId: string;
   userId: string;
 }) {
-  const request = await prisma.leaveRequest.findUnique({
-    where: { id: params.requestId },
-  });
+  return await prisma.$transaction(async (tx) => {
+    const request = await tx.leaveRequest.findUnique({
+      where: { id: params.requestId },
+    });
 
-  if (!request || request.organizationId !== params.organizationId || request.staffProfileId !== params.staffProfileId) {
-    throw new Error('Leave request not found.');
-  }
+    if (!request || request.organizationId !== params.organizationId || request.staffProfileId !== params.staffProfileId) {
+      throw new Error('Leave request not found.');
+    }
 
-  if (request.status !== 'PENDING') {
-    throw new Error('Only pending leave requests can be cancelled by staff.');
-  }
+    if (request.status !== 'PENDING' && request.status !== 'APPROVED') {
+      throw new Error('This leave request cannot be cancelled.');
+    }
 
-  const updated = await prisma.leaveRequest.update({
-    where: { id: request.id },
-    data: { status: 'CANCELLED' },
-  });
+    // If request was approved and leave was ANNUAL or SICK, restore used leave balance
+    if (request.status === 'APPROVED' && (request.type === 'ANNUAL' || request.type === 'SICK')) {
+      const year = request.startDate.getUTCFullYear();
+      const balance = await tx.leaveBalance.findUnique({
+        where: {
+          staffProfileId_year_leaveType: {
+            staffProfileId: request.staffProfileId,
+            year,
+            leaveType: request.type,
+          },
+        },
+      });
 
-  await prisma.auditLog.create({
-    data: {
-      organizationId: params.organizationId,
-      actorUserId: params.userId,
-      action: 'LEAVE_CANCELLED',
-      entityType: 'LeaveRequest',
-      entityId: updated.id,
-      metadata: {
-        staffProfileId: params.staffProfileId,
-        cancelledAt: new Date().toISOString(),
+      if (balance && balance.used >= request.daysCount) {
+        await tx.leaveBalance.update({
+          where: { id: balance.id },
+          data: {
+            used: { decrement: request.daysCount },
+          },
+        });
+      }
+    }
+
+    const updated = await tx.leaveRequest.update({
+      where: { id: request.id },
+      data: { status: 'CANCELLED' },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        organizationId: params.organizationId,
+        actorUserId: params.userId,
+        action: 'LEAVE_CANCELLED',
+        entityType: 'LeaveRequest',
+        entityId: updated.id,
+        metadata: {
+          staffProfileId: params.staffProfileId,
+          previousStatus: request.status,
+          cancelledAt: new Date().toISOString(),
+        },
       },
-    },
-  });
+    });
 
-  return updated;
+    return updated;
+  });
 }
 
 // -----------------------------------------------------------------------------

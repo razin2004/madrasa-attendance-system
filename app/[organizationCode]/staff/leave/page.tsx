@@ -69,6 +69,19 @@ export default function StaffLeaveDashboardPage() {
     }
   };
 
+  const getBalanceInfo = (type: string) => {
+    if (!Array.isArray(balances)) return { remaining: 0, entitlement: 0, used: 0 };
+    const found = balances.find((b: any) => b.leaveType === type);
+    return found
+      ? { remaining: found.remaining ?? 0, entitlement: found.entitlement ?? 0, used: found.used ?? 0 }
+      : { remaining: 0, entitlement: 0, used: 0 };
+  };
+
+  const annual = getBalanceInfo('ANNUAL');
+  const sick = getBalanceInfo('SICK');
+  const other = getBalanceInfo('OTHER');
+  const duty = getBalanceInfo('DUTY');
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -87,24 +100,24 @@ export default function StaffLeaveDashboardPage() {
       {/* Entitlement Balances Grid */}
       <div className={styles.balanceGrid}>
         <div className={styles.balanceCard}>
-          <span className={styles.balanceVal}>{balances?.annualRemaining ?? 14}</span>
-          <span className={styles.balanceLabel}>Annual Leave Remaining</span>
+          <span className={styles.balanceVal}>{annual.remaining}</span>
+          <span className={styles.balanceLabel}>Annual Leave (Used {annual.used}/{annual.entitlement})</span>
         </div>
         <div className={styles.balanceCard}>
           <span className={styles.balanceVal} style={{ color: '#34d399' }}>
-            {balances?.sickRemaining ?? 10}
+            {sick.remaining}
           </span>
-          <span className={styles.balanceLabel}>Sick Leave Remaining</span>
+          <span className={styles.balanceLabel}>Sick Leave (Used {sick.used}/{sick.entitlement})</span>
         </div>
         <div className={styles.balanceCard}>
           <span className={styles.balanceVal} style={{ color: '#fbbf24' }}>
-            {balances?.casualRemaining ?? 5}
+            {other.remaining}
           </span>
-          <span className={styles.balanceLabel}>Casual Leave Remaining</span>
+          <span className={styles.balanceLabel}>Casual / Other Remaining</span>
         </div>
         <div className={styles.balanceCard}>
           <span className={styles.balanceVal} style={{ color: '#c084fc' }}>
-            {balances?.dutyRemaining ?? 3}
+            {duty.remaining}
           </span>
           <span className={styles.balanceLabel}>Duty Leave Remaining</span>
         </div>

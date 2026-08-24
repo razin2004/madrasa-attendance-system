@@ -21,7 +21,7 @@ export default function StaffApplyLeavePage() {
   const router = useRouter();
   const toast = useToast();
 
-  const [leaveType, setLeaveType] = useState('Annual Leave');
+  const [type, setType] = useState<'ANNUAL' | 'SICK' | 'OTHER' | 'DUTY'>('ANNUAL');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
@@ -56,7 +56,7 @@ export default function StaffApplyLeavePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          leaveType,
+          type,
           startDate,
           endDate,
           reason,
@@ -103,24 +103,24 @@ export default function StaffApplyLeavePage() {
             <label className="form-label" style={{ marginBottom: '10px', display: 'block' }}>Select Leave Type *</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
               {[
-                { name: 'Annual Leave', desc: 'Planned vacation or time away from work' },
-                { name: 'Sick Leave', desc: 'Medical absence due to illness or injury' },
-                { name: 'Casual Leave', desc: 'Short-notice personal time off' },
-                { name: 'Duty Leave', desc: 'Official company business or external training' },
+                { type: 'ANNUAL', name: 'Annual Leave', desc: 'Planned vacation or time away from work' },
+                { type: 'SICK', name: 'Sick Leave', desc: 'Medical absence due to illness or injury' },
+                { type: 'OTHER', name: 'Casual / Other Leave', desc: 'Short-notice personal time off' },
+                { type: 'DUTY', name: 'Duty Leave', desc: 'Official company business or external training' },
               ].map((lt) => (
                 <div
-                  key={lt.name}
-                  onClick={() => setLeaveType(lt.name)}
+                  key={lt.type}
+                  onClick={() => setType(lt.type as any)}
                   style={{
                     padding: '14px',
                     borderRadius: 'var(--radius-md)',
-                    border: `1px solid ${leaveType === lt.name ? '#818cf8' : 'var(--border-subtle)'}`,
-                    backgroundColor: leaveType === lt.name ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                    border: `1px solid ${type === lt.type ? '#818cf8' : 'var(--border-subtle)'}`,
+                    backgroundColor: type === lt.type ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255, 255, 255, 0.02)',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: leaveType === lt.name ? '#ffffff' : 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: type === lt.type ? '#ffffff' : 'var(--text-secondary)' }}>
                     {lt.name}
                   </div>
                   <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>

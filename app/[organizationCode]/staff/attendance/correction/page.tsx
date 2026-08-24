@@ -21,7 +21,7 @@ export default function StaffAttendanceCorrectionPage() {
   const toast = useToast();
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [type, setType] = useState('Missing Clock In');
+  const [type, setType] = useState('MISSING_CLOCK_IN');
   const [requestedClockIn, setRequestedClockIn] = useState('08:00');
   const [requestedClockOut, setRequestedClockOut] = useState('17:00');
   const [reason, setReason] = useState('');
@@ -102,10 +102,11 @@ export default function StaffAttendanceCorrectionPage() {
               value={type}
               onChange={(e) => setType(e.target.value)}
             >
-              <option value="Missing Clock In">Missing Clock In</option>
-              <option value="Missing Clock Out">Missing Clock Out</option>
-              <option value="Incorrect Time">Incorrect Time Recorded</option>
-              <option value="System Failure">Technical / System Failure</option>
+              <option value="MISSING_CLOCK_IN">Missing Clock In</option>
+              <option value="MISSING_CLOCK_OUT">Missing Clock Out</option>
+              <option value="INCORRECT_CLOCK_IN">Incorrect Clock In Time</option>
+              <option value="INCORRECT_CLOCK_OUT">Incorrect Clock Out Time</option>
+              <option value="MANUAL_ENTRY">Manual Entry Request</option>
             </select>
           </div>
 
