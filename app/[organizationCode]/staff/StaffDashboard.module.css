@@ -175,13 +175,42 @@
 @media (max-width: 900px) {
   .mainLayout {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
   .header {
-    padding: 16px;
+    padding: 14px 16px;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .heroClockCard {
+    padding: 24px 18px;
+    min-height: auto;
+  }
+
+  .liveClockDisplay {
+    font-size: 32px;
+  }
+
+  .clockButton {
+    max-width: 100%;
+    width: 100%;
+    min-height: 52px;
+    font-size: 17px;
+  }
+
+  .quickActionsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .quickTile {
+    padding: 14px;
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
   }
 }

@@ -159,23 +159,61 @@
 
 @media (max-width: 768px) {
   .headerBar {
-    padding: 0 16px;
+    padding: 12px 16px;
     height: auto;
-    min-height: 64px;
-    padding-top: 12px;
-    padding-bottom: 12px;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 12px;
   }
+
   .headerActions {
     width: 100%;
-    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
+
   .contentBody {
     padding: 16px;
   }
+
+  .greetingText {
+    font-size: 18px;
+  }
+
+  .dateBanner {
+    padding: 14px 16px;
+  }
+
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .metricCard {
+    padding: 14px;
+  }
+
+  .quickActionsGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .quickActionCard {
+    padding: 18px;
+  }
+
   .alertCard {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
+  }
+
+  .alertCard button,
+  .alertCard a {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
   }
 }
