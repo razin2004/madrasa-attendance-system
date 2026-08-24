@@ -140,12 +140,12 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
 
   const key1 = process.env.BREVO_API_KEY;
   const key2 = process.env.BREVO_API_KEY_2;
-  const isProduction = process.env.NODE_ENV === 'production';
-  const preferSmtp = !isProduction || process.env.EMAIL_PROVIDER === 'smtp';
+  const hasSmtpConfig = !!(process.env.SMTP_USER || process.env.SMTP_EMAIL) && !!(process.env.SMTP_PASS || process.env.SMTP_PASSWORD);
+  const preferSmtp = process.env.EMAIL_PROVIDER === 'smtp' || hasSmtpConfig;
 
   if (preferSmtp) {
     // -----------------------------------------------------------------------
-    // LOCALHOST / DEVELOPMENT ROUTING: SMTP -> BREVO -> MOCK
+    // ROUTING: PRIMARY SMTP -> BREVO SLOT 1 -> BREVO SLOT 2 -> MOCK
     // -----------------------------------------------------------------------
 
     // Tier 1: SMTP Nodemailer
@@ -160,7 +160,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       finalSuccess = true;
       finalProvider = 'SMTP';
       finalMessageId = rSmtp.messageId;
-      console.log(`\n✉️ [SMTP DISPATCH SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${rSmtp.messageId}`);
+      console.log(`✉️ [SMTP DISPATCH SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${rSmtp.messageId}`);
     } else {
       finalError = `SMTP failed: ${rSmtp.error}`;
 
@@ -172,6 +172,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
           finalProvider = 'BREVO_SLOT_1';
           finalMessageId = r1.messageId;
           finalError = undefined;
+          console.log(`✉️ [BREVO SLOT 1 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r1.messageId}`);
         } else {
           finalError += ` | Slot 1 failed: ${r1.error}`;
         }
@@ -185,6 +186,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
           finalProvider = 'BREVO_SLOT_2';
           finalMessageId = r2.messageId;
           finalError = undefined;
+          console.log(`✉️ [BREVO SLOT 2 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r2.messageId}`);
         } else {
           finalError += ` | Slot 2 failed: ${r2.error}`;
         }
@@ -192,7 +194,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     }
   } else {
     // -----------------------------------------------------------------------
-    // PRODUCTION ROUTING: BREVO SLOT 1 -> BREVO SLOT 2 -> SMTP
+    // ROUTING: BREVO SLOT 1 -> BREVO SLOT 2 -> SMTP
     // -----------------------------------------------------------------------
 
     // Tier 1: Brevo Slot 1
@@ -202,6 +204,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
         finalSuccess = true;
         finalProvider = 'BREVO_SLOT_1';
         finalMessageId = r1.messageId;
+        console.log(`✉️ [BREVO SLOT 1 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r1.messageId}`);
       } else {
         finalError = `Slot 1 failed: ${r1.error}`;
       }
@@ -215,6 +218,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
         finalProvider = 'BREVO_SLOT_2';
         finalMessageId = r2.messageId;
         finalError = undefined;
+        console.log(`✉️ [BREVO SLOT 2 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r2.messageId}`);
       } else {
         finalError = `${finalError ? finalError + ' | ' : ''}Slot 2 failed: ${r2.error}`;
       }
@@ -228,10 +232,15 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
         finalProvider = 'SMTP';
         finalMessageId = rSmtp.messageId;
         finalError = undefined;
+        console.log(`✉️ [SMTP DISPATCH SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${rSmtp.messageId}`);
       } else {
         finalError = `${finalError ? finalError + ' | ' : ''}SMTP failed: ${rSmtp.error}`;
       }
     }
+  }
+
+  if (!finalSuccess) {
+    console.error(`❌ [EMAIL DISPATCH FAILED] To: ${normalizedRecipient} | Reason: ${finalError || 'Unknown provider error'}`);
   }
 
   // Tier 4: Dev Fallback if no provider worked in development mode
