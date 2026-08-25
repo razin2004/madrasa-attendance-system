@@ -523,17 +523,19 @@ export async function submitStaffLeaveRequest(params: {
         reviewUrl,
       });
 
-      await sendEmail({
+      sendEmail({
         organizationId: params.organizationId,
         recipient: orgAdmin.email,
         type: 'LEAVE_REQUEST_SUBMITTED',
         subject: payload.subject,
         htmlContent: payload.html,
         textContent: payload.text,
+      }).catch((emailErr) => {
+        console.error('Non-blocking leave request email delivery error:', emailErr);
       });
     }
   } catch (emailErr) {
-    console.error('Non-blocking leave request email delivery error:', emailErr);
+    console.error('Non-blocking leave request email preparation error:', emailErr);
   }
 
   return {
