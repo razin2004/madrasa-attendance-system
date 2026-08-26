@@ -208,31 +208,35 @@ export async function POST(request: Request) {
       console.error('Applicant registration confirmation email failed:', emailErr);
     });
 
-    // Email B: Notification to Super Admin
-    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'doctorbooksystem@gmail.com';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://shiftguard.app';
-    const reviewUrl = `${baseUrl}/super-admin/dashboard`;
+    // Email B: Notification to Super Admin (Requires SUPER_ADMIN_EMAIL environment variable)
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL?.trim();
+    if (!superAdminEmail) {
+      console.error('Server Configuration Warning: SUPER_ADMIN_EMAIL environment variable is not set. Organization registration alert email was not dispatched.');
+    } else {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://shiftguard.app';
+      const reviewUrl = `${baseUrl}/super-admin/dashboard`;
 
-    const superAdminTemplate = templateOrgRegistrationReceived({
-      orgName: newOrg.name,
-      organizationCode: newOrg.organizationCode,
-      contactPersonName: newOrg.contactPersonName || '',
-      contactEmail: newOrg.contactEmail || '',
-      phone: newOrg.phone || '',
-      submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-      reviewUrl,
-    });
+      const superAdminTemplate = templateOrgRegistrationReceived({
+        orgName: newOrg.name,
+        organizationCode: newOrg.organizationCode,
+        contactPersonName: newOrg.contactPersonName || '',
+        contactEmail: newOrg.contactEmail || '',
+        phone: newOrg.phone || '',
+        submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        reviewUrl,
+      });
 
-    sendEmail({
-      recipient: superAdminEmail,
-      type: 'ORG_REGISTRATION_RECEIVED',
-      subject: superAdminTemplate.subject,
-      htmlContent: superAdminTemplate.html,
-      textContent: superAdminTemplate.text,
-      organizationId: newOrg.id,
-    }).catch((emailErr) => {
-      console.error('Super Admin registration notification failed:', emailErr);
-    });
+      sendEmail({
+        recipient: superAdminEmail,
+        type: 'ORG_REGISTRATION_RECEIVED',
+        subject: superAdminTemplate.subject,
+        htmlContent: superAdminTemplate.html,
+        textContent: superAdminTemplate.text,
+        organizationId: newOrg.id,
+      }).catch((emailErr) => {
+        console.error('Super Admin registration notification failed:', emailErr);
+      });
+    }
 
     return NextResponse.json({
       success: true,
