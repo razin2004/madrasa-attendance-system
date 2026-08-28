@@ -83,19 +83,6 @@ export function OrgAdminSidebar({
       exact: false,
     },
     {
-      label: 'Shift Patterns',
-      href: `/${organizationCode}/admin/shifts`,
-      icon: Clock,
-      count: shiftPatternCount,
-      exact: false,
-    },
-    {
-      label: 'Roster Schedule',
-      href: `/${organizationCode}/admin/roster`,
-      icon: Calendar,
-      exact: false,
-    },
-    {
       label: 'Leave Management',
       href: `/${organizationCode}/admin/leave`,
       icon: Layers,

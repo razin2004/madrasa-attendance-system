@@ -10,8 +10,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:clear": "tsx scripts/clear-database.ts",
-    "test:phase1": "tsx scripts/test-phase1.ts"
+    "db:clear": "tsx scripts/clear-database.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

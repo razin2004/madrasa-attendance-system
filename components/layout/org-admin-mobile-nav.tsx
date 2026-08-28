@@ -59,12 +59,6 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
       icon: Users,
       exact: false,
     },
-    {
-      label: 'Roster',
-      href: `/${organizationCode}/admin/roster`,
-      icon: Calendar,
-      exact: false,
-    },
   ];
 
   const secondaryItems = [
@@ -73,12 +67,6 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
       href: `/${organizationCode}/admin/branches`,
       icon: MapPin,
       subtext: 'Manage workplace locations & IP geofences',
-    },
-    {
-      label: 'Shift Patterns',
-      href: `/${organizationCode}/admin/shifts`,
-      icon: Clock,
-      subtext: 'Configure weekly shift schedules',
     },
     {
       label: 'Leave Management',
