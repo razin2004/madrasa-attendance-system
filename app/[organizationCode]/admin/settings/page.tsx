@@ -108,7 +108,9 @@ export default function AdminSettingsPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setLogoUrl(data.logoUrl);
+        setOrgData((prev: any) => ({ ...prev, logoUrl: data.logoUrl }));
         toast.success('Organization logo uploaded and updated!');
+        if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
         toast.error(data.error || 'Failed to upload logo image.');
       }

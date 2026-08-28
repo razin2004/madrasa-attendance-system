@@ -39,8 +39,14 @@ export async function POST(
       );
     }
 
-    // Save file to disk storage (/public/uploads/logos/...)
-    const logoUrl = await saveLogoFile(buffer, file.name);
+    // Save file to disk storage if possible
+    let logoUrl = `data:${file.type || 'image/png'};base64,${buffer.toString('base64')}`;
+    try {
+      const diskPath = await saveLogoFile(buffer, file.name);
+      // Keep data URL for guaranteed cloud persistence across serverless reboots
+    } catch (fsErr) {
+      console.warn('File storage notice:', fsErr);
+    }
 
     // Update Organization logoUrl in DB
     await prisma.organization.update({

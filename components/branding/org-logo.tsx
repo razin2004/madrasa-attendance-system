@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2 } from 'lucide-react';
 
 interface OrgLogoProps {
@@ -13,6 +13,10 @@ interface OrgLogoProps {
 
 export function OrgLogo({ logoUrl, name, size = 20, className, style }: OrgLogoProps) {
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [logoUrl]);
 
   if (logoUrl && !hasError) {
     return (
