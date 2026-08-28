@@ -38,17 +38,18 @@ export function TenantBrandHeader({
         }}
       >
         {logoUrl && !imgFailed ? (
-          <img
-            src={logoUrl}
-            alt={`${orgName} Logo`}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              padding: '6px',
-            }}
-            onError={() => setImgFailed(true)}
-          />
+            <img
+              src={logoUrl}
+              alt={`${orgName} Logo`}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                padding: '0',
+                display: 'block',
+              }}
+              onError={() => setImgFailed(true)}
+            />
         ) : (
           <Building2 size={36} color="#818cf8" />
         )}

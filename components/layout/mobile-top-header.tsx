@@ -78,7 +78,7 @@ export function MobileTopHeader({
               <img
                 src={logoUrl}
                 alt={organizationName}
-                style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', padding: '0', display: 'block' }}
                 onError={() => setLogoFailed(true)}
               />
             ) : (
