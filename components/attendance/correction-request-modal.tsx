@@ -20,13 +20,18 @@ export function CorrectionRequestModal({
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
 
-  const [type, setType] = useState<'MISSING_CLOCK_IN' | 'MISSING_CLOCK_OUT' | 'INCORRECT_TIME' | 'OTHER'>('MISSING_CLOCK_IN');
+  const [type, setType] = useState<
+    'MISSING_CLOCK_IN' | 'MISSING_CLOCK_OUT' | 'INCORRECT_CLOCK_IN' | 'INCORRECT_CLOCK_OUT' | 'MANUAL_ENTRY'
+  >('MISSING_CLOCK_IN');
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [clockInTime, setClockInTime] = useState<string>('09:00');
   const [clockOutTime, setClockOutTime] = useState<string>('17:00');
   const [reason, setReason] = useState<string>('');
 
   if (!isOpen) return null;
+
+  const requiresClockIn = type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_CLOCK_IN' || type === 'MANUAL_ENTRY';
+  const requiresClockOut = type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_CLOCK_OUT' || type === 'MANUAL_ENTRY';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +46,10 @@ export function CorrectionRequestModal({
       let requestedClockInIso: string | undefined = undefined;
       let requestedClockOutIso: string | undefined = undefined;
 
-      if ((type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_TIME') && clockInTime) {
+      if (requiresClockIn && clockInTime) {
         requestedClockInIso = new Date(`${date}T${clockInTime}:00`).toISOString();
       }
-      if ((type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_TIME') && clockOutTime) {
+      if (requiresClockOut && clockOutTime) {
         requestedClockOutIso = new Date(`${date}T${clockOutTime}:00`).toISOString();
       }
 
@@ -146,10 +151,11 @@ export function CorrectionRequestModal({
               className="form-control"
               style={{ width: '100%', backgroundColor: 'rgba(15, 23, 42, 0.8)', color: '#ffffff' }}
             >
-              <option value="MISSING_CLOCK_IN">Forgot Clock In</option>
-              <option value="MISSING_CLOCK_OUT">Forgot Clock Out</option>
-              <option value="INCORRECT_TIME">Adjust Wrong Punch Time</option>
-              <option value="OTHER">Other Punch Discrepancy</option>
+              <option value="MISSING_CLOCK_IN">Missing Clock In (Forgot to punch in)</option>
+              <option value="MISSING_CLOCK_OUT">Missing Clock Out (Forgot to punch out)</option>
+              <option value="INCORRECT_CLOCK_IN">Adjust Wrong Clock In Time</option>
+              <option value="INCORRECT_CLOCK_OUT">Adjust Wrong Clock Out Time</option>
+              <option value="MANUAL_ENTRY">Manual Entry Request (Both In &amp; Out)</option>
             </select>
           </div>
 
@@ -169,7 +175,7 @@ export function CorrectionRequestModal({
           </div>
 
           {/* Clock In / Out Inputs */}
-          {(type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_TIME') && (
+          {requiresClockIn && (
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Actual Clock In Time *
@@ -185,7 +191,7 @@ export function CorrectionRequestModal({
             </div>
           )}
 
-          {(type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_TIME') && (
+          {requiresClockOut && (
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Actual Clock Out Time *

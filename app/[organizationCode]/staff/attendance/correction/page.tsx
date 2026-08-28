@@ -27,6 +27,9 @@ export default function StaffAttendanceCorrectionPage() {
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const requiresClockIn = type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_CLOCK_IN' || type === 'MANUAL_ENTRY';
+  const requiresClockOut = type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_CLOCK_OUT' || type === 'MANUAL_ENTRY';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !type || !reason.trim()) {
@@ -36,21 +39,31 @@ export default function StaffAttendanceCorrectionPage() {
 
     setSubmitting(true);
     try {
+      let requestedClockInIso: string | null = null;
+      let requestedClockOutIso: string | null = null;
+
+      if (requiresClockIn && requestedClockIn) {
+        requestedClockInIso = new Date(`${date}T${requestedClockIn}:00`).toISOString();
+      }
+      if (requiresClockOut && requestedClockOut) {
+        requestedClockOutIso = new Date(`${date}T${requestedClockOut}:00`).toISOString();
+      }
+
       const res = await fetch(`/api/org/${orgCode}/attendance/correction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           date,
           type,
-          requestedClockIn: requestedClockIn || null,
-          requestedClockOut: requestedClockOut || null,
-          reason,
+          requestedClockIn: requestedClockInIso,
+          requestedClockOut: requestedClockOutIso,
+          reason: reason.trim(),
         }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success('Attendance correction request submitted.');
+        toast.success('Attendance correction request submitted to Admin.');
         router.push(`/${orgCode}/staff/attendance/corrections`);
       } else {
         toast.error(data.error || 'Failed to submit correction request.');

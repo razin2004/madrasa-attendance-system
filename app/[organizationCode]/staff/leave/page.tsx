@@ -82,6 +82,22 @@ export default function StaffLeaveDashboardPage() {
   const other = getBalanceInfo('OTHER');
   const duty = getBalanceInfo('DUTY');
 
+  const formatLeaveType = (typeStr: string) => {
+    if (!typeStr) return 'Leave';
+    switch (typeStr.toUpperCase()) {
+      case 'ANNUAL':
+        return 'Annual Leave';
+      case 'SICK':
+        return 'Sick Leave';
+      case 'DUTY':
+        return 'Duty Leave';
+      case 'OTHER':
+        return 'Casual / Other Leave';
+      default:
+        return typeStr;
+    }
+  };
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -141,6 +157,7 @@ export default function StaffLeaveDashboardPage() {
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Leave Type</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Date Range</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Duration</th>
+                <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Reason</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Status</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Submitted</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Action</th>
@@ -149,11 +166,16 @@ export default function StaffLeaveDashboardPage() {
             <tbody>
               {leaveRequests.map((req) => (
                 <tr key={req.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '14px 16px', fontWeight: 700, color: '#ffffff' }}>{req.leaveType}</td>
-                  <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>
-                    {new Date(req.startDate).toLocaleDateString()} – {new Date(req.endDate).toLocaleDateString()}
+                  <td style={{ padding: '14px 16px', fontWeight: 700, color: '#ffffff' }}>
+                    {formatLeaveType(req.type || req.leaveType)}
                   </td>
-                  <td style={{ padding: '14px 16px', fontWeight: 700, color: '#818cf8' }}>{req.daysCount} days</td>
+                  <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>
+                    {new Date(req.startDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(req.endDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </td>
+                  <td style={{ padding: '14px 16px', fontWeight: 700, color: '#818cf8' }}>{req.daysCount} {req.daysCount === 1 ? 'day' : 'days'}</td>
+                  <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {req.reason}
+                  </td>
                   <td style={{ padding: '14px 16px' }}>
                     <span className={`badge ${req.status === 'APPROVED' ? 'badge-success' : req.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}>
                       {req.status}

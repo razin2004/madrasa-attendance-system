@@ -57,6 +57,18 @@ export default function StaffAttendancePage() {
   const metrics = reportData?.monthlyMetrics;
   const rows = reportData?.daysRows || [];
 
+  const formatDisplayTime = (timeStr?: string | null, isoStr?: string | null) => {
+    if (isoStr) {
+      try {
+        const d = new Date(isoStr);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+      } catch {}
+    }
+    return timeStr || '—';
+  };
+
   return (
     <div className={styles.attendanceContainer}>
       {/* Header Bar with Month Filter */}
@@ -89,6 +101,15 @@ export default function StaffAttendancePage() {
               );
             })}
           </select>
+
+          <Link
+            href={`/${orgCode}/staff/attendance/corrections`}
+            className="btn btn-secondary btn-sm"
+            style={{ marginLeft: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <FileText size={15} />
+            <span>My Corrections</span>
+          </Link>
 
           <Link
             href={`/${orgCode}/staff/attendance/correction`}
@@ -178,12 +199,12 @@ export default function StaffAttendancePage() {
                       </td>
                       <td style={{ color: 'var(--text-secondary)' }}>{row.shiftPatternName}</td>
                       <td style={{ color: 'var(--text-muted)' }}>{row.scheduledStart || '—'}</td>
-                      <td style={{ fontWeight: 700, color: row.clockInTime ? '#34d399' : 'var(--text-muted)' }}>
-                        {row.clockInTime || '—'}
+                      <td style={{ fontWeight: 700, color: row.clockInIso || row.clockInTime ? '#34d399' : 'var(--text-muted)' }}>
+                        {formatDisplayTime(row.clockInTime, row.clockInIso)}
                       </td>
                       <td style={{ color: 'var(--text-muted)' }}>{row.scheduledEnd || '—'}</td>
-                      <td style={{ fontWeight: 700, color: row.clockOutTime ? '#fbbf24' : 'var(--text-muted)' }}>
-                        {row.clockOutTime || '—'}
+                      <td style={{ fontWeight: 700, color: row.clockOutIso || row.clockOutTime ? '#fbbf24' : 'var(--text-muted)' }}>
+                        {formatDisplayTime(row.clockOutTime, row.clockOutIso)}
                       </td>
                       <td>
                         <span
@@ -254,8 +275,8 @@ export default function StaffAttendancePage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
                     <div>Shift: <strong style={{ color: '#ffffff' }}>{row.shiftPatternName}</strong></div>
                     <div>Schedule: <strong style={{ color: '#ffffff' }}>{row.scheduledStart && row.scheduledEnd ? `${row.scheduledStart} – ${row.scheduledEnd}` : 'Off Duty'}</strong></div>
-                    <div>Clock In: <strong style={{ color: '#34d399' }}>{row.clockInTime || '—'}</strong></div>
-                    <div>Clock Out: <strong style={{ color: '#fbbf24' }}>{row.clockOutTime || '—'}</strong></div>
+                    <div>Clock In: <strong style={{ color: '#34d399' }}>{formatDisplayTime(row.clockInTime, row.clockInIso)}</strong></div>
+                    <div>Clock Out: <strong style={{ color: '#fbbf24' }}>{formatDisplayTime(row.clockOutTime, row.clockOutIso)}</strong></div>
                   </div>
                 </div>
               );

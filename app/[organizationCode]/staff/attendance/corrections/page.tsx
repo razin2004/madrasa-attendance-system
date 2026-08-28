@@ -33,6 +33,33 @@ export default function StaffCorrectionHistoryPage() {
       .finally(() => setLoading(false));
   }, [orgCode, toast]);
 
+  const formatTimeStr = (isoStr?: string | null) => {
+    if (!isoStr) return '—';
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return isoStr;
+    }
+  };
+
+  const formatDateStr = (isoStr?: string | null) => {
+    if (!isoStr) return '—';
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      return d.toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return isoStr;
+    }
+  };
+
+  const formatCorrectionType = (t: string) => {
+    if (!t) return 'Correction';
+    return t.replace(/_/g, ' ');
+  };
+
   return (
     <div className={styles.container}>
       <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -72,6 +99,7 @@ export default function StaffCorrectionHistoryPage() {
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Affected Date</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Problem Type</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Requested Punch</th>
+                <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Reason</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Status</th>
                 <th style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Submitted Date</th>
               </tr>
@@ -79,13 +107,18 @@ export default function StaffCorrectionHistoryPage() {
             <tbody>
               {corrections.map((item) => (
                 <tr key={item.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '14px 16px', fontWeight: 700, color: '#ffffff' }}>{item.date}</td>
+                  <td style={{ padding: '14px 16px', fontWeight: 700, color: '#ffffff' }}>
+                    {formatDateStr(item.date)}
+                  </td>
                   <td style={{ padding: '14px 16px' }}>
-                    <span className="badge badge-warning">{item.type}</span>
+                    <span className="badge badge-warning">{formatCorrectionType(item.type)}</span>
                   </td>
                   <td style={{ padding: '14px 16px', fontFamily: 'var(--font-mono)', fontSize: '12.5px' }}>
-                    In: <span style={{ color: '#34d399' }}>{item.requestedClockIn || '—'}</span> &bull; Out:{' '}
-                    <span style={{ color: '#fbbf24' }}>{item.requestedClockOut || '—'}</span>
+                    In: <span style={{ color: '#34d399' }}>{formatTimeStr(item.requestedClockIn)}</span> &bull; Out:{' '}
+                    <span style={{ color: '#fbbf24' }}>{formatTimeStr(item.requestedClockOut)}</span>
+                  </td>
+                  <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.reason}
                   </td>
                   <td style={{ padding: '14px 16px' }}>
                     <span className={`badge ${item.status === 'APPROVED' ? 'badge-success' : item.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}>
