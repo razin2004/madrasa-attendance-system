@@ -52,12 +52,6 @@ export function StaffSidebar({
       exact: true,
     },
     {
-      label: 'Shift',
-      href: `${basePath}/shift`,
-      icon: CalendarDays,
-      exact: false,
-    },
-    {
       label: 'Leave',
       href: `${basePath}/leave`,
       icon: FileText,

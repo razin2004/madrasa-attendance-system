@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ShieldCheck,
   Building,
+  Settings,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
 
@@ -90,6 +91,12 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
       href: `/${organizationCode}/admin/reports`,
       icon: FileText,
       subtext: 'Export daily & monthly attendance CSV/PDF',
+    },
+    {
+      label: 'Settings',
+      href: `/${organizationCode}/admin/settings`,
+      icon: Settings,
+      subtext: 'Configure workspace details & branding',
     },
   ];
 

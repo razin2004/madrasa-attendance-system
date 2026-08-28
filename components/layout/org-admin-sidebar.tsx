@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   UserCheck,
   BarChart3,
+  Settings,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
 
@@ -122,6 +123,12 @@ export function OrgAdminSidebar({
       label: 'Reports & Analytics',
       href: `/${organizationCode}/admin/reports`,
       icon: BarChart3,
+      exact: false,
+    },
+    {
+      label: 'Settings',
+      href: `/${organizationCode}/admin/settings`,
+      icon: Settings,
       exact: false,
     },
   ];

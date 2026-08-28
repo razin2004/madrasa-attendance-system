@@ -473,16 +473,6 @@ export default function OrgAdminLandingPage() {
                       Opaque cryptographic hardware secrets.
                     </p>
                   </div>
-
-                  <div style={{ padding: '16px', backgroundColor: 'rgba(99, 102, 241, 0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <Calendar size={16} color="#818cf8" />
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#818cf8' }}>Layer 4: Shift Roster</span>
-                    </div>
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      Active scheduled shift patterns &amp; day overrides.
-                    </p>
-                  </div>
                 </div>
               </div>
             </>

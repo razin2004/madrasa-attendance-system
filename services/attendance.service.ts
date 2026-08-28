@@ -461,7 +461,7 @@ export async function recordAttendance(params: {
   if (!daySchedule.isScheduled || daySchedule.isHoliday) {
     return {
       success: false,
-      error: 'You cannot clock in or clock out because no schedule is assigned for today.',
+      error: 'No shift assigned.',
       evaluation,
     };
   }
