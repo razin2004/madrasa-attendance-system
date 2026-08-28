@@ -76,9 +76,8 @@ export default function RegisterOrganizationPage() {
       return;
     }
 
-    setCodeStatus({ state: 'checking', message: 'Checking code availability...' });
-
     const timer = setTimeout(async () => {
+      setCodeStatus({ state: 'checking', message: 'Checking code availability...' });
       try {
         const res = await fetch(`/api/organizations/check-availability?code=${encodeURIComponent(code)}`);
         const data = await res.json();
@@ -94,7 +93,7 @@ export default function RegisterOrganizationPage() {
       } catch {
         setCodeStatus({ state: 'idle', message: '' });
       }
-    }, 200);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [formData.organizationCode]);
