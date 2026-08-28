@@ -3,6 +3,7 @@ import { requireOrgAdmin } from '@/lib/tenant-auth';
 import {
   getDailyAttendanceReport,
   getMonthlyEmployeeAttendanceReport,
+  getDateRangeAttendanceReport,
 } from '@/services/reports.service';
 import { generateAttendanceReportCsv } from '@/services/export-csv.service';
 import { AttendanceSource } from '@prisma/client';
@@ -21,8 +22,12 @@ export async function GET(
     }
 
     const { searchParams } = req.nextUrl;
-    const reportType = searchParams.get('reportType') === 'MONTHLY' ? 'MONTHLY' : 'DAILY';
+    const rawReportType = searchParams.get('reportType');
+    const reportType = rawReportType === 'RANGE' ? 'RANGE' : rawReportType === 'MONTHLY' ? 'MONTHLY' : 'DAILY';
     const date = searchParams.get('date') || new Date().toISOString().slice(0, 10);
+    const startDate = searchParams.get('startDate') || date;
+    const endDate = searchParams.get('endDate') || date;
+
     const now = new Date();
     const year = parseInt(searchParams.get('year') || String(now.getUTCFullYear()), 10);
     const month = parseInt(searchParams.get('month') || String(now.getUTCMonth() + 1), 10);
@@ -35,7 +40,20 @@ export async function GET(
     let rows: any[] = [];
     let filename = `ShiftGuard_Attendance_Report_${params.organizationCode}_${date}.csv`;
 
-    if (reportType === 'DAILY') {
+    if (reportType === 'RANGE') {
+      const rangeReport = await getDateRangeAttendanceReport({
+        organizationId: auth.organization.id,
+        startDate,
+        endDate,
+        branchId,
+        staffId,
+        status,
+        source,
+        search,
+      });
+      rows = rangeReport.rows;
+      filename = `ShiftGuard_Range_Report_${params.organizationCode}_${startDate}_to_${endDate}.csv`;
+    } else if (reportType === 'DAILY') {
       const dailyReport = await getDailyAttendanceReport({
         organizationId: auth.organization.id,
         date,
@@ -64,7 +82,7 @@ export async function GET(
 
     const csvContent = generateAttendanceReportCsv({
       organizationName: auth.organization.name,
-      reportType,
+      reportType: reportType === 'RANGE' ? ('DAILY' as any) : reportType,
       rows,
     });
 

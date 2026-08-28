@@ -97,6 +97,26 @@ export default function ReportsDashboardPage() {
               <ArrowRight size={16} />
             </Link>
           </div>
+
+          {/* Card 3: Custom Date Range Attendance Report */}
+          <div className={styles.reportCard}>
+            <div>
+              <div
+                className={styles.cardIconBox}
+                style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}
+              >
+                <FileText size={24} />
+              </div>
+              <h2 className={styles.cardTitle}>Custom Date Range Report</h2>
+              <p className={styles.cardDesc}>
+                Generate and export attendance reports across custom date ranges (e.g. 1st to 15th of the month). Export multi-day bundles to CSV or print-ready PDF.
+              </p>
+            </div>
+            <Link href={`/${organizationCode}/admin/reports/range`} className={styles.cardLink}>
+              <span>Open Custom Range Report</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
 
         {/* Live Metrics Overview */}

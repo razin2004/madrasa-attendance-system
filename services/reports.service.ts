@@ -23,6 +23,17 @@ export interface MonthlyReportFilterParams {
   source?: AttendanceSource;
 }
 
+export interface DateRangeReportFilterParams {
+  organizationId: string;
+  startDate: string; // "YYYY-MM-DD"
+  endDate: string;   // "YYYY-MM-DD"
+  branchId?: string;
+  staffId?: string;
+  status?: string;
+  source?: AttendanceSource;
+  search?: string;
+}
+
 export interface AttendanceReportRow {
   staffProfileId: string;
   staffId: string;
@@ -690,5 +701,86 @@ export async function getReportsDashboardSummary(organizationId: string) {
     todayMetrics: todayReport.metrics,
     currentYear: year,
     currentMonth: month,
+  };
+}
+
+/**
+ * 4. Calculate Custom Date-Range Attendance Report
+ */
+export async function getDateRangeAttendanceReport(params: DateRangeReportFilterParams) {
+  const startUtc = parseIsoDateString(params.startDate);
+  const endUtc = parseIsoDateString(params.endDate);
+
+  if (startUtc.getTime() > endUtc.getTime()) {
+    throw new Error('Start date cannot be after end date.');
+  }
+
+  // Cap at 90 days max for custom range performance
+  const diffDays = Math.ceil((endUtc.getTime() - startUtc.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  if (diffDays > 90) {
+    throw new Error('Custom date range cannot exceed 90 days. Please select a shorter date range.');
+  }
+
+  const overallRows: AttendanceReportRow[] = [];
+  const combinedMetrics: ReportMetricsSummary = {
+    totalCount: 0,
+    presentCount: 0,
+    partialCount: 0,
+    holidayCount: 0,
+    leaveCount: 0,
+    annualLeaveCount: 0,
+    sickLeaveCount: 0,
+    dutyLeaveCount: 0,
+    otherLeaveCount: 0,
+    absentCount: 0,
+    notYetClockedInCount: 0,
+    inProgressCount: 0,
+    sourceMetrics: {
+      normalCount: 0,
+      manualCount: 0,
+      adjustedCount: 0,
+    },
+  };
+
+  // Loop day-by-day across the date range
+  for (let i = 0; i < diffDays; i++) {
+    const currDateObj = new Date(startUtc.getTime() + i * 24 * 60 * 60 * 1000);
+    const currDateStr = currDateObj.toISOString().slice(0, 10);
+
+    const dailyResult = await getDailyAttendanceReport({
+      organizationId: params.organizationId,
+      date: currDateStr,
+      branchId: params.branchId,
+      staffId: params.staffId,
+      status: params.status,
+      source: params.source,
+      search: params.search,
+    });
+
+    overallRows.push(...dailyResult.rows);
+
+    combinedMetrics.totalCount += dailyResult.metrics.totalCount;
+    combinedMetrics.presentCount += dailyResult.metrics.presentCount;
+    combinedMetrics.partialCount += dailyResult.metrics.partialCount;
+    combinedMetrics.holidayCount += dailyResult.metrics.holidayCount;
+    combinedMetrics.leaveCount += dailyResult.metrics.leaveCount;
+    combinedMetrics.annualLeaveCount += dailyResult.metrics.annualLeaveCount;
+    combinedMetrics.sickLeaveCount += dailyResult.metrics.sickLeaveCount;
+    combinedMetrics.dutyLeaveCount += dailyResult.metrics.dutyLeaveCount;
+    combinedMetrics.otherLeaveCount += dailyResult.metrics.otherLeaveCount;
+    combinedMetrics.absentCount += dailyResult.metrics.absentCount;
+    combinedMetrics.notYetClockedInCount += dailyResult.metrics.notYetClockedInCount;
+    combinedMetrics.inProgressCount += dailyResult.metrics.inProgressCount;
+    combinedMetrics.sourceMetrics.normalCount += dailyResult.metrics.sourceMetrics.normalCount;
+    combinedMetrics.sourceMetrics.manualCount += dailyResult.metrics.sourceMetrics.manualCount;
+    combinedMetrics.sourceMetrics.adjustedCount += dailyResult.metrics.sourceMetrics.adjustedCount;
+  }
+
+  return {
+    startDate: params.startDate,
+    endDate: params.endDate,
+    totalDays: diffDays,
+    metrics: combinedMetrics,
+    rows: overallRows,
   };
 }
