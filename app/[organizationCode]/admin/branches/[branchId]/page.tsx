@@ -669,7 +669,22 @@ export default function BranchDetailsPage() {
             </div>
             <form onSubmit={handleManualOverride}>
               <div style={{ marginBottom: '14px' }}>
-                <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Static Public IP</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Static Public IP</label>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ip = await getClientPublicIp();
+                      if (ip) {
+                        setManualIp(ip);
+                        toast.info(`Detected current IP: ${ip}`);
+                      }
+                    }}
+                    style={{ fontSize: '11px', color: '#38bdf8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                  >
+                    ⚡ Auto-Detect My IP
+                  </button>
+                </div>
                 <input type="text" required placeholder="e.g. 103.15.22.4" value={manualIp} onChange={(e) => setManualIp(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
               </div>
               <div style={{ marginBottom: '20px' }}>
