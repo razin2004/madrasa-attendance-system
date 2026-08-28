@@ -237,28 +237,37 @@ export default function AdminLeaveReviewPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {impactData.map((day: any, idx: number) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                        <td style={{ padding: '12px', fontWeight: 700, color: '#ffffff' }}>{day.date}</td>
-                        <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{day.totalScheduled}</td>
-                        <td style={{ padding: '12px', color: '#fbbf24' }}>{day.onLeaveCount + 1}</td>
-                        <td style={{ padding: '12px', fontWeight: 700, color: day.isShortage ? '#f87171' : '#34d399' }}>
-                          {day.remainingStaff}
-                        </td>
-                        <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{day.minRequired}</td>
-                        <td style={{ padding: '12px' }}>
-                          {day.isShortage ? (
-                            <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <XCircle size={12} /> Below Minimum
-                            </span>
-                          ) : (
-                            <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <CheckCircle2 size={12} /> Meets Minimum
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {impactData.map((day: any, idx: number) => {
+                      const totalScheduled = day.totalScheduled ?? day.totalAssignedStaff ?? 0;
+                      const onLeaveCount = day.onLeaveCount ?? day.alreadyOnLeaveStaff ?? 0;
+                      const onLeaveWithThis = day.onLeaveWithThis ?? (onLeaveCount + 1);
+                      const remainingStaff = day.remainingStaff ?? day.afterApprovalAvailable ?? 0;
+                      const minRequired = day.minRequired ?? day.minimumStaffingThreshold ?? 3;
+                      const isShortage = day.isShortage ?? (day.status === 'RED' || remainingStaff < minRequired);
+
+                      return (
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                          <td style={{ padding: '12px', fontWeight: 700, color: '#ffffff' }}>{day.date}</td>
+                          <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{totalScheduled}</td>
+                          <td style={{ padding: '12px', color: '#fbbf24' }}>{onLeaveWithThis}</td>
+                          <td style={{ padding: '12px', fontWeight: 700, color: isShortage ? '#f87171' : '#34d399' }}>
+                            {remainingStaff}
+                          </td>
+                          <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{minRequired}</td>
+                          <td style={{ padding: '12px' }}>
+                            {isShortage ? (
+                              <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <XCircle size={12} /> Below Minimum
+                              </span>
+                            ) : (
+                              <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <CheckCircle2 size={12} /> Meets Minimum
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

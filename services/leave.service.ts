@@ -152,6 +152,14 @@ export interface DayStaffingPicture {
   minimumStaffingThreshold: number;
   status: 'GREEN' | 'AMBER' | 'RED' | 'HOLIDAY' | 'NO_SHIFT';
   statusMessage: string;
+
+  // Frontend & API Aliases
+  totalScheduled?: number;
+  onLeaveCount?: number;
+  onLeaveWithThis?: number;
+  remainingStaff?: number;
+  minRequired?: number;
+  isShortage?: boolean;
 }
 
 export async function calculateStaffingImpact(
@@ -190,6 +198,7 @@ export async function calculateStaffingImpact(
 
   const daysResult: DayStaffingPicture[] = [];
   let totalShortageDays = 0;
+  const branchId = staff.branchAssignments[0]?.branchId;
 
   const weekdaysMap = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
 
@@ -221,6 +230,7 @@ export async function calculateStaffingImpact(
     const isHoliday = override ? override.isHoliday : weeklyDay ? weeklyDay.isHoliday : false;
 
     if (isHoliday) {
+      const minReq = shiftPattern?.minimumStaffingThreshold || 3;
       daysResult.push({
         date: dateStr,
         dayOfWeek,
@@ -231,71 +241,94 @@ export async function calculateStaffingImpact(
         totalAssignedStaff: 0,
         alreadyOnLeaveStaff: 0,
         afterApprovalAvailable: 0,
-        minimumStaffingThreshold: shiftPattern?.minimumStaffingThreshold || 1,
+        minimumStaffingThreshold: minReq,
         status: 'HOLIDAY',
         statusMessage: 'Scheduled Holiday',
+        totalScheduled: 0,
+        onLeaveCount: 0,
+        onLeaveWithThis: 1,
+        remainingStaff: 0,
+        minRequired: minReq,
+        isShortage: false,
       });
       continue;
     }
 
-    if (!shiftPattern || !weeklyDay) {
-      daysResult.push({
-        date: dateStr,
-        dayOfWeek,
-        isHoliday: false,
-        branchName: staff.branchAssignments[0]?.branch.name || null,
-        shiftName: null,
-        shiftHours: null,
-        totalAssignedStaff: 0,
-        alreadyOnLeaveStaff: 0,
-        afterApprovalAvailable: 0,
-        minimumStaffingThreshold: 1,
-        status: 'NO_SHIFT',
-        statusMessage: 'No scheduled shift found for this date',
-      });
-      continue;
-    }
+    let totalAssignedStaff = 0;
+    let approvedLeavesOnDate = 0;
+    let minimum = 3;
+    let shiftName: string | null = null;
+    let shiftHours: string | null = null;
 
-    // 3. Count total active staff assigned to this shift pattern on this date
-    const totalAssignedStaff = await prisma.shiftAssignment.count({
-      where: {
-        shiftPatternId: shiftPattern.id,
-        effectiveFrom: { lte: currDate },
-        OR: [{ effectiveTo: null }, { effectiveTo: { gte: currDate } }],
-        staffProfile: {
-          organizationId,
-          user: { status: 'ACTIVE' },
+    if (shiftPattern && weeklyDay) {
+      shiftName = shiftPattern.name;
+      shiftHours = override
+        ? `${override.startTime || '09:00'} - ${override.endTime || '17:00'}`
+        : `${weeklyDay.startTime || '09:00'} - ${weeklyDay.endTime || '17:00'}`;
+
+      totalAssignedStaff = await prisma.shiftAssignment.count({
+        where: {
+          shiftPatternId: shiftPattern.id,
+          effectiveFrom: { lte: currDate },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: currDate } }],
+          staffProfile: {
+            organizationId,
+            user: { status: 'ACTIVE' },
+          },
         },
-      },
-    });
+      });
 
-    // 4. Count how many OTHER staff on this shift pattern have approved leave on this date
-    const approvedLeavesOnDate = await prisma.leaveRequest.count({
-      where: {
-        organizationId,
-        status: 'APPROVED',
-        staffProfileId: { not: staffProfileId },
-        startDate: { lte: currDate },
-        endDate: { gte: currDate },
-        staffProfile: {
-          shiftAssignments: {
-            some: {
-              shiftPatternId: shiftPattern.id,
-              effectiveFrom: { lte: currDate },
-              OR: [{ effectiveTo: null }, { effectiveTo: { gte: currDate } }],
+      approvedLeavesOnDate = await prisma.leaveRequest.count({
+        where: {
+          organizationId,
+          status: 'APPROVED',
+          staffProfileId: { not: staffProfileId },
+          startDate: { lte: currDate },
+          endDate: { gte: currDate },
+          staffProfile: {
+            shiftAssignments: {
+              some: {
+                shiftPatternId: shiftPattern.id,
+                effectiveFrom: { lte: currDate },
+                OR: [{ effectiveTo: null }, { effectiveTo: { gte: currDate } }],
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    const minimum = shiftPattern.minimumStaffingThreshold || 1;
+      minimum = shiftPattern.minimumStaffingThreshold || 3;
+    } else {
+      // Branch / Org level staffing fallback
+      totalAssignedStaff = await prisma.staffProfile.count({
+        where: {
+          organizationId,
+          user: { status: 'ACTIVE' },
+          ...(branchId ? { branchAssignments: { some: { branchId } } } : {}),
+        },
+      });
+
+      approvedLeavesOnDate = await prisma.leaveRequest.count({
+        where: {
+          organizationId,
+          status: 'APPROVED',
+          staffProfileId: { not: staffProfileId },
+          startDate: { lte: currDate },
+          endDate: { gte: currDate },
+          ...(branchId ? { staffProfile: { branchAssignments: { some: { branchId } } } } : {}),
+        },
+      });
+
+      minimum = 3;
+    }
+
     const afterApprovalAvailable = Math.max(0, totalAssignedStaff - approvedLeavesOnDate - 1);
+    const isShortage = afterApprovalAvailable < minimum;
 
     let status: 'GREEN' | 'AMBER' | 'RED' = 'GREEN';
     let statusMessage = 'Meets minimum staffing threshold';
 
-    if (afterApprovalAvailable < minimum) {
+    if (isShortage) {
       status = 'RED';
       statusMessage = `Below minimum (${afterApprovalAvailable} / ${minimum} required)`;
       totalShortageDays++;
@@ -304,16 +337,12 @@ export async function calculateStaffingImpact(
       statusMessage = `Exactly at minimum (${afterApprovalAvailable} / ${minimum})`;
     }
 
-    const shiftHours = override
-      ? `${override.startTime || '09:00'} - ${override.endTime || '17:00'}`
-      : `${weeklyDay.startTime || '09:00'} - ${weeklyDay.endTime || '17:00'}`;
-
     daysResult.push({
       date: dateStr,
       dayOfWeek,
       isHoliday: false,
       branchName: staff.branchAssignments[0]?.branch.name || null,
-      shiftName: shiftPattern.name,
+      shiftName,
       shiftHours,
       totalAssignedStaff,
       alreadyOnLeaveStaff: approvedLeavesOnDate,
@@ -321,6 +350,14 @@ export async function calculateStaffingImpact(
       minimumStaffingThreshold: minimum,
       status,
       statusMessage,
+
+      // Aliases for Frontend & API
+      totalScheduled: totalAssignedStaff,
+      onLeaveCount: approvedLeavesOnDate,
+      onLeaveWithThis: approvedLeavesOnDate + 1,
+      remainingStaff: afterApprovalAvailable,
+      minRequired: minimum,
+      isShortage,
     });
   }
 
