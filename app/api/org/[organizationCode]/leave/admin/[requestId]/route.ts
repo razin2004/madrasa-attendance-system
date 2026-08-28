@@ -79,10 +79,24 @@ export async function GET(
       year
     );
 
+    const formattedRequest = {
+      ...request,
+      leaveType: request.type,
+      staff: request.staffProfile
+        ? {
+            id: request.staffProfile.id,
+            name: request.staffProfile.name,
+            staffId: request.staffProfile.staffId,
+            department: 'General',
+          }
+        : { id: '', name: 'Staff Member', staffId: '', department: 'General' },
+    };
+
     return NextResponse.json({
       success: true,
-      request,
-      staffingImpact,
+      request: formattedRequest,
+      staffingImpact: staffingImpact.days || [],
+      hasShortage: staffingImpact.hasShortage || false,
       alternativeSuggestions,
       balances,
     });

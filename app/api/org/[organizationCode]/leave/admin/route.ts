@@ -74,9 +74,21 @@ export async function GET(
       }),
     ]);
 
+    const formattedRequests = requests.map((req) => ({
+      ...req,
+      leaveType: req.type,
+      staff: req.staffProfile
+        ? {
+            id: req.staffProfile.id,
+            name: req.staffProfile.name,
+            staffId: req.staffProfile.staffId,
+          }
+        : { id: '', name: 'Staff Member', staffId: '' },
+    }));
+
     return NextResponse.json({
       success: true,
-      requests,
+      requests: formattedRequests,
       metrics: {
         pendingCount,
         approvedCount,

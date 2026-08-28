@@ -18,9 +18,16 @@ export async function POST(
     const { organization, session } = auth;
     const body = await req.json();
 
-    const { staffProfileId, type, startDate, endDate, reason, adminComment } = body;
+    const targetStaffProfileId = body.staffProfileId || body.staffId;
+    let rawType = (body.type || body.leaveType || 'ANNUAL').toString().toUpperCase().trim();
+    if (rawType.includes('ANNUAL')) rawType = 'ANNUAL';
+    else if (rawType.includes('SICK')) rawType = 'SICK';
+    else if (rawType.includes('DUTY')) rawType = 'DUTY';
+    else rawType = 'OTHER';
 
-    if (!staffProfileId || !type || !startDate || !endDate || !reason?.trim()) {
+    const { startDate, endDate, reason, adminComment } = body;
+
+    if (!targetStaffProfileId || !startDate || !endDate || !reason?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Staff member, leave type, start date, end date, and reason are required.' },
         { status: 400 }
@@ -32,8 +39,8 @@ export async function POST(
     const leave = await createAdminManualLeave({
       organizationId: organization.id,
       adminUserId: session.user.id,
-      staffProfileId,
-      type,
+      staffProfileId: targetStaffProfileId,
+      type: rawType as any,
       startDate,
       endDate,
       reason,

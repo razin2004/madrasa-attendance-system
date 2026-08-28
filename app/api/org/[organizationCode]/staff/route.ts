@@ -65,6 +65,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       staff: staffProfiles,
+      staffMembers: staffProfiles,
       counts: {
         total: staffProfiles.length,
         active: activeCount,

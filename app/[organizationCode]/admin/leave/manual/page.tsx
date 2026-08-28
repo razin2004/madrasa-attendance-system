@@ -28,7 +28,7 @@ export default function AdminManualLeavePage() {
   const [orgData, setOrgData] = useState<any>(null);
 
   const [selectedStaffId, setSelectedStaffId] = useState('');
-  const [leaveType, setLeaveType] = useState('Annual Leave');
+  const [leaveType, setLeaveType] = useState('ANNUAL');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
@@ -46,9 +46,10 @@ export default function AdminManualLeavePage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
-          setStaffList(data.staffMembers || []);
-          if (data.staffMembers?.length > 0) {
-            setSelectedStaffId(data.staffMembers[0].id);
+          const list = data.staffMembers || data.staff || [];
+          setStaffList(list);
+          if (list.length > 0) {
+            setSelectedStaffId(list[0].id);
           }
         }
       })
@@ -69,7 +70,9 @@ export default function AdminManualLeavePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          staffProfileId: selectedStaffId,
           staffId: selectedStaffId,
+          type: leaveType,
           leaveType,
           startDate,
           endDate,
@@ -147,11 +150,10 @@ export default function AdminManualLeavePage() {
                 value={leaveType}
                 onChange={(e) => setLeaveType(e.target.value)}
               >
-                <option value="Annual Leave">Annual Leave</option>
-                <option value="Sick Leave">Sick Leave</option>
-                <option value="Casual Leave">Casual Leave</option>
-                <option value="Duty Leave">Duty Leave</option>
-                <option value="Unpaid Leave">Unpaid Leave</option>
+                <option value="ANNUAL">Annual Leave</option>
+                <option value="SICK">Sick Leave</option>
+                <option value="OTHER">Casual / Other Leave</option>
+                <option value="DUTY">Duty Leave</option>
               </select>
             </div>
 

@@ -46,9 +46,10 @@ export default function AdminManualAttendancePage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
-          setStaffList(data.staffMembers || []);
-          if (data.staffMembers?.length > 0) {
-            setSelectedStaffId(data.staffMembers[0].id);
+          const list = data.staffMembers || data.staff || [];
+          setStaffList(list);
+          if (list.length > 0) {
+            setSelectedStaffId(list[0].id);
           }
         }
       })
