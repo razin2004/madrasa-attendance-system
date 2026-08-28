@@ -76,7 +76,7 @@ export async function POST(
       userAgent: request.headers.get('user-agent'),
     });
 
-    // 5. Dispatch Rejection Email to Applicant (Non-blocking)
+    // 5. Dispatch Rejection Email to Applicant (Awaited for serverless runtime resilience)
     if (updatedOrg.contactEmail) {
       const emailTemplate = templateOrgRegistrationRejected({
         orgName: updatedOrg.name,
@@ -84,15 +84,13 @@ export async function POST(
         rejectionReason,
       });
 
-      sendEmail({
+      await sendEmail({
         recipient: updatedOrg.contactEmail,
         type: 'ORG_REJECTED',
         subject: emailTemplate.subject,
         htmlContent: emailTemplate.html,
         textContent: emailTemplate.text,
         organizationId: updatedOrg.id,
-      }).catch((err) => {
-        console.error('Non-blocking rejection email error:', err);
       });
     }
 

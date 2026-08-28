@@ -91,6 +91,9 @@ async function sendViaSmtp(
       secure: port === 465,
       auth: { user, pass },
       tls: { rejectUnauthorized: false },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 8000,
     });
 
     const info = await transporter.sendMail({
@@ -114,7 +117,7 @@ async function sendViaSmtp(
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   const normalizedRecipient = normalizeEmail(options.recipient);
-  const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_EMAIL || 'noreply@shiftguard.com';
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_EMAIL || process.env.SMTP_USER || 'noreply@shiftguard.com';
   const senderName = process.env.BREVO_SENDER_NAME || 'ShiftGuard';
 
   // 1. Create initial PENDING EmailLog in DB
@@ -141,7 +144,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   const key1 = process.env.BREVO_API_KEY;
   const key2 = process.env.BREVO_API_KEY_2;
   const hasSmtpConfig = !!(process.env.SMTP_USER || process.env.SMTP_EMAIL) && !!(process.env.SMTP_PASS || process.env.SMTP_PASSWORD);
-  const preferSmtp = process.env.EMAIL_PROVIDER === 'smtp' || hasSmtpConfig;
+  const preferSmtp = process.env.EMAIL_PROVIDER === 'smtp' || (hasSmtpConfig && !key1 && !key2);
 
   if (preferSmtp) {
     // -----------------------------------------------------------------------

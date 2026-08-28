@@ -263,7 +263,7 @@ export async function POST(
       { maxWait: 15000, timeout: 30000 }
     );
 
-    // 4. Send Account Setup Email to Staff
+    // 4. Send Account Setup Email to Staff (Awaited for serverless runtime resilience)
     const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const activationUrl = `${origin}/activate-account?token=${rawActivationToken}`;
 
@@ -274,15 +274,13 @@ export async function POST(
       expiresInHours: 24,
     });
 
-    sendEmail({
+    await sendEmail({
       recipient: cleanEmail,
       type: 'STAFF_ACTIVATION_INVITATION',
       subject: emailTemplate.subject,
       htmlContent: emailTemplate.html,
       textContent: emailTemplate.text,
       organizationId: auth.organization.id,
-    }).catch((emailErr) => {
-      console.error('Non-blocking staff setup email failed:', emailErr);
     });
 
     // 5. Record Audit Log

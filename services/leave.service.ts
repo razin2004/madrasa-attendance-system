@@ -560,15 +560,13 @@ export async function submitStaffLeaveRequest(params: {
         reviewUrl,
       });
 
-      sendEmail({
+      await sendEmail({
         organizationId: params.organizationId,
         recipient: orgAdmin.email,
         type: 'LEAVE_REQUEST_SUBMITTED',
         subject: payload.subject,
         htmlContent: payload.html,
         textContent: payload.text,
-      }).catch((emailErr) => {
-        console.error('Non-blocking leave request email delivery error:', emailErr);
       });
     }
   } catch (emailErr) {

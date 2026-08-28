@@ -167,7 +167,7 @@ export async function POST(
       userAgent: request.headers.get('user-agent'),
     });
 
-    // 6. Dispatch Two Separate Emails
+    // 6. Dispatch Two Separate Emails (Awaited for serverless runtime resilience)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://shiftguard.app';
     const setupUrl = `${baseUrl}/activate-account?token=${rawSetupToken}`;
     const loginUrl = `${baseUrl}/login`;
@@ -179,18 +179,7 @@ export async function POST(
       contactPersonName: adminName,
     });
 
-    sendEmail({
-      recipient: adminEmail,
-      type: 'ORG_APPROVED_CONFIRMATION',
-      subject: approvalTemplate.subject,
-      htmlContent: approvalTemplate.html,
-      textContent: approvalTemplate.text,
-      organizationId: result.updatedOrg.id,
-    }).catch((err) => {
-      console.error('Non-blocking approval confirmation email failed:', err);
-    });
-
-    // Email 2: Password Setup & Login Email (sent immediately after)
+    // Email 2: Password Setup & Login Email
     const setupTemplate = templateOrgAdminPasswordSetup({
       orgName: result.updatedOrg.name,
       organizationCode: finalCode,
@@ -201,16 +190,24 @@ export async function POST(
       expiresInHours: 24,
     });
 
-    sendEmail({
-      recipient: adminEmail,
-      type: 'ORG_ADMIN_PASSWORD_SETUP',
-      subject: setupTemplate.subject,
-      htmlContent: setupTemplate.html,
-      textContent: setupTemplate.text,
-      organizationId: result.updatedOrg.id,
-    }).catch((err) => {
-      console.error('Non-blocking password setup email failed:', err);
-    });
+    await Promise.allSettled([
+      sendEmail({
+        recipient: adminEmail,
+        type: 'ORG_APPROVED_CONFIRMATION',
+        subject: approvalTemplate.subject,
+        htmlContent: approvalTemplate.html,
+        textContent: approvalTemplate.text,
+        organizationId: result.updatedOrg.id,
+      }),
+      sendEmail({
+        recipient: adminEmail,
+        type: 'ORG_ADMIN_PASSWORD_SETUP',
+        subject: setupTemplate.subject,
+        htmlContent: setupTemplate.html,
+        textContent: setupTemplate.text,
+        organizationId: result.updatedOrg.id,
+      }),
+    ]);
 
     return NextResponse.json({
       success: true,

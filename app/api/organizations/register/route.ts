@@ -187,7 +187,9 @@ export async function POST(request: Request) {
       userAgent: request.headers.get('user-agent'),
     });
 
-    // 7. Dispatch Notification Emails (Non-blocking failure resilience)
+    // 7. Dispatch Notification Emails (Awaited for serverless runtime resilience)
+    const emailPromises: Promise<any>[] = [];
+
     // Email A: Confirmation to Organization Applicant / Contact Person
     const applicantTemplate = templateOrgRegistrationApplicantConfirmation({
       orgName: newOrg.name,
@@ -197,16 +199,16 @@ export async function POST(request: Request) {
       submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
     });
 
-    sendEmail({
-      recipient: newOrg.contactEmail || contactEmail,
-      type: 'ORG_REGISTRATION_APPLICANT_CONFIRMATION',
-      subject: applicantTemplate.subject,
-      htmlContent: applicantTemplate.html,
-      textContent: applicantTemplate.text,
-      organizationId: newOrg.id,
-    }).catch((emailErr) => {
-      console.error('Applicant registration confirmation email failed:', emailErr);
-    });
+    emailPromises.push(
+      sendEmail({
+        recipient: newOrg.contactEmail || contactEmail,
+        type: 'ORG_REGISTRATION_APPLICANT_CONFIRMATION',
+        subject: applicantTemplate.subject,
+        htmlContent: applicantTemplate.html,
+        textContent: applicantTemplate.text,
+        organizationId: newOrg.id,
+      })
+    );
 
     // Email B: Notification to Super Admin (Requires SUPER_ADMIN_EMAIL environment variable)
     const superAdminEmail = process.env.SUPER_ADMIN_EMAIL?.trim();
@@ -226,17 +228,19 @@ export async function POST(request: Request) {
         reviewUrl,
       });
 
-      sendEmail({
-        recipient: superAdminEmail,
-        type: 'ORG_REGISTRATION_RECEIVED',
-        subject: superAdminTemplate.subject,
-        htmlContent: superAdminTemplate.html,
-        textContent: superAdminTemplate.text,
-        organizationId: newOrg.id,
-      }).catch((emailErr) => {
-        console.error('Super Admin registration notification failed:', emailErr);
-      });
+      emailPromises.push(
+        sendEmail({
+          recipient: superAdminEmail,
+          type: 'ORG_REGISTRATION_RECEIVED',
+          subject: superAdminTemplate.subject,
+          htmlContent: superAdminTemplate.html,
+          textContent: superAdminTemplate.text,
+          organizationId: newOrg.id,
+        })
+      );
     }
+
+    await Promise.allSettled(emailPromises);
 
     return NextResponse.json({
       success: true,

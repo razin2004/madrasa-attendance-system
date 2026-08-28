@@ -199,11 +199,17 @@ export default function StaffDashboardPage() {
   }, []);
 
   const runPrecheck = useCallback(
-    async (coords?: { latitude: number; longitude: number; accuracy?: number } | null) => {
+    async (coords?: { latitude: number; longitude: number; accuracy?: number } | null, isManual: boolean = false) => {
       setChecking(true);
       try {
         const deviceSecret = getOrCreateDeviceSecret();
-        const clientIp = await getClientPublicIp();
+        let clientIp: string | null = null;
+        try {
+          clientIp = await getClientPublicIp();
+        } catch {
+          // Fallback gracefully to server header extraction
+        }
+
         const bodyData: any = { deviceSecret };
         if (coords) {
           bodyData.latitude = coords.latitude;
@@ -234,6 +240,10 @@ export default function StaffDashboardPage() {
           if (data.organization) setOrgData(data.organization);
           setFetchError(null);
 
+          if (isManual) {
+            toast.success('Verification status refreshed.');
+          }
+
           // Dispatch real-time security precheck status to header
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: data.evaluation.isReady }));
@@ -244,7 +254,6 @@ export default function StaffDashboardPage() {
             !data.evaluation.layer1Device.isVerified &&
             (data.staff?.deviceStatus === 'NOT_REGISTERED' || !data.staffProfile.devices || data.staffProfile.devices.length === 0)
           ) {
-            toast.info('Registering this device...');
             try {
               const regRes = await fetch(`/api/org/${orgCode}/staff/device/register`, {
                 method: 'POST',
@@ -256,7 +265,7 @@ export default function StaffDashboardPage() {
               });
               const regData = await regRes.json();
               if (regData.success) {
-                toast.success('Device registered successfully.');
+                if (isManual) toast.success('Device registered successfully.');
                 // Re-run precheck to immediately show verified device state
                 const recheckRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
                   method: 'POST',
@@ -279,14 +288,14 @@ export default function StaffDashboardPage() {
           }
         } else {
           setFetchError(data.error || 'Attendance verification could not be completed. Please try again.');
-          toast.error(data.error || 'Precheck failed.');
+          if (isManual) toast.error(data.error || 'Precheck failed.');
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: false }));
           }
         }
       } catch {
         setFetchError('Attendance verification could not be completed. Please try again.');
-        toast.error('Network error checking branch security.');
+        if (isManual) toast.error('Network error checking branch security.');
       } finally {
         setChecking(false);
       }
@@ -296,8 +305,8 @@ export default function StaffDashboardPage() {
 
   const initData = useCallback(async () => {
     setLoading(true);
-    // Initial precheck without automatic geolocation re-verification
-    await runPrecheck(locationCoords);
+    // Initial precheck without automatic geolocation re-verification or intrusive toasts
+    await runPrecheck(null, false);
 
     try {
       const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=5`);
@@ -308,7 +317,7 @@ export default function StaffDashboardPage() {
     } catch {}
 
     setLoading(false);
-  }, [locationCoords, orgCode, runPrecheck]);
+  }, [orgCode, runPrecheck]);
 
   useEffect(() => {
     if (orgCode) {
@@ -319,8 +328,7 @@ export default function StaffDashboardPage() {
   const handleManualRefresh = async () => {
     setChecking(true);
     const coords = await requestGeolocation();
-    await runPrecheck(coords);
-    toast.success('Verification status refreshed.');
+    await runPrecheck(coords, true);
   };
 
   const executeClockAction = async (actionType: 'CLOCK_IN' | 'CLOCK_OUT') => {
