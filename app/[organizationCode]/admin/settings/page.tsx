@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Settings,
@@ -8,12 +8,18 @@ import {
   Phone,
   User,
   Mail,
-  Image as ImageIcon,
   Save,
   Loader2,
-  Calendar,
-  ShieldCheck,
+  Lock,
   Upload,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  KeyRound,
+  X,
+  Compass,
+  Clock,
+  HelpCircle,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -24,9 +30,11 @@ export default function AdminSettingsPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
   const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [orgData, setOrgData] = useState<any>(null);
 
   // Form State
@@ -35,7 +43,20 @@ export default function AdminSettingsPage() {
   const [contactPersonName, setContactPersonName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  
+  // Default Settings State
   const [attendanceCorrectionWindowDays, setAttendanceCorrectionWindowDays] = useState(5);
+  const [defaultGeofenceRadius, setDefaultGeofenceRadius] = useState(100);
+  const [defaultMaxDailyCycles, setDefaultMaxDailyCycles] = useState(1);
+
+  // Email Change OTP Modal State
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpStep, setOtpStep] = useState<'ENTER_NEW_EMAIL' | 'VERIFY_OTP'>('ENTER_NEW_EMAIL');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -64,23 +85,54 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      toast.error('Organization name cannot be empty.');
+  // Handle Logo Upload
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size exceeds 2MB limit.');
       return;
     }
 
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`/api/org/${organizationCode}/settings/logo`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setLogoUrl(data.logoUrl);
+        toast.success('Organization logo uploaded and updated!');
+      } else {
+        toast.error(data.error || 'Failed to upload logo image.');
+      }
+    } catch {
+      toast.error('Network error uploading logo.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  // Handle Save Settings
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setSaving(true);
+
     try {
       const res = await fetch(`/api/org/${organizationCode}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
+          name, // Organization Name (readOnly in UI, sent unchanged)
           phone,
           contactPersonName,
-          contactEmail,
+          contactEmail, // Will be changed via OTP modal below
           logoUrl,
           attendanceCorrectionWindowDays: Number(attendanceCorrectionWindowDays),
         }),
@@ -88,7 +140,7 @@ export default function AdminSettingsPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success('Organization settings updated successfully.');
+        toast.success('Workspace settings updated successfully.');
         setOrgData(data.settings);
       } else {
         toast.error(data.error || 'Failed to save settings.');
@@ -97,6 +149,83 @@ export default function AdminSettingsPage() {
       toast.error('Network error saving settings.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Request Email Change OTP
+  const handleRequestEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setModalError(null);
+
+    if (!newEmail.trim() || !newEmail.includes('@')) {
+      setModalError('Please enter a valid email address.');
+      return;
+    }
+
+    if (newEmail.trim().toLowerCase() === contactEmail.trim().toLowerCase()) {
+      setModalError('New email address must be different from current email.');
+      return;
+    }
+
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/settings/email-change/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newEmail: newEmail.trim() }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.info(`OTP verification code sent to ${newEmail.trim()}. Notice sent to current email.`);
+        setOtpStep('VERIFY_OTP');
+      } else {
+        setModalError(data.error || 'Failed to send verification OTP.');
+      }
+    } catch {
+      setModalError('Network error requesting OTP.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // Verify OTP and Complete Email Change
+  const handleVerifyEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setModalError(null);
+
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setModalError('Please enter the 6-digit OTP code.');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/settings/email-change/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          otpCode: otpCode.trim(),
+          newEmail: newEmail.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Contact email updated successfully!');
+        setContactEmail(newEmail.trim());
+        setShowEmailModal(false);
+        setOtpStep('ENTER_NEW_EMAIL');
+        setOtpCode('');
+        setNewEmail('');
+        fetchSettings();
+      } else {
+        setModalError(data.error || 'Invalid or expired OTP code.');
+      }
+    } catch {
+      setModalError('Network error verifying OTP.');
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -114,11 +243,11 @@ export default function AdminSettingsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
             <Settings size={24} color="#818cf8" />
             <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-              Organization Settings
+              Organization Workspace Settings
             </h1>
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-            Manage workspace identity, branding logo, contact profiles, and attendance rules.
+            Manage default workspace rules, update organization logo, and update administrative profiles.
           </p>
         </div>
 
@@ -129,59 +258,147 @@ export default function AdminSettingsPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            {/* Branding Preview & Identity */}
+            {/* BRANDING LOGO & IDENTITY CARD */}
             <div className="glass-card" style={{ padding: '28px', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Building2 size={18} color="#38bdf8" />
-                <span>Organization Identity &amp; Branding</span>
+                <span>Organization Identity &amp; Logo</span>
               </h2>
 
-              <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginBottom: '24px', padding: '16px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '14px', backgroundColor: '#0d121f', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                  <OrgLogo logoUrl={logoUrl} name={name || 'Logo'} size={28} />
+              {/* Logo Preview & Uploader Box */}
+              <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginBottom: '24px', padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '16px', backgroundColor: '#0d121f', border: '2px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                  <OrgLogo logoUrl={logoUrl} name={name || 'Organization Logo'} size={36} />
+                  {uploadingLogo && (
+                    <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Loader2 size={24} className="animate-spin text-indigo-400" />
+                    </div>
+                  )}
                 </div>
-                <div>
+
+                <div style={{ flex: 1, minWidth: '220px' }}>
                   <div style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff' }}>{name || 'Organization Name'}</div>
                   <div style={{ fontSize: '12px', color: '#38bdf8', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                    Code: {organizationCode}
+                    Workspace Code: {organizationCode}
+                  </div>
+
+                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="btn btn-secondary btn-sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
+                    >
+                      <Upload size={14} />
+                      <span>{logoUrl ? 'Change Logo Image' : 'Upload Logo Image'}</span>
+                    </button>
+                    {logoUrl && (
+                      <span style={{ fontSize: '11.5px', color: '#34d399', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCircle2 size={13} /> Logo Uploaded
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                    Supported formats: PNG, JPG, WEBP, SVG (Max 2MB).
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div className="form-group">
-                  <label className="form-label">Organization Name *</label>
+              {/* READONLY ORGANIZATION NAME */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ margin: 0 }}>
+                    Organization Name (Read-Only)
+                  </label>
+                  <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10.5px' }}>
+                    <Lock size={11} /> Locked after approval
+                  </span>
+                </div>
+                <div style={{ position: 'relative' }}>
                   <input
                     type="text"
                     className="form-input"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter organization name..."
-                    required
+                    readOnly
+                    disabled
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', color: 'var(--text-muted)', cursor: 'not-allowed', paddingRight: '40px' }}
                   />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Logo Image URL</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={logoUrl}
-                    onChange={(e) => setLogoUrl(e.target.value)}
-                    placeholder="https://example.com/logo.png or /uploads/logos/..."
-                  />
+                  <Lock size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '14px', top: '12px' }} />
                 </div>
               </div>
             </div>
 
-            {/* Contact Profiles */}
+            {/* DEFAULT WORKSPACE SETTINGS */}
             <div className="glass-card" style={{ padding: '28px', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={18} color="#34d399" />
-                <span>Contact &amp; Administrative Details</span>
+                <Compass size={18} color="#c084fc" />
+                <span>Default Workspace Rules &amp; Limits</span>
               </h2>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+                <div className="form-group">
+                  <label className="form-label">Default Geofence Radius (Meters)</label>
+                  <input
+                    type="number"
+                    min={20}
+                    max={1000}
+                    className="form-input"
+                    value={defaultGeofenceRadius}
+                    onChange={(e) => setDefaultGeofenceRadius(Number(e.target.value))}
+                  />
+                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Default allowed GPS distance perimeter for branch clock-in verification.
+                  </p>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Daily Attendance Cycle Limit</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={5}
+                    className="form-input"
+                    value={defaultMaxDailyCycles}
+                    onChange={(e) => setDefaultMaxDailyCycles(Number(e.target.value))}
+                  />
+                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    1 Cycle = 1 Clock In &amp; 1 Clock Out session per workday.
+                  </p>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Attendance Correction Request Window (Days)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    className="form-input"
+                    value={attendanceCorrectionWindowDays}
+                    onChange={(e) => setAttendanceCorrectionWindowDays(Number(e.target.value))}
+                  />
+                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Staff can request attendance correction up to this many days after punch date.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* CONTACT & ADMINISTRATIVE PROFILE */}
+            <div className="glass-card" style={{ padding: '28px', marginBottom: '28px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={18} color="#34d399" />
+                <span>Contact Profiles &amp; Administrative Email</span>
+              </h2>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div className="form-group">
                   <label className="form-label">Contact Person Name</label>
                   <input
@@ -190,17 +407,6 @@ export default function AdminSettingsPage() {
                     value={contactPersonName}
                     onChange={(e) => setContactPersonName(e.target.value)}
                     placeholder="Administrator full name"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Contact Email</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="admin@organization.com"
                   />
                 </div>
 
@@ -215,30 +421,38 @@ export default function AdminSettingsPage() {
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Attendance & Correction Policy */}
-            <div className="glass-card" style={{ padding: '28px', marginBottom: '28px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ShieldCheck size={18} color="#fbbf24" />
-                <span>Attendance Governance Rules</span>
-              </h2>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div className="form-group">
-                  <label className="form-label">Attendance Correction Request Window (Days)</label>
+              {/* CONTACT EMAIL WITH 2-STEP OTP VERIFICATION TRIGGER */}
+              <div className="form-group" style={{ marginBottom: 0, marginTop: '10px' }}>
+                <label className="form-label">Official Contact Email</label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <input
-                    type="number"
-                    min={1}
-                    max={30}
+                    type="email"
                     className="form-input"
-                    value={attendanceCorrectionWindowDays}
-                    onChange={(e) => setAttendanceCorrectionWindowDays(Number(e.target.value))}
+                    value={contactEmail}
+                    readOnly
+                    disabled
+                    style={{ flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.03)', color: '#ffffff' }}
                   />
-                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Staff can request attendance corrections up to this many days after the date.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewEmail('');
+                      setOtpCode('');
+                      setModalError(null);
+                      setOtpStep('ENTER_NEW_EMAIL');
+                      setShowEmailModal(true);
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+                  >
+                    <Mail size={14} />
+                    <span>Change Email (via OTP)</span>
+                  </button>
                 </div>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                  Email changes require 2-step OTP verification sent to the new email address. Notifications will be sent to both old &amp; new emails.
+                </p>
               </div>
             </div>
 
@@ -258,7 +472,7 @@ export default function AdminSettingsPage() {
                 ) : (
                   <>
                     <Save size={16} />
-                    <span>Save Settings</span>
+                    <span>Save Workspace Settings</span>
                   </>
                 )}
               </button>
@@ -266,6 +480,103 @@ export default function AdminSettingsPage() {
           </form>
         )}
       </div>
+
+      {/* 2-STEP EMAIL CHANGE OTP VERIFICATION MODAL */}
+      {showEmailModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px', backgroundColor: '#0d121f' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <KeyRound size={22} color="#38bdf8" />
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                  {otpStep === 'ENTER_NEW_EMAIL' ? 'Change Contact Email' : 'Verify Email Change OTP'}
+                </h3>
+              </div>
+              <button onClick={() => setShowEmailModal(false)} className="btn btn-ghost btn-sm" style={{ padding: '4px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {modalError && (
+              <div style={{ backgroundColor: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: '8px', fontSize: '12.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={16} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            {otpStep === 'ENTER_NEW_EMAIL' ? (
+              <form onSubmit={handleRequestEmailChange}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                  Current Email: <strong style={{ color: '#ffffff' }}>{contactEmail}</strong><br />
+                  Enter your new contact email address below. A 6-digit verification code will be sent to the new email address.
+                </p>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">New Official Email Address *</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="newemail@organization.com"
+                    required
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button type="button" onClick={() => setShowEmailModal(false)} className="btn btn-secondary btn-sm">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={isSendingOtp} className="btn btn-primary btn-sm">
+                    {isSendingOtp ? 'Sending OTP...' : 'Send Verification Code'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyEmailChange}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                  A 6-digit OTP code was sent to <strong style={{ color: '#38bdf8' }}>{newEmail}</strong>.<br />
+                  Enter the verification code below to confirm and update your contact email.
+                </p>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">6-Digit Verification Code *</label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    className="form-input"
+                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '20px', fontWeight: 800, color: '#38bdf8' }}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    required
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setOtpStep('ENTER_NEW_EMAIL')}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '12px', color: '#818cf8' }}
+                  >
+                    &larr; Back
+                  </button>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" onClick={() => setShowEmailModal(false)} className="btn btn-secondary btn-sm">
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={isVerifyingOtp || otpCode.length !== 6} className="btn btn-success btn-sm">
+                      {isVerifyingOtp ? 'Verifying...' : 'Confirm & Update Email'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>

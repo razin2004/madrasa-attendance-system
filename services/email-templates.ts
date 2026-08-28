@@ -1021,3 +1021,123 @@ ${data.loginUrl}
 
   return { subject, html, text };
 }
+
+/**
+ * 22. Organization Email Change Request — OTP sent to NEW Email
+ */
+export function templateEmailChangeOTP(data: {
+  orgName: string;
+  newEmail: string;
+  otpCode: string;
+  expiresInMinutes: number;
+}): EmailTemplatePayload {
+  const subject = `ShiftGuard — Email Change Verification Code: ${data.otpCode}`;
+  const html = emailWrapper(
+    'Verify Email Change',
+    `
+    <h2 class="title">Verify New Email Address</h2>
+    <p>You requested to update the official contact email address for <strong>${data.orgName}</strong> to <code>${data.newEmail}</code>.</p>
+    
+    <div class="box" style="text-align: center;">
+      <div class="credential-label">6-Digit Verification Code</div>
+      <div class="otp-code">${data.otpCode}</div>
+      <p style="color: #94a3b8; font-size: 13px; margin-top: 6px;">
+        This code expires in <strong>${data.expiresInMinutes} minutes</strong>.
+      </p>
+    </div>
+
+    <p style="color: #94a3b8; font-size: 13px;">
+      If you did not request this email change, please secure your account immediately.
+    </p>
+    `
+  );
+
+  const text = `
+SHIFTGUARD — VERIFY NEW EMAIL ADDRESS
+
+You requested to update the official contact email for ${data.orgName} to ${data.newEmail}.
+Verification Code: ${data.otpCode}
+This code expires in ${data.expiresInMinutes} minutes.
+  `.trim();
+
+  return { subject, html, text };
+}
+
+/**
+ * 23. Organization Email Change Request — Notice sent to OLD Email
+ */
+export function templateEmailChangeNoticeOld(data: {
+  orgName: string;
+  oldEmail: string;
+  newEmail: string;
+}): EmailTemplatePayload {
+  const subject = `ShiftGuard — Security Notice: Email Change Requested for ${data.orgName}`;
+  const html = emailWrapper(
+    'Security Notice',
+    `
+    <h2 class="title">Email Change Requested</h2>
+    <p>A request was submitted to change the contact email address for <strong>${data.orgName}</strong> from <code>${data.oldEmail}</code> to <code>${data.newEmail}</code>.</p>
+
+    <div class="box" style="border-left: 4px solid #f59e0b;">
+      <p style="color: #fbbf24; font-size: 13.5px; font-weight: 700; margin: 0 0 6px 0;">
+        ⚠️ Verification Code Sent
+      </p>
+      <p style="color: #cbd5e1; font-size: 13px; margin: 0;">
+        A 6-digit verification code was dispatched to <code>${data.newEmail}</code>. The change will not take effect until the code is verified by the administrator.
+      </p>
+    </div>
+    `
+  );
+
+  const text = `
+SHIFTGUARD — SECURITY NOTICE
+
+A request was submitted to change the contact email for ${data.orgName} from ${data.oldEmail} to ${data.newEmail}.
+A verification code was sent to ${data.newEmail}.
+  `.trim();
+
+  return { subject, html, text };
+}
+
+/**
+ * 24. Organization Email Change Success Confirmation — Sent to BOTH Emails
+ */
+export function templateEmailChangeSuccess(data: {
+  orgName: string;
+  oldEmail: string;
+  newEmail: string;
+}): EmailTemplatePayload {
+  const subject = `ShiftGuard — Confirmation: Contact Email Updated for ${data.orgName}`;
+  const html = emailWrapper(
+    'Email Updated',
+    `
+    <h2 class="title">Contact Email Updated</h2>
+    <p>The official contact email address for <strong>${data.orgName}</strong> has been successfully updated.</p>
+
+    <div class="box">
+      <div class="credential-item">
+        <div class="credential-label">Previous Email</div>
+        <div style="color: #94a3b8; font-size: 13.5px;">${data.oldEmail}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">New Official Email</div>
+        <div style="color: #38bdf8; font-weight: 700; font-size: 14px;">${data.newEmail}</div>
+      </div>
+    </div>
+
+    <p style="color: #34d399; font-size: 13.5px; font-weight: 600;">
+      ✓ Verification complete. Future organization notifications will be sent to ${data.newEmail}.
+    </p>
+    `
+  );
+
+  const text = `
+SHIFTGUARD — EMAIL UPDATED CONFIRMATION
+
+The official contact email address for ${data.orgName} has been updated.
+Previous Email: ${data.oldEmail}
+New Official Email: ${data.newEmail}
+  `.trim();
+
+  return { subject, html, text };
+}
