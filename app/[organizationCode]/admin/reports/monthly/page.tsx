@@ -145,6 +145,37 @@ export default function MonthlyReportPage() {
 
   const metrics = report?.monthlyMetrics;
 
+  const [payrollSummary, setPayrollSummary] = useState<any>(null);
+  const [exportingPayroll, setExportingPayroll] = useState(false);
+
+  const fetchPayroll = async () => {
+    if (!selectedStaffId) return;
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/reports/payroll?year=${year}&month=${month}&staffId=${selectedStaffId}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPayrollSummary(data.summary);
+      }
+    } catch (e) {
+      console.error('Error fetching payroll summary:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedStaffId) {
+      fetchPayroll();
+    }
+  }, [organizationCode, year, month, selectedStaffId]);
+
+  const handlePayrollCsvExport = () => {
+    if (!selectedStaffId) return;
+    setExportingPayroll(true);
+    const url = `/api/org/${organizationCode}/reports/export/payroll-csv?year=${year}&month=${month}&staffId=${selectedStaffId}`;
+    window.open(url, '_blank');
+    setTimeout(() => setExportingPayroll(false), 2000);
+    toast.success('Payroll & Hours CSV export initiated.');
+  };
+
   return (
     <div className={styles.pageContainer}>
       <OrgAdminSidebar
@@ -171,6 +202,11 @@ export default function MonthlyReportPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
+            <button type="button" onClick={handlePayrollCsvExport} disabled={exportingPayroll} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderColor: '#34d399', color: '#34d399' }}>
+              <FileText size={15} color="#34d399" />
+              <span>{exportingPayroll ? 'Preparing Payroll...' : 'Export Payroll CSV'}</span>
+            </button>
+
             <button type="button" onClick={handleCsvExport} disabled={exportingCsv} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Download size={15} color="#34d399" />
               <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
@@ -239,6 +275,33 @@ export default function MonthlyReportPage() {
             </div>
           </div>
         </div>
+
+        {/* Payroll Hours Breakdown Banner */}
+        {payrollSummary && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', margin: '0 32px 24px 32px' }}>
+            <div style={{ background: 'rgba(52, 211, 153, 0.08)', border: '1px solid rgba(52, 211, 153, 0.25)', borderRadius: '10px', padding: '14px 18px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#34d399', fontWeight: 700 }}>Total Hours Worked</div>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
+                {payrollSummary.hoursMetrics.actualWorkedFormatted}
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginLeft: '6px' }}>({payrollSummary.hoursMetrics.actualHoursWorked} hrs)</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '10px', padding: '14px 18px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#38bdf8', fontWeight: 700 }}>Total Scheduled Shift Hours</div>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
+                {payrollSummary.hoursMetrics.scheduledHours} hrs
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.25)', borderRadius: '10px', padding: '14px 18px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#fbbf24', fontWeight: 700 }}>Total Overtime Worked</div>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
+                {payrollSummary.hoursMetrics.overtimeFormatted}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filter Bar */}
         <div className={styles.filterBar}>
