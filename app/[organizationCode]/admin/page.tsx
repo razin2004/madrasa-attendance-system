@@ -7,6 +7,7 @@ import { useToast } from '../../../components/feedback/toast-provider';
 import { OrgAdminSidebar } from '../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../components/layout/org-admin-mobile-nav';
 import { LiveAttendanceFeed } from '../../../components/dashboard/live-attendance-feed';
+import { BranchStaffingBanner } from '../../../components/dashboard/branch-staffing-banner';
 import styles from './AdminDashboard.module.css';
 import {
   Building2,
@@ -297,6 +298,9 @@ export default function OrgAdminLandingPage() {
                   </div>
                 )}
               </div>
+
+              {/* Branch Staffing Coverage & Understaffing Warning Banner */}
+              <BranchStaffingBanner organizationCode={orgCode} />
 
               {/* Key Metrics Grid */}
               <div className={styles.metricsGrid}>
