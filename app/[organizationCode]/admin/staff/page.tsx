@@ -23,6 +23,9 @@ import {
   Mail,
   X,
   Loader2,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -86,6 +89,111 @@ export default function StaffDirectoryPage() {
   const [search, setSearch] = useState('');
   const [toggleStaff, setToggleStaff] = useState<StaffItem | null>(null);
   const [toggleLoading, setToggleLoading] = useState(false);
+
+  // Bulk CSV Import Modal State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [parsedRows, setParsedRows] = useState<Array<any>>([]);
+  const [importingCsv, setImportingCsv] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<any | null>(null);
+
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFile(file);
+    setImportError(null);
+    setImportResult(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r\n|\n/);
+      if (lines.length <= 1) {
+        setImportError('CSV file appears to be empty or missing headers.');
+        setParsedRows([]);
+        return;
+      }
+
+      const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+      const rows: any[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = line.split(',').map((v) => v.trim());
+        const rowObj: any = {};
+
+        headers.forEach((h, idx) => {
+          if (h.includes('name')) rowObj.name = values[idx] || '';
+          else if (h.includes('email')) rowObj.email = values[idx] || '';
+          else if (h.includes('id') || h.includes('staff')) rowObj.staffId = values[idx] || '';
+          else if (h.includes('phone')) rowObj.phone = values[idx] || '';
+          else if (h.includes('address')) rowObj.address = values[idx] || '';
+          else if (h.includes('branch')) rowObj.branchName = values[idx] || '';
+          else if (h.includes('role')) rowObj.role = values[idx] || '';
+        });
+
+        if (rowObj.name || rowObj.email) {
+          rows.push(rowObj);
+        }
+      }
+
+      setParsedRows(rows);
+    };
+    reader.readAsText(file);
+  };
+
+  const downloadSampleCSV = () => {
+    const csvContent =
+      'Name,Email,StaffID,Phone,Address,BranchName,Role\n' +
+      'John Doe,john.doe@organization.com,STF-1001,+15550199,"123 Main St",Main Headquarters,STAFF\n' +
+      'Sarah Connor,sarah.c@organization.com,STF-1002,+15550200,"456 North Ave",Downtown Branch,STAFF\n';
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'staff_bulk_import_sample.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleBulkImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (parsedRows.length === 0) {
+      setImportError('Please select a valid CSV file with staff data.');
+      return;
+    }
+
+    setImportingCsv(true);
+    setImportError(null);
+
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/staff/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: parsedRows }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Staff import completed successfully!');
+        setImportResult(data);
+        fetchInitialData();
+      } else {
+        setImportError(data.error || 'Failed to complete CSV import.');
+      }
+    } catch {
+      setImportError('Network error uploading CSV data.');
+    } finally {
+      setImportingCsv(false);
+    }
+  };
 
   useEffect(() => {
     if (organizationCode) {
@@ -204,6 +312,21 @@ export default function StaffDirectoryPage() {
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               <span>Refresh</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setCsvFile(null);
+                setParsedRows([]);
+                setImportError(null);
+                setImportResult(null);
+                setShowImportModal(true);
+              }}
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Upload size={14} />
+              <span>Import via CSV</span>
             </button>
 
             <Link
@@ -563,6 +686,149 @@ export default function StaffDirectoryPage() {
         confirmText={toggleStaff?.user.status === 'ACTIVE' ? 'Deactivate Account' : 'Activate Account'}
         variant={toggleStaff?.user.status === 'ACTIVE' ? 'danger' : 'primary'}
       />
+
+      {/* BULK CSV STAFF IMPORT MODAL */}
+      {showImportModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '640px', padding: '28px', backgroundColor: '#0d121f', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <FileSpreadsheet size={22} color="#818cf8" />
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                  Bulk Staff CSV Import
+                </h3>
+              </div>
+              <button onClick={() => setShowImportModal(false)} className="btn btn-ghost btn-sm" style={{ padding: '4px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {importError && (
+              <div style={{ backgroundColor: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)', padding: '10px 14px', borderRadius: '8px', fontSize: '12.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={16} />
+                <span>{importError}</span>
+              </div>
+            )}
+
+            {importResult ? (
+              <div style={{ padding: '16px 0' }}>
+                <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '16px', borderRadius: '10px', marginBottom: '20px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#34d399', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckCircle2 size={18} />
+                    <span>Import Completed Successfully!</span>
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#f8fafc', marginTop: '6px' }}>
+                    <strong>{importResult.importedCount}</strong> staff members successfully created.
+                    {importResult.skippedCount > 0 && <span> ({importResult.skippedCount} rows skipped)</span>}
+                  </div>
+                </div>
+
+                {importResult.errors && importResult.errors.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#f87171', marginBottom: '8px' }}>Skipped Rows &amp; Errors:</h4>
+                    <div style={{ maxHeight: '160px', overflowY: 'auto', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '8px 12px', border: '1px solid var(--border-subtle)' }}>
+                      {importResult.errors.map((err: any, i: number) => (
+                        <div key={i} style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '4px 0', borderBottom: i < importResult.errors.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
+                          Row {err.row}: {err.email ? <strong>{err.email}</strong> : ''} — <span style={{ color: '#f87171' }}>{err.reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setShowImportModal(false)} className="btn btn-primary btn-sm">
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleBulkImportSubmit}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                  Upload a CSV file containing staff profiles. Supported columns: <strong>Name, Email, StaffID, Phone, Address, BranchName, Role</strong>.
+                </p>
+
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px' }}>
+                  <button
+                    type="button"
+                    onClick={downloadSampleCSV}
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}
+                  >
+                    <Download size={14} />
+                    <span>Download Sample Template CSV</span>
+                  </button>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">Select CSV File *</label>
+                  <input
+                    type="file"
+                    accept=".csv, text/csv"
+                    onChange={handleCsvFileChange}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                {parsedRows.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
+                      Parsed Preview ({parsedRows.length} Rows Detected):
+                    </div>
+                    <div style={{ maxHeight: '160px', overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                            <th style={{ padding: '8px' }}>#</th>
+                            <th style={{ padding: '8px' }}>Name</th>
+                            <th style={{ padding: '8px' }}>Email</th>
+                            <th style={{ padding: '8px' }}>Branch</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parsedRows.slice(0, 10).map((r, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                              <td style={{ padding: '6px 8px', color: 'var(--text-muted)' }}>{idx + 1}</td>
+                              <td style={{ padding: '6px 8px', fontWeight: 700, color: '#ffffff' }}>{r.name || '—'}</td>
+                              <td style={{ padding: '6px 8px', color: 'var(--text-secondary)' }}>{r.email || '—'}</td>
+                              <td style={{ padding: '6px 8px', color: '#818cf8' }}>{r.branchName || 'Default'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button type="button" onClick={() => setShowImportModal(false)} className="btn btn-secondary btn-sm">
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={importingCsv || parsedRows.length === 0}
+                    className="btn btn-primary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    {importingCsv ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Importing {parsedRows.length} Staff...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={14} />
+                        <span>Upload &amp; Import ({parsedRows.length} Staff)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Mobile Navigation */}
       <OrgAdminMobileNav organizationCode={organizationCode} />
