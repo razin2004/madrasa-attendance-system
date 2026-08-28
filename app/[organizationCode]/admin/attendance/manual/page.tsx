@@ -70,6 +70,7 @@ export default function AdminManualAttendancePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          staffProfileId: selectedStaffId,
           staffId: selectedStaffId,
           date,
           clockInTime,

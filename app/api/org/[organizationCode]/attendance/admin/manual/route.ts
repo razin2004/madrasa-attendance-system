@@ -17,9 +17,10 @@ export async function POST(
 
     const { organization, session } = auth;
     const body = await req.json();
-    const { staffProfileId, branchId, date, clockInTime, clockOutTime, reason, adminComment } = body;
+    const targetStaffProfileId = body.staffProfileId || body.staffId;
+    const { branchId, date, clockInTime, clockOutTime, reason, adminComment } = body;
 
-    if (!staffProfileId || !date || !clockInTime || !reason?.trim()) {
+    if (!targetStaffProfileId || !date || !clockInTime || !reason?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Staff member, date, clock-in time, and reason are required.' },
         { status: 400 }
@@ -31,7 +32,7 @@ export async function POST(
     const result = await createAdminManualAttendance({
       organizationId: organization.id,
       adminUserId: session.user.id,
-      staffProfileId,
+      staffProfileId: targetStaffProfileId,
       branchId,
       date,
       clockInTime,
