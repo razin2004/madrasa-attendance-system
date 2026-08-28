@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useToast } from '../../../components/feedback/toast-provider';
 import { OrgAdminSidebar } from '../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../components/layout/org-admin-mobile-nav';
+import { LiveAttendanceFeed } from '../../../components/dashboard/live-attendance-feed';
 import styles from './AdminDashboard.module.css';
 import {
   Building2,
@@ -363,6 +364,9 @@ export default function OrgAdminLandingPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Live Real-Time Attendance Feed Widget */}
+              <LiveAttendanceFeed organizationCode={orgCode} />
 
               {/* Quick Actions Cards */}
               <div className={styles.quickActionsGrid}>
