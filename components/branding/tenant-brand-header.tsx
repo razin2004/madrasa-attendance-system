@@ -17,6 +17,8 @@ export function TenantBrandHeader({
   organizationCode,
   subtitle,
 }: TenantBrandHeaderProps) {
+  const [imgFailed, setImgFailed] = React.useState(false);
+
   return (
     <div style={{ textAlign: 'center', marginBottom: '28px' }}>
       <div
@@ -35,7 +37,7 @@ export function TenantBrandHeader({
           position: 'relative',
         }}
       >
-        {logoUrl ? (
+        {logoUrl && !imgFailed ? (
           <img
             src={logoUrl}
             alt={`${orgName} Logo`}
@@ -45,10 +47,7 @@ export function TenantBrandHeader({
               objectFit: 'contain',
               padding: '6px',
             }}
-            onError={(e) => {
-              // Fallback if image fails to load
-              e.currentTarget.style.display = 'none';
-            }}
+            onError={() => setImgFailed(true)}
           />
         ) : (
           <Building2 size={36} color="#818cf8" />

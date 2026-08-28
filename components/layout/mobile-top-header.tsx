@@ -23,6 +23,8 @@ export function MobileTopHeader({
   adminEmail,
   onLogout,
 }: MobileTopHeaderProps) {
+  const [logoFailed, setLogoFailed] = React.useState(false);
+
   return (
     <header
       style={{
@@ -72,11 +74,12 @@ export function MobileTopHeader({
               flexShrink: 0,
             }}
           >
-            {logoUrl ? (
+            {logoUrl && !logoFailed ? (
               <img
                 src={logoUrl}
                 alt={organizationName}
                 style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+                onError={() => setLogoFailed(true)}
               />
             ) : (
               <Shield size={18} color="#ffffff" />

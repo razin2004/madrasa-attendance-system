@@ -7,6 +7,7 @@ import { SuperAdminSidebar } from '@/components/layout/super-admin-sidebar';
 import { SuperAdminMobileNav } from '@/components/layout/super-admin-mobile-nav';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
+import { OrgLogo } from '@/components/branding/org-logo';
 import styles from './SuperAdminDashboard.module.css';
 import {
   Shield,
@@ -403,15 +404,7 @@ export default function SuperAdminDashboardPage() {
                                         flexShrink: 0,
                                       }}
                                     >
-                                      {org.logoUrl ? (
-                                        <img
-                                          src={org.logoUrl}
-                                          alt={org.name}
-                                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                                        />
-                                      ) : (
-                                        <Building2 size={20} color="#818cf8" />
-                                      )}
+                                      <OrgLogo logoUrl={org.logoUrl} name={org.name} size={20} />
                                     </div>
                                     <span style={{ fontWeight: 700, color: '#ffffff' }}>{org.name}</span>
                                   </div>
@@ -567,11 +560,7 @@ export default function SuperAdminDashboardPage() {
                                       overflow: 'hidden',
                                     }}
                                   >
-                                    {org.logoUrl ? (
-                                      <img src={org.logoUrl} alt={org.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                    ) : (
-                                      <Building2 size={16} color="#818cf8" />
-                                    )}
+                                    <OrgLogo logoUrl={org.logoUrl} name={org.name} size={16} />
                                   </div>
                                   <span style={{ fontWeight: 700, color: '#ffffff' }}>{org.name}</span>
                                 </div>
@@ -739,11 +728,7 @@ export default function SuperAdminDashboardPage() {
                     overflow: 'hidden',
                   }}
                 >
-                  {selectedOrg.logoUrl ? (
-                    <img src={selectedOrg.logoUrl} alt={selectedOrg.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <Building2 size={24} color="#818cf8" />
-                  )}
+                  <OrgLogo logoUrl={selectedOrg.logoUrl} name={selectedOrg.name} size={24} />
                 </div>
                 <div>
                   <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff' }}>

@@ -46,6 +46,7 @@ export function OrgAdminSidebar({
   const router = useRouter();
   const toast = useToast();
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const [logoFailed, setLogoFailed] = React.useState(false);
 
   const handleLogout = async () => {
     try {
@@ -168,8 +169,13 @@ export function OrgAdminSidebar({
             flexShrink: 0,
           }}
         >
-          {logoUrl ? (
-            <img src={logoUrl} alt={organizationName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {logoUrl && !logoFailed ? (
+            <img 
+              src={logoUrl} 
+              alt={organizationName} 
+              style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }} 
+              onError={() => setLogoFailed(true)}
+            />
           ) : (
             <Building2 size={22} color="#818cf8" />
           )}

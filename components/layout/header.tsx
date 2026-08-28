@@ -52,7 +52,14 @@ export function Header() {
               flexShrink: 0,
             }}
           >
-            <Shield size={20} color="#ffffff" />
+            <img
+              src="/icon.svg"
+              alt="ShiftGuard Logo"
+              style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="logoBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <linearGradient id="logoShieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="logoAccentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#logoBgGrad)" />
+  <path d="M 256 72 C 340 72 400 96 400 96 L 400 248 C 400 352 296 424 256 440 C 216 424 112 352 112 248 L 112 96 C 112 96 172 72 256 72 Z" fill="url(#logoShieldGrad)" stroke="rgba(255,255,255,0.2)" stroke-width="6" />
+  <path d="M 180 340 L 180 230 L 210 200 L 240 230 L 240 340 Z" fill="url(#logoAccentGrad)" opacity="0.85" />
+  <path d="M 270 340 L 270 230 L 300 200 L 330 230 L 330 340 Z" fill="url(#logoAccentGrad)" opacity="0.85" />
+  <path d="M 190 250 L 240 300 L 330 180" fill="none" stroke="#38bdf8" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M 190 250 L 240 300 L 330 180" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
