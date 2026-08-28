@@ -49,10 +49,11 @@ export default function AdminSettingsPage() {
   const [defaultGeofenceRadius, setDefaultGeofenceRadius] = useState(100);
   const [defaultMaxDailyCycles, setDefaultMaxDailyCycles] = useState(1);
 
-  // Email Change OTP Modal State
+  // Dual Email Change OTP Modal State
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
+  const [oldEmailOtp, setOldEmailOtp] = useState('');
+  const [newEmailOtp, setNewEmailOtp] = useState('');
   const [otpStep, setOtpStep] = useState<'ENTER_NEW_EMAIL' | 'VERIFY_OTP'>('ENTER_NEW_EMAIL');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -191,13 +192,18 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // Verify OTP and Complete Email Change
+  // Verify Dual OTPs and Complete Email Change
   const handleVerifyEmailChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
 
-    if (!otpCode || otpCode.trim().length !== 6) {
-      setModalError('Please enter the 6-digit OTP code.');
+    if (!oldEmailOtp || oldEmailOtp.trim().length !== 6) {
+      setModalError('Please enter the 6-digit authorization code sent to your CURRENT email.');
+      return;
+    }
+
+    if (!newEmailOtp || newEmailOtp.trim().length !== 6) {
+      setModalError('Please enter the 6-digit verification code sent to your NEW email.');
       return;
     }
 
@@ -207,7 +213,8 @@ export default function AdminSettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          otpCode: otpCode.trim(),
+          oldEmailOtp: oldEmailOtp.trim(),
+          newEmailOtp: newEmailOtp.trim(),
           newEmail: newEmail.trim(),
         }),
       });
@@ -218,14 +225,15 @@ export default function AdminSettingsPage() {
         setContactEmail(newEmail.trim());
         setShowEmailModal(false);
         setOtpStep('ENTER_NEW_EMAIL');
-        setOtpCode('');
+        setOldEmailOtp('');
+        setNewEmailOtp('');
         setNewEmail('');
         fetchSettings();
       } else {
-        setModalError(data.error || 'Invalid or expired OTP code.');
+        setModalError(data.error || 'Invalid or expired OTP verification code.');
       }
     } catch {
-      setModalError('Network error verifying OTP.');
+      setModalError('Network error verifying OTPs.');
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -424,7 +432,7 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              {/* CONTACT EMAIL WITH 2-STEP OTP VERIFICATION TRIGGER */}
+              {/* CONTACT EMAIL WITH DUAL OTP VERIFICATION TRIGGER */}
               <div className="form-group" style={{ marginBottom: 0, marginTop: '10px' }}>
                 <label className="form-label">Official Contact Email</label>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -440,7 +448,8 @@ export default function AdminSettingsPage() {
                     type="button"
                     onClick={() => {
                       setNewEmail('');
-                      setOtpCode('');
+                      setOldEmailOtp('');
+                      setNewEmailOtp('');
                       setModalError(null);
                       setOtpStep('ENTER_NEW_EMAIL');
                       setShowEmailModal(true);
@@ -449,11 +458,11 @@ export default function AdminSettingsPage() {
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
                   >
                     <Mail size={14} />
-                    <span>Change Email (via OTP)</span>
+                    <span>Change Email (Dual OTP)</span>
                   </button>
                 </div>
                 <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                  Email changes require 2-step OTP verification sent to the new email address. Notifications will be sent to both old &amp; new emails.
+                  Security policy: Verification codes will be sent to BOTH your current email and new email. Both OTPs are required to complete the change.
                 </p>
               </div>
             </div>
@@ -483,15 +492,15 @@ export default function AdminSettingsPage() {
         )}
       </div>
 
-      {/* 2-STEP EMAIL CHANGE OTP VERIFICATION MODAL */}
+      {/* DUAL-OTP EMAIL CHANGE VERIFICATION MODAL */}
       {showEmailModal && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px', backgroundColor: '#0d121f' }}>
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '28px', backgroundColor: '#0d121f' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <KeyRound size={22} color="#38bdf8" />
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                  {otpStep === 'ENTER_NEW_EMAIL' ? 'Change Contact Email' : 'Verify Email Change OTP'}
+                  {otpStep === 'ENTER_NEW_EMAIL' ? 'Change Contact Email' : 'Verify Dual Email OTPs'}
                 </h3>
               </div>
               <button onClick={() => setShowEmailModal(false)} className="btn btn-ghost btn-sm" style={{ padding: '4px' }}>
@@ -510,7 +519,7 @@ export default function AdminSettingsPage() {
               <form onSubmit={handleRequestEmailChange}>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
                   Current Email: <strong style={{ color: '#ffffff' }}>{contactEmail}</strong><br />
-                  Enter your new contact email address below. A 6-digit verification code will be sent to the new email address.
+                  Enter your new contact email below. Security OTP verification codes will be sent to <strong>BOTH</strong> addresses.
                 </p>
 
                 <div className="form-group" style={{ marginBottom: '20px' }}>
@@ -530,27 +539,48 @@ export default function AdminSettingsPage() {
                     Cancel
                   </button>
                   <button type="submit" disabled={isSendingOtp} className="btn btn-primary btn-sm">
-                    {isSendingOtp ? 'Sending OTP...' : 'Send Verification Code'}
+                    {isSendingOtp ? 'Sending OTPs...' : 'Send Verification Codes'}
                   </button>
                 </div>
               </form>
             ) : (
               <form onSubmit={handleVerifyEmailChange}>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
-                  A 6-digit OTP code was sent to <strong style={{ color: '#38bdf8' }}>{newEmail}</strong>.<br />
-                  Enter the verification code below to confirm and update your contact email.
+                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                  Verification codes have been dispatched to both email addresses. Please enter both 6-digit codes below:
                 </p>
 
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label className="form-label">6-Digit Verification Code *</label>
+                {/* CURRENT EMAIL OTP CODE INPUT */}
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>1. Current Email Code *</span>
+                    <span style={{ fontSize: '11px', color: '#fbbf24' }}>Sent to: {contactEmail}</span>
+                  </label>
                   <input
                     type="text"
                     maxLength={6}
                     className="form-input"
-                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '20px', fontWeight: 800, color: '#38bdf8' }}
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '18px', fontWeight: 800, color: '#fbbf24' }}
+                    value={oldEmailOtp}
+                    onChange={(e) => setOldEmailOtp(e.target.value.replace(/\D/g, ''))}
                     placeholder="123456"
+                    required
+                  />
+                </div>
+
+                {/* NEW EMAIL OTP CODE INPUT */}
+                <div className="form-group" style={{ marginBottom: '24px' }}>
+                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>2. New Email Code *</span>
+                    <span style={{ fontSize: '11px', color: '#38bdf8' }}>Sent to: {newEmail}</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    className="form-input"
+                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '18px', fontWeight: 800, color: '#38bdf8' }}
+                    value={newEmailOtp}
+                    onChange={(e) => setNewEmailOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="654321"
                     required
                   />
                 </div>
@@ -569,8 +599,12 @@ export default function AdminSettingsPage() {
                     <button type="button" onClick={() => setShowEmailModal(false)} className="btn btn-secondary btn-sm">
                       Cancel
                     </button>
-                    <button type="submit" disabled={isVerifyingOtp || otpCode.length !== 6} className="btn btn-success btn-sm">
-                      {isVerifyingOtp ? 'Verifying...' : 'Confirm & Update Email'}
+                    <button
+                      type="submit"
+                      disabled={isVerifyingOtp || oldEmailOtp.length !== 6 || newEmailOtp.length !== 6}
+                      className="btn btn-success btn-sm"
+                    >
+                      {isVerifyingOtp ? 'Verifying...' : 'Verify Both Codes & Update'}
                     </button>
                   </div>
                 </div>

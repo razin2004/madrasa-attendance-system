@@ -1064,36 +1064,42 @@ This code expires in ${data.expiresInMinutes} minutes.
 }
 
 /**
- * 23. Organization Email Change Request — Notice sent to OLD Email
+ * 23. Organization Email Change Request — Security OTP sent to CURRENT (OLD) Email
  */
-export function templateEmailChangeNoticeOld(data: {
+export function templateEmailChangeOldOTP(data: {
   orgName: string;
   oldEmail: string;
   newEmail: string;
+  otpCode: string;
+  expiresInMinutes: number;
 }): EmailTemplatePayload {
-  const subject = `ShiftGuard — Security Notice: Email Change Requested for ${data.orgName}`;
+  const subject = `ShiftGuard — Security Authorization Code (Current Email): ${data.otpCode}`;
   const html = emailWrapper(
-    'Security Notice',
+    'Current Email Verification',
     `
-    <h2 class="title">Email Change Requested</h2>
-    <p>A request was submitted to change the contact email address for <strong>${data.orgName}</strong> from <code>${data.oldEmail}</code> to <code>${data.newEmail}</code>.</p>
+    <h2 class="title">Current Email Authorization</h2>
+    <p>A request was initiated to change the official contact email for <strong>${data.orgName}</strong> to <code>${data.newEmail}</code>.</p>
 
-    <div class="box" style="border-left: 4px solid #f59e0b;">
-      <p style="color: #fbbf24; font-size: 13.5px; font-weight: 700; margin: 0 0 6px 0;">
-        ⚠️ Verification Code Sent
-      </p>
-      <p style="color: #cbd5e1; font-size: 13px; margin: 0;">
-        A 6-digit verification code was dispatched to <code>${data.newEmail}</code>. The change will not take effect until the code is verified by the administrator.
+    <div class="box" style="text-align: center;">
+      <div class="credential-label">Current Email Authorization Code</div>
+      <div class="otp-code" style="color: #f59e0b;">${data.otpCode}</div>
+      <p style="color: #94a3b8; font-size: 13px; margin-top: 6px;">
+        This code sent to your current email (<code>${data.oldEmail}</code>) expires in <strong>${data.expiresInMinutes} minutes</strong>.
       </p>
     </div>
+
+    <p style="color: #fb7185; font-size: 13px; font-weight: 600;">
+      🔒 Enter this authorization code alongside the code sent to your new email to complete the update. If you did not authorize this change, please contact support immediately.
+    </p>
     `
   );
 
   const text = `
-SHIFTGUARD — SECURITY NOTICE
+SHIFTGUARD — CURRENT EMAIL AUTHORIZATION
 
-A request was submitted to change the contact email for ${data.orgName} from ${data.oldEmail} to ${data.newEmail}.
-A verification code was sent to ${data.newEmail}.
+A request was initiated to change the contact email for ${data.orgName} to ${data.newEmail}.
+Current Email Authorization Code: ${data.otpCode}
+Expires in ${data.expiresInMinutes} minutes.
   `.trim();
 
   return { subject, html, text };

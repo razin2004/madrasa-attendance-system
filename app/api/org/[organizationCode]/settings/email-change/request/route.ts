@@ -5,7 +5,7 @@ import { normalizeEmail, generateNumericOTP, hashToken } from '@/lib/security';
 import { sendEmail } from '@/services/email.service';
 import {
   templateEmailChangeOTP,
-  templateEmailChangeNoticeOld,
+  templateEmailChangeOldOTP,
 } from '@/services/email-templates';
 
 export async function POST(
@@ -51,9 +51,9 @@ export async function POST(
       },
     });
 
-    // Generate 6-digit OTP
-    const otpCode = generateNumericOTP();
-    const tokenHash = hashToken(otpCode);
+    // 1. Generate 6-digit OTP for NEW Email
+    const newEmailOtp = generateNumericOTP();
+    const newTokenHash = hashToken(newEmailOtp);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     await prisma.securityToken.create({
@@ -61,59 +61,82 @@ export async function POST(
         organizationId: organization.id,
         userId: session.user.id,
         type: 'LOGIN_OTP',
-        tokenHash,
+        tokenHash: newTokenHash,
         expiresAt,
         metadata: {
-          action: 'ORGANIZATION_EMAIL_CHANGE',
+          action: 'EMAIL_CHANGE_NEW',
+          targetEmail: cleanNewEmail,
           oldEmail,
           newEmail: cleanNewEmail,
         },
       },
     });
 
-    // 1. Dispatch OTP email to NEW email
-    const otpEmailPayload = templateEmailChangeOTP({
+    // 2. Generate 6-digit OTP for CURRENT (OLD) Email
+    const oldEmailOtp = generateNumericOTP();
+    const oldTokenHash = hashToken(oldEmailOtp);
+
+    await prisma.securityToken.create({
+      data: {
+        organizationId: organization.id,
+        userId: session.user.id,
+        type: 'LOGIN_OTP',
+        tokenHash: oldTokenHash,
+        expiresAt,
+        metadata: {
+          action: 'EMAIL_CHANGE_OLD',
+          targetEmail: oldEmail,
+          oldEmail,
+          newEmail: cleanNewEmail,
+        },
+      },
+    });
+
+    // 3. Dispatch OTP to NEW Email Address
+    const newOtpPayload = templateEmailChangeOTP({
       orgName: organization.name,
       newEmail: cleanNewEmail,
-      otpCode,
+      otpCode: newEmailOtp,
       expiresInMinutes: 15,
     });
 
     await sendEmail({
       recipient: cleanNewEmail,
-      subject: otpEmailPayload.subject,
-      htmlContent: otpEmailPayload.html,
-      textContent: otpEmailPayload.text,
+      subject: newOtpPayload.subject,
+      htmlContent: newOtpPayload.html,
+      textContent: newOtpPayload.text,
       organizationId: organization.id,
-      type: 'EMAIL_CHANGE_OTP',
+      type: 'EMAIL_CHANGE_NEW_OTP',
     });
 
-    // 2. Dispatch Security Notification to OLD email
-    if (oldEmail && oldEmail !== cleanNewEmail) {
-      const oldNoticePayload = templateEmailChangeNoticeOld({
+    // 4. Dispatch Security Authorization OTP to CURRENT (OLD) Email Address
+    if (oldEmail) {
+      const oldOtpPayload = templateEmailChangeOldOTP({
         orgName: organization.name,
         oldEmail,
         newEmail: cleanNewEmail,
+        otpCode: oldEmailOtp,
+        expiresInMinutes: 15,
       });
 
       await sendEmail({
         recipient: oldEmail,
-        subject: oldNoticePayload.subject,
-        htmlContent: oldNoticePayload.html,
-        textContent: oldNoticePayload.text,
+        subject: oldOtpPayload.subject,
+        htmlContent: oldOtpPayload.html,
+        textContent: oldOtpPayload.text,
         organizationId: organization.id,
-        type: 'EMAIL_CHANGE_NOTICE',
+        type: 'EMAIL_CHANGE_OLD_OTP',
       });
     }
 
     return NextResponse.json({
       success: true,
-      message: `Verification OTP has been sent to ${cleanNewEmail}. Please check your inbox.`,
+      message: `Verification codes dispatched! Check both your current email (${oldEmail}) and new email (${cleanNewEmail}).`,
     });
   } catch (error: any) {
-    console.error('Error requesting email change OTP:', error);
+    console.error('Error requesting email change OTPs:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to dispatch verification OTP.' },
+      { success: false, error: error.message || 'Failed to dispatch verification OTPs.' },
       { status: 500 }
     );
   }

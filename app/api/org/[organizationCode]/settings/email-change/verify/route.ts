@@ -20,53 +20,82 @@ export async function POST(
 
     const { organization, session } = auth;
     const body = await req.json();
-    const { otpCode, newEmail } = body;
+    const { oldEmailOtp, newEmailOtp, newEmail } = body;
 
-    const cleanOtp = (otpCode || '').toString().trim();
+    const cleanOldOtp = (oldEmailOtp || '').toString().trim();
+    const cleanNewOtp = (newEmailOtp || '').toString().trim();
     const cleanNewEmail = normalizeEmail(newEmail);
 
-    if (!cleanOtp || cleanOtp.length !== 6) {
+    if (!cleanOldOtp || cleanOldOtp.length !== 6) {
       return NextResponse.json(
-        { success: false, error: 'Please enter the 6-digit OTP verification code.' },
+        { success: false, error: 'Please enter the 6-digit verification code sent to your CURRENT email.' },
         { status: 400 }
       );
     }
 
-    const tokenHash = hashToken(cleanOtp);
-    const securityToken = await prisma.securityToken.findUnique({
-      where: { tokenHash },
+    if (!cleanNewOtp || cleanNewOtp.length !== 6) {
+      return NextResponse.json(
+        { success: false, error: 'Please enter the 6-digit verification code sent to your NEW email.' },
+        { status: 400 }
+      );
+    }
+
+    // 1. Verify NEW Email OTP Token
+    const newTokenHash = hashToken(cleanNewOtp);
+    const newToken = await prisma.securityToken.findUnique({
+      where: { tokenHash: newTokenHash },
     });
 
     if (
-      !securityToken ||
-      securityToken.organizationId !== organization.id ||
-      securityToken.consumedAt !== null ||
-      securityToken.expiresAt < new Date()
+      !newToken ||
+      newToken.organizationId !== organization.id ||
+      newToken.consumedAt !== null ||
+      newToken.expiresAt < new Date()
     ) {
       return NextResponse.json(
-        { success: false, error: 'Invalid or expired OTP verification code.' },
+        { success: false, error: 'Invalid or expired OTP code for the NEW email address.' },
         { status: 400 }
       );
     }
 
-    const metadata: any = securityToken.metadata || {};
-    const targetNewEmail = cleanNewEmail || metadata.newEmail;
-    const oldEmail = metadata.oldEmail || organization.contactEmail || session.user.email;
+    // 2. Verify CURRENT (OLD) Email OTP Token
+    const oldTokenHash = hashToken(cleanOldOtp);
+    const oldToken = await prisma.securityToken.findUnique({
+      where: { tokenHash: oldTokenHash },
+    });
+
+    if (
+      !oldToken ||
+      oldToken.organizationId !== organization.id ||
+      oldToken.consumedAt !== null ||
+      oldToken.expiresAt < new Date()
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or expired authorization code for your CURRENT email address.' },
+        { status: 400 }
+      );
+    }
+
+    const metadataNew: any = newToken.metadata || {};
+    const metadataOld: any = oldToken.metadata || {};
+
+    const targetNewEmail = cleanNewEmail || metadataNew.newEmail || metadataOld.newEmail;
+    const oldEmail = metadataOld.oldEmail || metadataNew.oldEmail || organization.contactEmail || session.user.email;
 
     if (!targetNewEmail) {
       return NextResponse.json(
-        { success: false, error: 'Target new email is missing.' },
+        { success: false, error: 'Target new email address is missing.' },
         { status: 400 }
       );
     }
 
-    // 1. Mark token consumed
-    await prisma.securityToken.update({
-      where: { id: securityToken.id },
+    // 3. Mark both tokens consumed
+    await prisma.securityToken.updateMany({
+      where: { id: { in: [newToken.id, oldToken.id] } },
       data: { consumedAt: new Date() },
     });
 
-    // 2. Update Organization contactEmail in DB
+    // 4. Update Organization contactEmail in DB
     const updatedOrg = await prisma.organization.update({
       where: { id: organization.id },
       data: {
@@ -74,7 +103,7 @@ export async function POST(
       },
     });
 
-    // 3. Update Org Admin User email if admin user's email was matching old contactEmail
+    // 5. Update Org Admin User email if admin user's email was matching old contactEmail
     if (session.user.email === oldEmail) {
       await prisma.user.update({
         where: { id: session.user.id },
@@ -82,7 +111,7 @@ export async function POST(
       });
     }
 
-    // 4. Send Confirmation Emails to BOTH OLD AND NEW Email addresses
+    // 6. Send Confirmation Emails to BOTH OLD AND NEW Email addresses
     const successTemplate = templateEmailChangeSuccess({
       orgName: organization.name,
       oldEmail,
@@ -113,13 +142,13 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Contact email updated to ${targetNewEmail} successfully! Confirmation sent to both addresses.`,
+      message: `Contact email updated to ${targetNewEmail} successfully! Both OTP codes verified. Confirmation sent to both email addresses.`,
       organization: updatedOrg,
     });
   } catch (error: any) {
-    console.error('Error verifying email change OTP:', error);
+    console.error('Error verifying dual email change OTPs:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to verify OTP.' },
+      { success: false, error: error.message || 'Failed to verify OTPs.' },
       { status: 500 }
     );
   }
