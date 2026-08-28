@@ -296,14 +296,8 @@ export default function StaffDashboardPage() {
 
   const initData = useCallback(async () => {
     setLoading(true);
-    // Initial fast precheck
-    runPrecheck(locationCoords);
-
-    // Asynchronously request high-accuracy GPS coordinates for mobile
-    const coords = await requestGeolocation();
-    if (coords) {
-      await runPrecheck(coords);
-    }
+    // Initial precheck without automatic geolocation re-verification
+    await runPrecheck(locationCoords);
 
     try {
       const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=5`);
@@ -314,7 +308,7 @@ export default function StaffDashboardPage() {
     } catch {}
 
     setLoading(false);
-  }, [locationCoords, orgCode, requestGeolocation, runPrecheck]);
+  }, [locationCoords, orgCode, runPrecheck]);
 
   useEffect(() => {
     if (orgCode) {

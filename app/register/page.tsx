@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
@@ -13,6 +13,7 @@ import {
   Phone,
   Upload,
   CheckCircle2,
+  XCircle,
   AlertCircle,
   ArrowRight,
   ArrowLeft,
@@ -47,6 +48,93 @@ export default function RegisterOrganizationPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  // Real-time Availability States
+  const [codeStatus, setCodeStatus] = useState<{
+    state: 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
+    message: string;
+  }>({ state: 'idle', message: '' });
+
+  const [emailStatus, setEmailStatus] = useState<{
+    state: 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
+    message: string;
+  }>({ state: 'idle', message: '' });
+
+  // Real-time Organization Code Debounced Availability Check
+  useEffect(() => {
+    const code = formData.organizationCode.trim();
+    if (!code) {
+      setCodeStatus({ state: 'idle', message: '' });
+      return;
+    }
+
+    if (!/^[A-Z0-9]{3,12}$/.test(code)) {
+      setCodeStatus({
+        state: 'invalid',
+        message: 'Code must be 3–12 uppercase letters or numbers.',
+      });
+      return;
+    }
+
+    setCodeStatus({ state: 'checking', message: 'Checking code availability...' });
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/organizations/check-availability?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        if (data.success && data.code) {
+          if (data.code.available) {
+            setCodeStatus({ state: 'available', message: `✓ ${data.code.message || 'Organization code is available!'}` });
+          } else {
+            setCodeStatus({ state: 'taken', message: `✕ ${data.code.message || 'Organization code is already taken.'}` });
+          }
+        } else {
+          setCodeStatus({ state: 'idle', message: '' });
+        }
+      } catch {
+        setCodeStatus({ state: 'idle', message: '' });
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [formData.organizationCode]);
+
+  // Real-time Contact Email Debounced Availability Check
+  useEffect(() => {
+    const email = formData.contactEmail.trim();
+    if (!email) {
+      setEmailStatus({ state: 'idle', message: '' });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailStatus({ state: 'invalid', message: 'Please enter a valid email address.' });
+      return;
+    }
+
+    setEmailStatus({ state: 'checking', message: 'Checking email availability...' });
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/organizations/check-availability?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (data.success && data.email) {
+          if (data.email.available) {
+            setEmailStatus({ state: 'available', message: `✓ ${data.email.message || 'Email address is available!'}` });
+          } else {
+            setEmailStatus({ state: 'taken', message: `✕ ${data.email.message || 'This email is already registered as an admin or organization.'}` });
+          }
+        } else {
+          setEmailStatus({ state: 'idle', message: '' });
+        }
+      } catch {
+        setEmailStatus({ state: 'idle', message: '' });
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [formData.contactEmail]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -118,6 +206,8 @@ export default function RegisterOrganizationPage() {
       newErrors.organizationCode = 'Organization Code is required.';
     } else if (!/^[A-Z0-9]{3,12}$/.test(code)) {
       newErrors.organizationCode = 'Code must be 3–12 uppercase letters or numbers (e.g. ABCENG).';
+    } else if (codeStatus.state === 'taken') {
+      newErrors.organizationCode = 'This organization code is already taken. Please choose another code.';
     }
 
     const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
@@ -140,6 +230,8 @@ export default function RegisterOrganizationPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.contactEmail.trim() || !emailRegex.test(formData.contactEmail.trim())) {
       newErrors.contactEmail = 'Please enter a valid email address.';
+    } else if (emailStatus.state === 'taken') {
+      newErrors.contactEmail = 'This email is already registered as an admin or organization.';
     }
 
     setErrors(newErrors);
@@ -446,7 +538,18 @@ export default function RegisterOrganizationPage() {
                         value={formData.organizationCode}
                         onChange={handleInputChange}
                         className="form-input"
-                        style={{ paddingLeft: '40px', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
+                        style={{
+                          paddingLeft: '40px',
+                          paddingRight: '40px',
+                          fontFamily: 'var(--font-mono)',
+                          textTransform: 'uppercase',
+                          borderColor:
+                            codeStatus.state === 'available'
+                              ? '#34d399'
+                              : codeStatus.state === 'taken' || codeStatus.state === 'invalid'
+                              ? '#f87171'
+                              : undefined,
+                        }}
                         required
                       />
                       <Globe
@@ -454,7 +557,48 @@ export default function RegisterOrganizationPage() {
                         color="var(--text-muted)"
                         style={{ position: 'absolute', left: '14px', top: '13px' }}
                       />
+                      {codeStatus.state === 'checking' && (
+                        <Loader2
+                          size={18}
+                          className="animate-spin"
+                          style={{ position: 'absolute', right: '14px', top: '13px', color: '#818cf8' }}
+                        />
+                      )}
+                      {codeStatus.state === 'available' && (
+                        <CheckCircle2
+                          size={18}
+                          style={{ position: 'absolute', right: '14px', top: '13px', color: '#34d399' }}
+                        />
+                      )}
+                      {(codeStatus.state === 'taken' || codeStatus.state === 'invalid') && (
+                        <XCircle
+                          size={18}
+                          style={{ position: 'absolute', right: '14px', top: '13px', color: '#f87171' }}
+                        />
+                      )}
                     </div>
+                    {codeStatus.state !== 'idle' && (
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          marginTop: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color:
+                            codeStatus.state === 'available'
+                              ? '#34d399'
+                              : codeStatus.state === 'taken'
+                              ? '#f87171'
+                              : codeStatus.state === 'checking'
+                              ? '#818cf8'
+                              : '#fbbf24',
+                        }}
+                      >
+                        {codeStatus.message}
+                      </div>
+                    )}
                     <div className="form-hint">
                       Unique 3–12 uppercase code. Forms your custom workspace path:{' '}
                       <strong style={{ color: '#818cf8' }}>
@@ -553,7 +697,16 @@ export default function RegisterOrganizationPage() {
                         value={formData.contactEmail}
                         onChange={handleInputChange}
                         className="form-input"
-                        style={{ paddingLeft: '40px' }}
+                        style={{
+                          paddingLeft: '40px',
+                          paddingRight: '40px',
+                          borderColor:
+                            emailStatus.state === 'available'
+                              ? '#34d399'
+                              : emailStatus.state === 'taken' || emailStatus.state === 'invalid'
+                              ? '#f87171'
+                              : undefined,
+                        }}
                         required
                       />
                       <Mail
@@ -561,7 +714,48 @@ export default function RegisterOrganizationPage() {
                         color="var(--text-muted)"
                         style={{ position: 'absolute', left: '14px', top: '13px' }}
                       />
+                      {emailStatus.state === 'checking' && (
+                        <Loader2
+                          size={18}
+                          className="animate-spin"
+                          style={{ position: 'absolute', right: '14px', top: '13px', color: '#818cf8' }}
+                        />
+                      )}
+                      {emailStatus.state === 'available' && (
+                        <CheckCircle2
+                          size={18}
+                          style={{ position: 'absolute', right: '14px', top: '13px', color: '#34d399' }}
+                        />
+                      )}
+                      {(emailStatus.state === 'taken' || emailStatus.state === 'invalid') && (
+                        <XCircle
+                          size={18}
+                          style={{ position: 'absolute', right: '14px', top: '13px', color: '#f87171' }}
+                        />
+                      )}
                     </div>
+                    {emailStatus.state !== 'idle' && (
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          marginTop: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color:
+                            emailStatus.state === 'available'
+                              ? '#34d399'
+                              : emailStatus.state === 'taken'
+                              ? '#f87171'
+                              : emailStatus.state === 'checking'
+                              ? '#818cf8'
+                              : '#fbbf24',
+                        }}
+                      >
+                        {emailStatus.message}
+                      </div>
+                    )}
                     <div className="form-hint">
                       Your primary administrator login credentials will be dispatched to this email upon Super Admin approval.
                     </div>
