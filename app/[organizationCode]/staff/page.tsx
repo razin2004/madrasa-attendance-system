@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
+import { CorrectionRequestModal } from '@/components/attendance/correction-request-modal';
 import { getClientPublicIp } from '@/lib/client-location-ip';
 import styles from './StaffDashboard.module.css';
 
@@ -117,6 +118,9 @@ export default function StaffDashboardPage() {
   // Early Clock-Out Warning Modal State
   const [showEarlyClockOutModal, setShowEarlyClockOutModal] = useState(false);
   const [earlyClockOutMinutes, setEarlyClockOutMinutes] = useState<number>(0);
+
+  // Correction Request Modal State
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
 
   // Live Digital Clock
   useEffect(() => {
@@ -679,15 +683,20 @@ export default function StaffDashboardPage() {
             </div>
           </Link>
 
-          <Link href={`/${orgCode}/staff/attendance/correction`} className={styles.quickTile}>
+          <button
+            type="button"
+            onClick={() => setShowCorrectionModal(true)}
+            className={styles.quickTile}
+            style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer' }}
+          >
             <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <AlertCircle size={20} />
             </div>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Report Problem</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Attendance correction</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Request Correction</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Fix missed / wrong punch</div>
             </div>
-          </Link>
+          </button>
 
           <Link href={`/${orgCode}/staff/attendance`} className={styles.quickTile}>
             <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: 'rgba(129, 140, 248, 0.15)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -755,6 +764,14 @@ export default function StaffDashboardPage() {
         message={`Your scheduled shift end time is ${todayStatus?.schedule?.endTime || '5:00 PM'}. You still have ${earlyClockOutMinutes} minutes remaining. Are you sure you want to clock out early now?`}
         confirmText="Clock Out Early"
         variant="warning"
+      />
+
+      {/* ATTENDANCE CORRECTION REQUEST MODAL */}
+      <CorrectionRequestModal
+        organizationCode={orgCode}
+        isOpen={showCorrectionModal}
+        onClose={() => setShowCorrectionModal(false)}
+        onSuccess={() => runPrecheck()}
       />
     </div>
   );
