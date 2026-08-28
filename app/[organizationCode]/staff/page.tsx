@@ -322,8 +322,20 @@ export default function StaffDashboardPage() {
   useEffect(() => {
     if (orgCode) {
       initData();
+
+      const handleFocusOrOnline = () => {
+        runPrecheck(null, false);
+      };
+
+      window.addEventListener('focus', handleFocusOrOnline);
+      window.addEventListener('online', handleFocusOrOnline);
+
+      return () => {
+        window.removeEventListener('focus', handleFocusOrOnline);
+        window.removeEventListener('online', handleFocusOrOnline);
+      };
     }
-  }, [initData, orgCode]);
+  }, [initData, orgCode, runPrecheck]);
 
   const handleManualRefresh = async () => {
     setChecking(true);
@@ -335,13 +347,65 @@ export default function StaffDashboardPage() {
     setClocking(true);
     try {
       const deviceSecret = getOrCreateDeviceSecret();
-      const clientIp = await getClientPublicIp();
-      const coords = locationCoords || (await requestGeolocation());
+      let clientIp: string | null = null;
+      try {
+        clientIp = await getClientPublicIp();
+      } catch {}
 
+      const coords = locationCoords || (await requestGeolocation().catch(() => null));
+
+      // 1. Mandatory Live Backend Precheck Comparison before executing Clock In / Out
+      const precheckHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (clientIp) precheckHeaders['x-client-public-ip'] = clientIp;
+
+      const precheckBody: any = { deviceSecret };
+      if (coords) {
+        precheckBody.latitude = coords.latitude;
+        precheckBody.longitude = coords.longitude;
+        if (coords.accuracy !== undefined) precheckBody.accuracy = coords.accuracy;
+      }
+
+      const livePrecheckRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
+        method: 'POST',
+        headers: precheckHeaders,
+        body: JSON.stringify(precheckBody),
+        cache: 'no-store',
+      });
+
+      const livePrecheckData = await livePrecheckRes.json();
+      let candidateBranchId = precheck?.candidateBranch?.id;
+
+      if (livePrecheckData.success && livePrecheckData.evaluation) {
+        setPrecheck(livePrecheckData.evaluation);
+        if (livePrecheckData.todayStatus) setTodayStatus(livePrecheckData.todayStatus);
+        if (livePrecheckData.evaluation.candidateBranch?.id) {
+          candidateBranchId = livePrecheckData.evaluation.candidateBranch.id;
+        }
+
+        if (!livePrecheckData.evaluation.isReady) {
+          let errorMsg = 'Attendance verification failed.';
+          if (!livePrecheckData.evaluation.layer2Network?.isVerified) {
+            errorMsg = livePrecheckData.evaluation.layer2Network?.message || 'Your current network is not the registered branch network.';
+          } else if (!livePrecheckData.evaluation.layer3Geofence?.isVerified) {
+            errorMsg = livePrecheckData.evaluation.layer3Geofence?.message || 'Outside branch geofence.';
+          } else if (!livePrecheckData.evaluation.layer1Device?.isVerified) {
+            errorMsg = 'Unverified device.';
+          }
+
+          toast.error(errorMsg);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: false }));
+          }
+          setClocking(false);
+          return;
+        }
+      }
+
+      // 2. Verified Live Security Passed -> Execute Clock In / Out
       const payload: any = {
         action: actionType,
         deviceSecret,
-        branchId: precheck?.candidateBranch?.id,
+        branchId: candidateBranchId,
       };
 
       if (coords) {
@@ -350,13 +414,10 @@ export default function StaffDashboardPage() {
         if (coords.accuracy !== undefined) payload.accuracy = coords.accuracy;
       }
 
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (clientIp) headers['x-client-public-ip'] = clientIp;
-
       const endpoint = actionType === 'CLOCK_IN' ? 'clock-in' : 'clock-out';
       const res = await fetch(`/api/org/${orgCode}/attendance/${endpoint}`, {
         method: 'POST',
-        headers,
+        headers: precheckHeaders,
         body: JSON.stringify(payload),
       });
 
@@ -371,6 +432,7 @@ export default function StaffDashboardPage() {
         initData();
       } else {
         toast.error(data.error || `Failed to ${actionType === 'CLOCK_IN' ? 'clock in' : 'clock out'}.`);
+        if (data.evaluation) setPrecheck(data.evaluation);
       }
     } catch {
       toast.error('Network error recording attendance.');

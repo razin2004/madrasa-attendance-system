@@ -94,7 +94,7 @@ export default function RegisterOrganizationPage() {
       } catch {
         setCodeStatus({ state: 'idle', message: '' });
       }
-    }, 350);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [formData.organizationCode]);
@@ -109,11 +109,9 @@ export default function RegisterOrganizationPage() {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setEmailStatus({ state: 'invalid', message: 'Please enter a valid email address.' });
+      setEmailStatus({ state: 'idle', message: '' });
       return;
     }
-
-    setEmailStatus({ state: 'checking', message: 'Checking email availability...' });
 
     const timer = setTimeout(async () => {
       try {
@@ -121,7 +119,7 @@ export default function RegisterOrganizationPage() {
         const data = await res.json();
         if (data.success && data.email) {
           if (data.email.available) {
-            setEmailStatus({ state: 'available', message: `✓ ${data.email.message || 'Email address is available!'}` });
+            setEmailStatus({ state: 'available', message: '' });
           } else {
             setEmailStatus({ state: 'taken', message: `✕ ${data.email.message || 'This email is already registered as an admin or organization.'}` });
           }
@@ -131,7 +129,7 @@ export default function RegisterOrganizationPage() {
       } catch {
         setEmailStatus({ state: 'idle', message: '' });
       }
-    }, 350);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [formData.contactEmail]);
@@ -206,8 +204,9 @@ export default function RegisterOrganizationPage() {
       newErrors.organizationCode = 'Organization Code is required.';
     } else if (!/^[A-Z0-9]{3,12}$/.test(code)) {
       newErrors.organizationCode = 'Code must be 3–12 uppercase letters or numbers (e.g. ABCENG).';
-    } else if (codeStatus.state === 'taken') {
-      newErrors.organizationCode = 'This organization code is already taken. Please choose another code.';
+    } else if (codeStatus.state === 'taken' || codeStatus.state === 'checking') {
+      setErrors(newErrors);
+      return false;
     }
 
     const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
@@ -230,8 +229,9 @@ export default function RegisterOrganizationPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.contactEmail.trim() || !emailRegex.test(formData.contactEmail.trim())) {
       newErrors.contactEmail = 'Please enter a valid email address.';
-    } else if (emailStatus.state === 'taken') {
-      newErrors.contactEmail = 'This email is already registered as an admin or organization.';
+    } else if (emailStatus.state === 'taken' || emailStatus.state === 'checking') {
+      setErrors(newErrors);
+      return false;
     }
 
     setErrors(newErrors);
@@ -273,7 +273,6 @@ export default function RegisterOrganizationPage() {
     setServerError(null);
 
     if (!validateStep1() || !validateStep2() || !validateStep3()) {
-      toast.error('Please resolve all highlighted form errors.');
       return;
     }
 
@@ -700,12 +699,7 @@ export default function RegisterOrganizationPage() {
                         style={{
                           paddingLeft: '40px',
                           paddingRight: '40px',
-                          borderColor:
-                            emailStatus.state === 'available'
-                              ? '#34d399'
-                              : emailStatus.state === 'taken' || emailStatus.state === 'invalid'
-                              ? '#f87171'
-                              : undefined,
+                          borderColor: emailStatus.state === 'taken' ? '#f87171' : undefined,
                         }}
                         required
                       />
@@ -714,27 +708,14 @@ export default function RegisterOrganizationPage() {
                         color="var(--text-muted)"
                         style={{ position: 'absolute', left: '14px', top: '13px' }}
                       />
-                      {emailStatus.state === 'checking' && (
-                        <Loader2
-                          size={18}
-                          className="animate-spin"
-                          style={{ position: 'absolute', right: '14px', top: '13px', color: '#818cf8' }}
-                        />
-                      )}
-                      {emailStatus.state === 'available' && (
-                        <CheckCircle2
-                          size={18}
-                          style={{ position: 'absolute', right: '14px', top: '13px', color: '#34d399' }}
-                        />
-                      )}
-                      {(emailStatus.state === 'taken' || emailStatus.state === 'invalid') && (
+                      {emailStatus.state === 'taken' && (
                         <XCircle
                           size={18}
                           style={{ position: 'absolute', right: '14px', top: '13px', color: '#f87171' }}
                         />
                       )}
                     </div>
-                    {emailStatus.state !== 'idle' && (
+                    {emailStatus.state === 'taken' && (
                       <div
                         style={{
                           fontSize: '12px',
@@ -743,14 +724,7 @@ export default function RegisterOrganizationPage() {
                           display: 'flex',
                           alignItems: 'center',
                           gap: '4px',
-                          color:
-                            emailStatus.state === 'available'
-                              ? '#34d399'
-                              : emailStatus.state === 'taken'
-                              ? '#f87171'
-                              : emailStatus.state === 'checking'
-                              ? '#818cf8'
-                              : '#fbbf24',
+                          color: '#f87171',
                         }}
                       >
                         {emailStatus.message}

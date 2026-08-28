@@ -29,8 +29,10 @@ export async function GET(request: Request) {
           message: 'Code must be 3–12 uppercase letters or numbers.',
         };
       } else {
-        const existingOrg = await prisma.organization.findUnique({
-          where: { organizationCode: cleanCode },
+        const existingOrg = await prisma.organization.findFirst({
+          where: {
+            organizationCode: { equals: cleanCode, mode: 'insensitive' },
+          },
         });
 
         if (existingOrg) {
