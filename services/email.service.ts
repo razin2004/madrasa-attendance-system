@@ -34,39 +34,46 @@ async function sendViaBrevo(
   textContent: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    const cleanApiKey = apiKey.trim();
+    const cleanRecipient = recipient.trim().toLowerCase();
+    const cleanSenderEmail = senderEmail.trim().toLowerCase();
+    const cleanSenderName = senderName.trim() || 'ShiftGuard';
+
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api-key': apiKey.trim(),
+        'api-key': cleanApiKey,
         accept: 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: senderName, email: senderEmail },
-        to: [{ email: recipient }],
+        sender: { name: cleanSenderName, email: cleanSenderEmail },
+        to: [{ email: cleanRecipient }],
         subject,
         htmlContent,
         textContent,
       }),
     });
 
+    const data = await res.json().catch(() => ({}));
+
     if (res.ok) {
-      const data = await res.json().catch(() => ({}));
       return { success: true, messageId: data.messageId || 'brevo-dispatched' };
     } else {
-      const errData = await res.json().catch(() => ({}));
-      return {
-        success: false,
-        error: `Brevo HTTP ${res.status}: ${errData.message || res.statusText}`,
-      };
+      const errorDetail = data.message || data.code || res.statusText;
+      const formattedErr = `Brevo HTTP ${res.status}: ${errorDetail}`;
+      console.error(`❌ [BREVO API ERROR] ${formattedErr} (Sender: ${cleanSenderEmail})`);
+      return { success: false, error: formattedErr };
     }
   } catch (err: any) {
-    return { success: false, error: err?.message || 'Brevo network exception' };
+    const excMsg = err?.message || 'Brevo network exception';
+    console.error(`❌ [BREVO EXCEPTION] ${excMsg}`);
+    return { success: false, error: excMsg };
   }
 }
 
 /**
- * Execute Nodemailer SMTP call (Gmail SMTP for local & resilient fallback)
+ * Execute Nodemailer SMTP call (Gmail / Brevo SMTP / Custom SMTP)
  */
 async function sendViaSmtp(
   recipient: string,
@@ -74,26 +81,30 @@ async function sendViaSmtp(
   htmlContent: string,
   textContent: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const user = process.env.SMTP_USER || process.env.SMTP_EMAIL || '';
+  const user = (process.env.SMTP_USER || process.env.SMTP_EMAIL || '').trim();
   const pass = (process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '').replace(/\s+/g, '');
   const from = process.env.EMAIL_FROM || (user ? `ShiftGuard <${user}>` : 'ShiftGuard Notifications <noreply@shiftguard.com>');
 
   if (!user || !pass) {
-    return { success: false, error: 'SMTP credentials (SMTP_USER/SMTP_PASS) not configured.' };
+    return { success: false, error: 'SMTP credentials (SMTP_USER & SMTP_PASS) not set in environment.' };
   }
 
   try {
+    const isSecure = port === 465;
     const transporter = nodemailer.createTransport({
       host,
       port,
-      secure: port === 465,
+      secure: isSecure,
+      requireTLS: !isSecure && port === 587,
       auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
     });
 
     const info = await transporter.sendMail({
@@ -106,19 +117,24 @@ async function sendViaSmtp(
 
     return { success: true, messageId: info.messageId };
   } catch (err: any) {
-    return { success: false, error: err?.message || 'SMTP dispatch error' };
+    const smtpErr = err?.message || 'SMTP dispatch failure';
+    console.error(`❌ [SMTP DISPATCH ERROR] ${smtpErr} (Host: ${host}:${port}, User: ${user})`);
+    return { success: false, error: smtpErr };
   }
 }
 
 /**
- * High-resilience email dispatcher with environment-aware routing
- * - On Localhost / Development (NODE_ENV !== 'production'): Uses SMTP (Gmail Nodemailer) as Tier 1 Primary Provider.
- * - In Production (NODE_ENV === 'production'): Uses Brevo API (Slot 1 & Slot 2) as Tier 1 Primary Provider, with fallback to SMTP.
+ * High-resilience email dispatcher with environment-aware routing & multi-tier fallbacks
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   const normalizedRecipient = normalizeEmail(options.recipient);
-  const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_EMAIL || process.env.SMTP_USER || 'noreply@shiftguard.com';
-  const senderName = process.env.BREVO_SENDER_NAME || 'ShiftGuard';
+  const senderEmail = (
+    process.env.BREVO_SENDER_EMAIL ||
+    process.env.SMTP_USER ||
+    process.env.SMTP_EMAIL ||
+    'noreply@shiftguard.com'
+  ).trim();
+  const senderName = (process.env.BREVO_SENDER_NAME || 'ShiftGuard').trim();
 
   // 1. Create initial PENDING EmailLog in DB
   let emailLog: any = null;
@@ -141,119 +157,105 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   let finalMessageId: string | undefined;
   let finalError: string | undefined;
 
-  const key1 = process.env.BREVO_API_KEY;
-  const key2 = process.env.BREVO_API_KEY_2;
-  const hasSmtpConfig = !!(process.env.SMTP_USER || process.env.SMTP_EMAIL) && !!(process.env.SMTP_PASS || process.env.SMTP_PASSWORD);
+  const key1 = process.env.BREVO_API_KEY?.trim();
+  const key2 = process.env.BREVO_API_KEY_2?.trim();
+  const hasBrevo1 = Boolean(key1 && key1.length > 10);
+  const hasBrevo2 = Boolean(key2 && key2.length > 10);
+  const hasSmtpConfig = Boolean(
+    (process.env.SMTP_USER || process.env.SMTP_EMAIL) &&
+    (process.env.SMTP_PASS || process.env.SMTP_PASSWORD)
+  );
 
   const isDev = process.env.NODE_ENV !== 'production';
-  const preferSmtp = isDev || process.env.EMAIL_PROVIDER === 'smtp' || (hasSmtpConfig && (!key1 || key1.trim().length < 10));
+  const forceSmtp = process.env.EMAIL_PROVIDER === 'smtp';
 
-  if (preferSmtp) {
-    // -----------------------------------------------------------------------
-    // ROUTING (LOCAL/DEV): PRIMARY SMTP -> BREVO SLOT 1 -> BREVO SLOT 2 -> MOCK
-    // -----------------------------------------------------------------------
+  // Order of Provider Execution
+  // If forceSmtp or in Dev with SMTP configured -> Try SMTP first, then Brevo Slot 1, Brevo Slot 2
+  // Otherwise (Production default) -> Try Brevo Slot 1, Brevo Slot 2, then SMTP fallback
+  const providerOrder: ('BREVO_1' | 'BREVO_2' | 'SMTP')[] = [];
 
-    // Tier 1: SMTP Nodemailer
-    const rSmtp = await sendViaSmtp(
-      normalizedRecipient,
-      options.subject,
-      options.htmlContent,
-      options.textContent
-    );
-
-    if (rSmtp.success) {
-      finalSuccess = true;
-      finalProvider = 'SMTP';
-      finalMessageId = rSmtp.messageId;
-      console.log(`✉️ [SMTP DISPATCH SUCCESS] From: ${process.env.EMAIL_FROM || process.env.SMTP_USER || 'ShiftGuard'} | To: ${normalizedRecipient} | MessageID: ${rSmtp.messageId}`);
-    } else {
-      finalError = `SMTP failed: ${rSmtp.error}`;
-      console.warn(`⚠️ [SMTP DISPATCH FAILED] ${rSmtp.error}. Attempting Brevo Fallback...`);
-
-      // Tier 2: Brevo Slot 1 Fallback
-      if (key1 && key1.trim().length > 10) {
-        const r1 = await sendViaBrevo(key1, senderName, senderEmail, normalizedRecipient, options.subject, options.htmlContent, options.textContent);
-        if (r1.success) {
-          finalSuccess = true;
-          finalProvider = 'BREVO_SLOT_1';
-          finalMessageId = r1.messageId;
-          finalError = undefined;
-          console.log(`✉️ [BREVO SLOT 1 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r1.messageId}`);
-        } else {
-          finalError += ` | Slot 1 failed: ${r1.error}`;
-        }
-      }
-
-      // Tier 3: Brevo Slot 2 Fallback
-      if (!finalSuccess && key2 && key2.trim().length > 10) {
-        const r2 = await sendViaBrevo(key2, senderName, senderEmail, normalizedRecipient, options.subject, options.htmlContent, options.textContent);
-        if (r2.success) {
-          finalSuccess = true;
-          finalProvider = 'BREVO_SLOT_2';
-          finalMessageId = r2.messageId;
-          finalError = undefined;
-          console.log(`✉️ [BREVO SLOT 2 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r2.messageId}`);
-        } else {
-          finalError += ` | Slot 2 failed: ${r2.error}`;
-        }
-      }
-    }
+  if (forceSmtp || (isDev && hasSmtpConfig)) {
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
   } else {
-    // -----------------------------------------------------------------------
-    // ROUTING (PRODUCTION): BREVO SLOT 1 -> BREVO SLOT 2 -> SMTP
-    // -----------------------------------------------------------------------
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+  }
 
-    // Tier 1: Brevo Slot 1
-    if (key1 && key1.trim().length > 10) {
-      const r1 = await sendViaBrevo(key1, senderName, senderEmail, normalizedRecipient, options.subject, options.htmlContent, options.textContent);
-      if (r1.success) {
+  const attemptedErrors: string[] = [];
+
+  for (const provider of providerOrder) {
+    if (finalSuccess) break;
+
+    if (provider === 'BREVO_1' && key1) {
+      const r = await sendViaBrevo(
+        key1,
+        senderName,
+        senderEmail,
+        normalizedRecipient,
+        options.subject,
+        options.htmlContent,
+        options.textContent
+      );
+      if (r.success) {
         finalSuccess = true;
         finalProvider = 'BREVO_SLOT_1';
-        finalMessageId = r1.messageId;
-        console.log(`✉️ [BREVO SLOT 1 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r1.messageId}`);
+        finalMessageId = r.messageId;
+        console.log(`✉️ [BREVO SLOT 1 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r.messageId}`);
       } else {
-        finalError = `Slot 1 failed: ${r1.error}`;
+        attemptedErrors.push(`Brevo Slot 1: ${r.error}`);
       }
-    }
-
-    // Tier 2: Brevo Slot 2
-    if (!finalSuccess && key2 && key2.trim().length > 10) {
-      const r2 = await sendViaBrevo(key2, senderName, senderEmail, normalizedRecipient, options.subject, options.htmlContent, options.textContent);
-      if (r2.success) {
+    } else if (provider === 'BREVO_2' && key2) {
+      const r = await sendViaBrevo(
+        key2,
+        senderName,
+        senderEmail,
+        normalizedRecipient,
+        options.subject,
+        options.htmlContent,
+        options.textContent
+      );
+      if (r.success) {
         finalSuccess = true;
         finalProvider = 'BREVO_SLOT_2';
-        finalMessageId = r2.messageId;
-        finalError = undefined;
-        console.log(`✉️ [BREVO SLOT 2 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r2.messageId}`);
+        finalMessageId = r.messageId;
+        console.log(`✉️ [BREVO SLOT 2 SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r.messageId}`);
       } else {
-        finalError = `${finalError ? finalError + ' | ' : ''}Slot 2 failed: ${r2.error}`;
+        attemptedErrors.push(`Brevo Slot 2: ${r.error}`);
       }
-    }
-
-    // Tier 3: SMTP Fallback
-    if (!finalSuccess) {
-      const rSmtp = await sendViaSmtp(normalizedRecipient, options.subject, options.htmlContent, options.textContent);
-      if (rSmtp.success) {
+    } else if (provider === 'SMTP') {
+      const r = await sendViaSmtp(
+        normalizedRecipient,
+        options.subject,
+        options.htmlContent,
+        options.textContent
+      );
+      if (r.success) {
         finalSuccess = true;
         finalProvider = 'SMTP';
-        finalMessageId = rSmtp.messageId;
-        finalError = undefined;
-        console.log(`✉️ [SMTP DISPATCH SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${rSmtp.messageId}`);
+        finalMessageId = r.messageId;
+        console.log(`✉️ [SMTP SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r.messageId}`);
       } else {
-        finalError = `${finalError ? finalError + ' | ' : ''}SMTP failed: ${rSmtp.error}`;
+        attemptedErrors.push(`SMTP: ${r.error}`);
       }
     }
   }
 
   if (!finalSuccess) {
-    console.error(`❌ [EMAIL DISPATCH FAILED] To: ${normalizedRecipient} | Reason: ${finalError || 'Unknown provider error'}`);
-  }
+    finalError = attemptedErrors.length > 0
+      ? attemptedErrors.join(' | ')
+      : 'No email providers configured in environment (Set BREVO_API_KEY or SMTP_USER/SMTP_PASS).';
 
-  // Tier 4: Dev Fallback if no provider worked in development mode
-  if (!finalSuccess && process.env.NODE_ENV !== 'production') {
-    finalSuccess = true;
-    finalProvider = 'DEV_MOCK';
-    console.log(`[DEV MOCK EMAIL OUTPUT] To: ${normalizedRecipient} | Subject: ${options.subject}`);
+    console.error(`❌ [EMAIL DISPATCH FAILED] To: ${normalizedRecipient} | Errors: ${finalError}`);
+
+    // Dev mode fallback
+    if (isDev) {
+      finalSuccess = true;
+      finalProvider = 'DEV_MOCK';
+      console.log(`[DEV MOCK EMAIL DISPATCH] To: ${normalizedRecipient} | Subject: ${options.subject}`);
+    }
   }
 
   // 2. Update DB EmailLog status
