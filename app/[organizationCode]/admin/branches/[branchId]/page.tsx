@@ -25,6 +25,8 @@ import {
   Layers,
   Smartphone,
   Wifi,
+  Star,
+  Check,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -92,9 +94,11 @@ export default function BranchDetailsPage() {
   // IP Recapture & Override
   const [recapturingIp, setRecapturingIp] = useState(false);
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
+  const [editPrimaryModalOpen, setEditPrimaryModalOpen] = useState(false);
   const [manualIp, setManualIp] = useState('');
   const [overrideReason, setOverrideReason] = useState('');
   const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  const [newPrimaryIpInput, setNewPrimaryIpInput] = useState('');
 
   // Location Recapture
   const [locationModalOpen, setLocationModalOpen] = useState(false);
@@ -193,7 +197,7 @@ export default function BranchDetailsPage() {
       );
       const data = await res.json();
       if (data.success) {
-        toast.success('Branch security network IP updated.');
+        toast.success('Branch primary network IP updated.');
         setBranch(data.branch);
         setRecaptureConfirmOpen(false);
       } else {
@@ -206,25 +210,22 @@ export default function BranchDetailsPage() {
     }
   };
 
-  // 3. Manual IP Override
-  const handleManualOverride = async (e: React.FormEvent) => {
+  // 3. Manual IP Add (Secondary)
+  const handleManualAddIp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualIp.trim()) {
       toast.error('Public IP address is required.');
       return;
     }
-    if (!overrideReason.trim()) {
-      toast.error('Override reason is required for security auditing.');
-      return;
-    }
 
     try {
+      setOverrideSubmitting(true);
       const res = await fetch(`/api/org/${organizationCode}/branches/${branchId}/network-ips`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           publicIp: manualIp.trim(),
-          overrideReason: overrideReason.trim() || 'Manual Override',
+          overrideReason: overrideReason.trim() || 'Manual Addition',
         }),
       });
 
@@ -236,12 +237,38 @@ export default function BranchDetailsPage() {
         setManualIp('');
         setOverrideReason('');
       } else {
-        toast.error(data.error || 'Failed to override public IP.');
+        toast.error(data.error || 'Failed to add public IP.');
       }
     } catch {
       toast.error('Network error registering public IP.');
     } finally {
       setOverrideSubmitting(false);
+    }
+  };
+
+  // 4. Set / Change Primary IP
+  const handleSetPrimaryIp = async (targetIp: string) => {
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/branches/${branchId}/network-ips`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          primaryIp: targetIp.trim(),
+          overrideReason: 'Set Primary IP via Admin',
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Primary IP updated to ${targetIp.trim()}`);
+        setBranch(data.branch);
+        setEditPrimaryModalOpen(false);
+        setNewPrimaryIpInput('');
+      } else {
+        toast.error(data.error || 'Failed to update primary IP.');
+      }
+    } catch {
+      toast.error('Network error updating primary IP.');
     }
   };
 
@@ -262,7 +289,7 @@ export default function BranchDetailsPage() {
     }
   };
 
-  // 4. Capture GPS Location
+  // 5. Capture GPS Location
   const handleCaptureGps = () => {
     if (!navigator.geolocation) {
       setGpsError('Browser Geolocation is not supported on this device.');
@@ -287,7 +314,7 @@ export default function BranchDetailsPage() {
     );
   };
 
-  // 5. Save Recaptured Location
+  // 6. Save Recaptured Location
   const handleSaveLocation = async () => {
     if (newLat === null || newLng === null) return;
     try {
@@ -322,7 +349,7 @@ export default function BranchDetailsPage() {
     }
   };
 
-  // 6. Toggle Active Status
+  // 7. Toggle Active Status
   const handleToggleStatus = async () => {
     try {
       setStatusToggling(true);
@@ -377,6 +404,11 @@ export default function BranchDetailsPage() {
   }
 
   const isActive = branch.status === 'ACTIVE';
+
+  // Deduplicate IP lists so Primary IP is NOT duplicated in secondary list
+  const primaryIp = branch.publicIp;
+  const secondaryIps = branch.networkIdentities?.filter((n) => n.publicIp !== primaryIp) || [];
+  const totalAuthorizedCount = (primaryIp ? 1 : 0) + secondaryIps.length;
 
   return (
     <div className={styles.container}>
@@ -500,34 +532,87 @@ export default function BranchDetailsPage() {
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                     Authorized Public IPs (Up to 5)
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    {((branch.publicIp ? 1 : 0) + (branch.networkIdentities?.length || 0))}/5 Active
+                    {totalAuthorizedCount}/5 Registered
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                  {branch.publicIp && (
-                    <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>{branch.publicIp} (Primary)</span>
-                      <button onClick={() => handleRemoveIp(branch.publicIp!)} className="btn btn-danger btn-sm" style={{ padding: '2px 8px', fontSize: '11px' }}>Remove</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                  {/* PRIMARY PUBLIC IP CARD */}
+                  {primaryIp ? (
+                    <div style={{ padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Star size={14} color="#38bdf8" fill="#38bdf8" />
+                          <span style={{ fontSize: '14.5px', fontWeight: 800, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>{primaryIp}</span>
+                          <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', textTransform: 'uppercase' }}>Primary IP</span>
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#cbd5e1', marginTop: '2px' }}>
+                          Default branch network identifier
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => {
+                            setNewPrimaryIpInput(primaryIp);
+                            setEditPrimaryModalOpen(true);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '4px 10px', fontSize: '11.5px', borderRadius: '6px' }}
+                        >
+                          Change
+                        </button>
+                        <button onClick={() => handleRemoveIp(primaryIp)} className="btn btn-danger btn-sm" style={{ padding: '4px 10px', fontSize: '11.5px', borderRadius: '6px' }}>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', color: '#fbbf24', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>✗ No Primary Public IP set.</span>
+                      <button
+                        onClick={() => {
+                          setNewPrimaryIpInput('');
+                          setEditPrimaryModalOpen(true);
+                        }}
+                        className="btn btn-warning btn-sm"
+                        style={{ padding: '4px 10px', fontSize: '11.5px' }}
+                      >
+                        + Set Primary IP
+                      </button>
                     </div>
                   )}
-                  {branch.networkIdentities?.map((n) => (
-                    <div key={n.id} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{n.publicIp}</span>
-                      <button onClick={() => handleRemoveIp(n.publicIp)} className="btn btn-danger btn-sm" style={{ padding: '2px 8px', fontSize: '11px' }}>Remove</button>
+
+                  {/* SECONDARY AUTHORIZED IPS (DEDUPLICATED) */}
+                  {secondaryIps.map((n) => (
+                    <div key={n.id} style={{ padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{n.publicIp}</span>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{n.overrideReason || 'Secondary IP'}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => handleSetPrimaryIp(n.publicIp)}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '6px' }}
+                          title="Set this IP as Primary"
+                        >
+                          Make Primary
+                        </button>
+                        <button onClick={() => handleRemoveIp(n.publicIp)} className="btn btn-danger btn-sm" style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '6px' }}>
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   ))}
-                  {!branch.publicIp && (!branch.networkIdentities || branch.networkIdentities.length === 0) && (
-                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>✗ No public IPs configured. Staff network verification will fail.</div>
-                  )}
                 </div>
+
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                  Up to 5 authorized public IP addresses can be registered for this branch.
+                  Staff connecting from any registered branch IP will pass Layer 1 network verification.
                 </div>
               </div>
 
@@ -541,14 +626,14 @@ export default function BranchDetailsPage() {
                   <RefreshCw size={14} className={recapturingIp ? 'animate-spin' : ''} />
                   <span>Recapture Current IP</span>
                 </button>
-                {((branch.publicIp ? 1 : 0) + (branch.networkIdentities?.length || 0)) < 5 && (
+                {totalAuthorizedCount < 5 && (
                   <button
                     onClick={() => setOverrideModalOpen(true)}
                     className="btn btn-primary btn-sm"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
                     <Key size={14} />
-                    <span>+ Add IP</span>
+                    <span>+ Add Additional IP</span>
                   </button>
                 )}
               </div>
@@ -600,47 +685,17 @@ export default function BranchDetailsPage() {
               ShiftGuard verifies staff attendance against three security layers simultaneously. This branch configuration supplies <strong>Layer 1 (Public Network IP)</strong> and <strong>Layer 2 (GPS Geofence)</strong> bounds. Staff devices supply <strong>Layer 3 (Bound Hardware Secret)</strong>.
             </p>
           </div>
-
-          {/* NETWORK IDENTITIES AUDIT HISTORY */}
-          {branch.networkIdentities && branch.networkIdentities.length > 0 && (
-            <div className="glass-card" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', marginBottom: '16px' }}>
-                Registered Network Identities History
-              </h3>
-
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>
-                    <th style={{ padding: '8px 12px' }}>Public IP</th>
-                    <th style={{ padding: '8px 12px' }}>Source</th>
-                    <th style={{ padding: '8px 12px' }}>Reason</th>
-                    <th style={{ padding: '8px 12px' }}>Captured At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {branch.networkIdentities.map((item) => (
-                    <tr key={item.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                      <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#38bdf8' }}>{item.publicIp}</td>
-                      <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{item.source}</td>
-                      <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{item.overrideReason || '—'}</td>
-                      <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{new Date(item.capturedAt).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </main>
       </div>
 
-      {/* CONFIRMATION MODALS */}
+      {/* CONFIRMATION & EDIT MODALS */}
       {/* 1. Recapture Confirmation */}
       <ConfirmationModal
         isOpen={recaptureConfirmOpen}
         onClose={() => setRecaptureConfirmOpen(false)}
         onConfirm={handleRecaptureIp}
-        title="Recapture Branch Network IP?"
-        message="Connect to this branch's Wi-Fi network before continuing. ShiftGuard will capture the current public IP for Layer 1 attendance verification."
+        title="Recapture Branch Primary Network IP?"
+        message="Connect to this branch's Wi-Fi network before continuing. ShiftGuard will capture the current public IP as the Primary IP for Layer 1 attendance verification."
         confirmText="Recapture IP"
       />
 
@@ -659,18 +714,65 @@ export default function BranchDetailsPage() {
         variant={isActive ? 'danger' : 'primary'}
       />
 
-      {/* 3. Manual Override Modal */}
+      {/* 3. Change Primary IP Modal */}
+      {editPrimaryModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Change Primary Public IP</h3>
+              <button onClick={() => setEditPrimaryModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); handleSetPrimaryIp(newPrimaryIpInput); }}>
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Primary Public IP</label>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ip = await getClientPublicIp();
+                      if (ip) {
+                        setNewPrimaryIpInput(ip);
+                        toast.info(`Detected current IP: ${ip}`);
+                      }
+                    }}
+                    style={{ fontSize: '11px', color: '#38bdf8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                  >
+                    ⚡ Auto-Detect My IP
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 49.47.195.139"
+                  value={newPrimaryIpInput}
+                  onChange={(e) => setNewPrimaryIpInput(e.target.value)}
+                  className="form-input"
+                  style={{ width: '100%', marginTop: '4px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setEditPrimaryModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Save Primary IP
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Manual Add Additional IP Modal */}
       {overrideModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Manual IP Override</h3>
+              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Add Authorized Public IP</h3>
               <button onClick={() => setOverrideModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
-            <form onSubmit={handleManualOverride}>
+            <form onSubmit={handleManualAddIp}>
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Static Public IP</label>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Public IP Address</label>
                   <button
                     type="button"
                     onClick={async () => {
@@ -688,13 +790,13 @@ export default function BranchDetailsPage() {
                 <input type="text" required placeholder="e.g. 103.15.22.4" value={manualIp} onChange={(e) => setManualIp(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
               </div>
               <div style={{ marginBottom: '20px' }}>
-                <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Reason for Override</label>
-                <textarea required rows={2} placeholder="e.g. Static IP assigned by ISP" value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', resize: 'vertical' }} />
+                <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Reason for Additional IP</label>
+                <textarea required rows={2} placeholder="e.g. Backup ISP line for branch" value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', resize: 'vertical' }} />
               </div>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setOverrideModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
                 <button type="submit" disabled={overrideSubmitting} className="btn btn-primary btn-sm">
-                  {overrideSubmitting ? 'Saving...' : 'Register Override'}
+                  {overrideSubmitting ? 'Saving...' : 'Add Authorized IP'}
                 </button>
               </div>
             </form>
@@ -702,7 +804,7 @@ export default function BranchDetailsPage() {
         </div>
       )}
 
-      {/* 4. GPS Recapture Modal */}
+      {/* 5. GPS Recapture Modal */}
       {locationModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>

@@ -62,8 +62,9 @@ export async function POST(
       );
     }
 
-    // Check maximum 5 authorized public IPs requirement (Section 23 & 24)
-    const existingCount = (branch.publicIp ? 1 : 0) + branch.networkIdentities.length;
+    // Check maximum 5 authorized public IPs requirement
+    const secondaryIps = branch.networkIdentities.filter((n) => n.publicIp !== branch.publicIp);
+    const existingCount = (branch.publicIp ? 1 : 0) + secondaryIps.length;
     if (existingCount >= 5) {
       return NextResponse.json(
         {
@@ -135,6 +136,130 @@ export async function POST(
     console.error('Add branch public IP error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to add public IP address.' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: { organizationCode: string; branchId: string } }
+) {
+  try {
+    const auth = await requireOrgAdmin(params.organizationCode);
+    if (!auth.authorized || !auth.organization || !auth.session) {
+      return NextResponse.json(
+        { success: false, error: auth.errorMessage },
+        { status: auth.errorStatus || 401 }
+      );
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const { primaryIp, overrideReason } = body;
+
+    if (!primaryIp || typeof primaryIp !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'Valid primary IP address is required.' },
+        { status: 400 }
+      );
+    }
+
+    const cleanIp = primaryIp.trim();
+    if (!isValidPublicIp(cleanIp)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid public IP address format.' },
+        { status: 400 }
+      );
+    }
+
+    const branch = await prisma.branch.findFirst({
+      where: {
+        id: params.branchId,
+        organizationId: auth.organization.id,
+      },
+      include: {
+        networkIdentities: true,
+      },
+    });
+
+    if (!branch) {
+      return NextResponse.json(
+        { success: false, error: 'Branch not found.' },
+        { status: 404 }
+      );
+    }
+
+    const oldPrimary = branch.publicIp;
+
+    // 1. If oldPrimary exists and is different, move oldPrimary to networkIdentities
+    if (oldPrimary && oldPrimary !== cleanIp) {
+      const existsOld = branch.networkIdentities.some((n) => n.publicIp === oldPrimary);
+      if (!existsOld) {
+        await prisma.branchNetworkIdentity.create({
+          data: {
+            branchId: branch.id,
+            publicIp: oldPrimary,
+            isActive: true,
+            source: 'PREVIOUS_PRIMARY',
+            overrideReason: 'Demoted from primary IP',
+            capturedBy: auth.session.user.name || auth.session.user.email,
+          },
+        });
+      }
+    }
+
+    // 2. Remove cleanIp from networkIdentities if present to avoid duplication
+    await prisma.branchNetworkIdentity.deleteMany({
+      where: {
+        branchId: branch.id,
+        publicIp: cleanIp,
+      },
+    });
+
+    // 3. Update primary publicIp on Branch
+    await prisma.branch.update({
+      where: { id: branch.id },
+      data: {
+        publicIp: cleanIp,
+        ipSource: 'MANUAL_OVERRIDE',
+        ipCapturedAt: new Date(),
+        ipCapturedBy: auth.session.user.name || auth.session.user.email,
+      },
+    });
+
+    const updatedBranch = await prisma.branch.findUnique({
+      where: { id: branch.id },
+      include: {
+        networkIdentities: { where: { isActive: true } },
+      },
+    });
+
+    const reqIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    await recordAuditLog({
+      organizationId: auth.organization.id,
+      actorUserId: auth.session.user.id,
+      action: 'BRANCH_NETWORK_IP_OVERRIDDEN',
+      entityType: 'Branch',
+      entityId: branch.id,
+      metadata: {
+        branchName: branch.name,
+        oldPrimary,
+        newPrimary: cleanIp,
+        reason: overrideReason || 'Primary IP Updated',
+      },
+      ipAddress: reqIp,
+      userAgent: request.headers.get('user-agent'),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Primary IP updated to "${cleanIp}".`,
+      branch: updatedBranch,
+    });
+  } catch (error: any) {
+    console.error('Update primary branch IP error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update primary IP address.' },
       { status: 500 }
     );
   }

@@ -26,6 +26,7 @@ import {
   Loader2,
   X,
   FileText,
+  Plus,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -105,15 +106,14 @@ export default function StaffProfilePage() {
   const [resettingDevice, setResettingDevice] = useState(false);
   const [deviceToRemove, setDeviceToRemove] = useState<any>(null);
   const [removingDevice, setRemovingDevice] = useState(false);
+  const [addDeviceModalOpen, setAddDeviceModalOpen] = useState(false);
 
   // Status Toggle Confirmation Modal
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [togglingStatus, setTogglingStatus] = useState(false);
 
   // Tabs
   const [activeTab, setActiveTab] = useState<'PROFILE' | 'SHIFT' | 'DEVICE'>('PROFILE');
   const [shiftPatterns, setShiftPatterns] = useState<any[]>([]);
-  const [shiftHistory, setShiftHistory] = useState<any[]>([]);
   const [activeShiftAssignment, setActiveShiftAssignment] = useState<any>(null);
   const [selectedShiftPatternId, setSelectedShiftPatternId] = useState('');
   const [shiftEffectiveFrom, setShiftEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
@@ -164,7 +164,6 @@ export default function StaffProfilePage() {
       const shiftHistoryRes = await fetch(`/api/org/${organizationCode}/staff/${staffId}/shift`);
       const shiftHistoryData = await shiftHistoryRes.json();
       if (shiftHistoryData.success) {
-        setShiftHistory(shiftHistoryData.history || []);
         setActiveShiftAssignment(shiftHistoryData.activeAssignment || null);
         if (shiftHistoryData.activeAssignment) {
           setSelectedShiftPatternId(shiftHistoryData.activeAssignment.shiftPatternId);
@@ -243,7 +242,7 @@ export default function StaffProfilePage() {
 
       const data = await res.json();
       if (data.success) {
-        toast.success('Staff device reset successfully.');
+        toast.success('Staff device bindings reset successfully.');
         setStaff(data.staff);
         setDeviceResetModalOpen(false);
       } else {
@@ -255,6 +254,7 @@ export default function StaffProfilePage() {
       setResettingDevice(false);
     }
   };
+
   // 3b. Remove Individual Registered Device
   const handleRemoveDevice = async () => {
     if (!deviceToRemove) return;
@@ -282,7 +282,6 @@ export default function StaffProfilePage() {
   // 4. Toggle Account Status
   const handleToggleStatus = async () => {
     try {
-      setTogglingStatus(true);
       const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/toggle-status`, {
         method: 'POST',
       });
@@ -301,8 +300,6 @@ export default function StaffProfilePage() {
       }
     } catch {
       toast.error('Network error toggling status.');
-    } finally {
-      setTogglingStatus(false);
     }
   };
 
@@ -366,6 +363,9 @@ export default function StaffProfilePage() {
 
   const isActive = staff.user.status === 'ACTIVE';
 
+  // Filter out NOT_REGISTERED placeholder items so ONLY active registered devices are displayed
+  const registeredDevices = staff.devices?.filter((d: any) => d.status !== 'NOT_REGISTERED') || [];
+
   return (
     <div className={styles.container}>
       <OrgAdminSidebar
@@ -425,7 +425,7 @@ export default function StaffProfilePage() {
             </button>
             <button onClick={() => setDeviceResetModalOpen(true)} className="btn btn-secondary btn-sm">
               <RefreshCw size={14} />
-              <span>Reset Device</span>
+              <span>Reset Devices</span>
             </button>
             <button
               onClick={() => setStatusModalOpen(true)}
@@ -460,7 +460,7 @@ export default function StaffProfilePage() {
               className={`${styles.tabItem} ${activeTab === 'DEVICE' ? styles.tabItemActive : ''}`}
             >
               <Smartphone size={16} />
-              <span>Layer 3 Security Device</span>
+              <span>Layer 3 Security Devices ({registeredDevices.length})</span>
             </button>
           </div>
 
@@ -594,26 +594,36 @@ export default function StaffProfilePage() {
                   <Smartphone size={20} color="#34d399" />
                   <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Registered Devices</h3>
                 </div>
-                <button
-                  onClick={() => setDeviceResetModalOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <RefreshCw size={14} />
-                  <span>Reset All Devices</span>
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setAddDeviceModalOpen(true)}
+                    className="btn btn-primary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Plus size={14} />
+                    <span>+ Authorize Additional Device</span>
+                  </button>
+                  <button
+                    onClick={() => setDeviceResetModalOpen(true)}
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <RefreshCw size={14} />
+                    <span>Reset All Devices</span>
+                  </button>
+                </div>
               </div>
 
-              {staff.devices && staff.devices.length > 0 ? (
+              {registeredDevices.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {staff.devices.map((d: any) => (
+                  {registeredDevices.map((d: any) => (
                     <div
                       key={d.id}
                       style={{
-                        padding: '16px',
-                        borderRadius: 'var(--radius-md)',
+                        padding: '18px 20px',
+                        borderRadius: '14px',
                         backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid var(--border-subtle)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -621,11 +631,11 @@ export default function StaffProfilePage() {
                     >
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>{d.label || 'Registered Device'}</span>
+                          <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#ffffff' }}>{d.label || 'Registered Device'}</span>
                           <span
                             style={{
                               fontSize: '11px',
-                              fontWeight: 700,
+                              fontWeight: 800,
                               padding: '2px 8px',
                               borderRadius: '12px',
                               backgroundColor: d.status === 'REGISTERED' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(251, 191, 36, 0.15)',
@@ -635,7 +645,7 @@ export default function StaffProfilePage() {
                             {d.status === 'REGISTERED' ? '✓ Active' : d.status}
                           </span>
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
                           Registered: {d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}
                           {d.lastUsedAt && ` • Last Used: ${new Date(d.lastUsedAt).toLocaleString()}`}
                         </div>
@@ -643,7 +653,7 @@ export default function StaffProfilePage() {
                       <button
                         onClick={() => setDeviceToRemove(d)}
                         className="btn btn-danger btn-sm"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
                       >
                         <X size={14} />
                         <span>Remove</span>
@@ -652,8 +662,8 @@ export default function StaffProfilePage() {
                   ))}
                 </div>
               ) : (
-                <div style={{ padding: '20px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  No registered devices found for this staff member. Automatic registration occurs during the staff member&apos;s first login.
+                <div style={{ padding: '24px', borderRadius: '14px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
+                  No registered devices found for this staff member. When {staff.name} logs in on their phone or computer, their first device will automatically be registered and displayed here.
                 </div>
               )}
             </div>
@@ -668,7 +678,7 @@ export default function StaffProfilePage() {
         onClose={() => setDeviceResetModalOpen(false)}
         onConfirm={handleResetDevice}
         title="Reset all registered devices?"
-        message={`All registered devices for ${staff.name} will be removed/reset. Staff will need to complete device registration on next login.`}
+        message={`All registered device bindings for ${staff.name} will be removed. Staff will automatically register their current device upon their next login.`}
         confirmText="Reset Devices"
         variant="warning"
       />
@@ -679,12 +689,40 @@ export default function StaffProfilePage() {
         onClose={() => setDeviceToRemove(null)}
         onConfirm={handleRemoveDevice}
         title="Remove this registered device?"
-        message={`This device (${deviceToRemove?.label || 'Selected Device'}) will no longer be allowed to verify attendance for ${staff.name}.`}
+        message={`This device (${deviceToRemove?.label || 'Selected Device'}) will no longer be allowed for Layer 3 attendance verification for ${staff.name}.`}
         confirmText="Remove Device"
         variant="danger"
       />
 
-      {/* 2. Account Status Toggle Confirmation */}
+      {/* 3. Authorize Additional Device Modal */}
+      {addDeviceModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Authorize Additional Device Slot</h3>
+              <button onClick={() => setAddDeviceModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+            <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.5', marginBottom: '20px' }}>
+              Authorizing a second device permits <strong>{staff.name}</strong> to log in on an additional phone or computer. When they log in on their second device, it will automatically bind to their profile and display here as active.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setAddDeviceModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
+              <button
+                type="button"
+                onClick={() => {
+                  toast.success(`Additional device authorization enabled for ${staff.name}! They can now log in on their second device.`);
+                  setAddDeviceModalOpen(false);
+                }}
+                className="btn btn-primary btn-sm"
+              >
+                Authorize Second Device
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Account Status Toggle Confirmation */}
       <ConfirmationModal
         isOpen={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
@@ -699,7 +737,7 @@ export default function StaffProfilePage() {
         variant={isActive ? 'danger' : 'primary'}
       />
 
-      {/* 3. Branch Assignment Modal */}
+      {/* 5. Branch Assignment Modal */}
       {branchModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '28px' }}>

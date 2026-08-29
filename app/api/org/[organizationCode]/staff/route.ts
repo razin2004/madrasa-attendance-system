@@ -239,14 +239,6 @@ export async function POST(
           });
         }
 
-        // StaffDevice record
-        const device = await tx.staffDevice.create({
-          data: {
-            staffProfileId: profile.id,
-            status: 'NOT_REGISTERED',
-          },
-        });
-
         // SecurityToken for account activation & password creation
         await tx.securityToken.create({
           data: {
