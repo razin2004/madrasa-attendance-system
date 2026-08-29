@@ -110,7 +110,7 @@ export async function POST(
     });
 
     // 4. Dispatch Security Authorization OTP to CURRENT (OLD) Email Address
-    let resOld = { success: true, error: undefined as string | undefined };
+    let resOld: any = { success: true };
     if (oldEmail) {
       const oldOtpPayload = templateEmailChangeOldOTP({
         orgName: organization.name,
