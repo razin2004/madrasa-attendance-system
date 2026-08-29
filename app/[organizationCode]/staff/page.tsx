@@ -254,7 +254,11 @@ export default function StaffDashboardPage() {
 
           if (
             !data.evaluation.layer1Device.isVerified &&
-            (data.staff?.deviceStatus === 'NOT_REGISTERED' || !data.staffProfile.devices || data.staffProfile.devices.length === 0)
+            (data.staff?.deviceStatus === 'NOT_REGISTERED' ||
+             data.staff?.hasPendingDeviceSlot ||
+             !data.staffProfile.devices ||
+             data.staffProfile.devices.length === 0 ||
+             data.staffProfile.devices.some((d: any) => d.status === 'NOT_REGISTERED'))
           ) {
             try {
               const regRes = await fetch(`/api/org/${orgCode}/staff/device/register`, {

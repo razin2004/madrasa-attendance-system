@@ -648,8 +648,9 @@ export default function StaffProfilePage() {
 
               {allDevices.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {allDevices.map((d: any) => {
+                  {allDevices.map((d: any, index: number) => {
                     const isRegistered = d.status === 'REGISTERED';
+                    const isPrimary = index === 0;
                     return (
                       <div
                         key={d.id}
@@ -664,9 +665,23 @@ export default function StaffProfilePage() {
                         }}
                       >
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                fontSize: '10.5px',
+                                fontWeight: 800,
+                                padding: '2px 7px',
+                                borderRadius: '5px',
+                                backgroundColor: isPrimary ? 'rgba(56, 189, 248, 0.15)' : 'rgba(192, 132, 252, 0.15)',
+                                color: isPrimary ? '#38bdf8' : '#c084fc',
+                                border: `1px solid ${isPrimary ? 'rgba(56, 189, 248, 0.3)' : 'rgba(192, 132, 252, 0.3)'}`,
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {isPrimary ? 'Primary Device' : 'Secondary Device'}
+                            </span>
                             <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#ffffff' }}>
-                              {isRegistered ? d.label || 'Registered Device' : 'Secondary Device (Awaiting Login)'}
+                              {isRegistered ? d.label || (isPrimary ? 'Primary Registered Device' : 'Secondary Registered Device') : 'Secondary Device (Awaiting Login)'}
                             </span>
                             <span
                               style={{
@@ -679,10 +694,10 @@ export default function StaffProfilePage() {
                                 border: `1px solid ${isRegistered ? 'rgba(52, 211, 153, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
                               }}
                             >
-                              {isRegistered ? '✓ Active' : 'NOT_REGISTERED'}
+                              {isRegistered ? '✓ Active' : 'Awaiting Login'}
                             </span>
                           </div>
-                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
                             {isRegistered ? (
                               <>
                                 Registered: {d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}

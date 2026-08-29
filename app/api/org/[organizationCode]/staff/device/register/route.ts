@@ -33,7 +33,7 @@ export async function POST(
     const secretHash = hashDeviceSecret(deviceSecret.trim());
     const label = deviceLabel || request.headers.get('user-agent')?.slice(0, 80) || 'Staff Browser';
 
-    // Check if this exact device secret is already registered for this staff member
+    // 1. Check if this exact device secret is already registered for this staff member
     const existingDevice = await prisma.staffDevice.findFirst({
       where: {
         staffProfileId,
@@ -55,16 +55,30 @@ export async function POST(
       });
     }
 
-    // Check if there is a pending NOT_REGISTERED authorized device slot for this staff member
-    const pendingSlot = await prisma.staffDevice.findFirst({
-      where: {
-        staffProfileId,
-        status: 'NOT_REGISTERED',
-      },
+    // 2. Count existing registered devices & check for authorized pending slot
+    const allStaffDevices = await prisma.staffDevice.findMany({
+      where: { staffProfileId },
+      orderBy: { createdAt: 'asc' },
     });
+
+    const registeredDevices = allStaffDevices.filter((d) => d.status === 'REGISTERED');
+    const pendingSlot = allStaffDevices.find((d) => d.status === 'NOT_REGISTERED');
+
+    // Reject registration if staff already has a registered device AND no pending authorized slot
+    if (registeredDevices.length >= 1 && !pendingSlot) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Device registration limit reached. Please contact your organization administrator to authorize an additional device slot.',
+        },
+        { status: 403 }
+      );
+    }
 
     let registeredDevice;
     if (pendingSlot) {
+      // Bind incoming device to the pending authorized slot (Secondary Device)
       registeredDevice = await prisma.staffDevice.update({
         where: { id: pendingSlot.id },
         data: {
@@ -76,6 +90,7 @@ export async function POST(
         },
       });
     } else {
+      // First device registration (Primary Device)
       registeredDevice = await prisma.staffDevice.create({
         data: {
           staffProfileId,
@@ -98,6 +113,7 @@ export async function POST(
       metadata: {
         staffId: auth.staffProfile.staffId,
         label,
+        slotType: pendingSlot ? 'SECONDARY_DEVICE' : 'PRIMARY_DEVICE',
       },
       ipAddress: ip,
       userAgent: request.headers.get('user-agent'),
@@ -105,7 +121,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: 'Browser successfully registered to staff account.',
+      message: pendingSlot ? 'Secondary device registered successfully.' : 'Primary device registered successfully.',
       device: {
         id: registeredDevice.id,
         status: registeredDevice.status,
@@ -114,9 +130,9 @@ export async function POST(
       },
     });
   } catch (error: any) {
-    console.error('Staff device self-registration error:', error);
+    console.error('Staff device registration error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to register attendance device.' },
+      { success: false, error: 'Failed to register device credential.' },
       { status: 500 }
     );
   }

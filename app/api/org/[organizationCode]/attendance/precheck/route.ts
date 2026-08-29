@@ -78,7 +78,15 @@ async function handlePrecheck(
         staff: {
           staffId: auth.staffProfile.staffId,
           name: auth.staffProfile.name,
-          deviceStatus: (auth.staffProfile as any).devices?.some((d: any) => d.status === 'REGISTERED') ? 'REGISTERED' : (auth.staffProfile as any).devices?.some((d: any) => d.status === 'RESET_REQUIRED') ? 'RESET_REQUIRED' : 'NOT_REGISTERED',
+          deviceStatus: evaluation.layer1Device.isVerified
+            ? 'REGISTERED'
+            : (auth.staffProfile as any).devices?.some((d: any) => d.status === 'NOT_REGISTERED') || (auth.staffProfile as any).devices?.length === 0
+            ? 'NOT_REGISTERED'
+            : (auth.staffProfile as any).devices?.some((d: any) => d.status === 'RESET_REQUIRED')
+            ? 'RESET_REQUIRED'
+            : 'REGISTERED',
+          hasPendingDeviceSlot: (auth.staffProfile as any).devices?.some((d: any) => d.status === 'NOT_REGISTERED') || false,
+          isDeviceVerified: evaluation.layer1Device.isVerified,
         },
       },
       {
