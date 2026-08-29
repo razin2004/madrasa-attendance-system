@@ -69,6 +69,8 @@ export default function OrgAdminLandingPage() {
   });
   const [pendingLeaveCount, setPendingLeaveCount] = useState<number>(0);
   const [pendingLeaveRequests, setPendingLeaveRequests] = useState<any[]>([]);
+  const [pendingCorrectionsCount, setPendingCorrectionsCount] = useState<number>(0);
+  const [pendingCorrections, setPendingCorrections] = useState<any[]>([]);
   const [branchesList, setBranchesList] = useState<any[]>([]);
 
   const fetchData = async () => {
@@ -135,7 +137,7 @@ export default function OrgAdminLandingPage() {
           });
         }
 
-        // 4. Fetch pending leave requests needing admin review
+        // 4. Fetch pending leave requests & attendance corrections needing admin review
         try {
           const leaveRes = await fetch(`/api/org/${orgCode}/leave/admin?status=PENDING`);
           const leaveData = await leaveRes.json();
@@ -143,8 +145,15 @@ export default function OrgAdminLandingPage() {
             setPendingLeaveCount(leaveData.requests?.length || 0);
             setPendingLeaveRequests(leaveData.requests?.slice(0, 5) || []);
           }
+
+          const corrRes = await fetch(`/api/org/${orgCode}/attendance/admin/corrections?status=PENDING`);
+          const corrData = await corrRes.json();
+          if (corrData.success) {
+            setPendingCorrectionsCount(corrData.requests?.length || 0);
+            setPendingCorrections(corrData.requests?.slice(0, 5) || []);
+          }
         } catch {
-          // Non-blocking leave fetch
+          // Non-blocking fetch
         }
       } else {
         router.push('/');
@@ -462,6 +471,81 @@ export default function OrgAdminLandingPage() {
                             <td style={{ padding: '14px 20px', textAlign: 'right' }}>
                               <Link
                                 href={`/${orgCode}/admin/leave`}
+                                className="btn btn-primary btn-sm"
+                                style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 12px' }}
+                              >
+                                Review &rarr;
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* PENDING ATTENDANCE CORRECTIONS PANEL */}
+              <div className={styles.panelCard} style={{ marginTop: '20px' }}>
+                <div className={styles.panelHeader}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.12)' }}>
+                      <Clock size={18} color="#818cf8" />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                        Pending Attendance Correction Requests
+                      </h3>
+                      <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                        Staff-submitted punch adjustments requiring administrator approval
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link href={`/${orgCode}/admin/attendance/corrections`} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '12px' }}>
+                    <span>View All Corrections ({pendingCorrectionsCount})</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+
+                {pendingCorrections.length === 0 ? (
+                  <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                    <CheckCircle2 size={32} color="#34d399" style={{ margin: '0 auto 10px auto' }} />
+                    <div>All pending attendance correction requests have been reviewed.</div>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
+                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Staff Member</th>
+                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Date</th>
+                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight 700 }}>Correction Type</th>
+                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight 700 }}>Reason</th>
+                          <th style={{ padding: '12px 20px', textAlign: 'right', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight 700 }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingCorrections.map((req, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                            <td style={{ padding: '14px 20px', fontWeight: 700, color: '#ffffff' }}>
+                              {req.staff?.name || 'Staff Member'}
+                              <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 500 }}>ID: {req.staff?.staffId || '—'}</div>
+                            </td>
+                            <td style={{ padding: '14px 20px', color: '#ffffff', fontFamily: 'var(--font-mono)', fontSize: '12.5px' }}>
+                              {req.date}
+                            </td>
+                            <td style={{ padding: '14px 20px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24' }}>
+                                {req.type}
+                              </span>
+                            </td>
+                            <td style={{ padding: '14px 20px', color: '#94a3b8', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
+                              &ldquo;{req.reason || 'No reason provided'}&rdquo;
+                            </td>
+                            <td style={{ padding: '14px 20px', textAlign: 'right' }}>
+                              <Link
+                                href={`/${orgCode}/admin/attendance/corrections`}
                                 className="btn btn-primary btn-sm"
                                 style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 12px' }}
                               >
