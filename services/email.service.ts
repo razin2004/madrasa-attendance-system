@@ -66,7 +66,7 @@ async function sendViaBrevo(
 }
 
 /**
- * Execute Nodemailer SMTP call
+ * Execute Nodemailer SMTP call (Gmail SMTP for local & resilient fallback)
  */
 async function sendViaSmtp(
   recipient: string,
@@ -81,7 +81,7 @@ async function sendViaSmtp(
   const from = process.env.EMAIL_FROM || (user ? `ShiftGuard <${user}>` : 'ShiftGuard Notifications <noreply@shiftguard.com>');
 
   if (!user || !pass) {
-    return { success: false, error: 'SMTP credentials not configured.' };
+    return { success: false, error: 'SMTP credentials (SMTP_USER/SMTP_PASS) not configured.' };
   }
 
   try {
@@ -91,9 +91,9 @@ async function sendViaSmtp(
       secure: port === 465,
       auth: { user, pass },
       tls: { rejectUnauthorized: false },
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 8000,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
 
     const info = await transporter.sendMail({
@@ -112,8 +112,8 @@ async function sendViaSmtp(
 
 /**
  * High-resilience email dispatcher with environment-aware routing
- * - On Localhost / Development: Uses SMTP (Gmail Nodemailer) as Tier 1 primary provider.
- * - In Production: Uses Brevo API (Slot 1 & Slot 2) as Tier 1 primary provider, fallback to SMTP.
+ * - On Localhost / Development (NODE_ENV !== 'production'): Uses SMTP (Gmail Nodemailer) as Tier 1 Primary Provider.
+ * - In Production (NODE_ENV === 'production'): Uses Brevo API (Slot 1 & Slot 2) as Tier 1 Primary Provider, with fallback to SMTP.
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   const normalizedRecipient = normalizeEmail(options.recipient);
@@ -144,11 +144,13 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   const key1 = process.env.BREVO_API_KEY;
   const key2 = process.env.BREVO_API_KEY_2;
   const hasSmtpConfig = !!(process.env.SMTP_USER || process.env.SMTP_EMAIL) && !!(process.env.SMTP_PASS || process.env.SMTP_PASSWORD);
-  const preferSmtp = process.env.EMAIL_PROVIDER === 'smtp' || (hasSmtpConfig && !key1 && !key2);
+
+  const isDev = process.env.NODE_ENV !== 'production';
+  const preferSmtp = isDev || process.env.EMAIL_PROVIDER === 'smtp' || (hasSmtpConfig && (!key1 || key1.trim().length < 10));
 
   if (preferSmtp) {
     // -----------------------------------------------------------------------
-    // ROUTING: PRIMARY SMTP -> BREVO SLOT 1 -> BREVO SLOT 2 -> MOCK
+    // ROUTING (LOCAL/DEV): PRIMARY SMTP -> BREVO SLOT 1 -> BREVO SLOT 2 -> MOCK
     // -----------------------------------------------------------------------
 
     // Tier 1: SMTP Nodemailer
@@ -166,6 +168,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       console.log(`✉️ [SMTP DISPATCH SUCCESS] From: ${process.env.EMAIL_FROM || process.env.SMTP_USER || 'ShiftGuard'} | To: ${normalizedRecipient} | MessageID: ${rSmtp.messageId}`);
     } else {
       finalError = `SMTP failed: ${rSmtp.error}`;
+      console.warn(`⚠️ [SMTP DISPATCH FAILED] ${rSmtp.error}. Attempting Brevo Fallback...`);
 
       // Tier 2: Brevo Slot 1 Fallback
       if (key1 && key1.trim().length > 10) {
@@ -197,7 +200,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     }
   } else {
     // -----------------------------------------------------------------------
-    // ROUTING: BREVO SLOT 1 -> BREVO SLOT 2 -> SMTP
+    // ROUTING (PRODUCTION): BREVO SLOT 1 -> BREVO SLOT 2 -> SMTP
     // -----------------------------------------------------------------------
 
     // Tier 1: Brevo Slot 1
@@ -248,33 +251,25 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
 
   // Tier 4: Dev Fallback if no provider worked in development mode
   if (!finalSuccess && process.env.NODE_ENV !== 'production') {
-    console.log(`\n======================================================`);
-    console.log(`[DEV EMAIL MOCK DISPATCH]`);
-    console.log(`To: ${normalizedRecipient}`);
-    console.log(`Type: ${options.type}`);
-    console.log(`Subject: ${options.subject}`);
-    console.log(`------------------------------------------------------`);
-    console.log(options.textContent);
-    console.log(`======================================================\n`);
     finalSuccess = true;
     finalProvider = 'DEV_MOCK';
-    finalMessageId = `mock-${Date.now()}`;
+    console.log(`[DEV MOCK EMAIL OUTPUT] To: ${normalizedRecipient} | Subject: ${options.subject}`);
   }
 
-  // Update EmailLog in DB with result
+  // 2. Update DB EmailLog status
   if (emailLog) {
     try {
       await prisma.emailLog.update({
         where: { id: emailLog.id },
         data: {
-          status: finalSuccess ? 'SENT' : 'FAILED',
-          providerMessageId: finalMessageId ?? null,
-          failureReason: finalError ?? null,
-          sentAt: finalSuccess ? new Date() : null,
+          status: finalSuccess ? 'DELIVERED' : 'FAILED',
+          provider: finalProvider,
+          messageId: finalMessageId ?? null,
+          errorMessage: finalError ?? null,
         },
       });
-    } catch (updateErr) {
-      console.error('Failed to update EmailLog in DB:', updateErr);
+    } catch (dbErr) {
+      console.error('Failed to update EmailLog in DB:', dbErr);
     }
   }
 
