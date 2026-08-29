@@ -329,12 +329,11 @@ export async function evaluateThreeLayerAttendance(
       branchId: targetBranch.id,
     } as any;
   } else if (!coordinates || coordinates.latitude === undefined || coordinates.longitude === undefined) {
-    failureReasons.push('Location permission is required to verify attendance.');
     layer3 = {
       isVerified: false,
-      status: 'FAILED',
+      status: 'WARNING',
       title: 'Location Geofence',
-      message: 'Location permission is required to verify attendance.',
+      message: 'GPS coordinates not captured yet. Tap "Re-verify" or "Clock In" to verify your location.',
     };
   } else {
     // Check accuracy threshold (Section 20)
