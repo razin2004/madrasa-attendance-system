@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -28,6 +28,7 @@ interface OrgAdminSidebarProps {
   organizationCode: string;
   organizationName: string;
   logoUrl?: string | null;
+  adminName?: string;
   adminEmail?: string;
   branchCount?: number;
   staffCount?: number;
@@ -38,7 +39,8 @@ export function OrgAdminSidebar({
   organizationCode,
   organizationName,
   logoUrl,
-  adminEmail = 'Admin',
+  adminName,
+  adminEmail,
   branchCount,
   staffCount,
   shiftPatternCount,
@@ -46,8 +48,25 @@ export function OrgAdminSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const toast = useToast();
-  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
-  const [logoFailed, setLogoFailed] = React.useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
+
+  const [userName, setUserName] = useState<string>(adminName || '');
+  const [userEmail, setUserEmail] = useState<string>(adminEmail || '');
+
+  useEffect(() => {
+    if (!userName || !userEmail || userEmail === 'Admin') {
+      fetch('/api/auth/me')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.user) {
+            if (data.user.name) setUserName(data.user.name);
+            if (data.user.email) setUserEmail(data.user.email);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [adminName, adminEmail, userName, userEmail]);
 
   const handleLogout = async () => {
     try {
@@ -119,6 +138,9 @@ export function OrgAdminSidebar({
       exact: false,
     },
   ];
+
+  const displayAdminName = userName || adminName || 'Administrator';
+  const displayAdminEmail = userEmail && userEmail !== 'Admin' ? userEmail : 'Organization Admin';
 
   return (
     <aside
@@ -294,24 +316,28 @@ export function OrgAdminSidebar({
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <div
             style={{
-              width: '34px',
-              height: '34px',
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
               backgroundColor: 'rgba(99, 102, 241, 0.2)',
+              border: '1px solid rgba(129, 140, 248, 0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#818cf8',
+              fontWeight: 800,
+              fontSize: '14px',
+              flexShrink: 0,
             }}
           >
-            <User size={18} />
+            {displayAdminName ? displayAdminName.slice(0, 2).toUpperCase() : 'AD'}
           </div>
-          <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-              Organization Admin
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              {displayAdminName}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-              {adminEmail}
+            <div style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              {displayAdminEmail}
             </div>
           </div>
         </div>
@@ -319,7 +345,7 @@ export function OrgAdminSidebar({
         <button
           onClick={() => setShowLogoutModal(true)}
           className="btn btn-secondary btn-sm"
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderRadius: '8px' }}
         >
           <LogOut size={14} />
           <span>Sign Out</span>
