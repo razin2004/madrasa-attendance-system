@@ -303,42 +303,54 @@ export async function DELETE(
       );
     }
 
-    if (branch.publicIp === cleanIp) {
-      // Primary IP is being deleted. Check if any secondary authorized IP remains to auto-promote
-      const remainingSecondary = await prisma.branchNetworkIdentity.findFirst({
-        where: {
-          branchId: branch.id,
-          publicIp: { not: cleanIp },
-          isActive: true,
-        },
-        orderBy: { createdAt: 'asc' },
-      });
+    const isPrimaryDeleted = branch.publicIp === cleanIp;
 
-      if (remainingSecondary) {
-        // Automatically promote the next secondary IP to Primary
-        await prisma.branch.update({
-          where: { id: branch.id },
-          data: { publicIp: remainingSecondary.publicIp },
-        });
-
-        // Remove from secondary networkIdentities table so it's now Primary
-        await prisma.branchNetworkIdentity.delete({
-          where: { id: remainingSecondary.id },
-        });
-      } else {
-        await prisma.branch.update({
-          where: { id: branch.id },
-          data: { publicIp: null },
-        });
-      }
-    }
-
+    // Remove cleanIp from secondary identities if present
     await prisma.branchNetworkIdentity.deleteMany({
       where: {
         branchId: branch.id,
         publicIp: cleanIp,
       },
     });
+
+    let autoPromotedIp: string | null = null;
+
+    if (isPrimaryDeleted) {
+      // Find next available active secondary IP to auto-promote to Primary
+      const nextSecondary = await prisma.branchNetworkIdentity.findFirst({
+        where: {
+          branchId: branch.id,
+          isActive: true,
+          publicIp: { not: cleanIp },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (nextSecondary) {
+        autoPromotedIp = nextSecondary.publicIp;
+
+        // Delete nextSecondary from secondary identities as it becomes Primary
+        await prisma.branchNetworkIdentity.delete({
+          where: { id: nextSecondary.id },
+        });
+
+        // Set branch primary publicIp to autoPromotedIp
+        await prisma.branch.update({
+          where: { id: branch.id },
+          data: {
+            publicIp: autoPromotedIp,
+            ipCapturedAt: new Date(),
+            ipCapturedBy: auth.session.user.name || auth.session.user.email,
+          },
+        });
+      } else {
+        // No secondary IPs remaining, set publicIp to null
+        await prisma.branch.update({
+          where: { id: branch.id },
+          data: { publicIp: null },
+        });
+      }
+    }
 
     const updatedBranch = await prisma.branch.findUnique({
       where: { id: branch.id },
@@ -347,9 +359,13 @@ export async function DELETE(
       },
     });
 
+    const msg = autoPromotedIp
+      ? `Primary IP "${cleanIp}" removed. Secondary IP "${autoPromotedIp}" auto-promoted to Primary!`
+      : `Authorized IP "${cleanIp}" removed successfully.`;
+
     return NextResponse.json({
       success: true,
-      message: `Authorized IP "${cleanIp}" removed successfully.`,
+      message: msg,
       branch: updatedBranch,
     });
   } catch (error: any) {
