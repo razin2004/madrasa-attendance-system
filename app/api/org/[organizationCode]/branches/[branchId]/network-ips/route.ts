@@ -304,10 +304,33 @@ export async function DELETE(
     }
 
     if (branch.publicIp === cleanIp) {
-      await prisma.branch.update({
-        where: { id: branch.id },
-        data: { publicIp: null },
+      // Primary IP is being deleted. Check if any secondary authorized IP remains to auto-promote
+      const remainingSecondary = await prisma.branchNetworkIdentity.findFirst({
+        where: {
+          branchId: branch.id,
+          publicIp: { not: cleanIp },
+          isActive: true,
+        },
+        orderBy: { createdAt: 'asc' },
       });
+
+      if (remainingSecondary) {
+        // Automatically promote the next secondary IP to Primary
+        await prisma.branch.update({
+          where: { id: branch.id },
+          data: { publicIp: remainingSecondary.publicIp },
+        });
+
+        // Remove from secondary networkIdentities table so it's now Primary
+        await prisma.branchNetworkIdentity.delete({
+          where: { id: remainingSecondary.id },
+        });
+      } else {
+        await prisma.branch.update({
+          where: { id: branch.id },
+          data: { publicIp: null },
+        });
+      }
     }
 
     await prisma.branchNetworkIdentity.deleteMany({

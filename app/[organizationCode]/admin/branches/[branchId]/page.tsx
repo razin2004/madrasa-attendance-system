@@ -27,6 +27,7 @@ import {
   Wifi,
   Star,
   Check,
+  Plus,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -99,6 +100,11 @@ export default function BranchDetailsPage() {
   const [overrideReason, setOverrideReason] = useState('');
   const [overrideSubmitting, setOverrideSubmitting] = useState(false);
   const [newPrimaryIpInput, setNewPrimaryIpInput] = useState('');
+
+  // Action Loading States
+  const [settingPrimaryIp, setSettingPrimaryIp] = useState<string | null>(null);
+  const [deletingIp, setDeletingIp] = useState<string | null>(null);
+  const [detectingCurrentIp, setDetectingCurrentIp] = useState(false);
 
   // Location Recapture
   const [locationModalOpen, setLocationModalOpen] = useState(false);
@@ -249,6 +255,7 @@ export default function BranchDetailsPage() {
   // 4. Set / Change Primary IP
   const handleSetPrimaryIp = async (targetIp: string) => {
     try {
+      setSettingPrimaryIp(targetIp);
       const res = await fetch(`/api/org/${organizationCode}/branches/${branchId}/network-ips`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -269,14 +276,19 @@ export default function BranchDetailsPage() {
       }
     } catch {
       toast.error('Network error updating primary IP.');
+    } finally {
+      setSettingPrimaryIp(null);
     }
   };
 
+  // Remove IP (auto-promotes secondary IP if primary IP was deleted)
   const handleRemoveIp = async (ipToRemove: string) => {
     try {
-      const res = await fetch(`/api/org/${organizationCode}/branches/${branchId}/network-ips?ip=${encodeURIComponent(ipToRemove)}`, {
-        method: 'DELETE',
-      });
+      setDeletingIp(ipToRemove);
+      const res = await fetch(
+        `/api/org/${organizationCode}/branches/${branchId}/network-ips?ip=${encodeURIComponent(ipToRemove)}`,
+        { method: 'DELETE' }
+      );
       const data = await res.json();
       if (data.success) {
         toast.success(data.message || 'Authorized IP removed successfully.');
@@ -286,6 +298,27 @@ export default function BranchDetailsPage() {
       }
     } catch {
       toast.error('Network error removing IP address.');
+    } finally {
+      setDeletingIp(null);
+    }
+  };
+
+  // Detect Client IP helper
+  const handleDetectClientIp = async (targetField: 'PRIMARY' | 'SECONDARY') => {
+    try {
+      setDetectingCurrentIp(true);
+      const detected = await getClientPublicIp();
+      if (detected) {
+        if (targetField === 'PRIMARY') setNewPrimaryIpInput(detected);
+        else setManualIp(detected);
+        toast.info(`Detected current public IP: ${detected}`);
+      } else {
+        toast.error('Could not auto-detect public IP.');
+      }
+    } catch {
+      toast.error('Failed to detect public IP.');
+    } finally {
+      setDetectingCurrentIp(false);
     }
   };
 
@@ -449,15 +482,24 @@ export default function BranchDetailsPage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button onClick={() => setIsEditing(!isEditing)} className="btn btn-secondary btn-sm">
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="btn btn-secondary btn-sm"
+              disabled={savingMetadata}
+            >
               <Edit2 size={14} />
-              <span>{isEditing ? 'Cancel Edit' : 'Edit Branch'}</span>
+              <span>{isEditing ? 'Cancel Edit' : 'Edit Branch Info'}</span>
             </button>
             <button
               onClick={() => setStatusModalOpen(true)}
+              disabled={statusToggling}
               className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
             >
-              <Power size={14} />
+              {statusToggling ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Power size={14} />
+              )}
               <span>{isActive ? 'Deactivate Branch' : 'Activate Branch'}</span>
             </button>
           </div>
@@ -465,377 +507,491 @@ export default function BranchDetailsPage() {
 
         {/* Content Body */}
         <main style={{ padding: '32px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
-          {/* INACTIVE NOTICE BANNER */}
-          {!isActive && (
-            <div
-              style={{
-                padding: '16px 20px',
-                backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                border: '1px solid rgba(239, 68, 68, 0.25)',
-                borderRadius: 'var(--radius-md)',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                fontSize: '13.5px',
-                color: '#f87171',
-              }}
-            >
-              <ShieldAlert size={20} style={{ flexShrink: 0 }} />
-              <div>
-                <strong style={{ color: '#ffffff' }}>This branch is currently inactive.</strong> Staff assigned to this branch cannot use it for attendance verification.
-              </div>
-            </div>
-          )}
-
-          {/* EDIT FORM (When active) */}
+          {/* EDIT METADATA FORM */}
           {isEditing && (
             <div className="glass-card" style={{ padding: '24px', marginBottom: '28px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', marginBottom: '16px' }}>
-                Edit Branch Information
-              </h3>
-              <form onSubmit={handleSaveMetadata} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', marginBottom: '16px' }}>Edit Branch Information</h3>
+              <form onSubmit={handleSaveMetadata} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '16px', alignItems: 'end' }}>
                 <div>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Branch Name</label>
                   <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Address</label>
-                  <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Geofence Radius (Meters)</label>
+                  <input type="number" min="20" max="5000" required value={geofenceRadius} onChange={(e) => setGeofenceRadius(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
-                <div>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Geofence Radius (m)</label>
-                  <input type="number" min={20} max={5000} value={geofenceRadius} onChange={(e) => setGeofenceRadius(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Physical Address</label>
+                  <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
                 <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
                   <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary btn-sm">Cancel</button>
-                  <button type="submit" disabled={savingMetadata} className="btn btn-primary btn-sm">
-                    {savingMetadata ? 'Saving...' : 'Save Changes'}
+                  <button type="submit" disabled={savingMetadata} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    {savingMetadata ? <Loader2 size={14} className="animate-spin" /> : null}
+                    <span>{savingMetadata ? 'Saving...' : 'Save Changes'}</span>
                   </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* TWO COLUMN PANELS */}
-          <div className={styles.gridTwoCol}>
-            {/* Panel 1: Network Security */}
+          {/* TWO COLUMN GRID: NETWORK IP SECURITY (LEFT) vs LOCATION GEOFENCE (RIGHT) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '28px' }}>
+            {/* PANEL 1: NETWORK IP SECURITY (DEDUPLICATED) */}
             <div className={styles.panelCard}>
               <div className={styles.panelHeader}>
                 <h3 className={styles.panelTitle}>
-                  <Network size={18} color="#38bdf8" />
-                  Approved Network Security (Layer 1)
+                  <Wifi size={18} color="#38bdf8" />
+                  <span>Layer 1 Network Security (Public IP)</span>
                 </h3>
-                <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(6, 182, 212, 0.12)', color: '#38bdf8' }}>
-                  {branch.ipSource || 'AUTO_DETECTED'}
+                <span style={{ fontSize: '11.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                  {totalAuthorizedCount}/5 Authorized
                 </span>
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                    Authorized Public IPs (Up to 5)
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    {totalAuthorizedCount}/5 Registered
-                  </div>
-                </div>
+              <div style={{ padding: '24px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.5 }}>
+                  Staff clock-in requests verify against authorized workplace public IP addresses. You can set 1 Primary IP and up to 4 Secondary IPs.
+                </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
-                  {/* PRIMARY PUBLIC IP CARD */}
-                  {primaryIp ? (
-                    <div style={{ padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Star size={14} color="#38bdf8" fill="#38bdf8" />
-                          <span style={{ fontSize: '14.5px', fontWeight: 800, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>{primaryIp}</span>
-                          <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', textTransform: 'uppercase' }}>Primary IP</span>
-                        </div>
-                        <div style={{ fontSize: '11.5px', color: '#cbd5e1', marginTop: '2px' }}>
-                          Default branch network identifier
-                        </div>
+                {/* PRIMARY PUBLIC IP CARD */}
+                {primaryIp ? (
+                  <div
+                    style={{
+                      padding: '18px 20px',
+                      borderRadius: '14px',
+                      backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                      border: '1px solid rgba(99, 102, 241, 0.3)',
+                      marginBottom: '20px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Star size={16} color="#818cf8" fill="#818cf8" />
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>Primary Network IP</span>
+                        <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '1px 7px', borderRadius: '4px', backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}>
+                          Primary
+                        </span>
                       </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                           onClick={() => {
                             setNewPrimaryIpInput(primaryIp);
                             setEditPrimaryModalOpen(true);
                           }}
+                          disabled={settingPrimaryIp !== null}
                           className="btn btn-secondary btn-sm"
-                          style={{ padding: '4px 10px', fontSize: '11.5px', borderRadius: '6px' }}
+                          style={{ padding: '4px 10px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         >
-                          Change
+                          <Edit2 size={12} />
+                          <span>Change Primary IP</span>
                         </button>
-                        <button onClick={() => handleRemoveIp(primaryIp)} className="btn btn-danger btn-sm" style={{ padding: '4px 10px', fontSize: '11.5px', borderRadius: '6px' }}>
-                          Remove
+                        <button
+                          onClick={() => handleRemoveIp(primaryIp)}
+                          disabled={deletingIp === primaryIp}
+                          className="btn btn-danger btn-sm"
+                          style={{ padding: '4px 10px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          {deletingIp === primaryIp ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <X size={12} />
+                          )}
+                          <span>{deletingIp === primaryIp ? 'Deleting...' : 'Remove'}</span>
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <div style={{ padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', color: '#fbbf24', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span>✗ No Primary Public IP set.</span>
+
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 800, color: '#818cf8', letterSpacing: '0.5px' }}>
+                      {primaryIp}
+                    </div>
+
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                      Source: {branch.ipSource} &bull; Captured: {branch.ipCapturedAt ? new Date(branch.ipCapturedAt).toLocaleString() : 'N/A'}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '13px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>No Primary Public IP configured for this branch.</span>
+                    <button
+                      onClick={() => {
+                        setNewPrimaryIpInput('');
+                        setEditPrimaryModalOpen(true);
+                      }}
+                      className="btn btn-primary btn-sm"
+                      style={{ fontSize: '11.5px' }}
+                    >
+                      Set Primary IP
+                    </button>
+                  </div>
+                )}
+
+                {/* SECONDARY AUTHORIZED IPS LIST (PRIMARY EXCLUDED) */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Secondary Authorized IPs ({secondaryIps.length})</span>
+                    {totalAuthorizedCount < 5 && (
                       <button
                         onClick={() => {
-                          setNewPrimaryIpInput('');
-                          setEditPrimaryModalOpen(true);
+                          setManualIp('');
+                          setOverrideReason('');
+                          setOverrideModalOpen(true);
                         }}
-                        className="btn btn-warning btn-sm"
-                        style={{ padding: '4px 10px', fontSize: '11.5px' }}
+                        disabled={overrideSubmitting}
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                       >
-                        + Set Primary IP
+                        {overrideSubmitting ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                        <span>Add Authorized IP</span>
                       </button>
+                    )}
+                  </div>
+
+                  {secondaryIps.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {secondaryIps.map((item) => {
+                        const isSettingThisPrimary = settingPrimaryIp === item.publicIp;
+                        const isDeletingThis = deletingIp === item.publicIp;
+
+                        return (
+                          <div
+                            key={item.id}
+                            style={{
+                              padding: '12px 16px',
+                              borderRadius: '10px',
+                              backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                              border: '1px solid var(--border-subtle)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
+                                {item.publicIp}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                {item.overrideReason || 'Secondary IP'} &bull; Added {new Date(item.capturedAt).toLocaleDateString()}
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => handleSetPrimaryIp(item.publicIp)}
+                                disabled={isSettingThisPrimary || isDeletingThis}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '4px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="Make this IP the Primary IP"
+                              >
+                                {isSettingThisPrimary ? (
+                                  <Loader2 size={11} className="animate-spin" />
+                                ) : (
+                                  <Star size={11} color="#fbbf24" />
+                                )}
+                                <span>{isSettingThisPrimary ? 'Setting...' : 'Make Primary'}</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleRemoveIp(item.publicIp)}
+                                disabled={isDeletingThis || isSettingThisPrimary}
+                                className="btn btn-ghost btn-sm"
+                                style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--danger-text)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="Remove authorized IP"
+                              >
+                                {isDeletingThis ? (
+                                  <Loader2 size={11} className="animate-spin" />
+                                ) : (
+                                  <X size={13} />
+                                )}
+                                <span>{isDeletingThis ? 'Deleting...' : 'Remove'}</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '14px', borderRadius: '10px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px dashed var(--border-subtle)', fontSize: '12.5px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                      No secondary authorized IPs. Click "Add Authorized IP" to register backup WiFi/router IPs.
                     </div>
                   )}
-
-                  {/* SECONDARY AUTHORIZED IPS (DEDUPLICATED) */}
-                  {secondaryIps.map((n) => (
-                    <div key={n.id} style={{ padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div>
-                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{n.publicIp}</span>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{n.overrideReason || 'Secondary IP'}</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          onClick={() => handleSetPrimaryIp(n.publicIp)}
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '6px' }}
-                          title="Set this IP as Primary"
-                        >
-                          Make Primary
-                        </button>
-                        <button onClick={() => handleRemoveIp(n.publicIp)} className="btn btn-danger btn-sm" style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '6px' }}>
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
 
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                  Staff connecting from any registered branch IP will pass Layer 1 network verification.
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={() => setRecaptureConfirmOpen(true)}
-                  disabled={recapturingIp}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <RefreshCw size={14} className={recapturingIp ? 'animate-spin' : ''} />
-                  <span>Recapture Current IP</span>
-                </button>
-                {totalAuthorizedCount < 5 && (
+                {/* Recapture Action Button */}
+                <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                   <button
-                    onClick={() => setOverrideModalOpen(true)}
-                    className="btn btn-primary btn-sm"
+                    onClick={() => setRecaptureConfirmOpen(true)}
+                    disabled={recapturingIp}
+                    className="btn btn-secondary btn-sm"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    <Key size={14} />
-                    <span>+ Add Additional IP</span>
+                    {recapturingIp ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                    <span>{recapturingIp ? 'Detecting Network IP...' : 'Recapture Current Network IP'}</span>
                   </button>
-                )}
+                </div>
               </div>
             </div>
 
-            {/* Panel 2: Location Security */}
+            {/* PANEL 2: LOCATION & GEOFENCE SECURITY (RIGHT) */}
             <div className={styles.panelCard}>
               <div className={styles.panelHeader}>
                 <h3 className={styles.panelTitle}>
-                  <Navigation size={18} color="#34d399" />
-                  Location Security &amp; Geofence (Layer 2)
+                  <MapPin size={18} color="#34d399" />
+                  <span>Layer 2 GPS Geofence Security</span>
                 </h3>
-                <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#34d399' }}>
-                  ✓ {branch.geofenceRadiusMeters} m Radius
-                </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Latitude</div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{branch.latitude?.toFixed(6) || 'N/A'}</div>
+              <div style={{ padding: '24px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.5 }}>
+                  GPS perimeter restriction requires staff to be within allowed distance of physical coordinates when clocking in.
+                </p>
+
+                {/* COORDINATES DISPLAY */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+                  <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Latitude</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
+                      {branch.latitude !== null ? branch.latitude.toFixed(6) : 'Not set'}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Longitude</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
+                      {branch.longitude !== null ? branch.longitude.toFixed(6) : 'Not set'}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Longitude</div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{branch.longitude?.toFixed(6) || 'N/A'}</div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', marginBottom: '24px' }}>
+                  <div><span style={{ color: 'var(--text-muted)' }}>Allowed Geofence Radius: </span><strong style={{ color: '#ffffff' }}>{branch.geofenceRadiusMeters} meters</strong></div>
+                  <div><span style={{ color: 'var(--text-muted)' }}>GPS Signal Accuracy: </span><strong style={{ color: '#ffffff' }}>{branch.locationAccuracyMeters ? `${branch.locationAccuracyMeters}m` : 'N/A'}</strong></div>
+                  <div><span style={{ color: 'var(--text-muted)' }}>Last Location Update: </span><strong style={{ color: '#ffffff' }}>{branch.locationCapturedAt ? new Date(branch.locationCapturedAt).toLocaleString() : 'N/A'}</strong></div>
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => {
+                      setNewLat(branch.latitude);
+                      setNewLng(branch.longitude);
+                      setNewAccuracy(branch.locationAccuracyMeters);
+                      setGpsError(null);
+                      setLocationModalOpen(true);
+                    }}
+                    disabled={savingLocation}
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    {savingLocation ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+                    <span>{savingLocation ? 'Saving Location...' : 'Recapture GPS Coordinates'}</span>
+                  </button>
                 </div>
               </div>
-
-              <button
-                onClick={() => { setLocationModalOpen(true); handleCaptureGps(); }}
-                className="btn btn-secondary btn-sm"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Navigation size={14} />
-                <span>Re-capture GPS Location</span>
-              </button>
             </div>
-          </div>
-
-          {/* 3-LAYER SECURITY ARCHITECTURE OVERVIEW CARD */}
-          <div className="glass-card" style={{ padding: '24px', marginBottom: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-              <Layers size={18} color="#818cf8" />
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>
-                Three-Layer Attendance Verification Role
-              </h3>
-            </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              ShiftGuard verifies staff attendance against three security layers simultaneously. This branch configuration supplies <strong>Layer 1 (Public Network IP)</strong> and <strong>Layer 2 (GPS Geofence)</strong> bounds. Staff devices supply <strong>Layer 3 (Bound Hardware Secret)</strong>.
-            </p>
           </div>
         </main>
       </div>
 
-      {/* CONFIRMATION & EDIT MODALS */}
-      {/* 1. Recapture Confirmation */}
+      {/* MODALS */}
+
+      {/* 1. EDIT / CHANGE PRIMARY IP MODAL */}
+      {editPrimaryModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Set / Change Primary Network IP</h3>
+              <button onClick={() => setEditPrimaryModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!newPrimaryIpInput.trim()) return toast.error('Primary IP is required.');
+              handleSetPrimaryIp(newPrimaryIpInput.trim());
+            }}>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Primary Public IP Address *</label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <input
+                    type="text"
+                    required
+                    value={newPrimaryIpInput}
+                    onChange={(e) => setNewPrimaryIpInput(e.target.value)}
+                    placeholder="e.g. 49.47.195.139"
+                    className="form-input"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDetectClientIp('PRIMARY')}
+                    disabled={detectingCurrentIp}
+                    className="btn btn-secondary btn-sm"
+                    style={{ whiteSpace: 'nowrap', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title="Auto-detect my current public IP"
+                  >
+                    {detectingCurrentIp ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    <span>{detectingCurrentIp ? 'Detecting...' : 'Auto-Detect'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                <button type="button" onClick={() => setEditPrimaryModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
+                <button
+                  type="submit"
+                  disabled={settingPrimaryIp !== null}
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {settingPrimaryIp !== null ? <Loader2 size={14} className="animate-spin" /> : null}
+                  <span>{settingPrimaryIp !== null ? 'Saving Primary IP...' : 'Save Primary IP'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. MANUAL ADD SECONDARY IP MODAL */}
+      {overrideModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Add Authorized Secondary IP</h3>
+              <button onClick={() => setOverrideModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+
+            <form onSubmit={handleManualAddIp}>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Public IP Address *</label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <input
+                    type="text"
+                    required
+                    value={manualIp}
+                    onChange={(e) => setManualIp(e.target.value)}
+                    placeholder="e.g. 157.48.201.12"
+                    className="form-input"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDetectClientIp('SECONDARY')}
+                    disabled={detectingCurrentIp}
+                    className="btn btn-secondary btn-sm"
+                    style={{ whiteSpace: 'nowrap', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    {detectingCurrentIp ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    <span>{detectingCurrentIp ? 'Detecting...' : 'Auto-Detect'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Reason / Description</label>
+                <input
+                  type="text"
+                  value={overrideReason}
+                  onChange={(e) => setOverrideReason(e.target.value)}
+                  placeholder="e.g. Backup Router / Fiber Connection"
+                  className="form-input"
+                  style={{ width: '100%', marginTop: '4px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setOverrideModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
+                <button type="submit" disabled={overrideSubmitting} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  {overrideSubmitting ? <Loader2 size={14} className="animate-spin" /> : null}
+                  <span>{overrideSubmitting ? 'Registering IP...' : 'Register Authorized IP'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. RECAPTURE CONFIRM MODAL */}
       <ConfirmationModal
         isOpen={recaptureConfirmOpen}
         onClose={() => setRecaptureConfirmOpen(false)}
         onConfirm={handleRecaptureIp}
-        title="Recapture Branch Primary Network IP?"
-        message="Connect to this branch's Wi-Fi network before continuing. ShiftGuard will capture the current public IP as the Primary IP for Layer 1 attendance verification."
+        title="Recapture Network IP?"
+        message="This will update the branch's Primary IP to your current network's public IP address."
         confirmText="Recapture IP"
+        variant="primary"
       />
 
-      {/* 2. Status Toggle Confirmation */}
+      {/* 4. LOCATION RECAPTURE MODAL */}
+      {locationModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '460px', padding: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Recapture GPS Location</h3>
+              <button onClick={() => setLocationModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+
+            {gpsError && (
+              <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '12.5px', marginBottom: '16px' }}>
+                {gpsError}
+              </div>
+            )}
+
+            <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-subtle)', marginBottom: '20px' }}>
+              <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>Captured Coordinates:</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
+                {newLat !== null && newLng !== null ? `${newLat.toFixed(6)}, ${newLng.toFixed(6)}` : 'No GPS coordinates captured yet'}
+              </div>
+              {newAccuracy !== null && (
+                <div style={{ fontSize: '11.5px', color: '#34d399', marginTop: '4px' }}>Accuracy: {newAccuracy} meters</div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={handleCaptureGps}
+                disabled={capturingGps}
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                {capturingGps ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+                <span>{capturingGps ? 'Capturing GPS...' : 'Detect My Location'}</span>
+              </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" onClick={() => setLocationModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
+                <button
+                  type="button"
+                  onClick={handleSaveLocation}
+                  disabled={savingLocation || newLat === null}
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {savingLocation ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                  <span>{savingLocation ? 'Saving...' : 'Save Location'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. STATUS TOGGLE CONFIRM MODAL */}
       <ConfirmationModal
         isOpen={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         onConfirm={handleToggleStatus}
-        title={isActive ? 'Deactivate this branch?' : 'Activate this branch?'}
+        title={isActive ? 'Deactivate branch?' : 'Activate branch?'}
         message={
           isActive
-            ? 'Staff assigned to this branch will no longer be able to use it for attendance verification.'
-            : 'Re-activate this branch so assigned staff can resume attendance verification.'
+            ? `Deactivating ${branch.name} will prevent staff assigned to this branch from clocking in.`
+            : `Re-activating ${branch.name} will restore location and IP attendance validation.`
         }
         confirmText={isActive ? 'Deactivate Branch' : 'Activate Branch'}
         variant={isActive ? 'danger' : 'primary'}
       />
 
-      {/* 3. Change Primary IP Modal */}
-      {editPrimaryModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Change Primary Public IP</h3>
-              <button onClick={() => setEditPrimaryModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
-            </div>
-            <form onSubmit={(e) => { e.preventDefault(); handleSetPrimaryIp(newPrimaryIpInput); }}>
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Primary Public IP</label>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const ip = await getClientPublicIp();
-                      if (ip) {
-                        setNewPrimaryIpInput(ip);
-                        toast.info(`Detected current IP: ${ip}`);
-                      }
-                    }}
-                    style={{ fontSize: '11px', color: '#38bdf8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
-                  >
-                    ⚡ Auto-Detect My IP
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 49.47.195.139"
-                  value={newPrimaryIpInput}
-                  onChange={(e) => setNewPrimaryIpInput(e.target.value)}
-                  className="form-input"
-                  style={{ width: '100%', marginTop: '4px' }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setEditPrimaryModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
-                <button type="submit" className="btn btn-primary btn-sm">
-                  Save Primary IP
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 4. Manual Add Additional IP Modal */}
-      {overrideModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Add Authorized Public IP</h3>
-              <button onClick={() => setOverrideModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
-            </div>
-            <form onSubmit={handleManualAddIp}>
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Public IP Address</label>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const ip = await getClientPublicIp();
-                      if (ip) {
-                        setManualIp(ip);
-                        toast.info(`Detected current IP: ${ip}`);
-                      }
-                    }}
-                    style={{ fontSize: '11px', color: '#38bdf8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
-                  >
-                    ⚡ Auto-Detect My IP
-                  </button>
-                </div>
-                <input type="text" required placeholder="e.g. 103.15.22.4" value={manualIp} onChange={(e) => setManualIp(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
-              </div>
-              <div style={{ marginBottom: '20px' }}>
-                <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Reason for Additional IP</label>
-                <textarea required rows={2} placeholder="e.g. Backup ISP line for branch" value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', resize: 'vertical' }} />
-              </div>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setOverrideModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
-                <button type="submit" disabled={overrideSubmitting} className="btn btn-primary btn-sm">
-                  {overrideSubmitting ? 'Saving...' : 'Add Authorized IP'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 5. GPS Recapture Modal */}
-      {locationModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Re-capture GPS Location</h3>
-              <button onClick={() => setLocationModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
-            </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-              Ensure you are physically at the branch location before saving new GPS coordinates.
-            </p>
-            {capturingGps ? (
-              <div style={{ padding: '24px', textAlign: 'center' }}>
-                <Loader2 size={28} className="animate-spin" style={{ color: '#34d399', margin: '0 auto 8px auto' }} />
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Requesting device location...</div>
-              </div>
-            ) : newLat !== null ? (
-              <div style={{ padding: '16px', backgroundColor: 'rgba(16, 185, 129, 0.08)', borderRadius: 'var(--radius-md)', marginBottom: '20px', fontSize: '13px', color: '#34d399' }}>
-                ✓ Lat: {newLat.toFixed(6)}, Lng: {newLng?.toFixed(6)}
-              </div>
-            ) : null}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
-              <button type="button" onClick={() => setLocationModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
-              <button type="button" onClick={handleSaveLocation} disabled={newLat === null || savingLocation} className="btn btn-primary btn-sm">
-                {savingLocation ? 'Saving...' : 'Save Coordinates'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile Navigation */}
+      {/* Mobile Nav */}
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>
   );
