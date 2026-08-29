@@ -602,7 +602,7 @@ export default function OrgAdminLandingPage() {
                   <div style={{ padding: '18px', backgroundColor: 'rgba(168, 85, 247, 0.08)', borderRadius: '14px', border: '1px solid rgba(168, 85, 247, 0.25)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                       <Smartphone size={16} color="#c084fc" />
-                      <span style={{ fontSize: '13.5px', fontWeight: 800, color="#c084fc" }}>Layer 3: Device Binding</span>
+                      <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#c084fc' }}>Layer 3: Device Binding</span>
                     </div>
                     <p style={{ fontSize: '12px', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>
                       Binds opaque hardware cryptographic secrets to staff devices to block unauthorized device usage.
