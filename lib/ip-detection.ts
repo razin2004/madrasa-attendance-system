@@ -1,6 +1,25 @@
 /**
- * Server-side Public IP Extraction and Normalization
+ * Server-side & Client-side Public IP Extraction and Normalization
  */
+
+export async function getClientPublicIp(): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.ip) return data.ip.trim();
+    }
+  } catch {
+    try {
+      const res2 = await fetch('https://ipinfo.io/json');
+      if (res2.ok) {
+        const data2 = await res2.json();
+        if (data2.ip) return data2.ip.trim();
+      }
+    } catch {}
+  }
+  return null;
+}
 
 export function extractClientPublicIp(request: Request | Headers): string {
   const headers = request instanceof Request ? request.headers : request;
