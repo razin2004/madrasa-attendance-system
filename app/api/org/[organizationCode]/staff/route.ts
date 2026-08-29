@@ -250,7 +250,7 @@ export async function POST(
           },
         });
 
-        return { user, profile, device };
+        return { user, profile };
       },
       { maxWait: 15000, timeout: 30000 }
     );
