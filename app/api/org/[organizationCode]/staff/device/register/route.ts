@@ -55,17 +55,38 @@ export async function POST(
       });
     }
 
-    // Register new device record for staff member
-    const registeredDevice = await prisma.staffDevice.create({
-      data: {
+    // Check if there is a pending NOT_REGISTERED authorized device slot for this staff member
+    const pendingSlot = await prisma.staffDevice.findFirst({
+      where: {
         staffProfileId,
-        secretHash,
-        status: 'REGISTERED',
-        label,
-        registeredAt: new Date(),
-        lastUsedAt: new Date(),
+        status: 'NOT_REGISTERED',
       },
     });
+
+    let registeredDevice;
+    if (pendingSlot) {
+      registeredDevice = await prisma.staffDevice.update({
+        where: { id: pendingSlot.id },
+        data: {
+          secretHash,
+          status: 'REGISTERED',
+          label,
+          registeredAt: new Date(),
+          lastUsedAt: new Date(),
+        },
+      });
+    } else {
+      registeredDevice = await prisma.staffDevice.create({
+        data: {
+          staffProfileId,
+          secretHash,
+          status: 'REGISTERED',
+          label,
+          registeredAt: new Date(),
+          lastUsedAt: new Date(),
+        },
+      });
+    }
 
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
     await recordAuditLog({

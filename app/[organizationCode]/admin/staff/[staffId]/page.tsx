@@ -106,7 +106,10 @@ export default function StaffProfilePage() {
   const [resettingDevice, setResettingDevice] = useState(false);
   const [deviceToRemove, setDeviceToRemove] = useState<any>(null);
   const [removingDevice, setRemovingDevice] = useState(false);
+  
+  // Authorize Device Slot Modal
   const [addDeviceModalOpen, setAddDeviceModalOpen] = useState(false);
+  const [authorizingDevice, setAuthorizingDevice] = useState(false);
 
   // Status Toggle Confirmation Modal
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -232,7 +235,7 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 3. Reset Device (Layer 3)
+  // 3. Reset Device
   const handleResetDevice = async () => {
     try {
       setResettingDevice(true);
@@ -255,7 +258,30 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 3b. Remove Individual Registered Device
+  // 3b. Authorize Additional Device Slot
+  const handleAuthorizeDeviceSlot = async () => {
+    try {
+      setAuthorizingDevice(true);
+      const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/authorize-device`, {
+        method: 'POST',
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Secondary device slot authorized for ${staff?.name}! It is now listed as pending registration.`);
+        setAddDeviceModalOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.error || 'Failed to authorize additional device slot.');
+      }
+    } catch {
+      toast.error('Network error authorizing device slot.');
+    } finally {
+      setAuthorizingDevice(false);
+    }
+  };
+
+  // 3c. Remove Individual Device / Slot
   const handleRemoveDevice = async () => {
     if (!deviceToRemove) return;
     try {
@@ -266,7 +292,7 @@ export default function StaffProfilePage() {
 
       const data = await res.json();
       if (data.success) {
-        toast.success('Device removed successfully.');
+        toast.success('Device / Slot removed successfully.');
         fetchData();
         setDeviceToRemove(null);
       } else {
@@ -362,9 +388,10 @@ export default function StaffProfilePage() {
   }
 
   const isActive = staff.user.status === 'ACTIVE';
-
-  // Filter out NOT_REGISTERED placeholder items so ONLY active registered devices are displayed
-  const registeredDevices = staff.devices?.filter((d: any) => d.status !== 'NOT_REGISTERED') || [];
+  const allDevices = staff.devices || [];
+  const registeredCount = allDevices.filter((d: any) => d.status === 'REGISTERED').length;
+  const hasPendingSlot = allDevices.some((d: any) => d.status === 'NOT_REGISTERED');
+  const canAuthorizeMore = !hasPendingSlot && registeredCount < 2;
 
   return (
     <div className={styles.container}>
@@ -460,7 +487,7 @@ export default function StaffProfilePage() {
               className={`${styles.tabItem} ${activeTab === 'DEVICE' ? styles.tabItemActive : ''}`}
             >
               <Smartphone size={16} />
-              <span>Layer 3 Security Devices ({registeredDevices.length})</span>
+              <span>Layer 3 Security Devices ({allDevices.length})</span>
             </button>
           </div>
 
@@ -594,15 +621,20 @@ export default function StaffProfilePage() {
                   <Smartphone size={20} color="#34d399" />
                   <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Registered Devices</h3>
                 </div>
+
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    onClick={() => setAddDeviceModalOpen(true)}
-                    className="btn btn-primary btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Plus size={14} />
-                    <span>+ Authorize Additional Device</span>
-                  </button>
+                  {/* VANISH / HIDE BUTTON IF PENDING SLOT ALREADY EXISTS OR MAX DEVICES AUTHORIZED */}
+                  {canAuthorizeMore && (
+                    <button
+                      onClick={() => setAddDeviceModalOpen(true)}
+                      className="btn btn-primary btn-sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Plus size={14} />
+                      <span>Authorize Additional Device</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setDeviceResetModalOpen(true)}
                     className="btn btn-secondary btn-sm"
@@ -614,56 +646,68 @@ export default function StaffProfilePage() {
                 </div>
               </div>
 
-              {registeredDevices.length > 0 ? (
+              {allDevices.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {registeredDevices.map((d: any) => (
-                    <div
-                      key={d.id}
-                      style={{
-                        padding: '18px 20px',
-                        borderRadius: '14px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#ffffff' }}>{d.label || 'Registered Device'}</span>
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              fontWeight: 800,
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              backgroundColor: d.status === 'REGISTERED' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(251, 191, 36, 0.15)',
-                              color: d.status === 'REGISTERED' ? '#34d399' : '#fbbf24',
-                            }}
-                          >
-                            {d.status === 'REGISTERED' ? '✓ Active' : d.status}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
-                          Registered: {d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}
-                          {d.lastUsedAt && ` • Last Used: ${new Date(d.lastUsedAt).toLocaleString()}`}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setDeviceToRemove(d)}
-                        className="btn btn-danger btn-sm"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
+                  {allDevices.map((d: any) => {
+                    const isRegistered = d.status === 'REGISTERED';
+                    return (
+                      <div
+                        key={d.id}
+                        style={{
+                          padding: '18px 20px',
+                          borderRadius: '14px',
+                          backgroundColor: isRegistered ? 'rgba(255, 255, 255, 0.03)' : 'rgba(251, 191, 36, 0.04)',
+                          border: `1px solid ${isRegistered ? 'rgba(255, 255, 255, 0.08)' : 'rgba(251, 191, 36, 0.25)'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
                       >
-                        <X size={14} />
-                        <span>Remove</span>
-                      </button>
-                    </div>
-                  ))}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#ffffff' }}>
+                              {isRegistered ? d.label || 'Registered Device' : 'Secondary Device (Awaiting Login)'}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                backgroundColor: isRegistered ? 'rgba(52, 211, 153, 0.15)' : 'rgba(251, 191, 36, 0.15)',
+                                color: isRegistered ? '#34d399' : '#fbbf24',
+                                border: `1px solid ${isRegistered ? 'rgba(52, 211, 153, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
+                              }}
+                            >
+                              {isRegistered ? '✓ Active' : 'NOT_REGISTERED'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                            {isRegistered ? (
+                              <>
+                                Registered: {d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}
+                                {d.lastUsedAt && ` • Last Used: ${new Date(d.lastUsedAt).toLocaleString()}`}
+                              </>
+                            ) : (
+                              <>Authorized slot for 2nd device • Pending registration on next staff login.</>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setDeviceToRemove(d)}
+                          className="btn btn-danger btn-sm"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
+                        >
+                          <X size={14} />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div style={{ padding: '24px', borderRadius: '14px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
-                  No registered devices found for this staff member. When {staff.name} logs in on their phone or computer, their first device will automatically be registered and displayed here.
+                  No registered devices found for this staff member. When {staff.name} logs in on their phone or computer, their primary device will automatically be registered here.
                 </div>
               )}
             </div>
@@ -689,7 +733,7 @@ export default function StaffProfilePage() {
         onClose={() => setDeviceToRemove(null)}
         onConfirm={handleRemoveDevice}
         title="Remove this registered device?"
-        message={`This device (${deviceToRemove?.label || 'Selected Device'}) will no longer be allowed for Layer 3 attendance verification for ${staff.name}.`}
+        message={`This device slot (${deviceToRemove?.label || 'Selected Device'}) will be deleted. ${deviceToRemove?.status === 'NOT_REGISTERED' ? 'The pending secondary device slot will be revoked.' : 'The device will no longer be allowed for attendance verification.'}`}
         confirmText="Remove Device"
         variant="danger"
       />
@@ -703,19 +747,17 @@ export default function StaffProfilePage() {
               <button onClick={() => setAddDeviceModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
             <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.5', marginBottom: '20px' }}>
-              Authorizing a second device permits <strong>{staff.name}</strong> to log in on an additional phone or computer. When they log in on their second device, it will automatically bind to their profile and display here as active.
+              Authorizing a second device permits <strong>{staff.name}</strong> to log in on an additional phone or computer. A pending <strong>NOT_REGISTERED</strong> device slot will be authorized. When they log in on their second device, it will bind and become active.
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button type="button" onClick={() => setAddDeviceModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
               <button
                 type="button"
-                onClick={() => {
-                  toast.success(`Additional device authorization enabled for ${staff.name}! They can now log in on their second device.`);
-                  setAddDeviceModalOpen(false);
-                }}
+                disabled={authorizingDevice}
+                onClick={handleAuthorizeDeviceSlot}
                 className="btn btn-primary btn-sm"
               >
-                Authorize Second Device
+                {authorizingDevice ? 'Authorizing...' : 'Authorize Second Device'}
               </button>
             </div>
           </div>
