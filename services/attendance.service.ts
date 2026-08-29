@@ -359,7 +359,7 @@ export async function evaluateThreeLayerAttendance(
     if ((geoCheck.isWithin || isWifiVerified) && accuracy <= MAX_ACCURACY_THRESHOLD) {
       const msg = isWifiVerified && !geoCheck.isWithin
         ? `Inside ${targetBranch.name} • Verified via Branch Wi-Fi Network.`
-        : `Inside ${targetBranch.name} • ${geoCheck.distanceMeters}m from center.`;
+        : `Inside ${targetBranch.name} (Within Branch Boundary)`;
 
       layer3 = {
         isVerified: true,
