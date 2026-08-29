@@ -263,9 +263,9 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
         where: { id: emailLog.id },
         data: {
           status: finalSuccess ? 'SENT' : 'FAILED',
-          provider: finalProvider,
-          messageId: finalMessageId ?? null,
-          errorMessage: finalError ?? null,
+          providerMessageId: finalMessageId ?? null,
+          failureReason: finalError ?? null,
+          sentAt: finalSuccess ? new Date() : null,
         },
       });
     } catch (dbErr) {
