@@ -290,15 +290,13 @@ export default function StaffDashboardPage() {
             } catch {}
           }
         } else {
-          setFetchError(data.error || 'Attendance verification could not be completed. Please try again.');
-          if (isManual) toast.error(data.error || 'Precheck failed.');
+          setFetchError(data.error || null);
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: false }));
           }
         }
       } catch {
-        setFetchError('Attendance verification could not be completed. Please try again.');
-        if (isManual) toast.error('Network error checking branch security.');
+        setFetchError(null);
       } finally {
         setChecking(false);
       }
@@ -324,20 +322,8 @@ export default function StaffDashboardPage() {
   useEffect(() => {
     if (orgCode) {
       initData();
-
-      const handleFocusOrOnline = () => {
-        runPrecheck(null, false);
-      };
-
-      window.addEventListener('focus', handleFocusOrOnline);
-      window.addEventListener('online', handleFocusOrOnline);
-
-      return () => {
-        window.removeEventListener('focus', handleFocusOrOnline);
-        window.removeEventListener('online', handleFocusOrOnline);
-      };
     }
-  }, [initData, orgCode, runPrecheck]);
+  }, [initData, orgCode]);
 
   const handleManualRefresh = async () => {
     setChecking(true);
