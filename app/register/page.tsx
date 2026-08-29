@@ -62,45 +62,55 @@ export default function RegisterOrganizationPage() {
 
   // Real-time Organization Code Debounced Availability Check
   useEffect(() => {
+    let isCancelled = false;
     const code = formData.organizationCode.trim();
-    if (!code) {
+
+    if (!code || code.length < 3 || !/^[A-Z0-9]{3,12}$/.test(code)) {
       setCodeStatus({ state: 'idle', message: '' });
       return;
     }
 
-    if (!/^[A-Z0-9]{3,12}$/.test(code)) {
-      setCodeStatus({
-        state: 'invalid',
-        message: 'Code must be 3–12 uppercase letters or numbers.',
-      });
-      return;
-    }
+    setCodeStatus({ state: 'checking', message: 'Checking code availability...' });
 
     const timer = setTimeout(async () => {
-      setCodeStatus({ state: 'checking', message: 'Checking code availability...' });
       try {
         const res = await fetch(`/api/organizations/check-availability?code=${encodeURIComponent(code)}`);
         const data = await res.json();
-        if (data.success && data.code) {
-          if (data.code.available) {
-            setCodeStatus({ state: 'available', message: `✓ ${data.code.message || 'Organization code is available!'}` });
+        if (!isCancelled) {
+          if (data.success && data.code) {
+            if (data.code.available) {
+              setCodeStatus({
+                state: 'available',
+                message: `Organization code "${code}" is available`,
+              });
+            } else {
+              setCodeStatus({
+                state: 'taken',
+                message: `Organization code "${code}" is already taken`,
+              });
+            }
           } else {
-            setCodeStatus({ state: 'taken', message: `✕ ${data.code.message || 'Organization code is already taken.'}` });
+            setCodeStatus({ state: 'idle', message: '' });
           }
-        } else {
-          setCodeStatus({ state: 'idle', message: '' });
         }
       } catch {
-        setCodeStatus({ state: 'idle', message: '' });
+        if (!isCancelled) {
+          setCodeStatus({ state: 'idle', message: '' });
+        }
       }
-    }, 250);
+    }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
   }, [formData.organizationCode]);
 
   // Real-time Contact Email Debounced Availability Check
   useEffect(() => {
+    let isCancelled = false;
     const email = formData.contactEmail.trim();
+
     if (!email) {
       setEmailStatus({ state: 'idle', message: '' });
       return;
@@ -112,25 +122,37 @@ export default function RegisterOrganizationPage() {
       return;
     }
 
+    setEmailStatus({ state: 'checking', message: '' });
+
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/organizations/check-availability?email=${encodeURIComponent(email)}`);
         const data = await res.json();
-        if (data.success && data.email) {
-          if (data.email.available) {
-            setEmailStatus({ state: 'available', message: '' });
+        if (!isCancelled) {
+          if (data.success && data.email) {
+            if (data.email.available) {
+              setEmailStatus({ state: 'available', message: '' });
+            } else {
+              setEmailStatus({
+                state: 'taken',
+                message: 'This email is already registered.',
+              });
+            }
           } else {
-            setEmailStatus({ state: 'taken', message: `✕ ${data.email.message || 'This email is already registered as an admin or organization.'}` });
+            setEmailStatus({ state: 'idle', message: '' });
           }
-        } else {
-          setEmailStatus({ state: 'idle', message: '' });
         }
       } catch {
-        setEmailStatus({ state: 'idle', message: '' });
+        if (!isCancelled) {
+          setEmailStatus({ state: 'idle', message: '' });
+        }
       }
-    }, 250);
+    }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
   }, [formData.contactEmail]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -544,7 +566,7 @@ export default function RegisterOrganizationPage() {
                           borderColor:
                             codeStatus.state === 'available'
                               ? '#34d399'
-                              : codeStatus.state === 'taken' || codeStatus.state === 'invalid'
+                              : codeStatus.state === 'taken'
                               ? '#f87171'
                               : undefined,
                         }}
@@ -568,7 +590,7 @@ export default function RegisterOrganizationPage() {
                           style={{ position: 'absolute', right: '14px', top: '13px', color: '#34d399' }}
                         />
                       )}
-                      {(codeStatus.state === 'taken' || codeStatus.state === 'invalid') && (
+                      {codeStatus.state === 'taken' && (
                         <XCircle
                           size={18}
                           style={{ position: 'absolute', right: '14px', top: '13px', color: '#f87171' }}
