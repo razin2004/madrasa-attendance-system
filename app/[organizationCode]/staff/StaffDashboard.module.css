@@ -1,25 +1,63 @@
+/* Modern Staff Dashboard Design System - Premium Styling */
+
 .container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--bg-primary, #030712);
-  color: var(--text-primary, #f9fafb);
+  background: #090d16;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.05) 0px, transparent 50%);
+  color: #f8fafc;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }
 
+/* Glassmorphic Top Header */
 .header {
-  padding: 20px 32px;
-  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  padding: 16px 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: rgba(13, 18, 31, 0.85);
-  backdrop-filter: blur(16px);
+  background: rgba(13, 19, 33, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
   z-index: 50;
   gap: 16px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
 }
 
+.avatarRing {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.2) 100%);
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #a5b4fc;
+  font-size: 16px;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+}
+
+.onlineBadge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #0d1321;
+  box-shadow: 0 0 8px #10b981;
+}
+
+/* Main Container Layout */
 .mainLayout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -27,29 +65,119 @@
   margin-bottom: 32px;
 }
 
+/* Hero Clock Card */
 .heroClockCard {
   padding: 32px 28px;
-  border-radius: var(--radius-lg, 20px);
-  background: linear-gradient(180deg, rgba(17, 24, 39, 0.85) 0%, rgba(11, 15, 25, 0.95) 100%);
-  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.14));
-  box-shadow: var(--shadow-lg, 0 15px 35px -5px rgba(0, 0, 0, 0.5));
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(17, 25, 42, 0.9) 0%, rgba(10, 15, 26, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   text-align: center;
-  min-height: 380px;
+  min-height: 420px;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroClockCard::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(30px);
 }
 
 .liveClockDisplay {
   font-family: var(--font-mono, monospace);
-  font-size: 38px;
-  font-weight: 800;
+  font-size: 44px;
+  font-weight: 900;
   color: #ffffff;
-  letter-spacing: 1px;
-  margin: 12px 0 4px 0;
+  letter-spacing: 1.5px;
+  margin: 14px 0 6px 0;
+  text-shadow: 0 0 30px rgba(129, 140, 248, 0.4);
 }
 
+.shiftBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Punch Action Button */
+.clockButton {
+  width: 100%;
+  max-width: 340px;
+  padding: 18px 32px;
+  font-size: 17px;
+  font-weight: 800;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  letter-spacing: 0.3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.clockButtonIn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 25px -4px rgba(16, 185, 129, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.clockButtonIn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 30px -4px rgba(16, 185, 129, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.clockButtonIn:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.clockButtonOut {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 25px -4px rgba(244, 63, 94, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.clockButtonOut:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 30px -4px rgba(244, 63, 94, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.clockButtonOut:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.clockButtonDisabled {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #64748b !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* Security Verification Stack */
 .verificationGrid {
   display: flex;
   flex-direction: column;
@@ -57,196 +185,218 @@
 }
 
 .verificationCard {
-  padding: 16px 20px;
-  border-radius: var(--radius-md, 12px);
-  background: var(--bg-card, rgba(17, 24, 39, 0.65));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: all 0.2s ease;
+  gap: 10px;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.verificationCard:hover {
+  transform: translateX(4px);
+  background: rgba(21, 32, 54, 0.8);
 }
 
 .verificationVerified {
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.04);
+  border-left: 4px solid #10b981;
+  border-color: rgba(16, 185, 129, 0.25);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.06) 0%, rgba(15, 23, 42, 0.65) 100%);
 }
 
 .verificationFailed {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.04);
+  border-left: 4px solid #f43f5e;
+  border-color: rgba(244, 63, 94, 0.25);
+  background: linear-gradient(90deg, rgba(244, 63, 94, 0.06) 0%, rgba(15, 23, 42, 0.65) 100%);
 }
 
 .verificationWarning {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.04);
+  border-left: 4px solid #f59e0b;
+  border-color: rgba(245, 158, 11, 0.25);
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.06) 0%, rgba(15, 23, 42, 0.65) 100%);
 }
 
-.clockButton {
-  width: 100%;
-  max-width: 320px;
-  padding: 16px 28px;
-  font-size: 16px;
+.layerPill {
+  font-size: 10px;
   font-weight: 800;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  display: inline-block;
+  margin-bottom: 2px;
+}
+
+/* Quick Action Tiles */
+.quickActionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+  margin-bottom: 36px;
+}
+
+.quickTile {
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.2s ease;
-  user-select: none;
+  justify-content: space-between;
+  gap: 16px;
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.3);
 }
 
-.clockButtonIn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+.quickTile:hover {
+  transform: translateY(-4px);
+  border-color: rgba(129, 140, 248, 0.4);
+  background: rgba(26, 38, 66, 0.85);
+  box-shadow: 0 12px 25px -4px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.15);
 }
 
-.clockButtonIn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45);
+.quickTile:hover .arrowIcon {
+  transform: translateX(4px);
+  color: #a5b4fc;
 }
 
-.clockButtonOut {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.35);
+.arrowIcon {
+  transition: transform 0.2s ease;
+  color: #64748b;
 }
 
-.clockButtonOut:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.45);
+/* Recent History Card & Table */
+.historyTableCard {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
 }
 
-.clockButtonDisabled {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text-muted, #6b7280) !important;
-  cursor: not-allowed !important;
-  box-shadow: none !important;
+.tableHeaderRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
 }
 
+.tableHeaderTh {
+  padding: 14px 20px;
+  text-align: left;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.tableRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s ease;
+}
+
+.tableRow:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tableTd {
+  padding: 16px 20px;
+}
+
+/* Banner */
 .noScheduleBanner {
   padding: 20px 24px;
-  border-radius: var(--radius-md, 12px);
-  background-color: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.05) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   display: flex;
   align-items: center;
   gap: 16px;
   color: #fbbf24;
   margin-bottom: 28px;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
 }
 
-.quickActionsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.quickTile {
-  padding: 20px;
-  border-radius: var(--radius-md, 14px);
-  background: var(--bg-card, rgba(17, 24, 39, 0.65));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.quickTile:hover {
-  transform: translateY(-2px);
-  border-color: rgba(99, 102, 241, 0.4);
-  background: rgba(31, 41, 55, 0.8);
-}
-
-.historyTableCard {
-  border-radius: var(--radius-md, 14px);
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  background: var(--bg-card, rgba(17, 24, 39, 0.65));
-  overflow-x: auto;
-}
-
-@media (max-width: 900px) {
+/* Responsive Breakpoints */
+@media (max-width: 960px) {
   .mainLayout {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 24px;
   }
 }
 
 @media (max-width: 768px) {
   .header {
-    padding: 14px 16px;
-    flex-direction: row;
-    align-items: center;
+    padding: 14px 18px;
   }
 
   .heroClockCard {
-    padding: 24px 18px;
+    padding: 24px 20px;
     min-height: auto;
+    border-radius: 20px;
   }
 
   .liveClockDisplay {
-    font-size: 32px;
+    font-size: 34px;
   }
 
   .clockButton {
     max-width: 100%;
     width: 100%;
-    min-height: 52px;
+    min-height: 54px;
     font-size: 17px;
   }
 
   .quickActionsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 14px;
   }
 
   .quickTile {
-    padding: 14px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    padding: 16px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
   .header {
-    padding: 10px 12px;
+    padding: 12px 14px;
   }
 
   .heroClockCard {
-    padding: 18px 14px;
-    border-radius: 14px;
+    padding: 20px 16px;
+    border-radius: 18px;
   }
 
   .liveClockDisplay {
-    font-size: 26px;
+    font-size: 28px;
     margin: 8px 0 2px 0;
   }
 
   .clockButton {
     min-height: 48px;
     font-size: 15px;
-    padding: 12px 18px;
+    padding: 14px 20px;
   }
 
   .verificationCard {
-    padding: 12px 14px;
+    padding: 14px 16px;
   }
 
   .quickActionsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .quickTile {
-    padding: 10px;
-    gap: 6px;
+    padding: 14px 16px;
   }
 }
