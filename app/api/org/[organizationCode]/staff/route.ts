@@ -306,7 +306,7 @@ export async function POST(
         phone: cleanPhone,
         address: cleanAddress,
         activationUrl,
-        deviceStatus: result.device.status,
+        deviceStatus: 'NOT_REGISTERED',
       },
     });
   } catch (error: any) {
