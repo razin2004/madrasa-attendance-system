@@ -24,7 +24,12 @@ export default function StaffProfilePage() {
   const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/org/${orgCode}/attendance/precheck`, { method: 'POST' });
+      const deviceSecret = typeof window !== 'undefined' ? localStorage.getItem('shiftguard_device_secret') || '' : '';
+      const res = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceSecret }),
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.staffProfile) setStaffProfile(data.staffProfile);
@@ -57,11 +62,15 @@ export default function StaffProfilePage() {
     }
   };
 
+  const isDeviceRegistered =
+    Boolean(precheck?.layer1Device?.isVerified) ||
+    Boolean(staffProfile?.devices?.some((d: any) => d.status === 'REGISTERED'));
+
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-        <RefreshCw size={24} className="animate-spin text-indigo-400" />
-        <p style={{ marginTop: '8px' }}>Loading staff profile & security status...</p>
+      <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8' }}>
+        <RefreshCw size={28} className="animate-spin text-indigo-400" style={{ margin: '0 auto 12px auto' }} />
+        <p style={{ marginTop: '8px', fontSize: '14px' }}>Loading staff profile &amp; security status...</p>
       </div>
     );
   }
@@ -69,7 +78,7 @@ export default function StaffProfilePage() {
   return (
     <div className={styles.profileContainer}>
       <div className={styles.headerBar}>
-        <h2>Staff Profile & Account Security</h2>
+        <h2>Staff Profile &amp; Account Security</h2>
         <p>Manage your account identity, registered device token, and workspace settings</p>
       </div>
 
@@ -130,8 +139,14 @@ export default function StaffProfilePage() {
         <div className={styles.infoGrid}>
           <div className={styles.infoItem}>
             <span className={styles.label}>Device Hardware Binding</span>
-            <span className={styles.value}>
-              {precheck?.layer1Device?.isVerified ? '✓ Registered' : 'Not Registered'}
+            <span
+              className={styles.value}
+              style={{
+                color: isDeviceRegistered ? '#34d399' : '#fbbf24',
+                fontWeight: 700,
+              }}
+            >
+              {isDeviceRegistered ? '✓ Registered' : 'Not Registered'}
             </span>
           </div>
 
