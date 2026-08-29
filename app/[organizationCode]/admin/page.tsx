@@ -435,9 +435,9 @@ export default function OrgAdminLandingPage() {
                         <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
                           <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Staff Member</th>
                           <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Leave Type</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight 700 }}>Duration / Dates</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight 700 }}>Reason</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'right', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight 700 }}>Action</th>
+                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Duration / Dates</th>
+                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Reason</th>
+                          <th style={{ padding: '12px 20px', textAlign: 'right', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
