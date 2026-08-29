@@ -306,8 +306,7 @@ export default function StaffDashboardPage() {
 
   const initData = useCallback(async () => {
     setLoading(true);
-    const coords = await requestGeolocation().catch(() => null);
-    await runPrecheck(coords, false);
+    await runPrecheck(null, false);
 
     try {
       const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=5`);
@@ -318,7 +317,7 @@ export default function StaffDashboardPage() {
     } catch {}
 
     setLoading(false);
-  }, [orgCode, requestGeolocation, runPrecheck]);
+  }, [orgCode, runPrecheck]);
 
   useEffect(() => {
     if (orgCode) {
