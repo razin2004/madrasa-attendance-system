@@ -100,7 +100,7 @@ export async function POST(
       expiresInMinutes: 15,
     });
 
-    await sendEmail({
+    const resNew = await sendEmail({
       recipient: cleanNewEmail,
       subject: newOtpPayload.subject,
       htmlContent: newOtpPayload.html,
@@ -110,6 +110,7 @@ export async function POST(
     });
 
     // 4. Dispatch Security Authorization OTP to CURRENT (OLD) Email Address
+    let resOld = { success: true, error: undefined as string | undefined };
     if (oldEmail) {
       const oldOtpPayload = templateEmailChangeOldOTP({
         orgName: organization.name,
@@ -119,7 +120,7 @@ export async function POST(
         expiresInMinutes: 15,
       });
 
-      await sendEmail({
+      resOld = await sendEmail({
         recipient: oldEmail,
         subject: oldOtpPayload.subject,
         htmlContent: oldOtpPayload.html,
@@ -129,9 +130,24 @@ export async function POST(
       });
     }
 
+    if (!resNew.success && !resOld.success) {
+      const errDetail = resNew.error || resOld.error || 'Email dispatch failed.';
+      console.error('❌ Dual OTP email dispatch failed:', errDetail);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to send email verification codes. Reason: ${errDetail}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log(`✉️ [DUAL OTP DISPATCHED] New Email OTP: ${newEmailOtp} | Old Email OTP: ${oldEmailOtp}`);
+
     return NextResponse.json({
       success: true,
       message: `Verification codes dispatched! Check both your current email (${oldEmail}) and new email (${cleanNewEmail}).`,
+      ...(process.env.NODE_ENV !== 'production' ? { newEmailOtp, oldEmailOtp } : {}),
     });
   } catch (error: any) {
     console.error('Error requesting email change OTPs:', error);

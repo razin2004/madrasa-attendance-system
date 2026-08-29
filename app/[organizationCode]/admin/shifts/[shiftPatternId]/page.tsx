@@ -20,6 +20,8 @@ import {
   Check,
   X,
   Loader2,
+  Save,
+  Copy,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -29,7 +31,7 @@ import { formatDateToIsoDay, Weekday } from '@/lib/shift-validation';
 import styles from './ShiftDetail.module.css';
 
 interface WeeklyDayItem {
-  id: string;
+  id?: string;
   weekday: Weekday;
   isHoliday: boolean;
   startTime: string | null;
@@ -126,6 +128,12 @@ export default function ShiftPatternDetailPage() {
   const [minimumStaffingThreshold, setMinimumStaffingThreshold] = useState('1');
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Edit Weekly Schedule Modal State
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [editingDays, setEditingDays] = useState<WeeklyDayItem[]>([]);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchInitialData();
   }, [organizationCode, shiftPatternId]);
@@ -150,6 +158,9 @@ export default function ShiftPatternDetailPage() {
         setName(data.shiftPattern.name);
         setDescription(data.shiftPattern.description || '');
         setMinimumStaffingThreshold(String(data.shiftPattern.minimumStaffingThreshold));
+
+        // Initialize editingDays array for all 7 weekdays
+        initEditingDays(data.shiftPattern.weeklyDays || []);
       } else {
         toast.error(data.error || 'Failed to load shift pattern.');
       }
@@ -158,6 +169,29 @@ export default function ShiftPatternDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const initEditingDays = (existingDays: WeeklyDayItem[]) => {
+    const fullDays: WeeklyDayItem[] = WEEKDAY_ORDER.map((wDay) => {
+      const match = existingDays.find((d) => d.weekday === wDay);
+      if (match) {
+        return {
+          weekday: wDay,
+          isHoliday: match.isHoliday,
+          startTime: match.startTime || '09:00',
+          endTime: match.endTime || '17:00',
+          isOvernight: match.isOvernight || false,
+        };
+      }
+      return {
+        weekday: wDay,
+        isHoliday: wDay === 'SATURDAY' || wDay === 'SUNDAY',
+        startTime: '09:00',
+        endTime: '17:00',
+        isOvernight: false,
+      };
+    });
+    setEditingDays(fullDays);
   };
 
   const handleToggleActive = async () => {
@@ -206,6 +240,76 @@ export default function ShiftPatternDetailPage() {
     } finally {
       setSavingEdit(false);
     }
+  };
+
+  // Save Weekly Schedule
+  const handleSaveSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setScheduleError(null);
+
+    // Validate that at least one workday exists
+    const workdays = editingDays.filter((d) => !d.isHoliday);
+    if (workdays.length === 0) {
+      setScheduleError('At least one day must be set as a working day.');
+      return;
+    }
+
+    // Validate start & end times for workdays
+    for (const d of workdays) {
+      if (!d.startTime || !d.endTime) {
+        setScheduleError(`Please specify start and end times for ${WEEKDAY_NAMES[d.weekday]}.`);
+        return;
+      }
+    }
+
+    try {
+      setSavingSchedule(true);
+      const payloadDays = editingDays.map((d) => ({
+        weekday: d.weekday,
+        isHoliday: d.isHoliday,
+        startTime: d.isHoliday ? null : d.startTime,
+        endTime: d.isHoliday ? null : d.endTime,
+        isOvernight: d.isHoliday ? false : d.isOvernight,
+      }));
+
+      const res = await fetch(`/api/org/${organizationCode}/shift-patterns/${shiftPatternId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days: payloadDays }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Weekly working schedule updated successfully!');
+        setScheduleModalOpen(false);
+        fetchInitialData();
+      } else {
+        setScheduleError(data.error || 'Failed to save weekly schedule.');
+      }
+    } catch {
+      setScheduleError('Network error saving weekly schedule.');
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
+
+  // Quick Action: Copy Monday schedule to all workdays
+  const handleCopyMondayToAllWorkdays = () => {
+    const monday = editingDays.find((d) => d.weekday === 'MONDAY');
+    if (!monday) return;
+    setEditingDays((prev) =>
+      prev.map((d) => {
+        if (d.weekday === 'SATURDAY' || d.weekday === 'SUNDAY') return d;
+        return {
+          ...d,
+          isHoliday: false,
+          startTime: monday.startTime || '09:00',
+          endTime: monday.endTime || '17:00',
+          isOvernight: monday.isOvernight,
+        };
+      })
+    );
+    toast.info('Applied Monday hours to Mon–Fri workdays.');
   };
 
   const handleAssignStaff = async (e: React.FormEvent) => {
@@ -354,7 +458,19 @@ export default function ShiftPatternDetailPage() {
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={() => setIsEditing(!isEditing)} className="btn btn-secondary btn-sm">
               <Edit2 size={14} />
-              <span>{isEditing ? 'Cancel Edit' : 'Edit Pattern'}</span>
+              <span>{isEditing ? 'Cancel Edit' : 'Edit Info'}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                initEditingDays(pattern.weeklyDays);
+                setScheduleModalOpen(true);
+              }}
+              className="btn btn-secondary btn-sm"
+              style={{ border: '1px solid rgba(99, 102, 241, 0.4)', color: '#818cf8' }}
+            >
+              <Clock size={14} />
+              <span>Edit Weekly Schedule</span>
             </button>
 
             <button
@@ -383,10 +499,10 @@ export default function ShiftPatternDetailPage() {
 
         {/* Content Container */}
         <main style={{ padding: '32px', maxWidth: '1100px', width: '100%', margin: '0 auto' }}>
-          {/* Edit Pattern Form */}
+          {/* Edit Pattern Details Form */}
           {isEditing && (
             <div className="glass-card" style={{ padding: '24px', marginBottom: '28px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', marginBottom: '16px' }}>Edit Shift Pattern Information</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', marginBottom: '16px' }}>Edit Shift Pattern Details</h3>
               <form onSubmit={handleSaveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '16px', alignItems: 'end' }}>
                 <div>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Shift Name</label>
@@ -402,7 +518,7 @@ export default function ShiftPatternDetailPage() {
                 </div>
                 <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
                   <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary btn-sm">Cancel</button>
-                  <button type="submit" disabled={savingEdit} className="btn btn-primary btn-sm">{savingEdit ? 'Saving Changes...' : 'Save Changes'}</button>
+                  <button type="submit" disabled={savingEdit} className="btn btn-primary btn-sm">{savingEdit ? 'Saving...' : 'Save Info'}</button>
                 </div>
               </form>
             </div>
@@ -411,7 +527,7 @@ export default function ShiftPatternDetailPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Section 1: Weekly Schedule Grid */}
             <div className="glass-card" style={{ padding: '28px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
                     <Calendar size={18} />
@@ -421,9 +537,22 @@ export default function ShiftPatternDetailPage() {
                   </h2>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                  <ShieldCheck size={14} color="#38bdf8" />
-                  <span>Minimum Staff Required: <strong>{pattern.minimumStaffingThreshold}</strong></span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                    <ShieldCheck size={14} color="#38bdf8" />
+                    <span>Min Staff: <strong>{pattern.minimumStaffingThreshold}</strong></span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      initEditingDays(pattern.weeklyDays);
+                      setScheduleModalOpen(true);
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Edit2 size={13} />
+                    <span>Edit Schedule</span>
+                  </button>
                 </div>
               </div>
 
@@ -559,7 +688,176 @@ export default function ShiftPatternDetailPage() {
         </main>
       </div>
 
-      {/* Staff Assignment Modal with Conflict Warning */}
+      {/* EDIT WEEKLY WORKING SCHEDULE MODAL */}
+      {scheduleModalOpen && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '640px', padding: '28px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Clock size={20} color="#818cf8" />
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                  Edit Weekly Working Schedule
+                </h3>
+              </div>
+              <button onClick={() => setScheduleModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.4 }}>
+              Configure daily work hours, holiday status, and overnight shifts for <strong>{pattern.name}</strong>.
+            </p>
+
+            {/* Quick Actions Header */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleCopyMondayToAllWorkdays}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Copy size={12} />
+                <span>Apply Monday Hours to Mon–Fri</span>
+              </button>
+            </div>
+
+            {scheduleError && (
+              <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '12.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={15} />
+                <span>{scheduleError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveSchedule}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+                {WEEKDAY_ORDER.map((wDay) => {
+                  const dayObj = editingDays.find((d) => d.weekday === wDay) || {
+                    weekday: wDay,
+                    isHoliday: true,
+                    startTime: '09:00',
+                    endTime: '17:00',
+                    isOvernight: false,
+                  };
+
+                  return (
+                    <div
+                      key={wDay}
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        backgroundColor: dayObj.isHoliday ? 'rgba(255,255,255,0.02)' : 'rgba(99, 102, 241, 0.08)',
+                        border: `1px solid ${dayObj.isHoliday ? 'rgba(255,255,255,0.06)' : 'rgba(99, 102, 241, 0.25)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      {/* Day Label & Holiday Toggle */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '160px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingDays((prev) =>
+                              prev.map((d) => (d.weekday === wDay ? { ...d, isHoliday: !d.isHoliday } : d))
+                            );
+                          }}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer',
+                            backgroundColor: dayObj.isHoliday ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                            color: dayObj.isHoliday ? '#f87171' : '#34d399',
+                          }}
+                        >
+                          {dayObj.isHoliday ? 'Holiday' : '✓ Workday'}
+                        </button>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
+                          {WEEKDAY_NAMES[wDay]}
+                        </span>
+                      </div>
+
+                      {/* Time Pickers if Workday */}
+                      {!dayObj.isHoliday ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <input
+                            type="time"
+                            value={dayObj.startTime || '09:00'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditingDays((prev) =>
+                                prev.map((d) => (d.weekday === wDay ? { ...d, startTime: val } : d))
+                              );
+                            }}
+                            className="form-input"
+                            style={{ padding: '6px 8px', fontSize: '12px', width: '105px' }}
+                          />
+                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>to</span>
+                          <input
+                            type="time"
+                            value={dayObj.endTime || '17:00'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditingDays((prev) =>
+                                prev.map((d) => (d.weekday === wDay ? { ...d, endTime: val } : d))
+                              );
+                            }}
+                            className="form-input"
+                            style={{ padding: '6px 8px', fontSize: '12px', width: '105px' }}
+                          />
+
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#c084fc', cursor: 'pointer', marginLeft: '6px' }}>
+                            <input
+                              type="checkbox"
+                              checked={dayObj.isOvernight}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setEditingDays((prev) =>
+                                  prev.map((d) => (d.weekday === wDay ? { ...d, isOvernight: checked } : d))
+                                );
+                              }}
+                            />
+                            <span>Overnight</span>
+                          </label>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          Off Day / Holiday
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setScheduleModalOpen(false)} className="btn btn-secondary btn-sm">
+                  Cancel
+                </button>
+                <button type="submit" disabled={savingSchedule} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  {savingSchedule ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Saving Schedule...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={14} />
+                      <span>Save Weekly Schedule</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Staff Assignment Modal */}
       {assignModalOpen && (
         <div className="modal-overlay" onClick={() => setAssignModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', padding: '28px' }}>
@@ -570,7 +868,6 @@ export default function ShiftPatternDetailPage() {
               Select staff members and specify the effective date range. Overlapping assignments will be checked automatically.
             </p>
 
-            {/* Conflict Warning Box */}
             {conflictError && (
               <div
                 style={{
