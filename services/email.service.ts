@@ -93,11 +93,10 @@ async function sendViaSmtp(
 
   try {
     const isSecure = port === 465;
-    const transporter = nodemailer.createTransport({
+    const transportOpts: any = {
       host,
       port,
       secure: isSecure,
-      requireTLS: !isSecure && port === 587,
       auth: { user, pass },
       tls: {
         rejectUnauthorized: false,
@@ -105,7 +104,15 @@ async function sendViaSmtp(
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 20000,
-    });
+    };
+
+    if (host.includes('gmail.com')) {
+      transportOpts.service = 'gmail';
+    } else if (!isSecure && port === 587) {
+      transportOpts.requireTLS = true;
+    }
+
+    const transporter = nodemailer.createTransport(transportOpts);
 
     const info = await transporter.sendMail({
       from,

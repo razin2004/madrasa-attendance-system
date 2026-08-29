@@ -393,6 +393,27 @@ export default function StaffProfilePage() {
   const hasPendingSlot = allDevices.some((d: any) => d.status === 'NOT_REGISTERED');
   const canAuthorizeMore = !hasPendingSlot && registeredCount < 2;
 
+  const [resendingInvite, setResendingInvite] = useState(false);
+
+  const handleResendInvite = async () => {
+    try {
+      setResendingInvite(true);
+      const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/resend-invite`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || `Login email resent to ${staff?.user.email}`);
+      } else {
+        toast.error(data.error || 'Failed to resend login invitation email.');
+      }
+    } catch {
+      toast.error('Network error resending login email.');
+    } finally {
+      setResendingInvite(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <OrgAdminSidebar
@@ -446,6 +467,15 @@ export default function StaffProfilePage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={handleResendInvite}
+              disabled={resendingInvite}
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8' }}
+            >
+              {resendingInvite ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+              <span>Resend Login Email</span>
+            </button>
             <button onClick={() => setIsEditing(!isEditing)} className="btn btn-secondary btn-sm">
               <Edit2 size={14} />
               <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>

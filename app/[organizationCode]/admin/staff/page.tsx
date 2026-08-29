@@ -88,6 +88,26 @@ export default function StaffDirectoryPage() {
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE' | 'DEVICE_REGISTERED' | 'RESET_REQUIRED'>('ALL');
   const [search, setSearch] = useState('');
   const [toggleStaff, setToggleStaff] = useState<StaffItem | null>(null);
+  const [resendingStaffId, setResendingStaffId] = useState<string | null>(null);
+
+  const handleResendInvite = async (staffId: string, email: string) => {
+    try {
+      setResendingStaffId(staffId);
+      const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/resend-invite`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || `Login email resent to ${email}`);
+      } else {
+        toast.error(data.error || 'Failed to resend login invitation email.');
+      }
+    } catch {
+      toast.error('Network error resending login email.');
+    } finally {
+      setResendingStaffId(null);
+    }
+  };
   const [toggleLoading, setToggleLoading] = useState(false);
 
   // Bulk CSV Import Modal State
@@ -588,6 +608,16 @@ export default function StaffDirectoryPage() {
                           {/* Actions */}
                           <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                              <button
+                                onClick={() => handleResendInvite(staff.id, staff.user.email)}
+                                disabled={resendingStaffId === staff.id}
+                                className="btn btn-secondary btn-sm"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#38bdf8' }}
+                                title="Resend Activation & Login Email"
+                              >
+                                {resendingStaffId === staff.id ? <Loader2 size={13} className="animate-spin" /> : <Mail size={13} />}
+                                <span>Resend Email</span>
+                              </button>
                               <Link
                                 href={`/${organizationCode}/admin/staff/${staff.id}`}
                                 className="btn btn-secondary btn-sm"
