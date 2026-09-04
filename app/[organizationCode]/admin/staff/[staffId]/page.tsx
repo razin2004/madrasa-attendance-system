@@ -144,9 +144,9 @@ export default function StaffProfilePage() {
     }
   }, [organizationCode, staffId]);
 
-  const fetchData = async () => {
+  const fetchData = async (quiet = false) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
       const brandRes = await fetch(`/api/org/${organizationCode}/branding`);
       const brandData = await brandRes.json();
       if (brandData.success) {
@@ -193,7 +193,7 @@ export default function StaffProfilePage() {
     } catch {
       toast.error('Network error loading staff profile.');
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   };
 
@@ -1041,7 +1041,7 @@ export default function StaffProfilePage() {
               }
             : null
         }
-        onSuccess={fetchData}
+        onSuccess={() => fetchData(true)}
       />
 
       {/* Mobile Nav */}

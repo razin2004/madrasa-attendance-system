@@ -267,9 +267,9 @@ export default function StaffDirectoryPage() {
     }
   }, [organizationCode]);
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = async (quiet = false) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
       setHasError(false);
 
       const brandRes = await fetch(`/api/org/${organizationCode}/branding`);
@@ -291,7 +291,7 @@ export default function StaffDirectoryPage() {
       setHasError(true);
       toast.error('Network error loading staff directory.');
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   };
 
@@ -999,7 +999,7 @@ export default function StaffDirectoryPage() {
               }
             : null
         }
-        onSuccess={fetchInitialData}
+        onSuccess={() => fetchInitialData(true)}
       />
 
       {/* Mobile Navigation */}
