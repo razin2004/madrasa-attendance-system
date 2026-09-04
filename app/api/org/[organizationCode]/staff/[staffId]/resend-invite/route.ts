@@ -20,8 +20,8 @@ export async function POST(
 
     const staff = await prisma.staffProfile.findFirst({
       where: {
-        id: params.staffId,
         organizationId: auth.organization.id,
+        OR: [{ id: params.staffId }, { staffId: params.staffId }],
       },
       include: {
         user: true,

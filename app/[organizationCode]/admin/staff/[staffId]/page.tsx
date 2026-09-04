@@ -137,7 +137,7 @@ export default function StaffProfilePage() {
 
       const branchRes = await fetch(`/api/org/${organizationCode}/branches`);
       const branchData = await branchRes.json();
-      if (branchData.success) {
+      if (branchData.success && Array.isArray(branchData.branches)) {
         setAllOrgBranches(branchData.branches.filter((b: BranchItem) => b.status === 'ACTIVE'));
       }
 

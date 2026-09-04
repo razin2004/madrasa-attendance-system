@@ -20,8 +20,8 @@ export async function GET(
 
     const staffProfile = await prisma.staffProfile.findFirst({
       where: {
-        id: params.staffId,
         organizationId: auth.organization.id,
+        OR: [{ id: params.staffId }, { staffId: params.staffId }],
       },
       include: {
         user: {
@@ -78,8 +78,8 @@ export async function PATCH(
 
     const existingStaff = await prisma.staffProfile.findFirst({
       where: {
-        id: params.staffId,
         organizationId: auth.organization.id,
+        OR: [{ id: params.staffId }, { staffId: params.staffId }],
       },
     });
 

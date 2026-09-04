@@ -515,8 +515,8 @@ export default function StaffDirectoryPage() {
           {/* DESKTOP DATA TABLE */}
           {!loading && !hasError && filteredStaff.length > 0 && (
             <>
-              <div className={`${styles.tableDesktop} glass-card`} style={{ overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
+              <div className={`${styles.tableDesktop} glass-card`}>
+                <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
                       <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase' }}>
@@ -534,7 +534,7 @@ export default function StaffDirectoryPage() {
                       <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase' }}>
                         Layer 3 Device
                       </th>
-                      <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase', textAlign: 'right' }}>
+                      <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase', textAlign: 'right', whiteSpace: 'nowrap' }}>
                         Actions
                       </th>
                     </tr>
@@ -649,7 +649,7 @@ export default function StaffDirectoryPage() {
                           </td>
 
                           {/* Actions */}
-                          <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                          <td style={{ padding: '16px 20px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
                               {isPending ? (
                                 <>
