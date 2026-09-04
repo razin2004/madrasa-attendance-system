@@ -103,8 +103,8 @@ export function UpdatePasswordModal({
       if (res.ok && data.success) {
         toast.success(data.message || `Password updated for ${staff.name}`);
         setResult({
-          password: data.password,
-          emailSent: data.emailSent,
+          password: data.updatedPassword || data.password || '',
+          emailSent: data.emailSent ?? true,
         });
         if (onSuccess) onSuccess();
       } else {

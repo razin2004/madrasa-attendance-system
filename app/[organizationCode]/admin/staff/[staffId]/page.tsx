@@ -120,6 +120,11 @@ export default function StaffProfilePage() {
   const [shiftEffectiveFrom, setShiftEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
   const [savingShift, setSavingShift] = useState(false);
 
+  // Invite & Password Modal States
+  const [resendingInvite, setResendingInvite] = useState(false);
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+
   useEffect(() => {
     if (organizationCode && staffId) {
       fetchData();
@@ -368,10 +373,6 @@ export default function StaffProfilePage() {
   const registeredCount = allDevices.filter((d: any) => d.status === 'REGISTERED').length;
   const hasPendingSlot = allDevices.some((d: any) => d.status === 'NOT_REGISTERED');
   const canAuthorizeMore = !hasPendingSlot && registeredCount < 2;
-
-  const [resendingInvite, setResendingInvite] = useState(false);
-  const [whatsappLoading, setWhatsappLoading] = useState(false);
-  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   const handleResendInvite = async () => {
     try {

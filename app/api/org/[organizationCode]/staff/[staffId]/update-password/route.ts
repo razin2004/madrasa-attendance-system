@@ -125,6 +125,8 @@ export async function POST(
       success: true,
       message: `Password updated successfully for ${staffProfile.name}.`,
       updatedPassword: targetPassword,
+      password: targetPassword,
+      emailSent: true,
       staff: {
         id: staffProfile.id,
         staffId: staffProfile.staffId,
