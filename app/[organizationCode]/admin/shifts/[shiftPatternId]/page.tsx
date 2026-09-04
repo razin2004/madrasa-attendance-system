@@ -22,6 +22,7 @@ import {
   Loader2,
   Save,
   Copy,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -105,6 +106,9 @@ export default function ShiftPatternDetailPage() {
   const [allStaff, setAllStaff] = useState<AllStaffItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [branding, setBranding] = useState<any>(null);
+
+  // Top-Right Menu Open State
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Staff Assignment Modal
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -455,45 +459,69 @@ export default function ShiftPatternDetailPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setIsEditing(!isEditing)} className="btn btn-secondary btn-sm">
-              <Edit2 size={14} />
-              <span>{isEditing ? 'Cancel Edit' : 'Edit Info'}</span>
+          {/* Top Right Three Horizontal Lines Action Menu */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className={styles.menuTriggerBtn}
+              title="Shift Pattern Actions & Options"
+            >
+              <Menu size={20} />
             </button>
 
-            <button
-              onClick={() => {
-                initEditingDays(pattern.weeklyDays);
-                setScheduleModalOpen(true);
-              }}
-              className="btn btn-secondary btn-sm"
-              style={{ border: '1px solid rgba(99, 102, 241, 0.4)', color: '#818cf8' }}
-            >
-              <Clock size={14} />
-              <span>Edit Weekly Schedule</span>
-            </button>
+            {menuOpen && (
+              <>
+                {/* Backdrop to close menu when clicking outside */}
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(false)} />
+                
+                <div className={styles.actionDropdownMenu}>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setConflictError(null);
+                      setAssignModalOpen(true);
+                    }}
+                    disabled={!isActive}
+                    className={styles.dropdownItem}
+                    style={{ color: '#818cf8' }}
+                  >
+                    <Plus size={15} />
+                    <span>Assign Staff</span>
+                  </button>
 
-            <button
-              onClick={() => setToggleActiveModalOpen(true)}
-              className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <Power size={14} />
-              <span>{isActive ? 'Deactivate' : 'Activate'}</span>
-            </button>
+                  <button
+                    onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
+                    className={styles.dropdownItem}
+                  >
+                    <Edit2 size={15} />
+                    <span>{isEditing ? 'Cancel Edit' : 'Edit Pattern Info'}</span>
+                  </button>
 
-            <button
-              onClick={() => {
-                setConflictError(null);
-                setAssignModalOpen(true);
-              }}
-              disabled={!isActive}
-              className="btn btn-primary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Plus size={16} />
-              <span>Assign Staff</span>
-            </button>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      initEditingDays(pattern.weeklyDays);
+                      setScheduleModalOpen(true);
+                    }}
+                    className={styles.dropdownItem}
+                  >
+                    <Clock size={15} />
+                    <span>Edit Weekly Schedule</span>
+                  </button>
+
+                  <div className={styles.dropdownDivider} />
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setToggleActiveModalOpen(true); }}
+                    className={styles.dropdownItem}
+                    style={{ color: isActive ? '#f87171' : '#34d399' }}
+                  >
+                    <Power size={15} />
+                    <span>{isActive ? 'Deactivate Pattern' : 'Activate Pattern'}</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 

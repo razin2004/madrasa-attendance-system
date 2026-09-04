@@ -190,13 +190,16 @@ export default function StaffDirectoryPage() {
         const rowObj: any = {};
 
         headers.forEach((h, idx) => {
-          if (h.includes('name')) rowObj.name = values[idx] || '';
-          else if (h.includes('email')) rowObj.email = values[idx] || '';
-          else if (h.includes('id') || h.includes('staff')) rowObj.staffId = values[idx] || '';
-          else if (h.includes('phone')) rowObj.phone = values[idx] || '';
-          else if (h.includes('address')) rowObj.address = values[idx] || '';
-          else if (h.includes('branch')) rowObj.branchName = values[idx] || '';
-          else if (h.includes('role')) rowObj.role = values[idx] || '';
+          const val = values[idx] || '';
+          if (h.includes('name') && !h.includes('branch')) rowObj.name = val;
+          else if (h.includes('email')) rowObj.email = val;
+          else if (h.includes('staffid') || h.includes('staff_id') || (h.includes('id') && !h.includes('doc'))) rowObj.staffId = val;
+          else if (h.includes('phone') || h.includes('mobile')) rowObj.phone = val;
+          else if (h.includes('address')) rowObj.address = val;
+          else if (h.includes('doctype') || h.includes('idtype') || h.includes('doc_type')) rowObj.idDocType = val;
+          else if (h.includes('last4') || h.includes('last_4') || h.includes('idlast4')) rowObj.idDocLast4 = val;
+          else if (h.includes('branch')) rowObj.branchName = val;
+          else if (h.includes('role')) rowObj.role = val;
         });
 
         if (rowObj.name || rowObj.email) {
@@ -211,9 +214,10 @@ export default function StaffDirectoryPage() {
 
   const downloadSampleCSV = () => {
     const csvContent =
-      'Name,Email,StaffID,Phone,Address,BranchName,Role\n' +
-      'John Doe,john.doe@organization.com,STF-1001,+15550199,"123 Main St",Main Headquarters,STAFF\n' +
-      'Sarah Connor,sarah.c@organization.com,STF-1002,+15550200,"456 North Ave",Downtown Branch,STAFF\n';
+      'Name,Email,StaffID,Phone,Address,IDDocType,IDDocLast4,BranchName,Role\n' +
+      'John Doe,john.doe@organization.com,STF-1001,+919876543210,"123 Main Street",AADHAAR,5482,Main Branch,STAFF\n' +
+      'Sarah Smith,sarah.smith@organization.com,,,,,VOTER_ID,1234,,STAFF\n' +
+      'Alex Johnson,alex.j@organization.com,,,,,,,,STAFF\n';
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -887,9 +891,14 @@ export default function StaffDirectoryPage() {
               </div>
             ) : (
               <form onSubmit={handleBulkImportSubmit}>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
-                  Upload a CSV file containing staff profiles. Supported columns: <strong>Name, Email, StaffID, Phone, Address, BranchName, Role</strong>.
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+                  Upload a CSV file containing staff profiles. All supported columns: <strong>Name, Email, StaffID, Phone, Address, IDDocType, IDDocLast4, BranchName, Role</strong>.
                 </p>
+
+                <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)', fontSize: '12px', color: '#c7d2fe', marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div>📌 <strong>Mandatory Columns:</strong> <code>Name</code> &amp; <code>Email</code></div>
+                  <div>💡 <strong>Optional Columns:</strong> <code>StaffID</code>, <code>Phone</code>, <code>Address</code>, <code>IDDocType</code>, <code>IDDocLast4</code>, <code>BranchName</code>, <code>Role</code> (Leaving any optional cell empty is completely fine!).</div>
+                </div>
 
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px' }}>
                   <button

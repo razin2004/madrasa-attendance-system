@@ -30,6 +30,7 @@ import {
   Share2,
   Trash2,
   Upload,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -93,6 +94,9 @@ export default function StaffProfilePage() {
   const [staff, setStaff] = useState<StaffDetails | null>(null);
   const [allOrgBranches, setAllOrgBranches] = useState<BranchItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Top-Right Hamburger Menu State
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Edit Metadata State
   const [isEditing, setIsEditing] = useState(false);
@@ -512,76 +516,96 @@ export default function StaffProfilePage() {
                 </span>
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {staff.user.email} &bull; Joined {new Date(staff.createdAt).toLocaleDateString()}
+                {staff.user.email}
               </p>
             </div>
           </div>
 
-          <div className={styles.actionButtonsGroup}>
+          {/* Top Right Three Horizontal Lines Action Menu */}
+          <div style={{ position: 'relative' }}>
             <button
-              onClick={() => setIsEditing(!isEditing)}
-              className={styles.actionBtnSecondary}
-              title="Edit Staff Information & Documents"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className={styles.menuTriggerBtn}
+              title="Staff Options & Actions"
             >
-              <Edit2 size={14} />
-              <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
+              <Menu size={20} />
             </button>
 
-            {isPending ? (
+            {menuOpen && (
               <>
-                <button
-                  onClick={handleResendInvite}
-                  disabled={resendingInvite}
-                  className={styles.actionBtnSecondary}
-                  style={{ color: '#38bdf8' }}
-                  title="Resend Activation & Setup Email"
-                >
-                  {resendingInvite ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-                  <span>Resend Email</span>
-                </button>
-                <button
-                  onClick={handleWhatsAppInvite}
-                  disabled={whatsappLoading}
-                  className={styles.actionBtnWhatsapp}
-                  title="Share Password Setup Link via WhatsApp"
-                >
-                  {whatsappLoading ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
-                  <span>WhatsApp</span>
-                </button>
+                {/* Invisible backdrop to dismiss menu when clicking outside */}
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(false)} />
+                
+                <div className={styles.actionDropdownMenu}>
+                  <button
+                    onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
+                    className={styles.dropdownItem}
+                  >
+                    <Edit2 size={15} />
+                    <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
+                  </button>
+
+                  {isPending ? (
+                    <>
+                      <button
+                        onClick={() => { setMenuOpen(false); handleResendInvite(); }}
+                        disabled={resendingInvite}
+                        className={styles.dropdownItem}
+                        style={{ color: '#38bdf8' }}
+                      >
+                        {resendingInvite ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+                        <span>Resend Email</span>
+                      </button>
+                      <button
+                        onClick={() => { setMenuOpen(false); handleWhatsAppInvite(); }}
+                        disabled={whatsappLoading}
+                        className={styles.dropdownItem}
+                        style={{ color: '#25D366' }}
+                      >
+                        {whatsappLoading ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />}
+                        <span>WhatsApp Invite</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => { setMenuOpen(false); setPasswordModalOpen(true); }}
+                      className={styles.dropdownItem}
+                      style={{ color: '#c084fc' }}
+                    >
+                      <Key size={15} />
+                      <span>Update Password</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setDeviceResetModalOpen(true); }}
+                    className={styles.dropdownItem}
+                  >
+                    <RefreshCw size={15} />
+                    <span>Reset Devices</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setStatusModalOpen(true); }}
+                    className={styles.dropdownItem}
+                    style={{ color: isActive ? '#f87171' : '#34d399' }}
+                  >
+                    <Power size={15} />
+                    <span>{isActive ? 'Deactivate Account' : 'Activate Account'}</span>
+                  </button>
+
+                  <div className={styles.dropdownDivider} />
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
+                    className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                  >
+                    <Trash2 size={15} />
+                    <span>Delete Staff</span>
+                  </button>
+                </div>
               </>
-            ) : (
-              <button
-                onClick={() => setPasswordModalOpen(true)}
-                className={styles.actionBtnPurple}
-                title="Update Staff Password"
-              >
-                <Key size={14} />
-                <span>Update Password</span>
-              </button>
             )}
-
-            <button onClick={() => setDeviceResetModalOpen(true)} className={styles.actionBtnSecondary} title="Reset Layer 3 Device Bindings">
-              <RefreshCw size={14} />
-              <span>Reset Devices</span>
-            </button>
-
-            <button
-              onClick={() => setStatusModalOpen(true)}
-              className={isActive ? styles.actionBtnDanger : styles.actionBtnSuccess}
-              title={isActive ? 'Deactivate Staff Account' : 'Activate Staff Account'}
-            >
-              <Power size={14} />
-              <span>{isActive ? 'Deactivate' : 'Activate'}</span>
-            </button>
-
-            <button
-              onClick={() => setDeleteModalOpen(true)}
-              className={styles.actionBtnDelete}
-              title="Delete Staff Account from Organization"
-            >
-              <Trash2 size={14} />
-              <span>Delete Staff</span>
-            </button>
           </div>
         </header>
 
@@ -720,6 +744,17 @@ export default function StaffProfilePage() {
                       <span>Document Attached: {selectedDocFile.name}</span>
                     </div>
                   )}
+
+                  {/* Joined Date at very bottom of card */}
+                  <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={14} color="#818cf8" />
+                      <span>Joined Organization:</span>
+                    </div>
+                    <strong style={{ color: '#ffffff', fontWeight: 600 }}>
+                      {new Date(staff.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </strong>
+                  </div>
                 </div>
               </div>
 

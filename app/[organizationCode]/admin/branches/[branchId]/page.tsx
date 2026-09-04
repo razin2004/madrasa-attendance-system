@@ -23,6 +23,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -80,6 +81,9 @@ export default function BranchDetailPage() {
   const [branding, setBranding] = useState<any>(null);
   const [branch, setBranch] = useState<BranchDetail | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Menu Open State
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Edit Metadata State
   const [isEditing, setIsEditing] = useState(false);
@@ -467,20 +471,59 @@ export default function BranchDetailPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button onClick={() => setIsEditing(!isEditing)} className="btn btn-secondary btn-sm">
-              <Edit2 size={14} />
-              <span>{isEditing ? 'Cancel Edit' : 'Edit Branch'}</span>
-            </button>
+          {/* Top Right Three Horizontal Lines Action Menu */}
+          <div style={{ position: 'relative' }}>
             <button
-              onClick={() => setStatusModalOpen(true)}
-              disabled={togglingStatus}
-              className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              onClick={() => setMenuOpen(!menuOpen)}
+              className={styles.menuTriggerBtn}
+              title="Branch Options & Actions"
             >
-              {togglingStatus ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
-              <span>{isActive ? 'Deactivate Branch' : 'Activate Branch'}</span>
+              <Menu size={20} />
             </button>
+
+            {menuOpen && (
+              <>
+                {/* Backdrop to close menu when clicking outside */}
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(false)} />
+                
+                <div className={styles.actionDropdownMenu}>
+                  <button
+                    onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
+                    className={styles.dropdownItem}
+                  >
+                    <Edit2 size={15} />
+                    <span>{isEditing ? 'Cancel Edit' : 'Edit Branch'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setRecaptureConfirmOpen(true); }}
+                    className={styles.dropdownItem}
+                  >
+                    <RefreshCw size={15} />
+                    <span>Recapture Network IP</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setLocationModalOpen(true); }}
+                    className={styles.dropdownItem}
+                  >
+                    <Navigation size={15} />
+                    <span>Update GPS Location</span>
+                  </button>
+
+                  <div className={styles.dropdownDivider} />
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setStatusModalOpen(true); }}
+                    className={styles.dropdownItem}
+                    style={{ color: isActive ? '#f87171' : '#34d399' }}
+                  >
+                    <Power size={15} />
+                    <span>{isActive ? 'Deactivate Branch' : 'Activate Branch'}</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 
