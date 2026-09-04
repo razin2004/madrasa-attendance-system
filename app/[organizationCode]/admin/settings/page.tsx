@@ -20,6 +20,8 @@ import {
   Compass,
   Clock,
   HelpCircle,
+  Menu,
+  RefreshCw,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -58,6 +60,7 @@ export default function AdminSettingsPage() {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -240,26 +243,115 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0b0f19' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-primary, #030712)', color: 'var(--text-primary, #f9fafb)' }}>
       <OrgAdminSidebar
         organizationCode={organizationCode}
         organizationName={orgData?.name || name || 'ShiftGuard'}
         logoUrl={logoUrl || orgData?.logoUrl}
       />
 
-      <div style={{ flex: 1, padding: '24px 32px 80px 32px', maxWidth: '1000px' }}>
-        {/* Header */}
-        <div style={{ marginBottom: '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-            <Settings size={24} color="#818cf8" />
-            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-              Organization Workspace Settings
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingBottom: '80px' }}>
+        {/* Header Bar */}
+        <header
+          style={{
+            padding: '20px 32px',
+            borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: 'rgba(13, 18, 31, 0.85)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 50,
+            marginBottom: '28px',
+          }}
+        >
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px', margin: 0 }}>
+              Workspace Settings
             </h1>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary, #9ca3af)', marginTop: '2px', margin: 0 }}>
+              Manage default workspace rules, update organization logo, and administrative profiles.
+            </p>
           </div>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-            Manage default workspace rules, update organization logo, and update administrative profiles.
-          </p>
-        </div>
+
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
+                padding: 0,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-medium)',
+                color: '#ffffff',
+                cursor: 'pointer',
+              }}
+              title="Settings Actions Menu"
+            >
+              <Menu size={18} />
+            </button>
+
+            {headerMenuOpen && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setHeaderMenuOpen(false)} />
+                <div
+                  className="glass-card"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    zIndex: 1000,
+                    minWidth: '200px',
+                    padding: '6px',
+                    backgroundColor: '#0d121f',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      fetchSettings();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
+                    <span>Refresh Settings</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </header>
+
+        <main className="pageMainContent" style={{ maxWidth: '1000px', padding: '0 32px' }}>
 
         {loading ? (
           <div className="glass-card" style={{ padding: '60px 24px', textAlign: 'center' }}>
@@ -610,9 +702,10 @@ export default function AdminSettingsPage() {
                 </div>
               </form>
             )}
-          </div>
-        </div>
-      )}
+          </form>
+        )}
+        </main>
+      </div>
 
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>

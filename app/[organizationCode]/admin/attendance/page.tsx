@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Calendar,
   Filter,
@@ -46,6 +46,7 @@ interface DailyAttendanceItem {
 export default function AdminAttendancePage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
+  const router = useRouter();
   const toast = useToast();
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -360,7 +361,11 @@ export default function AdminAttendancePage() {
               </thead>
               <tbody>
                 {dailyList.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <tr
+                    key={idx}
+                    onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
+                    style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'background 0.15s ease' }}
+                  >
                     <td className={styles.td}>
                       <div style={{ fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8', marginTop: '1px' }}>

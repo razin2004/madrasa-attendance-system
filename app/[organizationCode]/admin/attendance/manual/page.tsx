@@ -11,6 +11,7 @@ import {
   FilePlus,
   Loader2,
   AlertTriangle,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '../../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../../components/layout/org-admin-mobile-nav';
@@ -26,6 +27,7 @@ export default function AdminManualAttendancePage() {
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [orgData, setOrgData] = useState<any>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -102,22 +104,110 @@ export default function AdminManualAttendancePage() {
       />
 
       <div className={styles.mainContent}>
-        <div style={{ marginBottom: '24px' }}>
-          <Link
-            href={`/${organizationCode}/admin/attendance`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '13px', textDecoration: 'none', marginBottom: '12px' }}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Attendance Overview</span>
-          </Link>
+        {/* Header Bar */}
+        <header className={styles.headerBar || styles.header} style={{ padding: '20px 32px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(13, 18, 31, 0.85)', backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 50, marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Link href={`/${organizationCode}/admin/attendance`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
+              <ArrowLeft size={16} />
+            </Link>
+            <div>
+              <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px', margin: 0 }}>
+                Record Manual Attendance
+              </h1>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px', margin: 0 }}>
+                Manually log attendance punches on behalf of employees with explicit justification.
+              </p>
+            </div>
+          </div>
 
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-            Record Manual Attendance Punch
-          </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-            Manually log attendance punches on behalf of employees with explicit justification (Source: MANUAL).
-          </p>
-        </div>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
+                padding: 0,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-medium)',
+                color: '#ffffff',
+                cursor: 'pointer',
+              }}
+              title="Manual Attendance Menu"
+            >
+              <Menu size={18} />
+            </button>
+
+            {headerMenuOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                />
+                <div
+                  className="glass-card"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    zIndex: 1000,
+                    minWidth: '200px',
+                    padding: '6px',
+                    backgroundColor: '#0d121f',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}
+                >
+                  <Link
+                    href={`/${organizationCode}/admin/attendance`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Clock size={15} color="#38bdf8" />
+                    <span>Daily Attendance</span>
+                  </Link>
+
+                  <Link
+                    href={`/${organizationCode}/admin/attendance/corrections`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <UserCheck size={15} color="#818cf8" />
+                    <span>Attendance Corrections</span>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </header>
 
         <div className="glass-card" style={{ maxWidth: '640px', padding: '28px' }}>
           <form onSubmit={handleSubmit}>

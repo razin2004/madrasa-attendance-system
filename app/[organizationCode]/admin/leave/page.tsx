@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Calendar,
   Filter,
@@ -43,6 +43,7 @@ interface LeaveRequestItem {
 export default function AdminLeavePage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
+  const router = useRouter();
   const toast = useToast();
 
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
@@ -105,8 +106,8 @@ export default function AdminLeavePage() {
         {/* Header */}
         <header className={styles.header}>
           <div>
-            <h1 className="text-xl font-bold text-white m-0">Leave Management</h1>
-            <p className="text-xs text-slate-400 m-0 mt-1">
+            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px', margin: 0 }}>Leave Management</h1>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
               Review leave requests, monitor staffing coverage, and manage employee leave.
             </p>
           </div>
@@ -285,12 +286,15 @@ export default function AdminLeavePage() {
                   <th className={styles.th}>Date Range</th>
                   <th className={styles.th}>Duration</th>
                   <th className={styles.th}>Status</th>
-                  <th className={styles.th}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((item) => (
-                  <tr key={item.id}>
+                  <tr
+                    key={item.id}
+                    onClick={() => router.push(`/${organizationCode}/admin/leave/${item.id}`)}
+                    style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+                  >
                     <td className={styles.td}>
                       <div style={{ fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>
@@ -310,16 +314,6 @@ export default function AdminLeavePage() {
                       <span className={`${styles.statusPill} ${styles[item.status.toLowerCase()]}`}>
                         {item.status}
                       </span>
-                    </td>
-                    <td className={styles.td}>
-                      <Link
-                        href={`/${organizationCode}/admin/leave/${item.id}`}
-                        className="btn btn-secondary btn-sm"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <span>Review</span>
-                        <ChevronRight size={14} />
-                      </Link>
                     </td>
                   </tr>
                 ))}
