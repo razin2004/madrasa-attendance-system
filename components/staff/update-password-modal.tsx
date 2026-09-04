@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { openWhatsAppPasswordShare } from '@/lib/whatsapp';
+import { generateTemporaryPassword } from '@/lib/security';
 
 interface UpdatePasswordModalProps {
   isOpen: boolean;
@@ -60,13 +61,10 @@ export function UpdatePasswordModal({
   if (!isOpen || !staff) return null;
 
   const handleGenerateRandom = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789#@!';
-    let pass = '';
-    for (let i = 0; i < 8; i++) {
-      pass += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    const pass = generateTemporaryPassword(8);
     setCustomPassword(pass);
     setShowPassword(true);
+    setErrorMsg(null);
   };
 
   const handleResetModal = () => {
@@ -83,6 +81,14 @@ export function UpdatePasswordModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedPass = customPassword.trim();
+
+    // Client-side validation: if typed, must be at least 8 chars. If blank, allowed (auto-generates 8 chars).
+    if (trimmedPass.length > 0 && trimmedPass.length < 8) {
+      setErrorMsg('Password must be at least 8 characters long.');
+      return;
+    }
+
     setUpdating(true);
     setErrorMsg(null);
 
@@ -421,7 +427,7 @@ export function UpdatePasswordModal({
                 </button>
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                Password must be at least 6 characters. If left empty, a secure 8-character password will be auto-generated.
+                Password must be at least 8 characters long. Leave empty to auto-generate a secure 8-character password.
               </p>
             </div>
 

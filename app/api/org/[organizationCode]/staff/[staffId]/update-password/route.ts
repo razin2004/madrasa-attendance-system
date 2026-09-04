@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireOrgAdmin } from '@/lib/tenant-auth';
-import { hashPassword, generateNumericPin } from '@/lib/security';
+import { hashPassword, generateTemporaryPassword } from '@/lib/security';
 import { sendEmail } from '@/services/email.service';
 import { recordAuditLog } from '@/services/audit.service';
 
@@ -21,19 +21,19 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { newPassword } = body;
+    const { newPassword, password } = body;
 
-    let targetPassword = (newPassword as string)?.trim();
-    if (targetPassword) {
-      if (targetPassword.length < 6) {
+    let targetPassword = ((newPassword || password) as string)?.trim() || '';
+    if (targetPassword.length > 0) {
+      if (targetPassword.length < 8) {
         return NextResponse.json(
-          { success: false, error: 'Password must be at least 6 characters long.' },
+          { success: false, error: 'Password must be at least 8 characters long.' },
           { status: 400 }
         );
       }
     } else {
-      // Auto-generate 8-character secure password if not specified
-      targetPassword = generateNumericPin(6);
+      // Auto-generate secure 8-character password if left empty
+      targetPassword = generateTemporaryPassword(8);
     }
 
     const staffProfile = await prisma.staffProfile.findFirst({

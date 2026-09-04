@@ -191,26 +191,15 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
 
   // Order of Provider Execution
   // - If forcedProvider === 'smtp', try SMTP first
-  // - If forcedProvider === 'brevo', try Brevo 1 & 2 first
-  // - In Local Running (Development): Default to SMTP if configured, then Brevo 1 & 2
-  // - In Real Running (Production): Default to Brevo 1 & 2, then SMTP fallback
+  // - Otherwise: Brevo API 1 & 2 take top priority (fast REST API), followed by SMTP fallback
   const providerOrder: ('BREVO_1' | 'BREVO_2' | 'SMTP')[] = [];
 
   if (forcedProvider === 'smtp') {
     if (hasSmtpConfig) providerOrder.push('SMTP');
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
-  } else if (forcedProvider === 'brevo') {
-    if (hasBrevo1) providerOrder.push('BREVO_1');
-    if (hasBrevo2) providerOrder.push('BREVO_2');
-    if (hasSmtpConfig) providerOrder.push('SMTP');
-  } else if (isDev) {
-    // Local environment: SMTP takes priority if set up
-    if (hasSmtpConfig) providerOrder.push('SMTP');
-    if (hasBrevo1) providerOrder.push('BREVO_1');
-    if (hasBrevo2) providerOrder.push('BREVO_2');
   } else {
-    // Production environment: Brevo API takes top priority
+    // Default / Brevo priority mode
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
     if (hasSmtpConfig) providerOrder.push('SMTP');
