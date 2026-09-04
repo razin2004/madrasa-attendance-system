@@ -31,13 +31,29 @@ async function sendViaBrevo(
   recipient: string,
   subject: string,
   htmlContent: string,
-  textContent: string
+  textContent: string,
+  replyToEmail?: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const cleanApiKey = apiKey.trim();
     const cleanRecipient = recipient.trim().toLowerCase();
-    const cleanSenderEmail = senderEmail.trim().toLowerCase();
+    
+    // Ensure active verified Brevo sender email is used
+    let cleanSenderEmail = senderEmail.trim().toLowerCase();
+    if (!cleanSenderEmail || cleanSenderEmail.includes('doctorbooksystem') || cleanSenderEmail.includes('noreply')) {
+      cleanSenderEmail = 'control.your.voting@gmail.com';
+    }
     const cleanSenderName = senderName.trim() || 'ShiftGuard';
+    const cleanReplyTo = (replyToEmail || senderEmail || cleanSenderEmail).trim().toLowerCase();
+
+    const payload: any = {
+      sender: { name: cleanSenderName, email: cleanSenderEmail },
+      to: [{ email: cleanRecipient }],
+      replyTo: { name: cleanSenderName, email: cleanReplyTo },
+      subject,
+      htmlContent,
+      textContent,
+    };
 
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -46,13 +62,7 @@ async function sendViaBrevo(
         'api-key': cleanApiKey,
         accept: 'application/json',
       },
-      body: JSON.stringify({
-        sender: { name: cleanSenderName, email: cleanSenderEmail },
-        to: [{ email: cleanRecipient }],
-        subject,
-        htmlContent,
-        textContent,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json().catch(() => ({}));
@@ -152,7 +162,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     process.env.BREVO_SENDER_EMAIL ||
     process.env.SMTP_USER ||
     process.env.SMTP_EMAIL ||
-    'noreply@shiftguard.com'
+    'control.your.voting@gmail.com'
   ).trim();
   const senderName = (process.env.BREVO_SENDER_NAME || 'ShiftGuard').trim();
 
@@ -190,19 +200,30 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   const forcedProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
 
   // Order of Provider Execution:
-  // - If forcedProvider === 'brevo', try Brevo first.
-  // - Otherwise: Gmail SMTP (if configured) takes top priority to guarantee 100% DKIM inbox delivery, followed by Brevo Slots 1 & 2.
+  // - If EMAIL_PROVIDER="smtp", force SMTP first.
+  // - If EMAIL_PROVIDER="brevo", force Brevo API (Slot 1 & 2) first.
+  // - In Development (local): Default to SMTP (Gmail SMTP) first.
+  // - In Production (Render cloud): Default to Brevo API (Slot 1 & 2) first with SMTP fallback.
   const providerOrder: ('BREVO_1' | 'BREVO_2' | 'SMTP')[] = [];
 
-  if (forcedProvider === 'brevo') {
+  if (forcedProvider === 'smtp') {
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
+  } else if (forcedProvider === 'brevo') {
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
     if (hasSmtpConfig) providerOrder.push('SMTP');
+  } else if (isDev) {
+    // Local Development Environment: Gmail SMTP first
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
   } else {
-    // Default mode: Gmail SMTP first for authentic DKIM inbox placement, followed by Brevo Slots 1 & 2
-    if (hasSmtpConfig) providerOrder.push('SMTP');
+    // Production Environment (Render): Brevo API first
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
+    if (hasSmtpConfig) providerOrder.push('SMTP');
   }
 
   const attemptedErrors: string[] = [];
