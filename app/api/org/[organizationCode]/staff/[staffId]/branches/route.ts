@@ -119,10 +119,20 @@ export async function POST(
       userAgent: request.headers.get('user-agent'),
     });
 
+    const updatedStaff = await prisma.staffProfile.findFirst({
+      where: { id: staffProfile.id },
+      include: {
+        user: true,
+        branchAssignments: { include: { branch: true } },
+        devices: true,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       message: 'Branch assignments updated successfully.',
       branchAssignments: updatedAssignments,
+      staff: updatedStaff,
     });
   } catch (error: any) {
     console.error('Update branch assignments error:', error);

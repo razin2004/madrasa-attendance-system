@@ -58,10 +58,20 @@ export async function POST(
       userAgent: request.headers.get('user-agent'),
     });
 
+    const updatedStaff = await prisma.staffProfile.findFirst({
+      where: { id: staffProfile.id },
+      include: {
+        user: true,
+        branchAssignments: { include: { branch: true } },
+        devices: true,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       message: `Staff member "${staffProfile.name}" is now ${nextStatus.toLowerCase()}.`,
       status: nextStatus,
+      staff: updatedStaff,
     });
   } catch (error: any) {
     console.error('Toggle staff status error:', error);

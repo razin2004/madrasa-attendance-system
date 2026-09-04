@@ -201,7 +201,7 @@ export default function StaffProfilePage() {
       const data = await res.json();
       if (data.success) {
         toast.success('Staff information updated.');
-        setStaff(data.staff);
+        await fetchData();
         setIsEditing(false);
       } else {
         toast.error(data.error || 'Failed to update staff metadata.');
@@ -226,7 +226,7 @@ export default function StaffProfilePage() {
       const data = await res.json();
       if (data.success) {
         toast.success('Branch assignment updated.');
-        setStaff(data.staff);
+        await fetchData();
         setBranchModalOpen(false);
       } else {
         toast.error(data.error || 'Failed to update branch assignment.');
@@ -249,7 +249,7 @@ export default function StaffProfilePage() {
       const data = await res.json();
       if (data.success) {
         toast.success('Staff device bindings reset successfully.');
-        setStaff(data.staff);
+        await fetchData();
         setDeviceResetModalOpen(false);
       } else {
         toast.error(data.error || 'Failed to reset device.');
@@ -273,7 +273,7 @@ export default function StaffProfilePage() {
       const data = await res.json();
       if (data.success) {
         toast.success('Device / Slot removed successfully.');
-        fetchData();
+        await fetchData();
         setDeviceToRemove(null);
       } else {
         toast.error(data.error || 'Failed to remove device.');
@@ -299,7 +299,7 @@ export default function StaffProfilePage() {
             ? 'Staff account deactivated.'
             : 'Staff account activated.'
         );
-        setStaff(data.staff);
+        await fetchData();
         setStatusModalOpen(false);
       } else {
         toast.error(data.error || 'Failed to toggle account status.');
@@ -482,14 +482,14 @@ export default function StaffProfilePage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div className={styles.actionButtonsGroup}>
             {isPending ? (
               <>
                 <button
                   onClick={handleResendInvite}
                   disabled={resendingInvite}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8' }}
+                  className={styles.actionBtnSecondary}
+                  style={{ color: '#38bdf8' }}
                   title="Resend Activation & Setup Email"
                 >
                   {resendingInvite ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
@@ -498,8 +498,7 @@ export default function StaffProfilePage() {
                 <button
                   onClick={handleWhatsAppInvite}
                   disabled={whatsappLoading}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
+                  className={styles.actionBtnWhatsapp}
                   title="Share Password Setup Link via WhatsApp"
                 >
                   {whatsappLoading ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
@@ -509,28 +508,27 @@ export default function StaffProfilePage() {
             ) : (
               <button
                 onClick={() => setPasswordModalOpen(true)}
-                className="btn btn-secondary btn-sm"
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)' }}
+                className={styles.actionBtnPurple}
                 title="Update Staff Password"
               >
                 <Key size={14} />
                 <span>Update Password</span>
               </button>
             )}
-            <button onClick={() => setIsEditing(!isEditing)} className="btn btn-secondary btn-sm">
+            <button onClick={() => setIsEditing(!isEditing)} className={styles.actionBtnSecondary}>
               <Edit2 size={14} />
               <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
             </button>
-            <button onClick={() => setDeviceResetModalOpen(true)} className="btn btn-secondary btn-sm">
+            <button onClick={() => setDeviceResetModalOpen(true)} className={styles.actionBtnSecondary}>
               <RefreshCw size={14} />
               <span>Reset Devices</span>
             </button>
             <button
               onClick={() => setStatusModalOpen(true)}
-              className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
+              className={isActive ? styles.actionBtnDanger : styles.actionBtnSuccess}
             >
               <Power size={14} />
-              <span>{isActive ? 'Deactivate Account' : 'Activate Account'}</span>
+              <span>{isActive ? 'Deactivate' : 'Activate'}</span>
             </button>
           </div>
         </header>
