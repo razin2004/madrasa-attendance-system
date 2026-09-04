@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireOrgAdmin } from '@/lib/tenant-auth';
-import { hashPassword, generateTemporaryPassword } from '@/lib/security';
+import { hashPassword, generateTemporaryPassword, getAppBaseUrl } from '@/lib/security';
 import { sendEmail } from '@/services/email.service';
 import { recordAuditLog } from '@/services/audit.service';
 
@@ -77,7 +77,7 @@ export async function POST(
     // Send email notification to staff member ONLY if checked
     let emailSent = false;
     if (shouldSendEmail) {
-      const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const origin = getAppBaseUrl(request);
       const loginUrl = `${origin}/login`;
 
       const emailResult = await sendEmail({

@@ -139,3 +139,28 @@ export function generateDeviceSecret(): string {
 export function hashDeviceSecret(secret: string): string {
   return crypto.createHash('sha256').update(secret.trim()).digest('hex');
 }
+
+/**
+ * Safely get the public base URL of the app for email links, activation URLs, and redirects.
+ * Dynamically fall back to incoming request host if NEXT_PUBLIC_APP_URL is localhost or unconfigured in production.
+ */
+export function getAppBaseUrl(req?: Request): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+
+  if (req) {
+    try {
+      const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+      const proto = req.headers.get('x-forwarded-proto') || (isProduction ? 'https' : 'http');
+      if (host) {
+        return `${proto}://${host}`.replace(/\/+$/, '');
+      }
+    } catch {}
+  }
+
+  return envUrl ? envUrl.replace(/\/+$/, '') : 'http://localhost:3000';
+}

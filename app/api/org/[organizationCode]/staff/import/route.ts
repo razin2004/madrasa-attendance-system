@@ -185,7 +185,7 @@ export async function POST(
         });
 
         // Dispatch invitation email asynchronously
-        const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const origin = getAppBaseUrl(req);
         const activationUrl = `${origin}/activate-account?token=${rawActivationToken}`;
 
         const emailTemplate = templateStaffActivationInvitation({

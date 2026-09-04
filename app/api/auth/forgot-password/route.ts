@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { normalizeEmail, hashToken } from '@/lib/security';
+import { normalizeEmail, hashToken, getAppBaseUrl } from '@/lib/security';
 import { checkRateLimit, recordRateLimitAttempt } from '@/lib/rate-limiter';
 import { sendEmail } from '@/services/email.service';
 import { templatePasswordResetLink } from '@/services/email-templates';
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const origin = getAppBaseUrl(request);
     const resetUrl = `${origin}/reset-password?token=${rawResetToken}`;
 
     await sendEmail({

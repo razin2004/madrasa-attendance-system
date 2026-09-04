@@ -7,6 +7,7 @@ import {
   generateStaffId,
   normalizeEmail,
   hashToken,
+  getAppBaseUrl,
 } from '@/lib/security';
 import { recordAuditLog } from '@/services/audit.service';
 import { sendEmail } from '@/services/email.service';
@@ -256,7 +257,7 @@ export async function POST(
     );
 
     // 4. Send Account Setup Email to Staff (Awaited for serverless runtime resilience)
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const origin = getAppBaseUrl(request);
     const activationUrl = `${origin}/activate-account?token=${rawActivationToken}`;
 
     const emailTemplate = templateStaffActivationInvitation({

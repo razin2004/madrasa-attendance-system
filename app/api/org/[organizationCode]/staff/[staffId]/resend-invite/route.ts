@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { requireOrgAdmin } from '@/lib/tenant-auth';
+import { getAppBaseUrl } from '@/lib/security';
 import { sendEmail } from '@/services/email.service';
 import { templateStaffActivationInvitation } from '@/services/email-templates';
 
@@ -58,7 +59,7 @@ export async function POST(
     });
 
     // Build activation URL & Email Template
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const origin = getAppBaseUrl(request);
     const activationUrl = `${origin}/activate-account?token=${rawActivationToken}`;
 
     const emailTemplate = templateStaffActivationInvitation({
