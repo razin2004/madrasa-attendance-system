@@ -726,3 +726,15 @@ input[type="button"]:active:not(:disabled) {
     scroll-behavior: auto !important;
   }
 }
+
+/* Sticky Header for All Admin Panels */
+div[class*="mainContent"] > header,
+header[class*="headerBar"],
+header[class*="header"] {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 90 !important;
+  background-color: rgba(13, 19, 33, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}

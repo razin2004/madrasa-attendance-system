@@ -245,11 +245,21 @@ export default function RosterCalendarPage() {
                 value={selectedBranchId}
                 onChange={(e) => setSelectedBranchId(e.target.value)}
                 className="form-input"
-                style={{ height: '36px', fontSize: '13px', minWidth: '180px' }}
+                style={{
+                  height: '38px',
+                  padding: '6px 32px 6px 12px',
+                  fontSize: '13px',
+                  minWidth: '200px',
+                  color: '#ffffff',
+                  backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                }}
               >
-                <option value="">All Branches</option>
+                <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
                 {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
+                  <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
                     {b.name}
                   </option>
                 ))}

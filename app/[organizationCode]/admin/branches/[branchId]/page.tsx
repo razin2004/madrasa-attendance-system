@@ -115,6 +115,10 @@ export default function BranchDetailPage() {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState(false);
 
+  // Delete Branch Confirmation Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingBranch, setDeletingBranch] = useState(false);
+
   // Recapture Location Modal State
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [capturingGps, setCapturingGps] = useState(false);
@@ -307,6 +311,50 @@ export default function BranchDetailPage() {
       toast.error('Network error removing IP address.');
     } finally {
       setRemovingIp(null);
+    }
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!branch) return;
+    try {
+      setTogglingStatus(true);
+      const res = await fetch(`/api/org/${organizationCode}/branches/${branchId}/deactivate`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(branch.status === 'ACTIVE' ? 'Branch deactivated.' : 'Branch activated.');
+        setStatusModalOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.error || 'Failed to update branch status.');
+      }
+    } catch {
+      toast.error('Network error updating status.');
+    } finally {
+      setTogglingStatus(false);
+    }
+  };
+
+  const handleConfirmDeleteBranch = async () => {
+    if (!branch) return;
+    try {
+      setDeletingBranch(true);
+      const res = await fetch(`/api/org/${organizationCode}/branches/${branchId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Branch deleted successfully.');
+        setDeleteModalOpen(false);
+        router.push(`/${organizationCode}/admin/branches`);
+      } else {
+        toast.error(data.error || 'Failed to delete branch.');
+      }
+    } catch {
+      toast.error('Network error deleting branch.');
+    } finally {
+      setDeletingBranch(false);
     }
   };
 
@@ -520,6 +568,15 @@ export default function BranchDetailPage() {
                   >
                     <Power size={15} />
                     <span>{isActive ? 'Deactivate Branch' : 'Activate Branch'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
+                    className={styles.dropdownItem}
+                    style={{ color: 'var(--danger-text)' }}
+                  >
+                    <Trash2 size={15} />
+                    <span>Delete Branch</span>
                   </button>
                 </div>
               </>
@@ -771,22 +828,35 @@ export default function BranchDetailPage() {
         confirmText="Recapture IP"
       />
 
-      {/* 2. Status Toggle Confirmation */}
+      {/* 2. Status Toggle Modal */}
       <ConfirmationModal
         isOpen={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
-        onConfirm={handleToggleStatus}
-        title={isActive ? 'Deactivate this branch?' : 'Activate this branch?'}
+        onConfirm={handleConfirmToggleStatus}
+        title={isActive ? 'Deactivate Branch Location' : 'Activate Branch Location'}
         message={
           isActive
-            ? 'Staff assigned to this branch will no longer be able to use it for attendance verification.'
-            : 'Re-activate this branch so assigned staff can resume attendance verification.'
+            ? `Are you sure you want to deactivate ${branch.name}? Staff assigned to this branch will no longer be able to use its network IP or geofence location for attendance verification.`
+            : `Are you sure you want to reactivate ${branch.name}?`
         }
         confirmText={isActive ? 'Deactivate Branch' : 'Activate Branch'}
-        variant={isActive ? 'danger' : 'primary'}
+        confirmVariant={isActive ? 'danger' : 'primary'}
+        loading={togglingStatus}
       />
 
-      {/* 3. Change Primary IP Modal */}
+      {/* 3. Delete Branch Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmDeleteBranch}
+        title="Delete Branch Location"
+        message={`Are you sure you want to permanently delete "${branch.name}"? This action cannot be undone and will remove all associated network IP configs and settings.`}
+        confirmText="Delete Branch"
+        confirmVariant="danger"
+        loading={deletingBranch}
+      />
+
+      {/* 4. Change Primary IP Modal */}
       {editPrimaryModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>

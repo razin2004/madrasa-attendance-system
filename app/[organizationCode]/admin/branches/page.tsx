@@ -406,9 +406,11 @@ export default function BranchesListPage() {
                       return (
                         <tr
                           key={branch.id}
+                          onClick={() => router.push(`/${organizationCode}/admin/branches/${branch.id}`)}
                           style={{
                             borderBottom: '1px solid var(--border-subtle)',
                             transition: 'background 0.15s ease',
+                            cursor: 'pointer',
                           }}
                         >
                           <td style={{ padding: '16px 20px', fontWeight: 700, color: '#ffffff' }}>
@@ -453,25 +455,15 @@ export default function BranchesListPage() {
                               <span>{hasGps ? `✓ ${branch.geofenceRadiusMeters} m` : '✗ Not Configured'}</span>
                             </div>
                           </td>
-                          <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                              <Link
-                                href={`/${organizationCode}/admin/branches/${branch.id}`}
-                                className="btn btn-secondary btn-sm"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                <span>Details</span>
-                                <ChevronRight size={14} />
-                              </Link>
-                              <button
-                                onClick={() => setToggleModalBranch(branch)}
-                                className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                <Power size={13} />
-                                <span>{isActive ? 'Deactivate' : 'Activate'}</span>
-                              </button>
-                            </div>
+                          <td style={{ padding: '16px 20px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setToggleModalBranch(branch)}
+                              className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Power size={13} />
+                              <span>{isActive ? 'Deactivate' : 'Activate'}</span>
+                            </button>
                           </td>
                         </tr>
                       );
@@ -487,7 +479,12 @@ export default function BranchesListPage() {
                   const hasIp = Boolean(branch.publicIp);
 
                   return (
-                    <div key={branch.id} className={styles.mobileCard}>
+                    <div
+                      key={branch.id}
+                      className={styles.mobileCard}
+                      onClick={() => router.push(`/${organizationCode}/admin/branches/${branch.id}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                         <div style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff' }}>
                           {branch.name}
@@ -522,18 +519,11 @@ export default function BranchesListPage() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <Link
-                          href={`/${organizationCode}/admin/branches/${branch.id}`}
-                          className="btn btn-secondary btn-sm"
-                          style={{ flex: 1, textAlign: 'center' }}
-                        >
-                          Details
-                        </Link>
+                      <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => setToggleModalBranch(branch)}
                           className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-                          style={{ flex: 1 }}
+                          style={{ width: '100%' }}
                         >
                           {isActive ? 'Deactivate' : 'Activate'}
                         </button>

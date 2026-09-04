@@ -125,6 +125,10 @@ export default function ShiftPatternDetailPage() {
   // Toggle Active Confirmation Modal
   const [toggleActiveModalOpen, setToggleActiveModalOpen] = useState(false);
 
+  // Delete Pattern Confirmation Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingShift, setDeletingShift] = useState(false);
+
   // Edit Pattern Form
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
@@ -214,6 +218,28 @@ export default function ShiftPatternDetailPage() {
       }
     } catch {
       toast.error('Network error updating status.');
+    }
+  };
+
+  const handleConfirmDeleteShift = async () => {
+    if (!pattern) return;
+    try {
+      setDeletingShift(true);
+      const res = await fetch(`/api/org/${organizationCode}/shift-patterns/${pattern.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Shift pattern deleted successfully.');
+        setDeleteModalOpen(false);
+        router.push(`/${organizationCode}/admin/shifts`);
+      } else {
+        toast.error(data.error || 'Failed to delete shift pattern.');
+      }
+    } catch {
+      toast.error('Network error deleting shift pattern.');
+    } finally {
+      setDeletingShift(false);
     }
   };
 
@@ -518,6 +544,15 @@ export default function ShiftPatternDetailPage() {
                   >
                     <Power size={15} />
                     <span>{isActive ? 'Deactivate Pattern' : 'Activate Pattern'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
+                    className={styles.dropdownItem}
+                    style={{ color: 'var(--danger-text)' }}
+                  >
+                    <Trash2 size={15} />
+                    <span>Delete Shift Pattern</span>
                   </button>
                 </div>
               </>
@@ -1068,14 +1103,26 @@ export default function ShiftPatternDetailPage() {
         isOpen={toggleActiveModalOpen}
         onClose={() => setToggleActiveModalOpen(false)}
         onConfirm={handleToggleActive}
-        title={isActive ? 'Deactivate shift pattern?' : 'Activate shift pattern?'}
+        title={pattern.isActive ? 'Deactivate Shift Pattern?' : 'Activate Shift Pattern?'}
         message={
-          isActive
-            ? `Deactivating "${pattern.name}" prevents new staff assignments. Existing historical roster and attendance records remain preserved.`
-            : `Reactivating "${pattern.name}" will allow staff to be assigned to this shift pattern for new schedules.`
+          pattern.isActive
+            ? `Deactivating ${pattern.name} will prevent new attendance calculations under this schedule until reactivated.`
+            : `Activating ${pattern.name} will restore its automatic schedule calculations.`
         }
-        confirmText={isActive ? 'Deactivate Pattern' : 'Activate Pattern'}
-        variant={isActive ? 'danger' : 'primary'}
+        confirmText={pattern.isActive ? 'Deactivate' : 'Activate'}
+        confirmVariant={pattern.isActive ? 'danger' : 'primary'}
+      />
+
+      {/* Delete Shift Pattern Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmDeleteShift}
+        title="Delete Shift Pattern"
+        message={`Are you sure you want to permanently delete "${pattern.name}"? This action cannot be undone and will remove all associated weekly shift days and staff assignments.`}
+        confirmText="Delete Shift Pattern"
+        confirmVariant="danger"
+        loading={deletingShift}
       />
 
       {/* Mobile Nav */}

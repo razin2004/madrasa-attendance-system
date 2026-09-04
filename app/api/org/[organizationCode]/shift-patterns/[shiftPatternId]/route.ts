@@ -218,3 +218,59 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { organizationCode: string; shiftPatternId: string } }
+) {
+  try {
+    const auth = await requireOrgAdmin(params.organizationCode);
+    if (!auth.authorized || !auth.organization || !auth.session) {
+      return NextResponse.json(
+        { success: false, error: auth.errorMessage },
+        { status: auth.errorStatus || 401 }
+      );
+    }
+
+    const shiftPattern = await prisma.shiftPattern.findFirst({
+      where: {
+        id: params.shiftPatternId,
+        organizationId: auth.organization.id,
+      },
+    });
+
+    if (!shiftPattern) {
+      return NextResponse.json(
+        { success: false, error: 'Shift pattern not found or access denied.' },
+        { status: 404 }
+      );
+    }
+
+    await prisma.shiftPattern.delete({
+      where: { id: shiftPattern.id },
+    });
+
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    await recordAuditLog({
+      organizationId: auth.organization.id,
+      actorUserId: auth.session.user.id,
+      action: 'SHIFT_PATTERN_DELETED',
+      entityType: 'ShiftPattern',
+      entityId: shiftPattern.id,
+      metadata: { patternName: shiftPattern.name },
+      ipAddress: ip,
+      userAgent: request.headers.get('user-agent'),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Shift pattern deleted successfully.',
+    });
+  } catch (error: any) {
+    console.error('Delete shift pattern error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete shift pattern.' },
+      { status: 500 }
+    );
+  }
+}

@@ -158,7 +158,7 @@ export default function AdminLeavePage() {
                   }}
                 >
                   <Link
-                    href={`/${organizationCode}/admin/leave/manual`}
+                    href={`/${organizationCode}/admin/attendance`}
                     onClick={() => setHeaderMenuOpen(false)}
                     style={{
                       display: 'flex',

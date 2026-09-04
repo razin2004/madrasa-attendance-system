@@ -169,3 +169,59 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { organizationCode: string; branchId: string } }
+) {
+  try {
+    const auth = await requireOrgAdmin(params.organizationCode);
+    if (!auth.authorized || !auth.organization || !auth.session) {
+      return NextResponse.json(
+        { success: false, error: auth.errorMessage },
+        { status: auth.errorStatus || 401 }
+      );
+    }
+
+    const branch = await prisma.branch.findFirst({
+      where: {
+        id: params.branchId,
+        organizationId: auth.organization.id,
+      },
+    });
+
+    if (!branch) {
+      return NextResponse.json(
+        { success: false, error: 'Branch not found or access denied.' },
+        { status: 404 }
+      );
+    }
+
+    await prisma.branch.delete({
+      where: { id: branch.id },
+    });
+
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    await recordAuditLog({
+      organizationId: auth.organization.id,
+      actorUserId: auth.session.user.id,
+      action: 'BRANCH_DELETED',
+      entityType: 'Branch',
+      entityId: branch.id,
+      metadata: { branchName: branch.name },
+      ipAddress: ip,
+      userAgent: request.headers.get('user-agent'),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Branch deleted successfully.',
+    });
+  } catch (error: any) {
+    console.error('Delete branch error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete branch.' },
+      { status: 500 }
+    );
+  }
+}
