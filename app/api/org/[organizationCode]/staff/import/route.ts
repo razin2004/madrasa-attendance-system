@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { requireOrgAdmin } from '@/lib/tenant-auth';
 import { prisma } from '@/lib/prisma';
-import { normalizeEmail, generateStaffId, hashPassword, hashToken } from '@/lib/security';
+import { normalizeEmail, generateStaffId, hashPassword, hashToken, getAppBaseUrl } from '@/lib/security';
 import { sendEmail } from '@/services/email.service';
 import { templateStaffActivationInvitation } from '@/services/email-templates';
 
