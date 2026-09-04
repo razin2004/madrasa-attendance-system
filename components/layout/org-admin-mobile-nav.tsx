@@ -69,6 +69,18 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
       subtext: 'Manage workplace locations & IP geofences',
     },
     {
+      label: 'Shifts & Roster',
+      href: `/${organizationCode}/admin/shifts`,
+      icon: Clock,
+      subtext: 'Create recurring schedules & staff assignments',
+    },
+    {
+      label: 'Roster Calendar',
+      href: `/${organizationCode}/admin/roster`,
+      icon: Calendar,
+      subtext: 'View weekly staff allocation matrix',
+    },
+    {
       label: 'Leave Management',
       href: `/${organizationCode}/admin/leave`,
       icon: ShieldCheck,

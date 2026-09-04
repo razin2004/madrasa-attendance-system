@@ -1293,17 +1293,61 @@ export async function createAdminManualAttendance(params: {
     throw new Error('Manual attendance cannot be recorded for future dates.');
   }
 
-  // Fetch admin and staff
+  // Fetch admin and staff with shift pattern assignments and overrides
+  const scheduleDate = new Date(targetDate);
+  scheduleDate.setHours(0, 0, 0, 0);
+
   const [adminUser, staff] = await Promise.all([
     prisma.user.findUnique({ where: { id: params.adminUserId } }),
     prisma.staffProfile.findFirst({
       where: { id: params.staffProfileId, organizationId: params.organizationId },
-      include: { user: true, organization: true, branchAssignments: { include: { branch: true } } },
+      include: {
+        user: true,
+        organization: true,
+        branchAssignments: { include: { branch: true } },
+        shiftAssignments: {
+          include: {
+            shiftPattern: {
+              include: { weeklyDays: true },
+            },
+          },
+        },
+        shiftOverrides: {
+          where: {
+            date: {
+              gte: scheduleDate,
+              lte: new Date(new Date(scheduleDate).setHours(23, 59, 59, 999)),
+            },
+          },
+        },
+      },
     }),
   ]);
 
   if (!adminUser || !staff) {
     throw new Error('Admin or Staff profile not found.');
+  }
+
+  // Validate if target date is an actual working day for this staff member's shift
+  const daySchedule = calculateStaffDaySchedule(
+    scheduleDate,
+    staff.shiftAssignments,
+    staff.shiftOverrides
+  );
+
+  const formattedDateStr = scheduleDate.toISOString().slice(0, 10);
+
+  if (!daySchedule.isScheduled) {
+    throw new Error(
+      `Cannot record manual attendance: ${staff.name} (${staff.staffId}) does not have an active shift pattern assigned for ${formattedDateStr}.`
+    );
+  }
+
+  if (daySchedule.isHoliday) {
+    const shiftName = daySchedule.shiftPatternName || 'assigned shift';
+    throw new Error(
+      `Cannot record manual attendance: ${formattedDateStr} is a scheduled day off / holiday for ${staff.name}'s shift (${shiftName}).`
+    );
   }
 
   const targetBranchId = params.branchId || staff.branchAssignments[0]?.branchId || null;
