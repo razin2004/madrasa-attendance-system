@@ -188,126 +188,126 @@ export default function ReportsDashboardPage() {
 
         {/* Main Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
+          {/* Live Metrics Overview */}
+          <div className={styles.metricsOverview} style={{ margin: '0 0 28px 0' }}>
+            <h3 className={styles.metricsHeader}>
+              <BarChart3 size={18} color="#38bdf8" />
+              <span>Today&apos;s Live Attendance Overview ({summary?.todayDate || 'Today'})</span>
+            </h3>
+
+            {loading ? (
+              <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                <Loader2 size={24} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 8px auto' }} />
+                <p style={{ fontSize: '13px', margin: 0 }}>Loading live metrics...</p>
+              </div>
+            ) : (
+              <div className={styles.metricsGrid}>
+                <div className={styles.metricBox}>
+                  <div className={styles.metricLabel}>Total Staff Evaluated</div>
+                  <div className={styles.metricVal}>{summary?.todayMetrics?.totalCount || 0}</div>
+                </div>
+
+                <div className={styles.metricBox}>
+                  <div className={styles.metricLabel}>Present</div>
+                  <div className={styles.metricVal} style={{ color: '#34d399' }}>
+                    {summary?.todayMetrics?.presentCount || 0}
+                  </div>
+                </div>
+
+                <div className={styles.metricBox}>
+                  <div className={styles.metricLabel}>Approved Leave</div>
+                  <div className={styles.metricVal} style={{ color: '#38bdf8' }}>
+                    {summary?.todayMetrics?.leaveCount || 0}
+                  </div>
+                </div>
+
+                <div className={styles.metricBox}>
+                  <div className={styles.metricLabel}>Absent</div>
+                  <div className={styles.metricVal} style={{ color: '#f87171' }}>
+                    {summary?.todayMetrics?.absentCount || 0}
+                  </div>
+                </div>
+
+                <div className={styles.metricBox}>
+                  <div className={styles.metricLabel}>Verified (Normal)</div>
+                  <div className={styles.metricVal} style={{ color: '#34d399' }}>
+                    {summary?.todayMetrics?.sourceMetrics?.normalCount || 0}
+                  </div>
+                </div>
+
+                <div className={styles.metricBox}>
+                  <div className={styles.metricLabel}>Manual / Adjusted</div>
+                  <div className={styles.metricVal} style={{ color: '#fbbf24' }}>
+                    {(summary?.todayMetrics?.sourceMetrics?.manualCount || 0) +
+                      (summary?.todayMetrics?.sourceMetrics?.adjustedCount || 0)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Report Cards Grid */}
-          <div className={styles.cardsGrid} style={{ padding: 0, margin: '0 0 32px 0' }}>
-          {/* Card 1: Daily Attendance Report */}
-          <div className={styles.reportCard}>
-            <div>
-              <div
-                className={styles.cardIconBox}
-                style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}
-              >
-                <Clock size={24} />
+          <div className={styles.cardsGrid} style={{ padding: 0, margin: 0 }}>
+            {/* Card 1: Daily Attendance Report */}
+            <div className={styles.reportCard}>
+              <div>
+                <div
+                  className={styles.cardIconBox}
+                  style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}
+                >
+                  <Clock size={24} />
+                </div>
+                <h2 className={styles.cardTitle}>Daily Attendance Report</h2>
+                <p className={styles.cardDesc}>
+                  View daily attendance across all staff members. Identifies Present, Partial, Holiday, Approved Leave, and Absent status with distinct Normal, Manual, and Adjusted sources.
+                </p>
               </div>
-              <h2 className={styles.cardTitle}>Daily Attendance Report</h2>
-              <p className={styles.cardDesc}>
-                View daily attendance across all staff members. Identifies Present, Partial, Holiday, Approved Leave, and Absent status with distinct Normal, Manual, and Adjusted sources.
-              </p>
+              <Link href={`/${organizationCode}/admin/reports/daily`} className={styles.cardLink}>
+                <span>Open Daily Report</span>
+                <ArrowRight size={16} />
+              </Link>
             </div>
-            <Link href={`/${organizationCode}/admin/reports/daily`} className={styles.cardLink}>
-              <span>Open Daily Report</span>
-              <ArrowRight size={16} />
-            </Link>
+
+            {/* Card 2: Monthly Employee Attendance Report */}
+            <div className={styles.reportCard}>
+              <div>
+                <div
+                  className={styles.cardIconBox}
+                  style={{ background: 'rgba(129, 140, 248, 0.15)', color: '#818cf8' }}
+                >
+                  <Calendar size={24} />
+                </div>
+                <h2 className={styles.cardTitle}>Employee Monthly Attendance Report</h2>
+                <p className={styles.cardDesc}>
+                  Detailed monthly attendance log for individual staff members. Includes monthly metrics breakdown (Working days, Present, Leave types, Absences, Source metrics) and exports.
+                </p>
+              </div>
+              <Link href={`/${organizationCode}/admin/reports/monthly`} className={styles.cardLink}>
+                <span>Open Monthly Report</span>
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            {/* Card 3: Custom Date Range Attendance Report */}
+            <div className={styles.reportCard}>
+              <div>
+                <div
+                  className={styles.cardIconBox}
+                  style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}
+                >
+                  <FileText size={24} />
+                </div>
+                <h2 className={styles.cardTitle}>Custom Date Range Report</h2>
+                <p className={styles.cardDesc}>
+                  Generate and export attendance reports across custom date ranges (e.g. 1st to 15th of the month). Export multi-day bundles to CSV or print-ready PDF.
+                </p>
+              </div>
+              <Link href={`/${organizationCode}/admin/reports/range`} className={styles.cardLink}>
+                <span>Open Custom Range Report</span>
+                <ArrowRight size={16} />
+              </Link>
+            </div>
           </div>
-
-          {/* Card 2: Monthly Employee Attendance Report */}
-          <div className={styles.reportCard}>
-            <div>
-              <div
-                className={styles.cardIconBox}
-                style={{ background: 'rgba(129, 140, 248, 0.15)', color: '#818cf8' }}
-              >
-                <Calendar size={24} />
-              </div>
-              <h2 className={styles.cardTitle}>Employee Monthly Attendance Report</h2>
-              <p className={styles.cardDesc}>
-                Detailed monthly attendance log for individual staff members. Includes monthly metrics breakdown (Working days, Present, Leave types, Absences, Source metrics) and exports.
-              </p>
-            </div>
-            <Link href={`/${organizationCode}/admin/reports/monthly`} className={styles.cardLink}>
-              <span>Open Monthly Report</span>
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-
-          {/* Card 3: Custom Date Range Attendance Report */}
-          <div className={styles.reportCard}>
-            <div>
-              <div
-                className={styles.cardIconBox}
-                style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}
-              >
-                <FileText size={24} />
-              </div>
-              <h2 className={styles.cardTitle}>Custom Date Range Report</h2>
-              <p className={styles.cardDesc}>
-                Generate and export attendance reports across custom date ranges (e.g. 1st to 15th of the month). Export multi-day bundles to CSV or print-ready PDF.
-              </p>
-            </div>
-            <Link href={`/${organizationCode}/admin/reports/range`} className={styles.cardLink}>
-              <span>Open Custom Range Report</span>
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
-
-        {/* Live Metrics Overview */}
-        <div className={styles.metricsOverview}>
-          <h3 className={styles.metricsHeader}>
-            <BarChart3 size={18} color="#38bdf8" />
-            <span>Today&apos;s Live Attendance Overview ({summary?.todayDate || 'Today'})</span>
-          </h3>
-
-          {loading ? (
-            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <Loader2 size={24} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 8px auto' }} />
-              <p style={{ fontSize: '13px', margin: 0 }}>Loading live metrics...</p>
-            </div>
-          ) : (
-            <div className={styles.metricsGrid}>
-              <div className={styles.metricBox}>
-                <div className={styles.metricLabel}>Total Staff Evaluated</div>
-                <div className={styles.metricVal}>{summary?.todayMetrics?.totalCount || 0}</div>
-              </div>
-
-              <div className={styles.metricBox}>
-                <div className={styles.metricLabel}>Present</div>
-                <div className={styles.metricVal} style={{ color: '#34d399' }}>
-                  {summary?.todayMetrics?.presentCount || 0}
-                </div>
-              </div>
-
-              <div className={styles.metricBox}>
-                <div className={styles.metricLabel}>Approved Leave</div>
-                <div className={styles.metricVal} style={{ color: '#38bdf8' }}>
-                  {summary?.todayMetrics?.leaveCount || 0}
-                </div>
-              </div>
-
-              <div className={styles.metricBox}>
-                <div className={styles.metricLabel}>Absent</div>
-                <div className={styles.metricVal} style={{ color: '#f87171' }}>
-                  {summary?.todayMetrics?.absentCount || 0}
-                </div>
-              </div>
-
-              <div className={styles.metricBox}>
-                <div className={styles.metricLabel}>Verified (Normal)</div>
-                <div className={styles.metricVal} style={{ color: '#34d399' }}>
-                  {summary?.todayMetrics?.sourceMetrics?.normalCount || 0}
-                </div>
-              </div>
-
-              <div className={styles.metricBox}>
-                <div className={styles.metricLabel}>Manual / Adjusted</div>
-                <div className={styles.metricVal} style={{ color: '#fbbf24' }}>
-                  {(summary?.todayMetrics?.sourceMetrics?.manualCount || 0) +
-                    (summary?.todayMetrics?.sourceMetrics?.adjustedCount || 0)}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
         </main>
       </div>
       <OrgAdminMobileNav organizationCode={organizationCode} />
