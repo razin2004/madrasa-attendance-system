@@ -39,6 +39,7 @@ import {
   CheckCircle,
   XCircle,
   ExternalLink,
+  Menu,
 } from 'lucide-react';
 
 export default function OrgAdminLandingPage() {
@@ -72,6 +73,7 @@ export default function OrgAdminLandingPage() {
   const [pendingCorrectionsCount, setPendingCorrectionsCount] = useState<number>(0);
   const [pendingCorrections, setPendingCorrections] = useState<any[]>([]);
   const [branchesList, setBranchesList] = useState<any[]>([]);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -215,36 +217,138 @@ export default function OrgAdminLandingPage() {
             </p>
           </div>
 
-          <div className={styles.headerActions}>
+          <div style={{ position: 'relative' }}>
             <button
-              onClick={fetchData}
-              disabled={isLoading}
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
               className="btn btn-secondary btn-sm"
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
+                padding: 0,
                 borderRadius: '10px',
-                padding: '8px 14px',
-                fontSize: '12.5px',
-                fontWeight: 600,
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-medium)',
+                color: '#ffffff',
+                cursor: 'pointer',
               }}
+              title="Dashboard Actions Menu"
             >
-              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} color="#a5b4fc" />
-              <span>Refresh</span>
+              <Menu size={18} />
             </button>
 
-            <Link href={`/${orgCode}/admin/staff`} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '10px' }}>
-              <Users size={14} color="#38bdf8" />
-              <span>Staff</span>
-            </Link>
+            {headerMenuOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                />
+                <div
+                  className="glass-card"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    zIndex: 1000,
+                    minWidth: '200px',
+                    padding: '6px',
+                    backgroundColor: '#0d121f',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}
+                >
+                  <Link
+                    href={`/${orgCode}/admin/roster`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    }}
+                  >
+                    <Calendar size={15} color="#818cf8" />
+                    <span>Roster Schedule</span>
+                  </Link>
 
-            <Link href={`/${orgCode}/admin/roster`} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '10px' }}>
-              <Calendar size={14} />
-              <span>Roster Schedule</span>
-            </Link>
+                  <Link
+                    href={`/${orgCode}/admin/staff`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Users size={15} color="#38bdf8" />
+                    <span>Staff Directory</span>
+                  </Link>
+
+                  <Link
+                    href={`/${orgCode}/admin/branches`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Building2 size={15} color="#c084fc" />
+                    <span>Branches Directory</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      fetchData();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <RefreshCw size={15} color="#34d399" className={isLoading ? 'animate-spin' : ''} />
+                    <span>Refresh Dashboard</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 

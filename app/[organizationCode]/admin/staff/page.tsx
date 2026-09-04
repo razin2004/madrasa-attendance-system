@@ -28,6 +28,7 @@ import {
   FileSpreadsheet,
   Share2,
   Key,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -95,6 +96,7 @@ export default function StaffDirectoryPage() {
   const [resendingStaffId, setResendingStaffId] = useState<string | null>(null);
   const [whatsappLoadingId, setWhatsappLoadingId] = useState<string | null>(null);
   const [passwordModalStaff, setPasswordModalStaff] = useState<StaffItem | null>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   const handleResendInvite = async (staffId: string, email: string) => {
     try {
@@ -103,10 +105,10 @@ export default function StaffDirectoryPage() {
         method: 'POST',
       });
       const data = await res.json();
-      if (data.success) {
-        toast.success(data.message || `Login email resent to ${email}`);
+      if (res.ok && data.success) {
+        toast.success(`Login invite re-sent to ${email}`);
       } else {
-        toast.error(data.error || 'Failed to resend login invitation email.');
+        toast.error(data.error || 'Failed to resend login email.');
       }
     } catch {
       toast.error('Network error resending login email.');
@@ -250,7 +252,7 @@ export default function StaffDirectoryPage() {
       if (res.ok && data.success) {
         toast.success(data.message || 'Staff import completed successfully!');
         setImportResult(data);
-        fetchInitialData();
+        fetchInitialData(true);
       } else {
         setImportError(data.error || 'Failed to complete CSV import.');
       }
@@ -299,10 +301,10 @@ export default function StaffDirectoryPage() {
     if (!toggleStaff) return;
     try {
       setToggleLoading(true);
-      const res = await fetch(
-        `/api/org/${organizationCode}/staff/${toggleStaff.id}/toggle-status`,
-        { method: 'POST' }
-      );
+      const res = await fetch(`/api/org/${organizationCode}/staff/${toggleStaff.id}/toggle-status`, {
+        method: 'POST',
+      });
+
       const data = await res.json();
       if (data.success) {
         toast.success(
@@ -311,7 +313,7 @@ export default function StaffDirectoryPage() {
             : 'Staff account activated.'
         );
         setToggleStaff(null);
-        fetchInitialData();
+        fetchInitialData(true);
       } else {
         toast.error(data.error || 'Failed to update status.');
       }
@@ -323,19 +325,19 @@ export default function StaffDirectoryPage() {
   };
 
   const filteredStaff = staffList.filter((s) => {
-    if (filter === 'ACTIVE' && s.user.status !== 'ACTIVE') return false;
-    if (filter === 'INACTIVE' && s.user.status !== 'INACTIVE') return false;
+    if (filter === 'ACTIVE' && s.user?.status !== 'ACTIVE') return false;
+    if (filter === 'INACTIVE' && s.user?.status !== 'INACTIVE') return false;
     if (filter === 'DEVICE_REGISTERED' && !s.devices?.some((d: any) => d.status === 'REGISTERED')) return false;
     if (filter === 'RESET_REQUIRED' && !s.devices?.some((d: any) => d.status === 'RESET_REQUIRED')) return false;
 
     if (search.trim()) {
       const q = search.toLowerCase();
-      const matchBranch = s.branchAssignments.some((b) => b.branch.name.toLowerCase().includes(q));
+      const matchBranch = s.branchAssignments?.some((b) => b.branch?.name?.toLowerCase().includes(q)) ?? false;
       return (
-        s.staffId.toLowerCase().includes(q) ||
-        s.name.toLowerCase().includes(q) ||
-        s.user.email.toLowerCase().includes(q) ||
-        s.phone.toLowerCase().includes(q) ||
+        (s.staffId && s.staffId.toLowerCase().includes(q)) ||
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.user?.email && s.user.email.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.toLowerCase().includes(q)) ||
         matchBranch
       );
     }
@@ -369,40 +371,130 @@ export default function StaffDirectoryPage() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ position: 'relative' }}>
             <button
-              onClick={() => fetchInitialData()}
-              disabled={loading}
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
               className="btn btn-secondary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              <span>Refresh</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setCsvFile(null);
-                setParsedRows([]);
-                setImportError(null);
-                setImportResult(null);
-                setShowImportModal(true);
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
+                padding: 0,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-medium)',
+                color: '#ffffff',
+                cursor: 'pointer',
               }}
-              className="btn btn-secondary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              title="Staff Directory Actions Menu"
             >
-              <Upload size={14} />
-              <span>Import via CSV</span>
+              <Menu size={18} />
             </button>
 
-            <Link
-              href={`/${organizationCode}/admin/staff/new`}
-              className="btn btn-primary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Plus size={16} />
-              <span>Add Staff Member</span>
-            </Link>
+            {headerMenuOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                />
+                <div
+                  className="glass-card"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    zIndex: 1000,
+                    minWidth: '220px',
+                    padding: '6px',
+                    backgroundColor: '#0d121f',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}
+                >
+                  <Link
+                    href={`/${organizationCode}/admin/staff/new`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    }}
+                  >
+                    <Plus size={15} color="#818cf8" />
+                    <span>Add New Staff</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      setCsvFile(null);
+                      setParsedRows([]);
+                      setImportError(null);
+                      setImportResult(null);
+                      setShowImportModal(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Upload size={15} color="#38bdf8" />
+                    <span>Import Staff via CSV</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      fetchInitialData();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
+                    <span>Refresh Directory</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 

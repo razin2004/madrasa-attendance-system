@@ -22,6 +22,7 @@ import {
   X,
   CheckCircle2,
   Loader2,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../components/layout/org-admin-mobile-nav';
@@ -68,6 +69,7 @@ export default function BranchesListPage() {
   const [search, setSearch] = useState('');
   const [toggleModalBranch, setToggleModalBranch] = useState<BranchItem | null>(null);
   const [toggleLoading, setToggleLoading] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   useEffect(() => {
     if (organizationCode) {
@@ -167,24 +169,100 @@ export default function BranchesListPage() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ position: 'relative' }}>
             <button
-              onClick={fetchInitialData}
-              disabled={loading}
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
               className="btn btn-secondary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
+                padding: 0,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-medium)',
+                color: '#ffffff',
+                cursor: 'pointer',
+              }}
+              title="Branch Directory Actions Menu"
             >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              <span>Refresh</span>
+              <Menu size={18} />
             </button>
-            <Link
-              href={`/${organizationCode}/admin/branches/new`}
-              className="btn btn-primary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Plus size={16} />
-              <span>Register Branch</span>
-            </Link>
+
+            {headerMenuOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                />
+                <div
+                  className="glass-card"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    zIndex: 1000,
+                    minWidth: '200px',
+                    padding: '6px',
+                    backgroundColor: '#0d121f',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}
+                >
+                  <Link
+                    href={`/${organizationCode}/admin/branches/new`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    }}
+                  >
+                    <Plus size={15} color="#818cf8" />
+                    <span>Register Branch</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      fetchInitialData();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
+                    <span>Refresh Branches</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 

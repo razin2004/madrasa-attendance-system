@@ -17,6 +17,7 @@ import {
   FileText,
   Loader2,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -49,6 +50,7 @@ export default function AdminLeavePage() {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<LeaveRequestItem[]>([]);
   const [orgData, setOrgData] = useState<any>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/org/${organizationCode}/branding`)
@@ -109,15 +111,100 @@ export default function AdminLeavePage() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Link
-              href={`/${organizationCode}/admin/leave/manual`}
-              className="btn btn-primary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
+                padding: 0,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-medium)',
+                color: '#ffffff',
+                cursor: 'pointer',
+              }}
+              title="Leave Management Actions Menu"
             >
-              <Plus size={16} />
-              <span>Record Manual Leave</span>
-            </Link>
+              <Menu size={18} />
+            </button>
+
+            {headerMenuOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                />
+                <div
+                  className="glass-card"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    zIndex: 1000,
+                    minWidth: '200px',
+                    padding: '6px',
+                    backgroundColor: '#0d121f',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}
+                >
+                  <Link
+                    href={`/${organizationCode}/admin/leave/manual`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    }}
+                  >
+                    <Plus size={15} color="#818cf8" />
+                    <span>Record Manual Leave</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      fetchLeaveRequests();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
+                    <span>Refresh Requests</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 
