@@ -110,6 +110,9 @@
 
 .tableDesktop {
   display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .cardsMobile {

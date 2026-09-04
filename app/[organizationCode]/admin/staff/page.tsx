@@ -634,7 +634,7 @@ export default function StaffDirectoryPage() {
                             {staff.devices?.some((d: any) => d.status === 'REGISTERED') ? (
                               <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#34d399', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                 <CheckCircle2 size={13} />
-                                <span>{staff.devices.filter((d: any) => d.status === 'REGISTERED').length} Device(s) Bound</span>
+                                <span>1 Device Bound</span>
                               </span>
                             ) : staff.devices?.some((d: any) => d.status === 'RESET_REQUIRED') ? (
                               <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -650,57 +650,47 @@ export default function StaffDirectoryPage() {
 
                           {/* Actions */}
                           <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
                               {isPending ? (
                                 <>
                                   <button
                                     onClick={() => handleResendInvite(staff.id, staff.user.email)}
                                     disabled={resendingStaffId === staff.id}
                                     className="btn btn-secondary btn-sm"
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#38bdf8' }}
+                                    style={{ padding: '8px', borderRadius: '8px', color: '#38bdf8' }}
                                     title="Resend Activation & Login Email"
                                   >
-                                    {resendingStaffId === staff.id ? <Loader2 size={13} className="animate-spin" /> : <Mail size={13} />}
-                                    <span>Resend Email</span>
+                                    {resendingStaffId === staff.id ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
                                   </button>
                                   <button
                                     onClick={() => handleWhatsAppInvite(staff)}
                                     disabled={whatsappLoadingId === staff.id}
                                     className="btn btn-secondary btn-sm"
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
+                                    style={{ padding: '8px', borderRadius: '8px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
                                     title="Share Password Setup Invite via WhatsApp"
                                   >
-                                    {whatsappLoadingId === staff.id ? <Loader2 size={13} className="animate-spin" /> : <Share2 size={13} />}
-                                    <span>WhatsApp</span>
+                                    {whatsappLoadingId === staff.id ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />}
                                   </button>
                                 </>
                               ) : (
                                 <button
                                   onClick={() => setPasswordModalStaff(staff)}
                                   className="btn btn-secondary btn-sm"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)' }}
+                                  style={{ padding: '8px', borderRadius: '8px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)' }}
                                   title="Update Staff Password"
                                 >
-                                  <Key size={13} />
-                                  <span>Password</span>
+                                  <Key size={15} />
                                 </button>
                               )}
                               <Link
                                 href={`/${organizationCode}/admin/staff/${staff.id}`}
-                                className="btn btn-secondary btn-sm"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                className="btn btn-primary btn-sm"
+                                style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="View Staff Profile & Security Controls"
                               >
                                 <span>Profile</span>
                                 <ChevronRight size={14} />
                               </Link>
-                              <button
-                                onClick={() => setToggleStaff(staff)}
-                                className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                <Power size={13} />
-                                <span>{isActive ? 'Deactivate' : 'Activate'}</span>
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -735,63 +725,86 @@ export default function StaffDirectoryPage() {
                             fontWeight: 700,
                             backgroundColor: isPending ? 'rgba(245, 158, 11, 0.15)' : isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                             color: isPending ? '#fbbf24' : isActive ? '#34d399' : '#f87171',
+                            border: `1px solid ${isPending ? 'rgba(245, 158, 11, 0.3)' : isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
                           }}
                         >
                           {isPending ? 'SETUP PENDING' : isActive ? 'ACTIVE' : 'INACTIVE'}
                         </span>
                       </div>
 
-                      <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                        Email: {staff.user.email}
-                        {staff.phone && <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Phone: {staff.phone}</div>}
+                      <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Mail size={13} color="var(--text-muted)" />
+                          <span>{staff.user.email}</span>
+                        </div>
+                        {staff.branchAssignments.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                            <MapPin size={13} color="#818cf8" />
+                            <span>{staff.branchAssignments.map((b) => b.branch.name).join(', ')}</span>
+                          </div>
+                        )}
                       </div>
 
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '14px' }}>
-                        {isPending ? (
-                          <>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', marginTop: '12px' }}>
+                        <div>
+                          {staff.devices?.some((d: any) => d.status === 'REGISTERED') ? (
+                            <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#34d399', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <CheckCircle2 size={13} />
+                              <span>1 Device Bound</span>
+                            </span>
+                          ) : staff.devices?.some((d: any) => d.status === 'RESET_REQUIRED') ? (
+                            <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <AlertTriangle size={13} />
+                              <span>Reset Required</span>
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                              — Not Registered
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {isPending ? (
+                            <>
+                              <button
+                                onClick={() => handleResendInvite(staff.id, staff.user.email)}
+                                disabled={resendingStaffId === staff.id}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '8px', borderRadius: '8px', color: '#38bdf8' }}
+                                title="Resend Activation Email"
+                              >
+                                {resendingStaffId === staff.id ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+                              </button>
+                              <button
+                                onClick={() => handleWhatsAppInvite(staff)}
+                                disabled={whatsappLoadingId === staff.id}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '8px', borderRadius: '8px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
+                                title="Share WhatsApp Invite"
+                              >
+                                {whatsappLoadingId === staff.id ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                              </button>
+                            </>
+                          ) : (
                             <button
-                              onClick={() => handleResendInvite(staff.id, staff.user.email)}
-                              disabled={resendingStaffId === staff.id}
+                              onClick={() => setPasswordModalStaff(staff)}
                               className="btn btn-secondary btn-sm"
-                              style={{ flex: '1 1 calc(50% - 4px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#38bdf8', fontSize: '12px' }}
+                              style={{ padding: '8px', borderRadius: '8px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)' }}
+                              title="Update Password"
                             >
-                              {resendingStaffId === staff.id ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
-                              <span>Resend Email</span>
+                              <Key size={14} />
                             </button>
-                            <button
-                              onClick={() => handleWhatsAppInvite(staff)}
-                              disabled={whatsappLoadingId === staff.id}
-                              className="btn btn-secondary btn-sm"
-                              style={{ flex: '1 1 calc(50% - 4px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)', fontSize: '12px' }}
-                            >
-                              {whatsappLoadingId === staff.id ? <Loader2 size={12} className="animate-spin" /> : <Share2 size={12} />}
-                              <span>WhatsApp</span>
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => setPasswordModalStaff(staff)}
-                            className="btn btn-secondary btn-sm"
-                            style={{ flex: '1 1 calc(50% - 4px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)', fontSize: '12px' }}
+                          )}
+                          <Link
+                            href={`/${organizationCode}/admin/staff/${staff.id}`}
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
                           >
-                            <Key size={12} />
-                            <span>Password</span>
-                          </button>
-                        )}
-                        <Link
-                          href={`/${organizationCode}/admin/staff/${staff.id}`}
-                          className="btn btn-secondary btn-sm"
-                          style={{ flex: isPending ? '1 1 100%' : '1 1 calc(50% - 4px)', textAlign: 'center', fontSize: '12px' }}
-                        >
-                          Profile
-                        </Link>
-                        <button
-                          onClick={() => setToggleStaff(staff)}
-                          className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-                          style={{ flex: '1 1 100%', fontSize: '12px' }}
-                        >
-                          {isActive ? 'Deactivate' : 'Activate'}
-                        </button>
+                            <span>Profile</span>
+                            <ChevronRight size={13} />
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   );
