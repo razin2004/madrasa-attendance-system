@@ -582,7 +582,6 @@ export default function AdminSettingsPage() {
             </div>
           </form>
         )}
-      </div>
 
       {/* DUAL-OTP EMAIL CHANGE VERIFICATION MODAL */}
       {showEmailModal && (
