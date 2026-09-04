@@ -702,8 +702,9 @@ export default function AdminSettingsPage() {
                 </div>
               </form>
             )}
-          </form>
-        )}
+          </div>
+        </div>
+      )}
         </main>
       </div>
 
