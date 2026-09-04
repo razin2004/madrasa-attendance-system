@@ -27,11 +27,14 @@ import {
   X,
   FileText,
   Plus,
+  Share2,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
+import { UpdatePasswordModal } from '@/components/staff/update-password-modal';
+import { openWhatsAppInvite } from '@/lib/whatsapp';
 import styles from './StaffProfile.module.css';
 
 interface BranchItem {
@@ -61,7 +64,7 @@ interface StaffDetails {
   user: {
     id: string;
     email: string;
-    status: 'ACTIVE' | 'INACTIVE';
+    status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
     role: string;
     lastLoginAt: string | null;
     createdAt: string;
@@ -106,11 +109,6 @@ export default function StaffProfilePage() {
   const [resettingDevice, setResettingDevice] = useState(false);
   const [deviceToRemove, setDeviceToRemove] = useState<any>(null);
   const [removingDevice, setRemovingDevice] = useState(false);
-  
-  // Authorize Device Slot Modal
-  const [addDeviceModalOpen, setAddDeviceModalOpen] = useState(false);
-  const [authorizingDevice, setAuthorizingDevice] = useState(false);
-
   // Status Toggle Confirmation Modal
   const [statusModalOpen, setStatusModalOpen] = useState(false);
 
@@ -258,29 +256,6 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 3b. Authorize Additional Device Slot
-  const handleAuthorizeDeviceSlot = async () => {
-    try {
-      setAuthorizingDevice(true);
-      const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/authorize-device`, {
-        method: 'POST',
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        toast.success(`Secondary device slot authorized for ${staff?.name}! It is now listed as pending registration.`);
-        setAddDeviceModalOpen(false);
-        fetchData();
-      } else {
-        toast.error(data.error || 'Failed to authorize additional device slot.');
-      }
-    } catch {
-      toast.error('Network error authorizing device slot.');
-    } finally {
-      setAuthorizingDevice(false);
-    }
-  };
-
   // 3c. Remove Individual Device / Slot
   const handleRemoveDevice = async () => {
     if (!deviceToRemove) return;
@@ -387,6 +362,7 @@ export default function StaffProfilePage() {
     );
   }
 
+  const isPending = staff.user.status === 'PENDING';
   const isActive = staff.user.status === 'ACTIVE';
   const allDevices = staff.devices || [];
   const registeredCount = allDevices.filter((d: any) => d.status === 'REGISTERED').length;
@@ -394,6 +370,8 @@ export default function StaffProfilePage() {
   const canAuthorizeMore = !hasPendingSlot && registeredCount < 2;
 
   const [resendingInvite, setResendingInvite] = useState(false);
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   const handleResendInvite = async () => {
     try {
@@ -411,6 +389,43 @@ export default function StaffProfilePage() {
       toast.error('Network error resending login email.');
     } finally {
       setResendingInvite(false);
+    }
+  };
+
+  const handleWhatsAppInvite = async () => {
+    if (!staff) return;
+    try {
+      setWhatsappLoading(true);
+      const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/resend-invite`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      const activationUrl = data.success ? data.activationUrl : undefined;
+
+      openWhatsAppInvite({
+        phone: staff.phone,
+        staffName: staff.name,
+        orgName: branding?.name || 'Organization',
+        organizationCode,
+        staffId: staff.staffId,
+        email: staff.user.email,
+        activationUrl,
+      });
+
+      if (data.success && activationUrl) {
+        try {
+          await navigator.clipboard.writeText(activationUrl);
+          toast.success(`WhatsApp invite opened & setup link copied for ${staff.name}!`);
+        } catch {
+          toast.success(`WhatsApp invite opened for ${staff.name}`);
+        }
+      } else {
+        toast.info(`WhatsApp invite opened for ${staff.name}`);
+      }
+    } catch {
+      toast.error('Failed to prepare WhatsApp invite link.');
+    } finally {
+      setWhatsappLoading(false);
     }
   };
 
@@ -452,12 +467,12 @@ export default function StaffProfilePage() {
                     borderRadius: '9999px',
                     fontSize: '11.5px',
                     fontWeight: 700,
-                    backgroundColor: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: isActive ? '#34d399' : '#f87171',
-                    border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    backgroundColor: isPending ? 'rgba(245, 158, 11, 0.15)' : isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: isPending ? '#fbbf24' : isActive ? '#34d399' : '#f87171',
+                    border: `1px solid ${isPending ? 'rgba(245, 158, 11, 0.3)' : isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
                   }}
                 >
-                  {isActive ? 'ACTIVE' : 'INACTIVE'}
+                  {isPending ? 'SETUP PENDING' : isActive ? 'ACTIVE' : 'INACTIVE'}
                 </span>
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -466,16 +481,41 @@ export default function StaffProfilePage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button
-              onClick={handleResendInvite}
-              disabled={resendingInvite}
-              className="btn btn-secondary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8' }}
-            >
-              {resendingInvite ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-              <span>Resend Login Email</span>
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {isPending ? (
+              <>
+                <button
+                  onClick={handleResendInvite}
+                  disabled={resendingInvite}
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8' }}
+                  title="Resend Activation & Setup Email"
+                >
+                  {resendingInvite ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+                  <span>Resend Email</span>
+                </button>
+                <button
+                  onClick={handleWhatsAppInvite}
+                  disabled={whatsappLoading}
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
+                  title="Share Password Setup Link via WhatsApp"
+                >
+                  {whatsappLoading ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                  <span>WhatsApp</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setPasswordModalOpen(true)}
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)' }}
+                title="Update Staff Password"
+              >
+                <Key size={14} />
+                <span>Update Password</span>
+              </button>
+            )}
             <button onClick={() => setIsEditing(!isEditing)} className="btn btn-secondary btn-sm">
               <Edit2 size={14} />
               <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
@@ -495,7 +535,7 @@ export default function StaffProfilePage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Navigation Tabs */}
           <div className={styles.tabsBar}>
             <button
@@ -649,38 +689,23 @@ export default function StaffProfilePage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Smartphone size={20} color="#34d399" />
-                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Registered Devices</h3>
+                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Registered Security Device</h3>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  {/* VANISH / HIDE BUTTON IF PENDING SLOT ALREADY EXISTS OR MAX DEVICES AUTHORIZED */}
-                  {canAuthorizeMore && (
-                    <button
-                      onClick={() => setAddDeviceModalOpen(true)}
-                      className="btn btn-primary btn-sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Plus size={14} />
-                      <span>Authorize Additional Device</span>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => setDeviceResetModalOpen(true)}
-                    className="btn btn-secondary btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <RefreshCw size={14} />
-                    <span>Reset All Devices</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => setDeviceResetModalOpen(true)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <RefreshCw size={14} />
+                  <span>Reset Registered Device</span>
+                </button>
               </div>
 
               {allDevices.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {allDevices.map((d: any, index: number) => {
+                  {allDevices.slice(0, 1).map((d: any) => {
                     const isRegistered = d.status === 'REGISTERED';
-                    const isPrimary = index === 0;
                     return (
                       <div
                         key={d.id}
@@ -702,16 +727,16 @@ export default function StaffProfilePage() {
                                 fontWeight: 800,
                                 padding: '2px 7px',
                                 borderRadius: '5px',
-                                backgroundColor: isPrimary ? 'rgba(56, 189, 248, 0.15)' : 'rgba(192, 132, 252, 0.15)',
-                                color: isPrimary ? '#38bdf8' : '#c084fc',
-                                border: `1px solid ${isPrimary ? 'rgba(56, 189, 248, 0.3)' : 'rgba(192, 132, 252, 0.3)'}`,
+                                backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                                color: '#38bdf8',
+                                border: '1px solid rgba(56, 189, 248, 0.3)',
                                 textTransform: 'uppercase',
                               }}
                             >
-                              {isPrimary ? 'Primary Device' : 'Secondary Device'}
+                              Authorized Device
                             </span>
                             <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#ffffff' }}>
-                              {isRegistered ? d.label || (isPrimary ? 'Primary Registered Device' : 'Secondary Registered Device') : 'Secondary Device (Awaiting Login)'}
+                              {isRegistered ? d.label || 'Staff Primary Registered Device' : 'Device Slot (Awaiting Login)'}
                             </span>
                             <span
                               style={{
@@ -734,7 +759,7 @@ export default function StaffProfilePage() {
                                 {d.lastUsedAt && ` • Last Used: ${new Date(d.lastUsedAt).toLocaleString()}`}
                               </>
                             ) : (
-                              <>Authorized slot for 2nd device • Pending registration on next staff login.</>
+                              <>Pending device authorization on next staff login.</>
                             )}
                           </div>
                         </div>
@@ -752,7 +777,7 @@ export default function StaffProfilePage() {
                 </div>
               ) : (
                 <div style={{ padding: '24px', borderRadius: '14px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
-                  No registered devices found for this staff member. When {staff.name} logs in on their phone or computer, their primary device will automatically be registered here.
+                  No registered device found for this staff member. When {staff.name} logs in on their phone or computer and approves device registration, their device will be registered here.
                 </div>
               )}
             </div>
@@ -783,31 +808,6 @@ export default function StaffProfilePage() {
         variant="danger"
       />
 
-      {/* 3. Authorize Additional Device Modal */}
-      {addDeviceModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Authorize Additional Device Slot</h3>
-              <button onClick={() => setAddDeviceModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
-            </div>
-            <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.5', marginBottom: '20px' }}>
-              Authorizing a second device permits <strong>{staff.name}</strong> to log in on an additional phone or computer. A pending <strong>NOT_REGISTERED</strong> device slot will be authorized. When they log in on their second device, it will bind and become active.
-            </p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setAddDeviceModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
-              <button
-                type="button"
-                disabled={authorizingDevice}
-                onClick={handleAuthorizeDeviceSlot}
-                className="btn btn-primary btn-sm"
-              >
-                {authorizingDevice ? 'Authorizing...' : 'Authorize Second Device'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 4. Account Status Toggle Confirmation */}
       <ConfirmationModal
@@ -862,6 +862,26 @@ export default function StaffProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Update Password Modal */}
+      <UpdatePasswordModal
+        isOpen={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        organizationCode={organizationCode}
+        orgName={branding?.name}
+        staff={
+          staff
+            ? {
+                id: staff.id,
+                staffId: staff.staffId,
+                name: staff.name,
+                email: staff.user.email,
+                phone: staff.phone,
+              }
+            : null
+        }
+        onSuccess={fetchData}
+      />
 
       {/* Mobile Nav */}
       <OrgAdminMobileNav organizationCode={organizationCode} />

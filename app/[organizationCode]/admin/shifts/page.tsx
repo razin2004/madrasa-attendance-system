@@ -191,7 +191,7 @@ export default function ShiftPatternsPage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '1240px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1240px' }}>
           {/* Filter Bar */}
           <div className={styles.filterBar}>
             {/* Tabs */}

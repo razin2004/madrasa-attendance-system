@@ -175,7 +175,7 @@ export default function CreateShiftPatternPage() {
         </header>
 
         {/* Form Container */}
-        <main style={{ padding: '32px', maxWidth: '860px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '860px' }}>
           <form onSubmit={handleSubmit}>
             {/* 1. Shift Profile Information */}
             <div className="glass-card" style={{ padding: '28px', marginBottom: '24px' }}>

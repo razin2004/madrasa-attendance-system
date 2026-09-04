@@ -143,8 +143,8 @@ function ActivateAccountForm() {
         <div style={{ textAlign: 'center', padding: '12px 0' }}>
           <div
             style={{
-              width: '48px',
-              height: '48px',
+              width: '52px',
+              height: '52px',
               borderRadius: '50%',
               backgroundColor: 'rgba(52, 211, 153, 0.15)',
               display: 'flex',
@@ -152,17 +152,39 @@ function ActivateAccountForm() {
               justifyContent: 'center',
               margin: '0 auto 16px auto',
               color: '#34d399',
+              border: '1px solid rgba(52, 211, 153, 0.3)',
             }}
           >
-            <CheckCircle2 size={28} />
+            <CheckCircle2 size={30} />
           </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#f8fafc', marginBottom: '8px' }}>
-            Account Activated!
+          <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#f8fafc', marginBottom: '8px' }}>
+            Password Set &amp; Account Activated!
           </h3>
-          <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.5' }}>
-            Your password has been set. You can now sign in to your workspace using your email address and password.
+          <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+            Your account password has been created successfully. You can now log in using your email address and password.
           </p>
-          <Link href="/login" className="btn btn-primary" style={{ width: '100%', padding: '12px' }}>
+
+          {/* First Login Device Notice Box */}
+          <div
+            style={{
+              backgroundColor: 'rgba(99, 102, 241, 0.08)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: '10px',
+              padding: '16px',
+              textAlign: 'left',
+              marginBottom: '24px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#818cf8', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
+              <Lock size={16} />
+              <span>Notice on First Sign-In &amp; Device Setup</span>
+            </div>
+            <p style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.5', margin: 0 }}>
+              When you log in for the first time, a <strong>Device Authorization Popup</strong> will appear. Confirming it will register your current phone or browser as your official <strong>Layer 3 Security Device</strong> for attendance verification.
+            </p>
+          </div>
+
+          <Link href="/login" className="btn btn-primary" style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <span>Proceed to Sign In</span>
             <ArrowRight size={16} />
           </Link>

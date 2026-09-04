@@ -220,7 +220,7 @@ export default function RegisterBranchPage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           <form onSubmit={handleSubmit} className={styles.formGrid}>
             {/* Form Inputs Area */}
             <div>

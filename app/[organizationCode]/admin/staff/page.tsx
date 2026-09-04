@@ -26,11 +26,15 @@ import {
   Upload,
   Download,
   FileSpreadsheet,
+  Share2,
+  Key,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
+import { UpdatePasswordModal } from '@/components/staff/update-password-modal';
+import { openWhatsAppInvite } from '@/lib/whatsapp';
 import styles from './StaffDirectory.module.css';
 
 interface BranchAssignment {
@@ -53,7 +57,7 @@ interface StaffItem {
   user: {
     id: string;
     email: string;
-    status: 'ACTIVE' | 'INACTIVE';
+    status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
     role: string;
     lastLoginAt: string | null;
   };
@@ -89,6 +93,8 @@ export default function StaffDirectoryPage() {
   const [search, setSearch] = useState('');
   const [toggleStaff, setToggleStaff] = useState<StaffItem | null>(null);
   const [resendingStaffId, setResendingStaffId] = useState<string | null>(null);
+  const [whatsappLoadingId, setWhatsappLoadingId] = useState<string | null>(null);
+  const [passwordModalStaff, setPasswordModalStaff] = useState<StaffItem | null>(null);
 
   const handleResendInvite = async (staffId: string, email: string) => {
     try {
@@ -106,6 +112,42 @@ export default function StaffDirectoryPage() {
       toast.error('Network error resending login email.');
     } finally {
       setResendingStaffId(null);
+    }
+  };
+
+  const handleWhatsAppInvite = async (staff: StaffItem) => {
+    try {
+      setWhatsappLoadingId(staff.id);
+      const res = await fetch(`/api/org/${organizationCode}/staff/${staff.id}/resend-invite`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      const activationUrl = data.success ? data.activationUrl : undefined;
+      
+      openWhatsAppInvite({
+        phone: staff.phone,
+        staffName: staff.name,
+        orgName: branding?.name || 'Organization',
+        organizationCode,
+        staffId: staff.staffId,
+        email: staff.user.email,
+        activationUrl,
+      });
+
+      if (data.success && activationUrl) {
+        try {
+          await navigator.clipboard.writeText(activationUrl);
+          toast.success(`WhatsApp invite opened & setup link copied for ${staff.name}!`);
+        } catch {
+          toast.success(`WhatsApp invite opened for ${staff.name}`);
+        }
+      } else {
+        toast.info(`WhatsApp invite opened for ${staff.name}`);
+      }
+    } catch {
+      toast.error('Failed to prepare WhatsApp invite link.');
+    } finally {
+      setWhatsappLoadingId(null);
     }
   };
   const [toggleLoading, setToggleLoading] = useState(false);
@@ -361,7 +403,7 @@ export default function StaffDirectoryPage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Filters & Search */}
           <div className={styles.filterSearchRow}>
             {/* Filter Tabs */}
@@ -499,6 +541,7 @@ export default function StaffDirectoryPage() {
                   </thead>
                   <tbody>
                     {filteredStaff.map((staff) => {
+                      const isPending = staff.user.status === 'PENDING';
                       const isActive = staff.user.status === 'ACTIVE';
 
                       return (
@@ -576,13 +619,13 @@ export default function StaffDirectoryPage() {
                                 borderRadius: '9999px',
                                 fontSize: '11.5px',
                                 fontWeight: 700,
-                                backgroundColor: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                color: isActive ? '#34d399' : '#f87171',
-                                border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                                backgroundColor: isPending ? 'rgba(245, 158, 11, 0.15)' : isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                color: isPending ? '#fbbf24' : isActive ? '#34d399' : '#f87171',
+                                border: `1px solid ${isPending ? 'rgba(245, 158, 11, 0.3)' : isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
                               }}
                             >
-                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isActive ? '#34d399' : '#f87171' }} />
-                              {isActive ? 'ACTIVE' : 'INACTIVE'}
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isPending ? '#fbbf24' : isActive ? '#34d399' : '#f87171' }} />
+                              {isPending ? 'SETUP PENDING' : isActive ? 'ACTIVE' : 'INACTIVE'}
                             </span>
                           </td>
 
@@ -607,17 +650,41 @@ export default function StaffDirectoryPage() {
 
                           {/* Actions */}
                           <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                              <button
-                                onClick={() => handleResendInvite(staff.id, staff.user.email)}
-                                disabled={resendingStaffId === staff.id}
-                                className="btn btn-secondary btn-sm"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#38bdf8' }}
-                                title="Resend Activation & Login Email"
-                              >
-                                {resendingStaffId === staff.id ? <Loader2 size={13} className="animate-spin" /> : <Mail size={13} />}
-                                <span>Resend Email</span>
-                              </button>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                              {isPending ? (
+                                <>
+                                  <button
+                                    onClick={() => handleResendInvite(staff.id, staff.user.email)}
+                                    disabled={resendingStaffId === staff.id}
+                                    className="btn btn-secondary btn-sm"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#38bdf8' }}
+                                    title="Resend Activation & Login Email"
+                                  >
+                                    {resendingStaffId === staff.id ? <Loader2 size={13} className="animate-spin" /> : <Mail size={13} />}
+                                    <span>Resend Email</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleWhatsAppInvite(staff)}
+                                    disabled={whatsappLoadingId === staff.id}
+                                    className="btn btn-secondary btn-sm"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
+                                    title="Share Password Setup Invite via WhatsApp"
+                                  >
+                                    {whatsappLoadingId === staff.id ? <Loader2 size={13} className="animate-spin" /> : <Share2 size={13} />}
+                                    <span>WhatsApp</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => setPasswordModalStaff(staff)}
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)' }}
+                                  title="Update Staff Password"
+                                >
+                                  <Key size={13} />
+                                  <span>Password</span>
+                                </button>
+                              )}
                               <Link
                                 href={`/${organizationCode}/admin/staff/${staff.id}`}
                                 className="btn btn-secondary btn-sm"
@@ -646,6 +713,7 @@ export default function StaffDirectoryPage() {
               {/* MOBILE RESPONSIVE CARDS */}
               <div className={styles.cardsMobile}>
                 {filteredStaff.map((staff) => {
+                  const isPending = staff.user.status === 'PENDING';
                   const isActive = staff.user.status === 'ACTIVE';
 
                   return (
@@ -665,30 +733,62 @@ export default function StaffDirectoryPage() {
                             borderRadius: '9999px',
                             fontSize: '11px',
                             fontWeight: 700,
-                            backgroundColor: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                            color: isActive ? '#34d399' : '#f87171',
+                            backgroundColor: isPending ? 'rgba(245, 158, 11, 0.15)' : isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                            color: isPending ? '#fbbf24' : isActive ? '#34d399' : '#f87171',
                           }}
                         >
-                          {isActive ? 'ACTIVE' : 'INACTIVE'}
+                          {isPending ? 'SETUP PENDING' : isActive ? 'ACTIVE' : 'INACTIVE'}
                         </span>
                       </div>
 
                       <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
                         Email: {staff.user.email}
+                        {staff.phone && <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Phone: {staff.phone}</div>}
                       </div>
 
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '14px' }}>
+                        {isPending ? (
+                          <>
+                            <button
+                              onClick={() => handleResendInvite(staff.id, staff.user.email)}
+                              disabled={resendingStaffId === staff.id}
+                              className="btn btn-secondary btn-sm"
+                              style={{ flex: '1 1 calc(50% - 4px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#38bdf8', fontSize: '12px' }}
+                            >
+                              {resendingStaffId === staff.id ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
+                              <span>Resend Email</span>
+                            </button>
+                            <button
+                              onClick={() => handleWhatsAppInvite(staff)}
+                              disabled={whatsappLoadingId === staff.id}
+                              className="btn btn-secondary btn-sm"
+                              style={{ flex: '1 1 calc(50% - 4px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)', fontSize: '12px' }}
+                            >
+                              {whatsappLoadingId === staff.id ? <Loader2 size={12} className="animate-spin" /> : <Share2 size={12} />}
+                              <span>WhatsApp</span>
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setPasswordModalStaff(staff)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ flex: '1 1 calc(50% - 4px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)', fontSize: '12px' }}
+                          >
+                            <Key size={12} />
+                            <span>Password</span>
+                          </button>
+                        )}
                         <Link
                           href={`/${organizationCode}/admin/staff/${staff.id}`}
                           className="btn btn-secondary btn-sm"
-                          style={{ flex: 1, textAlign: 'center' }}
+                          style={{ flex: isPending ? '1 1 100%' : '1 1 calc(50% - 4px)', textAlign: 'center', fontSize: '12px' }}
                         >
                           Profile
                         </Link>
                         <button
                           onClick={() => setToggleStaff(staff)}
                           className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-                          style={{ flex: 1 }}
+                          style={{ flex: '1 1 100%', fontSize: '12px' }}
                         >
                           {isActive ? 'Deactivate' : 'Activate'}
                         </button>
@@ -859,6 +959,26 @@ export default function StaffDirectoryPage() {
           </div>
         </div>
       )}
+
+      {/* Update Password Modal */}
+      <UpdatePasswordModal
+        isOpen={Boolean(passwordModalStaff)}
+        onClose={() => setPasswordModalStaff(null)}
+        organizationCode={organizationCode}
+        orgName={branding?.name}
+        staff={
+          passwordModalStaff
+            ? {
+                id: passwordModalStaff.id,
+                staffId: passwordModalStaff.staffId,
+                name: passwordModalStaff.name,
+                email: passwordModalStaff.user.email,
+                phone: passwordModalStaff.phone,
+              }
+            : null
+        }
+        onSuccess={fetchInitialData}
+      />
 
       {/* Mobile Navigation */}
       <OrgAdminMobileNav organizationCode={organizationCode} />

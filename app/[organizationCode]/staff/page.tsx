@@ -126,6 +126,11 @@ export default function StaffDashboardPage() {
   // Correction Request Modal State
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
 
+  // Device Binding Confirmation Modal State
+  const [showDeviceBindingModal, setShowDeviceBindingModal] = useState(false);
+  const [registeringDevice, setRegisteringDevice] = useState(false);
+  const [pendingPrecheckCtx, setPendingPrecheckCtx] = useState<{ headers: any; bodyData: any } | null>(null);
+
   // Live Digital Clock
   useEffect(() => {
     const updateTime = () => {
@@ -256,43 +261,19 @@ export default function StaffDashboardPage() {
             window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: data.evaluation.isReady }));
           }
 
-          // Auto-Register Unbound Device Slot if eligible
-          if (
+          // Trigger Device Binding Confirmation Modal if device is not registered
+          const needsDeviceBinding =
             !data.evaluation.layer1Device.isVerified &&
             (data.staff?.deviceStatus === 'NOT_REGISTERED' ||
+              data.staff?.deviceStatus === 'RESET_REQUIRED' ||
               data.staff?.hasPendingDeviceSlot ||
-              !data.staffProfile.devices ||
+              !data.staffProfile?.devices ||
               data.staffProfile.devices.length === 0 ||
-              data.staffProfile.devices.some((d: any) => d.status === 'NOT_REGISTERED'))
-          ) {
-            try {
-              const regRes = await fetch(`/api/org/${orgCode}/staff/device/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  deviceSecret,
-                  deviceLabel: navigator.userAgent?.slice(0, 80) || 'Staff Device',
-                }),
-              });
-              const regData = await regRes.json();
-              if (regData.success) {
-                if (isManual) toast.success('Device bound successfully to staff profile.');
-                const recheckRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
-                  method: 'POST',
-                  headers,
-                  body: JSON.stringify(bodyData),
-                  cache: 'no-store',
-                });
-                const recheckData = await recheckRes.json();
-                if (recheckRes.ok && recheckData.success) {
-                  setPrecheck(recheckData.evaluation);
-                  setTodayStatus(recheckData.todayStatus);
-                  if (typeof window !== 'undefined') {
-                    window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: recheckData.evaluation.isReady }));
-                  }
-                }
-              }
-            } catch {}
+              data.staffProfile.devices.some((d: any) => d.status === 'NOT_REGISTERED' || d.status === 'RESET_REQUIRED'));
+
+          if (needsDeviceBinding) {
+            setPendingPrecheckCtx({ headers, bodyData });
+            setShowDeviceBindingModal(true);
           }
         } else {
           setFetchError(data.error || null);
@@ -301,11 +282,13 @@ export default function StaffDashboardPage() {
           }
         }
       } catch {
-        setFetchError(null);
-      } finally {
-        if (isManual) {
-          setChecking(false);
+        setFetchError('Failed to fetch precheck verification data.');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: false }));
         }
+      } finally {
+        setLoading(false);
+        setChecking(false);
       }
     },
     [getOrCreateDeviceSecret, orgCode, router, toast]
@@ -337,6 +320,61 @@ export default function StaffDashboardPage() {
     setChecking(true);
     const coords = await requestGeolocation();
     await runPrecheck(coords, true);
+  };
+
+  const handleCancelDeviceRegistration = async () => {
+    try {
+      localStorage.removeItem('shiftguard_device_secret');
+      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    } finally {
+      toast.info('Device registration cancelled. Signed out.');
+      setShowDeviceBindingModal(false);
+      router.push(`/${orgCode}/login`);
+    }
+  };
+
+  const handleProceedDeviceRegistration = async () => {
+    try {
+      setRegisteringDevice(true);
+      const deviceSecret = getOrCreateDeviceSecret();
+      const regRes = await fetch(`/api/org/${orgCode}/staff/device/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceSecret,
+          deviceLabel: navigator.userAgent?.slice(0, 80) || 'Staff Device',
+        }),
+      });
+
+      const regData = await regRes.json();
+      if (regData.success) {
+        toast.success('Device registered successfully as your primary security device!');
+        setShowDeviceBindingModal(false);
+
+        if (pendingPrecheckCtx) {
+          const recheckRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
+            method: 'POST',
+            headers: pendingPrecheckCtx.headers,
+            body: JSON.stringify(pendingPrecheckCtx.bodyData),
+            cache: 'no-store',
+          });
+          const recheckData = await recheckRes.json();
+          if (recheckRes.ok && recheckData.success) {
+            setPrecheck(recheckData.evaluation);
+            setTodayStatus(recheckData.todayStatus);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: recheckData.evaluation.isReady }));
+            }
+          }
+        }
+      } else {
+        toast.error(regData.error || 'Failed to register device.');
+      }
+    } catch {
+      toast.error('Network error registering device.');
+    } finally {
+      setRegisteringDevice(false);
+    }
   };
 
   const executeClockAction = async (actionType: 'CLOCK_IN' | 'CLOCK_OUT') => {
@@ -930,6 +968,115 @@ export default function StaffDashboardPage() {
         onClose={() => setShowCorrectionModal(false)}
         onSuccess={() => runPrecheck()}
       />
+
+      {/* DEVICE BINDING CONFIRMATION MODAL */}
+      {showDeviceBindingModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            backgroundColor: 'rgba(3, 7, 18, 0.88)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            className="glass-card"
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              padding: '24px 20px',
+              backgroundColor: '#0d121f',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px auto',
+                  color: '#818cf8',
+                }}
+              >
+                <Smartphone size={28} />
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                Authorize &amp; Register Security Device
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                First-time sign-in / post-device reset verification notice
+              </p>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '12px',
+                padding: '18px',
+                fontSize: '13px',
+                lineHeight: '1.6',
+                color: '#cbd5e1',
+                marginBottom: '24px',
+              }}
+            >
+              <p style={{ color: '#ffffff', fontWeight: 700, marginBottom: '10px' }}>
+                📌 Device Binding Notice:
+              </p>
+              <p style={{ marginBottom: '10px' }}>
+                You are logging in from an unregistered device. Proceeding will generate and bind a unique cryptographic security key for this phone/browser to your staff account.
+              </p>
+              <ul style={{ paddingLeft: '18px', margin: 0, fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                <li style={{ marginBottom: '4px' }}>Workplace attendance punching will be verified against this device.</li>
+                <li>If you change devices, an administrator must reset your device binding before a new device can be authorized.</li>
+              </ul>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={handleCancelDeviceRegistration}
+                className="btn btn-secondary btn-sm"
+                style={{ flex: 1, padding: '11px', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+              >
+                Cancel &amp; Sign Out
+              </button>
+
+              <button
+                type="button"
+                disabled={registeringDevice}
+                onClick={handleProceedDeviceRegistration}
+                className="btn btn-primary btn-sm"
+                style={{ flex: 1.2, padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                {registeringDevice ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    <span>Registering...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={16} />
+                    <span>Proceed &amp; Register Device</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,10 +18,13 @@ import {
   Check,
   Loader2,
   X,
+  Share2,
+  Copy,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { useToast } from '@/components/feedback/toast-provider';
+import { openWhatsAppInvite } from '@/lib/whatsapp';
 import styles from './StaffCreate.module.css';
 
 interface BranchItem {
@@ -70,6 +73,8 @@ export default function OnboardStaffPage() {
     staffId: string;
     name: string;
     email: string;
+    phone?: string | null;
+    activationUrl?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -160,6 +165,8 @@ export default function OnboardStaffPage() {
           staffId: data.staff.staffId,
           name: data.staff.name,
           email: data.staff.email,
+          phone: data.staff.phone,
+          activationUrl: data.staff.activationUrl,
         });
       } else {
         toast.error(data.error || 'Failed to onboard staff member.');
@@ -205,7 +212,7 @@ export default function OnboardStaffPage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '880px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '880px' }}>
           {!createdStaff ? (
             <>
               {/* Stepper Progress Bar */}
@@ -619,7 +626,7 @@ export default function OnboardStaffPage() {
                 <strong>{createdStaff.name}</strong> (Staff ID: <span style={{ fontFamily: 'var(--font-mono)', color: '#818cf8' }}>{createdStaff.staffId}</span>) has been added to your organization.
               </p>
 
-              <div style={{ padding: '16px 20px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(13, 18, 31, 0.95)', border: '1px solid var(--border-medium)', textAlign: 'left', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-secondary)', marginBottom: '28px' }}>
+              <div style={{ padding: '16px 20px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(13, 18, 31, 0.95)', border: '1px solid var(--border-medium)', textAlign: 'left', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-secondary)', marginBottom: '20px' }}>
                 <p style={{ color: '#f8fafc', fontWeight: 600, marginBottom: '6px' }}>
                   📧 Account Activation Email Sent:
                 </p>
@@ -629,6 +636,70 @@ export default function OnboardStaffPage() {
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   The staff member can click the setup link in their email to create their password and sign in at <code>/login</code>.
                 </p>
+              </div>
+
+              {/* Instant WhatsApp Share & Copy Setup Link */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    openWhatsAppInvite({
+                      phone: createdStaff.phone,
+                      staffName: createdStaff.name,
+                      orgName: branding?.name || 'Organization',
+                      organizationCode,
+                      staffId: createdStaff.staffId,
+                      email: createdStaff.email,
+                      activationUrl: createdStaff.activationUrl,
+                    });
+                    toast.success(createdStaff.phone ? 'Opening WhatsApp chat...' : 'Opening WhatsApp contact selector...');
+                  }}
+                  style={{
+                    backgroundColor: '#25D366',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Share2 size={18} />
+                  <span>
+                    {createdStaff.phone
+                      ? `Share Invitation via WhatsApp (${createdStaff.phone})`
+                      : 'Share Invitation via WhatsApp'}
+                  </span>
+                </button>
+
+                {createdStaff.activationUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdStaff.activationUrl!);
+                      toast.success('Password setup link copied to clipboard!');
+                    }}
+                    className="btn btn-secondary"
+                    style={{
+                      width: '100%',
+                      padding: '11px 16px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <Copy size={16} />
+                    <span>Copy Setup Link to Clipboard</span>
+                  </button>
+                )}
               </div>
 
               <button

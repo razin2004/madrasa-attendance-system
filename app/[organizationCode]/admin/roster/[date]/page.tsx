@@ -202,7 +202,7 @@ export default function RosterDayDetailPage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '1100px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1100px' }}>
           {loading || !data ? (
             <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
               <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 12px auto' }} />

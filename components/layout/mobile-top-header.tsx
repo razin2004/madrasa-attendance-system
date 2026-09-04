@@ -42,7 +42,7 @@ export function MobileTopHeader({
         paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
         {backHref ? (
           <Link
             href={backHref}
@@ -56,6 +56,7 @@ export function MobileTopHeader({
               backgroundColor: 'rgba(255, 255, 255, 0.06)',
               color: '#ffffff',
               border: '1px solid var(--border-subtle)',
+              flexShrink: 0,
             }}
           >
             <ArrowLeft size={18} />
@@ -87,12 +88,12 @@ export function MobileTopHeader({
           </div>
         )}
 
-        <div>
-          <h1 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0, lineHeight: 1.2 }}>
+        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+          <h1 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {title}
           </h1>
           {subtitle && (
-            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.2 }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {subtitle}
             </p>
           )}

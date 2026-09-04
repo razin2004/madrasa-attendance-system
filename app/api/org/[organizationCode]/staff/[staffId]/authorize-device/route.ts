@@ -35,51 +35,13 @@ export async function POST(
       );
     }
 
-    // Check if an un-registered device slot is already pending
-    const existingPending = staffProfile.devices.find(
-      (d) => d.status === 'NOT_REGISTERED'
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Multiple device registration is disabled. Staff accounts are strictly limited to a single registered device. Use "Reset Device" if the staff member changed their device.',
+      },
+      { status: 400 }
     );
-
-    if (existingPending) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'An additional device slot is already authorized and pending login for this staff member.',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Create a new NOT_REGISTERED device slot
-    const newDeviceSlot = await prisma.staffDevice.create({
-      data: {
-        staffProfileId: staffProfile.id,
-        status: 'NOT_REGISTERED',
-        label: 'Secondary Authorized Device (Pending Login)',
-      },
-    });
-
-    // Record Audit Log
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-    await recordAuditLog({
-      organizationId: auth.organization.id,
-      actorUserId: auth.session.user.id,
-      action: 'STAFF_DEVICE_SLOT_AUTHORIZED',
-      entityType: 'StaffDevice',
-      entityId: newDeviceSlot.id,
-      metadata: {
-        staffId: staffProfile.staffId,
-        staffName: staffProfile.name,
-      },
-      ipAddress: ip,
-      userAgent: request.headers.get('user-agent'),
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: `Secondary device slot authorized for ${staffProfile.name}. They can now log in on their second device.`,
-      device: newDeviceSlot,
-    });
   } catch (error: any) {
     console.error('Authorize additional device error:', error);
     return NextResponse.json(

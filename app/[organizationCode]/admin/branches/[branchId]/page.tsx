@@ -485,7 +485,7 @@ export default function BranchDetailPage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Warning Banner if Inactive */}
           {!isActive && (
             <div style={{ padding: '16px 20px', borderRadius: '12px', backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '13.5px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>

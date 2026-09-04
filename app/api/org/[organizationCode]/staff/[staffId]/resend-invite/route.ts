@@ -90,6 +90,14 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: `Login invitation email sent successfully to ${staff.user.email}`,
+      activationUrl,
+      staff: {
+        id: staff.id,
+        staffId: staff.staffId,
+        name: staff.name,
+        email: staff.user.email,
+        phone: staff.phone,
+      },
     });
   } catch (err: any) {
     console.error('Error resending staff invite email:', err);

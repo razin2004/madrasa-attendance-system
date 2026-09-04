@@ -189,7 +189,7 @@ export default function BranchesListPage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Filter & Search Bar */}
           <div className={styles.filterSearchRow}>
             {/* Filter Tabs */}

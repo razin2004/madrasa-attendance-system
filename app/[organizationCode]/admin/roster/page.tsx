@@ -203,7 +203,7 @@ export default function RosterCalendarPage() {
         </header>
 
         {/* Content Body */}
-        <main style={{ padding: '32px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Controls Bar: Week Navigator & Branch Filters */}
           <div className={styles.controlsBar}>
             {/* Week Navigator */}

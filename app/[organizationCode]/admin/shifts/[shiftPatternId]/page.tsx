@@ -498,7 +498,7 @@ export default function ShiftPatternDetailPage() {
         </header>
 
         {/* Content Container */}
-        <main style={{ padding: '32px', maxWidth: '1100px', width: '100%', margin: '0 auto' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1100px' }}>
           {/* Edit Pattern Details Form */}
           {isEditing && (
             <div className="glass-card" style={{ padding: '24px', marginBottom: '28px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>

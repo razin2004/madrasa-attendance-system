@@ -55,32 +55,31 @@ export async function POST(
       });
     }
 
-    // 2. Count existing registered devices & check for authorized pending slot
+    // 2. Query existing staff devices & enforce 1 device limit
     const allStaffDevices = await prisma.staffDevice.findMany({
       where: { staffProfileId },
       orderBy: { createdAt: 'asc' },
     });
 
     const registeredDevices = allStaffDevices.filter((d) => d.status === 'REGISTERED');
-    const pendingSlot = allStaffDevices.find((d) => d.status === 'NOT_REGISTERED');
 
-    // Reject registration if staff already has a registered device AND no pending authorized slot
-    if (registeredDevices.length >= 1 && !pendingSlot) {
+    // Strictly enforce max 1 registered device per staff member
+    if (registeredDevices.length >= 1) {
       return NextResponse.json(
         {
           success: false,
           error:
-            'Device registration limit reached. Please contact your organization administrator to authorize an additional device slot.',
+            'A device is already registered to your staff account. Only one authorized device is allowed per staff member. Please contact your organization administrator to reset your registered device if you changed phones.',
         },
         { status: 403 }
       );
     }
 
     let registeredDevice;
-    if (pendingSlot) {
-      // Bind incoming device to the pending authorized slot (Secondary Device)
+    if (allStaffDevices.length > 0) {
+      // Update existing device slot to REGISTERED
       registeredDevice = await prisma.staffDevice.update({
-        where: { id: pendingSlot.id },
+        where: { id: allStaffDevices[0].id },
         data: {
           secretHash,
           status: 'REGISTERED',
@@ -90,7 +89,7 @@ export async function POST(
         },
       });
     } else {
-      // First device registration (Primary Device)
+      // Create first device registration
       registeredDevice = await prisma.staffDevice.create({
         data: {
           staffProfileId,
@@ -113,7 +112,7 @@ export async function POST(
       metadata: {
         staffId: auth.staffProfile.staffId,
         label,
-        slotType: pendingSlot ? 'SECONDARY_DEVICE' : 'PRIMARY_DEVICE',
+        slotType: 'PRIMARY_DEVICE',
       },
       ipAddress: ip,
       userAgent: request.headers.get('user-agent'),
@@ -121,7 +120,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: pendingSlot ? 'Secondary device registered successfully.' : 'Primary device registered successfully.',
+      message: 'Device registered successfully.',
       device: {
         id: registeredDevice.id,
         status: registeredDevice.status,
