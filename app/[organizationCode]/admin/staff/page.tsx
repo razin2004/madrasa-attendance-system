@@ -612,7 +612,7 @@ export default function StaffDirectoryPage() {
           {!loading && !hasError && filteredStaff.length > 0 && (
             <>
               <div className={`${styles.tableDesktop} glass-card`}>
-                <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
+                <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
                       <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase' }}>
@@ -630,20 +630,22 @@ export default function StaffDirectoryPage() {
                       <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase' }}>
                         Layer 3 Device
                       </th>
-                      <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        Actions
-                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStaff.map((staff) => {
-                      const isPending = staff.user.status === 'PENDING';
-                      const isActive = staff.user.status === 'ACTIVE';
+                      const isPending = staff.user?.status === 'PENDING';
+                      const isActive = staff.user?.status === 'ACTIVE';
 
                       return (
                         <tr
                           key={staff.id}
-                          style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s ease' }}
+                          onClick={() => router.push(`/${organizationCode}/admin/staff/${staff.id}`)}
+                          style={{
+                            borderBottom: '1px solid var(--border-subtle)',
+                            transition: 'background 0.15s ease',
+                            cursor: 'pointer',
+                          }}
                         >
                           {/* Staff Name & ID */}
                           <td style={{ padding: '16px 20px' }}>
@@ -664,7 +666,7 @@ export default function StaffDirectoryPage() {
                           <td style={{ padding: '16px 20px', color: 'var(--text-secondary)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}>
                               <Mail size={13} color="var(--text-muted)" />
-                              <span>{staff.user.email}</span>
+                              <span>{staff.user?.email}</span>
                             </div>
                             {staff.phone && (
                               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
@@ -676,7 +678,7 @@ export default function StaffDirectoryPage() {
                           {/* Assigned Branches */}
                           <td style={{ padding: '16px 20px' }}>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                              {staff.branchAssignments.length > 0 ? (
+                              {staff.branchAssignments?.length > 0 ? (
                                 staff.branchAssignments.map((b) => (
                                   <span
                                     key={b.branch.id}
@@ -743,52 +745,6 @@ export default function StaffDirectoryPage() {
                               </span>
                             )}
                           </td>
-
-                          {/* Actions */}
-                          <td style={{ padding: '16px 20px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
-                              {isPending ? (
-                                <>
-                                  <button
-                                    onClick={() => handleResendInvite(staff.id, staff.user.email)}
-                                    disabled={resendingStaffId === staff.id}
-                                    className="btn btn-secondary btn-sm"
-                                    style={{ padding: '8px', borderRadius: '8px', color: '#38bdf8' }}
-                                    title="Resend Activation & Login Email"
-                                  >
-                                    {resendingStaffId === staff.id ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
-                                  </button>
-                                  <button
-                                    onClick={() => handleWhatsAppInvite(staff)}
-                                    disabled={whatsappLoadingId === staff.id}
-                                    className="btn btn-secondary btn-sm"
-                                    style={{ padding: '8px', borderRadius: '8px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
-                                    title="Share Password Setup Invite via WhatsApp"
-                                  >
-                                    {whatsappLoadingId === staff.id ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />}
-                                  </button>
-                                </>
-                              ) : (
-                                <button
-                                  onClick={() => setPasswordModalStaff(staff)}
-                                  className="btn btn-secondary btn-sm"
-                                  style={{ padding: '8px', borderRadius: '8px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)' }}
-                                  title="Update Staff Password"
-                                >
-                                  <Key size={15} />
-                                </button>
-                              )}
-                              <Link
-                                href={`/${organizationCode}/admin/staff/${staff.id}`}
-                                className="btn btn-primary btn-sm"
-                                style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                title="View Staff Profile & Security Controls"
-                              >
-                                <span>Profile</span>
-                                <ChevronRight size={14} />
-                              </Link>
-                            </div>
-                          </td>
                         </tr>
                       );
                     })}
@@ -799,11 +755,16 @@ export default function StaffDirectoryPage() {
               {/* MOBILE RESPONSIVE CARDS */}
               <div className={styles.cardsMobile}>
                 {filteredStaff.map((staff) => {
-                  const isPending = staff.user.status === 'PENDING';
-                  const isActive = staff.user.status === 'ACTIVE';
+                  const isPending = staff.user?.status === 'PENDING';
+                  const isActive = staff.user?.status === 'ACTIVE';
 
                   return (
-                    <div key={staff.id} className={styles.mobileCard}>
+                    <div
+                      key={staff.id}
+                      className={styles.mobileCard}
+                      onClick={() => router.push(`/${organizationCode}/admin/staff/${staff.id}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div className={styles.avatarBadge}>{getInitials(staff.name)}</div>
@@ -831,9 +792,9 @@ export default function StaffDirectoryPage() {
                       <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Mail size={13} color="var(--text-muted)" />
-                          <span>{staff.user.email}</span>
+                          <span>{staff.user?.email}</span>
                         </div>
-                        {staff.branchAssignments.length > 0 && (
+                        {staff.branchAssignments?.length > 0 && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                             <MapPin size={13} color="#818cf8" />
                             <span>{staff.branchAssignments.map((b) => b.branch.name).join(', ')}</span>
@@ -859,47 +820,9 @@ export default function StaffDirectoryPage() {
                             </span>
                           )}
                         </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {isPending ? (
-                            <>
-                              <button
-                                onClick={() => handleResendInvite(staff.id, staff.user.email)}
-                                disabled={resendingStaffId === staff.id}
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: '8px', borderRadius: '8px', color: '#38bdf8' }}
-                                title="Resend Activation Email"
-                              >
-                                {resendingStaffId === staff.id ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-                              </button>
-                              <button
-                                onClick={() => handleWhatsAppInvite(staff)}
-                                disabled={whatsappLoadingId === staff.id}
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: '8px', borderRadius: '8px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
-                                title="Share WhatsApp Invite"
-                              >
-                                {whatsappLoadingId === staff.id ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => setPasswordModalStaff(staff)}
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: '8px', borderRadius: '8px', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.3)' }}
-                              title="Update Password"
-                            >
-                              <Key size={14} />
-                            </button>
-                          )}
-                          <Link
-                            href={`/${organizationCode}/admin/staff/${staff.id}`}
-                            className="btn btn-primary btn-sm"
-                            style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
-                          >
-                            <span>Profile</span>
-                            <ChevronRight size={13} />
-                          </Link>
+                        <div style={{ fontSize: '12px', color: '#818cf8', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span>View Profile</span>
+                          <ChevronRight size={13} />
                         </div>
                       </div>
                     </div>
