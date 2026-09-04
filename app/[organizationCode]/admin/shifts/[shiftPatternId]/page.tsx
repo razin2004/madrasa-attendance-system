@@ -1110,7 +1110,7 @@ export default function ShiftPatternDetailPage() {
             : `Activating ${pattern.name} will restore its automatic schedule calculations.`
         }
         confirmText={pattern.isActive ? 'Deactivate' : 'Activate'}
-        confirmVariant={pattern.isActive ? 'danger' : 'primary'}
+        variant={pattern.isActive ? 'danger' : 'primary'}
       />
 
       {/* Delete Shift Pattern Modal */}
@@ -1121,8 +1121,8 @@ export default function ShiftPatternDetailPage() {
         title="Delete Shift Pattern"
         message={`Are you sure you want to permanently delete "${pattern.name}"? This action cannot be undone and will remove all associated weekly shift days and staff assignments.`}
         confirmText="Delete Shift Pattern"
-        confirmVariant="danger"
-        loading={deletingShift}
+        variant="danger"
+        isLoading={deletingShift}
       />
 
       {/* Mobile Nav */}

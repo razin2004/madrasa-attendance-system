@@ -840,8 +840,8 @@ export default function BranchDetailPage() {
             : `Are you sure you want to reactivate ${branch.name}?`
         }
         confirmText={isActive ? 'Deactivate Branch' : 'Activate Branch'}
-        confirmVariant={isActive ? 'danger' : 'primary'}
-        loading={togglingStatus}
+        variant={isActive ? 'danger' : 'primary'}
+        isLoading={togglingStatus}
       />
 
       {/* 3. Delete Branch Modal */}
@@ -852,8 +852,8 @@ export default function BranchDetailPage() {
         title="Delete Branch Location"
         message={`Are you sure you want to permanently delete "${branch.name}"? This action cannot be undone and will remove all associated network IP configs and settings.`}
         confirmText="Delete Branch"
-        confirmVariant="danger"
-        loading={deletingBranch}
+        variant="danger"
+        isLoading={deletingBranch}
       />
 
       {/* 4. Change Primary IP Modal */}
