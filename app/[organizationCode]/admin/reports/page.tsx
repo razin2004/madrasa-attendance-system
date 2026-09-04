@@ -42,7 +42,7 @@ export default function ReportsDashboardPage() {
   }, [organizationCode]);
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <OrgAdminSidebar
         organizationCode={organizationCode}
         organizationName={orgData?.name || 'ShiftGuard'}
@@ -51,7 +51,7 @@ export default function ReportsDashboardPage() {
 
       <div className={styles.mainContent}>
         {/* Header */}
-        <header className={styles.header} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <header className={styles.headerBar} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h1 className={styles.title}>Reports &amp; Analytics</h1>
             <p className={styles.subtitle}>
@@ -94,7 +94,7 @@ export default function ReportsDashboardPage() {
                     right: 0,
                     top: 'calc(100% + 8px)',
                     zIndex: 1000,
-                    minWidth: '200px',
+                    minWidth: '220px',
                     padding: '6px',
                     backgroundColor: '#0d121f',
                     border: '1px solid var(--border-medium)',
@@ -106,7 +106,7 @@ export default function ReportsDashboardPage() {
                   }}
                 >
                   <Link
-                    href={`/${organizationCode}/admin/reports/daily`}
+                    href={`/${organizationCode}/admin/attendance`}
                     onClick={() => setHeaderMenuOpen(false)}
                     style={{
                       display: 'flex',
@@ -121,6 +121,25 @@ export default function ReportsDashboardPage() {
                     }}
                   >
                     <Clock size={15} color="#38bdf8" />
+                    <span>Attendance Overview</span>
+                  </Link>
+
+                  <Link
+                    href={`/${organizationCode}/admin/reports/daily`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Clock size={15} color="#34d399" />
                     <span>Daily Report</span>
                   </Link>
 
@@ -133,10 +152,10 @@ export default function ReportsDashboardPage() {
                       gap: '10px',
                       padding: '10px 14px',
                       borderRadius: '8px',
-                      color: '#ffffff',
+                      color: '#cbd5e1',
                       textDecoration: 'none',
                       fontSize: '13px',
-                      fontWeight: 600,
+                      fontWeight: 500,
                     }}
                   >
                     <Calendar size={15} color="#818cf8" />
@@ -152,13 +171,13 @@ export default function ReportsDashboardPage() {
                       gap: '10px',
                       padding: '10px 14px',
                       borderRadius: '8px',
-                      color: '#ffffff',
+                      color: '#cbd5e1',
                       textDecoration: 'none',
                       fontSize: '13px',
-                      fontWeight: 600,
+                      fontWeight: 500,
                     }}
                   >
-                    <FileText size={15} color="#34d399" />
+                    <FileText size={15} color="#fbbf24" />
                     <span>Custom Range Report</span>
                   </Link>
                 </div>
@@ -167,8 +186,10 @@ export default function ReportsDashboardPage() {
           </div>
         </header>
 
-        {/* Report Cards Grid */}
-        <div className={styles.cardsGrid}>
+        {/* Main Content Body */}
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
+          {/* Report Cards Grid */}
+          <div className={styles.cardsGrid} style={{ padding: 0, margin: '0 0 32px 0' }}>
           {/* Card 1: Daily Attendance Report */}
           <div className={styles.reportCard}>
             <div>
@@ -287,6 +308,7 @@ export default function ReportsDashboardPage() {
             </div>
           )}
         </div>
+        </main>
       </div>
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>

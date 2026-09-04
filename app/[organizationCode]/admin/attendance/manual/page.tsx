@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   UserCheck,
   FilePlus,
+  FileText,
   Loader2,
   AlertTriangle,
   Menu,
@@ -96,7 +97,7 @@ export default function AdminManualAttendancePage() {
   };
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <OrgAdminSidebar
         organizationCode={organizationCode}
         organizationName={orgData?.name || 'ShiftGuard'}
@@ -105,16 +106,14 @@ export default function AdminManualAttendancePage() {
 
       <div className={styles.mainContent}>
         {/* Header Bar */}
-        <header className={styles.headerBar || styles.header} style={{ padding: '20px 32px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(13, 18, 31, 0.85)', backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 50, marginBottom: '24px' }}>
+        <header className={styles.headerBar}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <Link href={`/${organizationCode}/admin/attendance`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
               <ArrowLeft size={16} />
             </Link>
             <div>
-              <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px', margin: 0 }}>
-                Record Manual Attendance
-              </h1>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px', margin: 0 }}>
+              <h1 className={styles.title}>Record Manual Attendance</h1>
+              <p className={styles.subtitle}>
                 Manually log attendance punches on behalf of employees with explicit justification.
               </p>
             </div>
@@ -203,13 +202,34 @@ export default function AdminManualAttendancePage() {
                     <UserCheck size={15} color="#818cf8" />
                     <span>Attendance Corrections</span>
                   </Link>
+
+                  <Link
+                    href={`/${organizationCode}/admin/reports`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <FileText size={15} color="#34d399" />
+                    <span>Reports &amp; Analytics</span>
+                  </Link>
                 </div>
               </>
             )}
           </div>
         </header>
 
-        <div className="glass-card" style={{ maxWidth: '640px', padding: '28px' }}>
+        {/* Main Content Body */}
+        <main className="pageMainContent" style={{ maxWidth: '800px' }}>
+          <div className="glass-card" style={{ padding: '28px' }}>
           <form onSubmit={handleSubmit}>
             {/* Staff Selection */}
             <div className="form-group" style={{ marginBottom: '20px' }}>
@@ -287,6 +307,7 @@ export default function AdminManualAttendancePage() {
             </div>
           </form>
         </div>
+        </main>
       </div>
 
       <OrgAdminMobileNav organizationCode={organizationCode} />

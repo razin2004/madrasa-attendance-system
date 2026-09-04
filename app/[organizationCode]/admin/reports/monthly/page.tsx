@@ -1,8 +1,6 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Calendar,
@@ -15,6 +13,7 @@ import {
   MapPin,
   FileText,
   Loader2,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -35,6 +34,7 @@ interface BranchOption {
 export default function MonthlyReportPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
+  const router = useRouter();
   const toast = useToast();
 
   const now = new Date();
@@ -44,6 +44,7 @@ export default function MonthlyReportPage() {
   const [branchId, setBranchId] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [source, setSource] = useState<string>('');
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   const [staffList, setStaffList] = useState<StaffOption[]>([]);
   const [branchList, setBranchList] = useState<BranchOption[]>([]);
@@ -177,7 +178,7 @@ export default function MonthlyReportPage() {
   };
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <OrgAdminSidebar
         organizationCode={organizationCode}
         organizationName={orgData?.name || 'ShiftGuard'}
@@ -185,39 +186,178 @@ export default function MonthlyReportPage() {
       />
 
       <div className={styles.mainContent}>
-        <div style={{ padding: '16px 32px 0 32px' }}>
-          <Link href={`/${organizationCode}/admin/reports`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '13px', textDecoration: 'none' }}>
-            <ArrowLeft size={16} /> Back to Reports Dashboard
-          </Link>
-        </div>
-
-        <header className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Employee Monthly Attendance Report</h1>
-            <p className={styles.subtitle}>
-              Monthly calendar breakdown &amp; metrics for{' '}
-              <strong>{report?.staff?.name || 'Selected Employee'}</strong> (ID:{' '}
-              {report?.staff?.staffId || '—'})
-            </p>
+        <header className={styles.headerBar}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Link href={`/${organizationCode}/admin/reports`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
+              <ArrowLeft size={16} />
+            </Link>
+            <div>
+              <h1 className={styles.title}>Employee Monthly Attendance Report</h1>
+              <p className={styles.subtitle}>
+                Monthly calendar breakdown &amp; metrics for{' '}
+                <strong
+                  onClick={() => selectedStaffId && router.push(`/${organizationCode}/admin/staff/${selectedStaffId}`)}
+                  style={{ cursor: 'pointer', color: '#818cf8', textDecoration: 'underline' }}
+                  title="View Staff Profile"
+                >
+                  {report?.staff?.name || 'Selected Employee'}
+                </strong>{' '}
+                (ID: {report?.staff?.staffId || '—'})
+              </p>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="button" onClick={handlePayrollCsvExport} disabled={exportingPayroll} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderColor: '#34d399', color: '#34d399' }}>
-              <FileText size={15} color="#34d399" />
-              <span>{exportingPayroll ? 'Preparing Payroll...' : 'Export Payroll CSV'}</span>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
+                padding: 0,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-medium)',
+                color: '#ffffff',
+                cursor: 'pointer',
+              }}
+              title="Monthly Report Actions"
+            >
+              <Menu size={18} />
             </button>
 
-            <button type="button" onClick={handleCsvExport} disabled={exportingCsv} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Download size={15} color="#34d399" />
-              <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
-            </button>
+            {headerMenuOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                />
+                <div
+                  className="glass-card"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    zIndex: 1000,
+                    minWidth: '220px',
+                    padding: '6px',
+                    backgroundColor: '#0d121f',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      handlePayrollCsvExport();
+                    }}
+                    disabled={exportingPayroll}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#34d399',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <FileText size={15} color="#34d399" />
+                    <span>{exportingPayroll ? 'Preparing Payroll...' : 'Export Payroll CSV'}</span>
+                  </button>
 
-            <button type="button" onClick={handlePdfExport} disabled={exportingPdf} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Printer size={15} color="#ffffff" />
-              <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save PDF'}</span>
-            </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      handleCsvExport();
+                    }}
+                    disabled={exportingCsv}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Download size={15} color="#34d399" />
+                    <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      handlePdfExport();
+                    }}
+                    disabled={exportingPdf}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      border: 'none',
+                      background: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Printer size={15} color="#38bdf8" />
+                    <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save PDF'}</span>
+                  </button>
+
+                  <Link
+                    href={`/${organizationCode}/admin/reports`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <ArrowLeft size={15} color="#818cf8" />
+                    <span>Reports Dashboard</span>
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </header>
+
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
 
         {/* Monthly Summary Metrics Bar */}
         <div className={styles.metricsGrid}>
@@ -483,6 +623,7 @@ export default function MonthlyReportPage() {
             </table>
           )}
         </div>
+        </main>
       </div>
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>

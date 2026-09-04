@@ -113,7 +113,7 @@ export default function AdminAttendancePage() {
   };
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <OrgAdminSidebar
         organizationCode={organizationCode}
         organizationName={orgData?.name || 'ShiftGuard'}
@@ -122,7 +122,7 @@ export default function AdminAttendancePage() {
 
       <div className={styles.mainContent}>
         {/* Header Bar */}
-        <header className={styles.header}>
+        <header className={styles.headerBar}>
           <div>
             <h1 className={styles.title}>Daily Attendance Overview</h1>
             <p className={styles.subtitle}>
@@ -215,6 +215,25 @@ export default function AdminAttendancePage() {
                     <span>Correction Requests</span>
                   </Link>
 
+                  <Link
+                    href={`/${organizationCode}/admin/reports`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <FileText size={15} color="#34d399" />
+                    <span>Reports &amp; Analytics</span>
+                  </Link>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -246,92 +265,94 @@ export default function AdminAttendancePage() {
           </div>
         </header>
 
-        {/* Top Metrics Cards */}
-        <div className={styles.metricsGrid}>
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #3b82f6' }}>
-            <div className={styles.metricLabel}>Total Present</div>
-            <div className={styles.metricValue}>{metrics.totalPresent}</div>
-          </div>
+        {/* Main Content Body */}
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
+          {/* Top Metrics Cards */}
+          <div className={styles.metricsGrid} style={{ margin: '0 0 20px 0' }}>
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #3b82f6' }}>
+              <div className={styles.metricLabel}>Total Present</div>
+              <div className={styles.metricValue}>{metrics.totalPresent}</div>
+            </div>
 
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #10b981' }}>
-            <div className={styles.metricLabel}>Verified (Normal)</div>
-            <div className={styles.metricValue} style={{ color: '#34d399' }}>
-              {metrics.normalCount}
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #10b981' }}>
+              <div className={styles.metricLabel}>Verified (Normal)</div>
+              <div className={styles.metricValue} style={{ color: '#34d399' }}>
+                {metrics.normalCount}
+              </div>
+            </div>
+
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #f59e0b' }}>
+              <div className={styles.metricLabel}>Manual Admin Entries</div>
+              <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
+                {metrics.manualCount}
+              </div>
+            </div>
+
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #38bdf8' }}>
+              <div className={styles.metricLabel}>Adjusted Corrections</div>
+              <div className={styles.metricValue} style={{ color: '#38bdf8' }}>
+                {metrics.adjustedCount}
+              </div>
             </div>
           </div>
 
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #f59e0b' }}>
-            <div className={styles.metricLabel}>Manual Admin Entries</div>
-            <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
-              {metrics.manualCount}
+          {/* Filter Bar */}
+          <div className={styles.filterBar} style={{ padding: 0, margin: '0 0 20px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Date:</span>
+              <input
+                type="date"
+                className="form-input"
+                style={{ height: '36px', fontSize: '13px' }}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
             </div>
-          </div>
 
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #38bdf8' }}>
-            <div className={styles.metricLabel}>Adjusted Corrections</div>
-            <div className={styles.metricValue} style={{ color: '#38bdf8' }}>
-              {metrics.adjustedCount}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Source:</span>
+              <select
+                className="form-input"
+                style={{ height: '36px', fontSize: '13px', backgroundColor: '#0d121f', color: '#ffffff' }}
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+              >
+                <option value="" style={{ backgroundColor: '#0d121f', color: '#ffffff' }}>All Sources</option>
+                <option value="NORMAL" style={{ backgroundColor: '#0d121f', color: '#ffffff' }}>NORMAL (3-Layer Verified)</option>
+                <option value="MANUAL" style={{ backgroundColor: '#0d121f', color: '#ffffff' }}>MANUAL (Admin Created)</option>
+                <option value="ADJUSTED" style={{ backgroundColor: '#0d121f', color: '#ffffff' }}>ADJUSTED (Correction Approved)</option>
+              </select>
             </div>
-          </div>
-        </div>
 
-        {/* Filter Bar */}
-        <div className={styles.filterBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Date:</span>
-            <input
-              type="date"
-              className="form-input"
-              style={{ height: '36px', fontSize: '13px' }}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Source:</span>
-            <select
-              className="form-input"
-              style={{ height: '36px', fontSize: '13px' }}
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
+            <form
+              onSubmit={handleSearchSubmit}
+              style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '220px' }}
             >
-              <option value="">All Sources</option>
-              <option value="NORMAL">NORMAL (3-Layer Verified)</option>
-              <option value="MANUAL">MANUAL (Admin Created)</option>
-              <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
-            </select>
+              <input
+                type="text"
+                className="form-input"
+                style={{ flex: 1, height: '36px', fontSize: '13px' }}
+                placeholder="Search staff name or ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '8px 12px' }}>
+                <Search size={14} />
+              </button>
+            </form>
+
+            <button
+              onClick={fetchData}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '8px 12px' }}
+              title="Refresh"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            </button>
           </div>
 
-          <form
-            onSubmit={handleSearchSubmit}
-            style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '220px' }}
-          >
-            <input
-              type="text"
-              className="form-input"
-              style={{ flex: 1, height: '36px', fontSize: '13px' }}
-              placeholder="Search staff name or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '8px 12px' }}>
-              <Search size={14} />
-            </button>
-          </form>
-
-          <button
-            onClick={fetchData}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '8px 12px' }}
-            title="Refresh"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-
-        {/* Attendance Table */}
-        <div className={styles.tableCard}>
+          {/* Attendance Table */}
+          <div className={styles.tableCard} style={{ margin: 0 }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 12px auto' }} />
@@ -419,6 +440,7 @@ export default function AdminAttendancePage() {
             </table>
           )}
         </div>
+        </main>
       </div>
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>

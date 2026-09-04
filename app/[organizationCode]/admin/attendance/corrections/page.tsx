@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Calendar,
   Filter,
@@ -43,6 +43,7 @@ interface CorrectionRequest {
 export default function AdminAttendanceCorrectionsPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
+  const router = useRouter();
   const toast = useToast();
 
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
@@ -109,7 +110,7 @@ export default function AdminAttendanceCorrectionsPage() {
   const rejectedCount = requests.filter((r) => r.status === 'REJECTED').length;
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <OrgAdminSidebar
         organizationCode={organizationCode}
         organizationName={orgData?.name || 'ShiftGuard'}
@@ -118,7 +119,7 @@ export default function AdminAttendanceCorrectionsPage() {
 
       <div className={styles.mainContent}>
         {/* Header */}
-        <header className={styles.header}>
+        <header className={styles.headerBar}>
           <div>
             <h1 className={styles.title}>Attendance Correction Requests</h1>
             <p className={styles.subtitle}>
@@ -210,6 +211,25 @@ export default function AdminAttendanceCorrectionsPage() {
                     <span>Manual Attendance</span>
                   </Link>
 
+                  <Link
+                    href={`/${organizationCode}/admin/reports`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <FileText size={15} color="#34d399" />
+                    <span>Reports &amp; Analytics</span>
+                  </Link>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -241,7 +261,9 @@ export default function AdminAttendanceCorrectionsPage() {
           </div>
         </header>
 
-        {/* Metrics Grid */}
+        {/* Main Content Body */}
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
+          {/* Metrics Grid */}
         <div className={styles.metricsGrid}>
           <div className={styles.metricCard} style={{ borderLeft: '3px solid #fbbf24' }}>
             <div className={styles.metricLabel}>Pending Corrections</div>
@@ -311,8 +333,13 @@ export default function AdminAttendanceCorrectionsPage() {
 
                   return (
                     <tr key={item.id} className={styles.tr}>
-                      <td className={styles.td}>
-                        <div className={styles.staffName}>{item.staff.name}</div>
+                      <td
+                        className={styles.td}
+                        onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
+                        style={{ cursor: 'pointer' }}
+                        title="View Staff Profile"
+                      >
+                        <div className={styles.staffName} style={{ color: '#818cf8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>{item.staff.name}</div>
                         <div className={styles.staffId}>ID: {item.staff.staffId}</div>
                       </td>
                       <td className={styles.td} style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
@@ -365,6 +392,7 @@ export default function AdminAttendanceCorrectionsPage() {
             </table>
           )}
         </div>
+        </main>
       </div>
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>
