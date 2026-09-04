@@ -75,7 +75,7 @@ export default function ShiftPatternsPage() {
   const [hasError, setHasError] = useState(false);
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [search, setSearch] = useState('');
-  const [toggleModalPattern, setToggleModalPattern] = useState<ShiftPatternItem | null>(null);
+  const [togglePattern, setTogglePattern] = useState<ShiftPatternItem | null>(null);
   const [toggleLoading, setToggleLoading] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
