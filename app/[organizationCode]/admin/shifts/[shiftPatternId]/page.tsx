@@ -943,72 +943,93 @@ export default function ShiftPatternDetailPage() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
-                  Select Staff Members ({selectedStaffIds.length} selected)
-                </label>
-                <div
-                  style={{
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-md)',
-                    backgroundColor: 'rgba(13, 18, 31, 0.8)',
-                    padding: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '6px',
-                  }}
-                >
-                  {allStaff.map((s) => {
-                    const isSelected = selectedStaffIds.includes(s.id);
-                    return (
-                      <div
-                        key={s.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedStaffIds(selectedStaffIds.filter((id) => id !== s.id));
-                          } else {
-                            setSelectedStaffIds([...selectedStaffIds, s.id]);
-                          }
-                        }}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 'var(--radius-sm)',
-                          backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                          border: `1px solid ${isSelected ? '#4f46e5' : 'transparent'}`,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '3px',
-                            backgroundColor: isSelected ? '#4f46e5' : 'transparent',
-                            border: `1px solid ${isSelected ? '#4f46e5' : 'var(--border-medium)'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#ffffff',
-                          }}
-                        >
-                          {isSelected && <Check size={11} />}
+              {/* Compute staff available for assignment (exclude staff with active assignments to this pattern) */}
+              {(() => {
+                const todayStr = formatDateToIsoDay(new Date());
+                const availableStaff = allStaff.filter((staff) => {
+                  const isAssigned = pattern.assignments.some((a) => {
+                    if (a.staffProfile.id !== staff.id) return false;
+                    if (!a.effectiveTo) return true;
+                    return a.effectiveTo.slice(0, 10) >= todayStr;
+                  });
+                  return !isAssigned;
+                });
+
+                return (
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
+                      Select Staff Members ({selectedStaffIds.length} selected)
+                    </label>
+                    <div
+                      style={{
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-md)',
+                        backgroundColor: 'rgba(13, 18, 31, 0.8)',
+                        padding: '8px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                      }}
+                    >
+                      {availableStaff.length === 0 ? (
+                        <div style={{ padding: '16px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px', fontStyle: 'italic' }}>
+                          All active staff members are already assigned to this shift pattern.
                         </div>
-                        <div style={{ fontSize: '13px', color: '#ffffff' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', color: '#818cf8', marginRight: '6px' }}>
-                            {s.staffId}
-                          </span>
-                          {s.name}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      ) : (
+                        availableStaff.map((s) => {
+                          const isSelected = selectedStaffIds.includes(s.id);
+                          return (
+                            <div
+                              key={s.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedStaffIds(selectedStaffIds.filter((id) => id !== s.id));
+                                } else {
+                                  setSelectedStaffIds([...selectedStaffIds, s.id]);
+                                }
+                              }}
+                              style={{
+                                padding: '8px 12px',
+                                borderRadius: 'var(--radius-sm)',
+                                backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                                border: `1px solid ${isSelected ? '#4f46e5' : 'transparent'}`,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: '16px',
+                                  height: '16px',
+                                  borderRadius: '3px',
+                                  backgroundColor: isSelected ? '#4f46e5' : 'transparent',
+                                  border: `1px solid ${isSelected ? '#4f46e5' : 'var(--border-medium)'}`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: '#ffffff',
+                                }}
+                              >
+                                {isSelected && <Check size={11} />}
+                              </div>
+                              <div style={{ fontSize: '13px', color: '#ffffff' }}>
+                                <span style={{ fontFamily: 'var(--font-mono)', color: '#818cf8', marginRight: '6px' }}>
+                                  {s.staffId}
+                                </span>
+                                {s.name}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
                 <button
