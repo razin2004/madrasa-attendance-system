@@ -133,16 +133,33 @@ export async function POST(
       where: {
         email: cleanEmail,
       },
+      include: {
+        staffProfile: true,
+      },
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `An account with email "${cleanEmail}" already exists in the system.`,
-        },
-        { status: 409 }
-      );
+      if (existingUser.organizationId === auth.organization.id) {
+        if (existingUser.staffProfile) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `A staff account with email "${cleanEmail}" already exists in your organization (Staff ID: ${existingUser.staffProfile.staffId}).`,
+            },
+            { status: 409 }
+          );
+        }
+        // User belongs to this organization (e.g. ORG_ADMIN) but has no StaffProfile yet.
+        // Proceed to attach a StaffProfile to this existingUser!
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `An account with email "${cleanEmail}" is already registered under another account or organization. Please specify a unique staff email address.`,
+          },
+          { status: 409 }
+        );
+      }
     }
 
     // Check optional phone uniqueness within organization if phone was provided
@@ -196,31 +213,35 @@ export async function POST(
     const tokenHash = hashToken(rawActivationToken);
     const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 Hours
 
-    // 3. Transactional Creation of User, Profile, Branch Assignments, Device, and SecurityToken
+    // 3. Transactional Creation of User (if new), Profile, Branch Assignments, Device, and SecurityToken
     const result = await prisma.$transaction(
       async (tx) => {
-        // User record in PENDING state awaiting staff password creation
-        const user = await tx.user.create({
-          data: {
-            organizationId: auth.organization!.id,
-            name: cleanName,
-            email: cleanEmail,
-            phone: cleanPhone,
-            passwordHash: initialPlaceholderHash,
-            role: 'STAFF',
-            status: 'PENDING',
-            mustChangePassword: false,
-          },
-        });
+        let targetUser: any = existingUser;
+
+        if (!targetUser) {
+          // User record in PENDING state awaiting staff password creation
+          targetUser = await tx.user.create({
+            data: {
+              organizationId: auth.organization!.id,
+              name: cleanName,
+              email: cleanEmail,
+              phone: cleanPhone,
+              passwordHash: initialPlaceholderHash,
+              role: 'STAFF',
+              status: 'PENDING',
+              mustChangePassword: false,
+            },
+          });
+        }
 
         // StaffProfile record
         const profile = await tx.staffProfile.create({
           data: {
-            userId: user.id,
+            userId: targetUser.id,
             organizationId: auth.organization!.id,
             staffId: generatedStaffId,
             name: cleanName,
-            phone: cleanPhone,
+            phone: cleanPhone || targetUser.phone,
             address: cleanAddress,
             idDocType: idDocType as any,
             idDocLast4: idDocLast4 || null,
@@ -239,18 +260,20 @@ export async function POST(
           });
         }
 
-        // SecurityToken for account activation & password creation
-        await tx.securityToken.create({
-          data: {
-            userId: user.id,
-            organizationId: auth.organization!.id,
-            type: 'INVITATION',
-            tokenHash,
-            expiresAt: tokenExpiresAt,
-          },
-        });
+        // SecurityToken for account activation & password creation (if PENDING)
+        if (targetUser.status === 'PENDING') {
+          await tx.securityToken.create({
+            data: {
+              userId: targetUser.id,
+              organizationId: auth.organization!.id,
+              type: 'INVITATION',
+              tokenHash,
+              expiresAt: tokenExpiresAt,
+            },
+          });
+        }
 
-        return { user, profile };
+        return { user: targetUser, profile };
       },
       { maxWait: 15000, timeout: 30000 }
     );
