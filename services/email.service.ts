@@ -134,6 +134,19 @@ async function sendViaSmtp(
  * High-resilience email dispatcher with environment-aware routing & multi-tier fallbacks
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
+  if (!options || !options.recipient || typeof options.recipient !== 'string' || !options.recipient.trim().includes('@')) {
+    console.error('❌ [EMAIL DISPATCH ERROR] Invalid or missing recipient email:', options?.recipient);
+    return { success: false, error: 'Invalid or missing recipient email address.' };
+  }
+  if (!options.subject || !options.subject.trim()) {
+    console.error('❌ [EMAIL DISPATCH ERROR] Missing email subject for recipient:', options.recipient);
+    return { success: false, error: 'Email subject is required.' };
+  }
+  if (!options.htmlContent || !options.htmlContent.trim()) {
+    console.error('❌ [EMAIL DISPATCH ERROR] Missing email HTML content for recipient:', options.recipient);
+    return { success: false, error: 'Email HTML content is required.' };
+  }
+
   const normalizedRecipient = normalizeEmail(options.recipient);
   const senderEmail = (
     process.env.BREVO_SENDER_EMAIL ||
@@ -150,7 +163,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       data: {
         organizationId: options.organizationId ?? null,
         recipient: normalizedRecipient,
-        type: options.type,
+        type: options.type || 'TRANSACTIONAL',
         subject: options.subject,
         status: 'PENDING',
       },
@@ -174,18 +187,30 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   );
 
   const isDev = process.env.NODE_ENV !== 'production';
-  const forceSmtp = process.env.EMAIL_PROVIDER === 'smtp';
+  const forcedProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
 
   // Order of Provider Execution
-  // If forceSmtp or in Dev with SMTP configured -> Try SMTP first, then Brevo Slot 1, Brevo Slot 2
-  // Otherwise (Production default) -> Try Brevo Slot 1, Brevo Slot 2, then SMTP fallback
+  // - If forcedProvider === 'smtp', try SMTP first
+  // - If forcedProvider === 'brevo', try Brevo 1 & 2 first
+  // - In Local Running (Development): Default to SMTP if configured, then Brevo 1 & 2
+  // - In Real Running (Production): Default to Brevo 1 & 2, then SMTP fallback
   const providerOrder: ('BREVO_1' | 'BREVO_2' | 'SMTP')[] = [];
 
-  if (forceSmtp || (isDev && hasSmtpConfig)) {
+  if (forcedProvider === 'smtp') {
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
+  } else if (forcedProvider === 'brevo') {
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+  } else if (isDev) {
+    // Local environment: SMTP takes priority if set up
     if (hasSmtpConfig) providerOrder.push('SMTP');
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
   } else {
+    // Production environment: Brevo API takes top priority
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
     if (hasSmtpConfig) providerOrder.push('SMTP');
@@ -253,11 +278,11 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   if (!finalSuccess) {
     finalError = attemptedErrors.length > 0
       ? attemptedErrors.join(' | ')
-      : 'No email providers configured in environment (Set BREVO_API_KEY or SMTP_USER/SMTP_PASS).';
+      : 'No active email providers configured in environment (Set SMTP_USER/SMTP_PASS or BREVO_API_KEY).';
 
     console.error(`❌ [EMAIL DISPATCH FAILED] To: ${normalizedRecipient} | Errors: ${finalError}`);
 
-    // Dev mode fallback
+    // Dev mode fallback to console log mock to avoid breaking local workflow if SMTP/Brevo is absent
     if (isDev) {
       finalSuccess = true;
       finalProvider = 'DEV_MOCK';

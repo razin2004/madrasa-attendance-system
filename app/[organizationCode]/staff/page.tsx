@@ -18,13 +18,13 @@ import {
   ShieldCheck,
   FilePlus,
   ChevronRight,
-  TrendingUp,
-  Info,
-  Loader2,
-  UserCheck,
-  FileText,
-  AlertCircle,
   Sparkles,
+  Loader2,
+  AlertCircle,
+  LogOut,
+  Navigation,
+  Activity,
+  Check,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
@@ -40,6 +40,7 @@ interface PrecheckData {
     message: string;
     status: 'SUCCESS' | 'FAILED' | 'WARNING';
     deviceStatus: string;
+    label?: string | null;
   };
   layer2Network: {
     isVerified: boolean;
@@ -47,6 +48,7 @@ interface PrecheckData {
     message: string;
     status: 'SUCCESS' | 'FAILED' | 'WARNING';
     branchName?: string;
+    requestIp?: string;
   };
   layer3Geofence: {
     isVerified: boolean;
@@ -159,7 +161,7 @@ export default function StaffDashboardPage() {
           const coords = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
+            accuracy: Math.round(position.coords.accuracy),
           };
           setLocationCoords(coords);
           setLocationError(null);
@@ -167,7 +169,7 @@ export default function StaffDashboardPage() {
         },
         (highAccErr) => {
           if (highAccErr.code === highAccErr.PERMISSION_DENIED) {
-            setLocationError('Location access was denied. Please allow location permissions in your browser settings to verify geofence.');
+            setLocationError('Location access was denied. Please enable location permissions in browser settings.');
             resolve(null);
             return;
           }
@@ -176,20 +178,20 @@ export default function StaffDashboardPage() {
               const coords = {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
-                accuracy: position.coords.accuracy,
+                accuracy: Math.round(position.coords.accuracy),
               };
               setLocationCoords(coords);
               setLocationError(null);
               resolve(coords);
             },
             (lowAccErr) => {
-              let msg = 'Unable to fetch your location.';
+              let msg = 'Unable to fetch your location coordinates.';
               if (lowAccErr.code === lowAccErr.PERMISSION_DENIED) {
-                msg = 'Location access was denied. Please allow location permissions in your browser settings to verify geofence.';
+                msg = 'Location access was denied. Please allow location permissions in browser settings.';
               } else if (lowAccErr.code === lowAccErr.POSITION_UNAVAILABLE) {
-                msg = 'Location signal unavailable. Ensure location services are enabled on your device.';
+                msg = 'Location signal unavailable. Ensure GPS / Location services are enabled.';
               } else if (lowAccErr.code === lowAccErr.TIMEOUT) {
-                msg = 'Location request timed out. Please try again.';
+                msg = 'Location request timed out. Click Re-verify to try again.';
               }
               setLocationError(msg);
               resolve(null);
@@ -197,14 +199,16 @@ export default function StaffDashboardPage() {
             { enableHighAccuracy: false, timeout: 8000, maximumAge: 30000 }
           );
         },
-        { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     });
   }, []);
 
   const runPrecheck = useCallback(
     async (coords?: { latitude: number; longitude: number; accuracy?: number } | null, isManual: boolean = false) => {
-      setChecking(true);
+      if (isManual) {
+        setChecking(true);
+      }
       try {
         const deviceSecret = getOrCreateDeviceSecret();
         let clientIp: string | null = null;
@@ -245,20 +249,21 @@ export default function StaffDashboardPage() {
           setFetchError(null);
 
           if (isManual) {
-            toast.success('Verification status refreshed.');
+            toast.success('Security verification status refreshed.');
           }
 
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: data.evaluation.isReady }));
           }
 
+          // Auto-Register Unbound Device Slot if eligible
           if (
             !data.evaluation.layer1Device.isVerified &&
             (data.staff?.deviceStatus === 'NOT_REGISTERED' ||
-             data.staff?.hasPendingDeviceSlot ||
-             !data.staffProfile.devices ||
-             data.staffProfile.devices.length === 0 ||
-             data.staffProfile.devices.some((d: any) => d.status === 'NOT_REGISTERED'))
+              data.staff?.hasPendingDeviceSlot ||
+              !data.staffProfile.devices ||
+              data.staffProfile.devices.length === 0 ||
+              data.staffProfile.devices.some((d: any) => d.status === 'NOT_REGISTERED'))
           ) {
             try {
               const regRes = await fetch(`/api/org/${orgCode}/staff/device/register`, {
@@ -271,7 +276,7 @@ export default function StaffDashboardPage() {
               });
               const regData = await regRes.json();
               if (regData.success) {
-                if (isManual) toast.success('Device registered successfully.');
+                if (isManual) toast.success('Device bound successfully to staff profile.');
                 const recheckRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
                   method: 'POST',
                   headers,
@@ -298,7 +303,9 @@ export default function StaffDashboardPage() {
       } catch {
         setFetchError(null);
       } finally {
-        setChecking(false);
+        if (isManual) {
+          setChecking(false);
+        }
       }
     },
     [getOrCreateDeviceSecret, orgCode, router, toast]
@@ -306,7 +313,8 @@ export default function StaffDashboardPage() {
 
   const initData = useCallback(async () => {
     setLoading(true);
-    await runPrecheck(null, false);
+    // Initial pre-check on load runs without triggering automatic geolocation browser prompts or manual refresh state
+    await runPrecheck(locationCoords || null, false);
 
     try {
       const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=5`);
@@ -317,7 +325,7 @@ export default function StaffDashboardPage() {
     } catch {}
 
     setLoading(false);
-  }, [orgCode, runPrecheck]);
+  }, [locationCoords, orgCode, runPrecheck]);
 
   useEffect(() => {
     if (orgCode) {
@@ -342,7 +350,7 @@ export default function StaffDashboardPage() {
 
       const coords = locationCoords || (await requestGeolocation().catch(() => null));
 
-      // 1. Mandatory Live Backend Precheck Comparison
+      // 1. Mandatory Live Backend Security Evaluation
       const precheckHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
       if (clientIp) precheckHeaders['x-client-public-ip'] = clientIp;
 
@@ -373,11 +381,11 @@ export default function StaffDashboardPage() {
         if (!livePrecheckData.evaluation.isReady) {
           let errorMsg = 'Attendance verification failed.';
           if (!livePrecheckData.evaluation.layer2Network?.isVerified) {
-            errorMsg = livePrecheckData.evaluation.layer2Network?.message || 'Your current network is not the registered branch network.';
+            errorMsg = livePrecheckData.evaluation.layer2Network?.message || 'Your current network IP is not registered for your branch.';
           } else if (!livePrecheckData.evaluation.layer3Geofence?.isVerified) {
-            errorMsg = livePrecheckData.evaluation.layer3Geofence?.message || 'Outside branch geofence.';
+            errorMsg = livePrecheckData.evaluation.layer3Geofence?.message || 'Outside branch geofence boundary.';
           } else if (!livePrecheckData.evaluation.layer1Device?.isVerified) {
-            errorMsg = 'Unverified device.';
+            errorMsg = 'Current device is not registered to your account.';
           }
 
           toast.error(errorMsg);
@@ -389,7 +397,7 @@ export default function StaffDashboardPage() {
         }
       }
 
-      // 2. Verified Live Security Passed -> Execute Clock In / Out
+      // 2. Verified Live Security Passed -> Execute Punch
       const payload: any = {
         action: actionType,
         deviceSecret,
@@ -423,7 +431,7 @@ export default function StaffDashboardPage() {
         if (data.evaluation) setPrecheck(data.evaluation);
       }
     } catch {
-      toast.error('Network error recording attendance.');
+      toast.error('Network error recording attendance punch.');
     } finally {
       setClocking(false);
     }
@@ -459,73 +467,69 @@ export default function StaffDashboardPage() {
   const isCompleted = Boolean(todayStatus?.isDailyLimitReached && !isClockedIn);
   const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isCompleted);
 
+  const initials = staffInfo?.name
+    ? staffInfo.name.trim().split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+    : 'SG';
+
+  const verifiedLayersCount = [
+    precheck?.layer1Device.isVerified,
+    precheck?.layer2Network.isVerified,
+    precheck?.layer3Geofence.isVerified,
+  ].filter(Boolean).length;
+
   return (
     <div className={styles.container}>
-      {/* Glassmorphic Top Header */}
+      {/* Glassmorphic Top Navigation Header */}
       <header className={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div className={styles.headerTitleGroup}>
           <div className={styles.avatarRing}>
-            {staffInfo?.name ? staffInfo.name.slice(0, 2).toUpperCase() : 'SG'}
-            <div className={styles.onlineBadge} title="Active Session" />
+            {initials}
+            <div className={styles.onlineBadge} title="Active Staff Session" />
           </div>
           <div>
             <h1 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.2px' }}>
-              {staffInfo?.name || 'Staff Attendance Dashboard'}
+              {staffInfo?.name || 'Staff Attendance Portal'}
             </h1>
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0 0', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               <span>Staff ID:</span>
               <span style={{ fontFamily: 'var(--font-mono)', color: '#a5b4fc', fontWeight: 700 }}>{staffInfo?.staffId || '—'}</span>
+              {(staffInfo?.user?.email || staffInfo?.email) && (
+                <>
+                  <span>&bull;</span>
+                  <span style={{ color: '#cbd5e1' }}>{staffInfo?.user?.email || staffInfo?.email}</span>
+                </>
+              )}
               <span>&bull;</span>
-              <span>{orgData?.name || orgCode}</span>
+              <span style={{ color: '#cbd5e1' }}>{orgData?.name || orgCode}</span>
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div className={styles.headerNavControls}>
           <button
             onClick={handleManualRefresh}
             disabled={checking}
-            className="btn btn-secondary btn-sm"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              borderRadius: '10px',
-              padding: '8px 14px',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-            }}
+            className={styles.headerButton}
           >
             <RefreshCw size={14} className={checking ? 'animate-spin' : ''} color="#a5b4fc" />
-            <span>Re-verify</span>
+            <span>{checking ? 'Verifying...' : 'Re-verify'}</span>
           </button>
           <Link
             href={`/${orgCode}/staff/attendance`}
-            className="btn btn-secondary btn-sm"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              borderRadius: '10px',
-              padding: '8px 14px',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-              color: '#f8fafc',
-            }}
+            className={styles.headerButton}
           >
             <History size={14} color="#38bdf8" />
-            <span>Punch History</span>
+            <span>Punch Log</span>
           </Link>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main style={{ padding: '28px 24px 80px 24px', maxWidth: '1200px', width: '100%', margin: '0 auto' }}>
-        {/* NO SCHEDULE BANNER */}
+      {/* Main Container Body */}
+      <main style={{ padding: '16px 24px 80px 24px', maxWidth: '1240px', width: '100%', margin: '0 auto' }}>
+        
+
+
+        {/* NO SCHEDULE WARNING BANNER */}
         {!loading && !hasSchedule && (
           <div className={styles.noScheduleBanner}>
             <AlertTriangle size={24} color="#fbbf24" style={{ flexShrink: 0 }} />
@@ -533,57 +537,58 @@ export default function StaffDashboardPage() {
               <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#ffffff' }}>
                 No Shift Schedule Assigned Today
               </div>
-              <div style={{ fontSize: '12.5px', marginTop: '2px', color: '#cbd5e1' }}>
-                Clock-in is temporarily locked because no shift is scheduled for your profile today. Contact your organization administrator if this is unexpected.
+              <div style={{ fontSize: '12.5px', marginTop: '2px', color: '#cbd5e1', lineHeight: '1.4' }}>
+                Clock-in is temporarily locked because no active shift schedule is assigned to your profile for today. Contact your organization administrator if you need a shift assigned.
               </div>
             </div>
           </div>
         )}
 
-        {/* SYSTEMATIC 2-COLUMN DESKTOP LAYOUT */}
+        {/* MAIN 2-COLUMN GRID */}
         <div className={styles.mainLayout}>
-          {/* LEFT: LIVE DIGITAL CLOCK & HERO PUNCH HUB */}
+          
+          {/* PANEL 1: LIVE DIGITAL CLOCK & HERO ACTION HUB */}
           <div className={styles.heroClockCard}>
             <div style={{ width: '100%' }}>
-              <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Live System Time
+              <div className={styles.clockHeaderLabel}>
+                Live Workspace System Time
               </div>
               <div className={styles.liveClockDisplay}>{currentTime || '12:00:00 PM'}</div>
-              <div style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '4px' }}>
+              <div className={styles.currentDateText}>
                 {currentDateStr}
               </div>
 
-              <div style={{ marginTop: '12px' }}>
+              <div>
                 <span className={styles.shiftBadge}>
-                  <Calendar size={13} color="#818cf8" />
+                  <Calendar size={14} color="#818cf8" />
                   <span>
                     {todayStatus?.schedule?.shiftPatternName
                       ? `${todayStatus.schedule.shiftPatternName} (${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime})`
-                      : 'Shift Schedule'}
+                      : 'Assigned Shift Schedule'}
                   </span>
                 </span>
               </div>
             </div>
 
-            <div style={{ width: '100%', margin: '28px 0' }}>
+            <div className={styles.punchContainer}>
               {isCompleted ? (
                 <div>
-                  <CheckCircle2 size={48} color="#34d399" style={{ margin: '0 auto 12px auto' }} />
+                  <CheckCircle2 size={52} color="#34d399" style={{ margin: '0 auto 12px auto' }} />
                   <h2 style={{ fontSize: '19px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
-                    Today&apos;s Attendance Complete
+                    Today&apos;s Attendance Complete 🎉
                   </h2>
                   <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
-                    You have completed your scheduled attendance shift for today.
+                    You have successfully completed your shift attendance for today.
                   </p>
                 </div>
               ) : (
-                <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: isClockedIn ? '#fbbf24' : '#34d399', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
-                    {isClockedIn ? '● Currently Clocked In' : isReadyToClock ? '● Ready to Clock In' : '● Verification Required'}
+                <div style={{ width: '100%' }}>
+                  <div className={`${styles.statusPill} ${isClockedIn ? styles.statusPillIn : isReadyToClock ? styles.statusPillReady : styles.statusPillLock}`}>
+                    {isClockedIn ? '● Currently Clocked In' : isReadyToClock ? '● Security Verified — Ready to Clock In' : '● Verification Checks Required'}
                   </div>
 
                   {isClockedIn && (
-                    <div style={{ fontSize: '13.5px', color: '#cbd5e1', marginBottom: '18px' }}>
+                    <div className={styles.clockedInInfo}>
                       Clocked in at <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{todayStatus?.lastClockInTime}</strong>
                       {todayStatus?.lateMinutes ? (
                         <span style={{ color: '#fbbf24', marginLeft: '8px', fontSize: '12px', fontWeight: 700 }}>
@@ -597,7 +602,7 @@ export default function StaffDashboardPage() {
 
                   <button
                     onClick={handleClockButtonClick}
-                    disabled={!isReadyToClock && !isClockedIn || clocking || checking}
+                    disabled={(!isReadyToClock && !isClockedIn) || clocking || checking}
                     className={`${styles.clockButton} ${
                       isClockedIn
                         ? styles.clockButtonOut
@@ -609,7 +614,7 @@ export default function StaffDashboardPage() {
                     {clocking ? (
                       <>
                         <Loader2 size={20} className="animate-spin" />
-                        <span>Processing Verification...</span>
+                        <span>Verifying &amp; Recording...</span>
                       </>
                     ) : isClockedIn ? (
                       <>
@@ -625,80 +630,80 @@ export default function StaffDashboardPage() {
                   </button>
 
                   {!isReadyToClock && !isClockedIn && (
-                    <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '14px', lineHeight: '1.4' }}>
+                    <p className={styles.lockGuidanceText}>
                       {!hasSchedule
-                        ? 'Clock in is disabled because no shift schedule is assigned for today.'
-                        : 'All 3 verification security checks (Device, Network, Location) must pass to enable Clock In.'}
+                        ? 'Clock-in is locked because no shift schedule is assigned for today.'
+                        : 'All 3 security verification layers (Device, Network IP, Geofence GPS) must pass to unlock Clock In.'}
                     </p>
                   )}
                 </div>
               )}
             </div>
 
-            <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className={styles.zeroTrustFooter}>
               <ShieldCheck size={15} color="#818cf8" />
-              <span>3-Layer Security Verification Enforced</span>
+              <span>ShiftGuard 3-Layer Zero-Trust Security Verification</span>
             </div>
           </div>
 
-          {/* RIGHT: THREE-LAYER VERIFICATION STACK */}
+          {/* PANEL 2: 3-LAYER SECURITY DIAGNOSTICS STACK */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.2px' }}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>
                 <ShieldCheck size={18} color="#818cf8" />
-                <span>Verification Security Stack</span>
+                <span>Security Diagnostics Stack</span>
               </h2>
-              <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600 }}>Live Real-Time Checks</span>
+              <span className={styles.sectionSubtitle}>Live Real-Time Checks</span>
             </div>
 
             <div className={styles.verificationGrid}>
-              {/* LAYER 1: DEVICE */}
+              {/* LAYER 1: REGISTERED DEVICE */}
               <div
                 className={`${styles.verificationCard} ${
                   precheck?.layer1Device.isVerified ? styles.verificationVerified : styles.verificationFailed
                 }`}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: precheck?.layer1Device.isVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)' }}>
+                <div className={styles.cardTopRow}>
+                  <div className={styles.cardIconTitleGroup}>
+                    <div className={styles.layerIconBox} style={{ backgroundColor: precheck?.layer1Device.isVerified ? 'rgba(16, 185, 129, 0.14)' : 'rgba(244, 63, 94, 0.14)' }}>
                       <Smartphone size={18} color={precheck?.layer1Device.isVerified ? '#34d399' : '#f43f5e'} />
                     </div>
                     <div>
                       <span className={styles.layerPill}>Layer 1</span>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Registered Device</div>
+                      <div className={styles.layerTitle}>Registered Staff Device</div>
                     </div>
                   </div>
                   {precheck?.layer1Device.isVerified ? <CheckCircle2 size={18} color="#34d399" /> : <XCircle size={18} color="#f43f5e" />}
                 </div>
-                <div style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.4', marginTop: '2px' }}>
-                  {precheck?.layer1Device.message || 'Checking device secret...'}
+                <div className={styles.layerMessage}>
+                  {precheck?.layer1Device.message || 'Evaluating device binding secret...'}
                 </div>
               </div>
 
-              {/* LAYER 2: NETWORK IP */}
+              {/* LAYER 2: BRANCH NETWORK PUBLIC IP */}
               <div
                 className={`${styles.verificationCard} ${
                   precheck?.layer2Network.isVerified ? styles.verificationVerified : styles.verificationFailed
                 }`}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: precheck?.layer2Network.isVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)' }}>
+                <div className={styles.cardTopRow}>
+                  <div className={styles.cardIconTitleGroup}>
+                    <div className={styles.layerIconBox} style={{ backgroundColor: precheck?.layer2Network.isVerified ? 'rgba(16, 185, 129, 0.14)' : 'rgba(244, 63, 94, 0.14)' }}>
                       <Wifi size={18} color={precheck?.layer2Network.isVerified ? '#34d399' : '#f43f5e'} />
                     </div>
                     <div>
                       <span className={styles.layerPill}>Layer 2</span>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Branch Network IP</div>
+                      <div className={styles.layerTitle}>Branch Network Wi-Fi IP</div>
                     </div>
                   </div>
                   {precheck?.layer2Network.isVerified ? <CheckCircle2 size={18} color="#34d399" /> : <XCircle size={18} color="#f43f5e" />}
                 </div>
-                <div style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.4', marginTop: '2px' }}>
-                  {precheck?.layer2Network.message || 'Checking network public IP...'}
+                <div className={styles.layerMessage}>
+                  {precheck?.layer2Network.message || 'Evaluating public network IP identity...'}
                 </div>
               </div>
 
-              {/* LAYER 3: GEOFENCE */}
+              {/* LAYER 3: GEOFENCE GPS DISTANCE */}
               <div
                 className={`${styles.verificationCard} ${
                   precheck?.layer3Geofence.isVerified
@@ -708,14 +713,14 @@ export default function StaffDashboardPage() {
                     : styles.verificationFailed
                 }`}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: precheck?.layer3Geofence.isVerified ? 'rgba(16, 185, 129, 0.12)' : locationError ? 'rgba(245, 158, 11, 0.12)' : 'rgba(244, 63, 94, 0.12)' }}>
+                <div className={styles.cardTopRow}>
+                  <div className={styles.cardIconTitleGroup}>
+                    <div className={styles.layerIconBox} style={{ backgroundColor: precheck?.layer3Geofence.isVerified ? 'rgba(16, 185, 129, 0.14)' : locationError ? 'rgba(245, 158, 11, 0.14)' : 'rgba(244, 63, 94, 0.14)' }}>
                       <MapPin size={18} color={precheck?.layer3Geofence.isVerified ? '#34d399' : locationError ? '#fbbf24' : '#f43f5e'} />
                     </div>
                     <div>
                       <span className={styles.layerPill}>Layer 3</span>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Branch Geofence GPS</div>
+                      <div className={styles.layerTitle}>Branch Geofence GPS</div>
                     </div>
                   </div>
                   {precheck?.layer3Geofence.isVerified ? (
@@ -724,56 +729,79 @@ export default function StaffDashboardPage() {
                     <XCircle size={18} color={locationError ? '#fbbf24' : '#f43f5e'} />
                   )}
                 </div>
-                <div style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.4', marginTop: '2px' }}>
-                  {locationError ? locationError : precheck?.layer3Geofence.message || 'Checking GPS location...'}
+
+                <div className={styles.layerMessage}>
+                  {locationError ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ color: '#fbbf24' }}>{locationError}</span>
+                      <button
+                        onClick={handleManualRefresh}
+                        disabled={checking}
+                        className="btn btn-secondary btn-sm"
+                        style={{ alignSelf: 'flex-start', fontSize: '11px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Navigation size={12} className={checking ? 'animate-spin' : ''} />
+                        <span>{checking ? 'Verifying Location...' : 'Enable / Retry Location'}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    precheck?.layer3Geofence.message || 'Evaluating GPS geofence boundary...'
+                  )}
                 </div>
+
+                {precheck?.layer3Geofence.distanceMeters !== undefined && precheck.layer3Geofence.distanceMeters >= 0 && (
+                  <div className={styles.distanceDetail}>
+                    Calculated Distance: <strong style={{ color: precheck.layer3Geofence.isVerified ? '#34d399' : '#f87171' }}>{precheck.layer3Geofence.distanceMeters}m</strong> (Allowed Radius: {precheck.layer3Geofence.allowedRadiusMeters || 150}m
+                    {precheck.layer3Geofence.accuracyMeters !== undefined ? `, Accuracy: ±${precheck.layer3Geofence.accuracyMeters}m` : ''})
+                  </div>
+                )}
               </div>
 
-              {/* SCHEDULE CHECK */}
+              {/* SHIFT SCHEDULE VALIDATION */}
               <div
                 className={`${styles.verificationCard} ${
                   hasSchedule ? styles.verificationVerified : styles.verificationFailed
                 }`}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: hasSchedule ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)' }}>
+                <div className={styles.cardTopRow}>
+                  <div className={styles.cardIconTitleGroup}>
+                    <div className={styles.layerIconBox} style={{ backgroundColor: hasSchedule ? 'rgba(16, 185, 129, 0.14)' : 'rgba(244, 63, 94, 0.14)' }}>
                       <Clock size={18} color={hasSchedule ? '#34d399' : '#f43f5e'} />
                     </div>
                     <div>
                       <span className={styles.layerPill}>Shift Check</span>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Assigned Shift</div>
+                      <div className={styles.layerTitle}>Shift Roster Assigned</div>
                     </div>
                   </div>
                   {hasSchedule ? <CheckCircle2 size={18} color="#34d399" /> : <XCircle size={18} color="#f43f5e" />}
                 </div>
-                <div style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.4', marginTop: '2px' }}>
+                <div className={styles.layerMessage}>
                   {hasSchedule && todayStatus?.schedule?.startTime && todayStatus?.schedule?.endTime
-                    ? `${todayStatus.schedule.shiftPatternName || 'Shift'}: ${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime}`
-                    : 'No shift schedule assigned for today.'}
+                    ? `${todayStatus.schedule.shiftPatternName || 'Scheduled Shift'}: ${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime}`
+                    : 'No active shift schedule assigned for today.'}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* QUICK ACTION TILES */}
+        {/* PANEL 3: QUICK ACTIONS GRID */}
         <div style={{ marginBottom: '14px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.2px' }}>
+          <h2 className={styles.sectionTitle}>
             <Sparkles size={18} color="#38bdf8" />
-            <span>Quick Actions</span>
+            <span>Quick Workspace Actions</span>
           </h2>
         </div>
 
         <div className={styles.quickActionsGrid}>
           <Link href={`/${orgCode}/staff/leave/new`} className={styles.quickTile}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className={styles.quickTileContent}>
+              <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8' }}>
                 <FilePlus size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Apply Leave</div>
-                <div style={{ fontSize: '12px', color: '#94a3b8' }}>Submit time-off request</div>
+                <div className={styles.quickTileTitle}>Apply Leave</div>
+                <div className={styles.quickTileSub}>Submit time-off application</div>
               </div>
             </div>
             <ChevronRight size={18} className={styles.arrowIcon} />
@@ -785,35 +813,35 @@ export default function StaffDashboardPage() {
             className={styles.quickTile}
             style={{ width: '100%', cursor: 'pointer', textAlign: 'left' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className={styles.quickTileContent}>
+              <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(245, 158, 11, 0.14)', color: '#fbbf24' }}>
                 <AlertCircle size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Request Correction</div>
-                <div style={{ fontSize: '12px', color: '#94a3b8' }}>Fix missed punch</div>
+                <div className={styles.quickTileTitle}>Request Correction</div>
+                <div className={styles.quickTileSub}>Fix missed or incorrect punch</div>
               </div>
             </div>
             <ChevronRight size={18} className={styles.arrowIcon} />
           </button>
 
           <Link href={`/${orgCode}/staff/attendance`} className={styles.quickTile}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: 'rgba(129, 140, 248, 0.12)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className={styles.quickTileContent}>
+              <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(129, 140, 248, 0.14)', color: '#818cf8' }}>
                 <History size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>View Log History</div>
-                <div style={{ fontSize: '12px', color: '#94a3b8' }}>Complete punch history</div>
+                <div className={styles.quickTileTitle}>View Log History</div>
+                <div className={styles.quickTileSub}>Full attendance history</div>
               </div>
             </div>
             <ChevronRight size={18} className={styles.arrowIcon} />
           </Link>
         </div>
 
-        {/* RECENT ATTENDANCE ACTIVITY */}
+        {/* PANEL 4: RECENT ATTENDANCE ACTIVITY LOGS */}
         <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.2px' }}>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '14px' }}>
             <History size={18} color="#818cf8" />
             <span>Recent Attendance Logs</span>
           </h2>
@@ -821,10 +849,10 @@ export default function StaffDashboardPage() {
           <div className={styles.historyTableCard}>
             {recentRecords.length === 0 ? (
               <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
-                No recent attendance logs found.
+                No recent attendance punch records found.
               </div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <table className={styles.historyTable}>
                 <thead>
                   <tr className={styles.tableHeaderRow}>
                     <th className={styles.tableHeaderTh}>Punch Type</th>
@@ -858,7 +886,7 @@ export default function StaffDashboardPage() {
                         {r.branch?.name || 'Main Branch'}
                       </td>
                       <td className={styles.tableTd} style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1' }}>
-                        {new Date(r.timestamp).toLocaleString()}
+                        {new Date(r.timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}
                       </td>
                       <td className={styles.tableTd}>
                         <span

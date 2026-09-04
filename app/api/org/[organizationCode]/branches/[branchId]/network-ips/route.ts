@@ -75,13 +75,27 @@ export async function POST(
       );
     }
 
-    // Check duplicate IP
-    if (
-      branch.publicIp === cleanIp ||
-      branch.networkIdentities.some((n) => n.publicIp === cleanIp)
-    ) {
+    // Check duplicate IP across all branches in organization
+    const existingBranchWithIp = await prisma.branch.findFirst({
+      where: {
+        organizationId: auth.organization.id,
+        OR: [
+          { publicIp: cleanIp },
+          { networkIdentities: { some: { publicIp: cleanIp, isActive: true } } },
+        ],
+      },
+      select: { id: true, name: true },
+    });
+
+    if (existingBranchWithIp) {
+      const isSameBranch = existingBranchWithIp.id === branch.id;
       return NextResponse.json(
-        { success: false, error: `Public IP "${cleanIp}" is already registered for this branch.` },
+        {
+          success: false,
+          error: isSameBranch
+            ? `IP address "${cleanIp}" already exists for this branch.`
+            : `IP address "${cleanIp}" already exists (registered to branch "${existingBranchWithIp.name}").`,
+        },
         { status: 409 }
       );
     }

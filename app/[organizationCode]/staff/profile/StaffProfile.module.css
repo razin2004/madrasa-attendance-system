@@ -1,8 +1,9 @@
 .profileContainer {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
+  padding: 20px 24px 60px 24px;
 }
 
 .headerBar {

@@ -155,6 +155,15 @@ export async function requireStaff(organizationCode: string): Promise<StaffAuthR
   const staffProfile = await prisma.staffProfile.findUnique({
     where: { userId: session.user.id },
     include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          status: true,
+        },
+      },
       devices: true,
       branchAssignments: {
         include: { branch: true },

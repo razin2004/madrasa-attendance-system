@@ -212,8 +212,18 @@ export default function BranchDetailPage() {
   // 3. Manual IP Add (Secondary)
   const handleManualAddIp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualIp.trim()) {
+    const cleanIp = manualIp.trim();
+    if (!cleanIp) {
       toast.error('Public IP address is required.');
+      return;
+    }
+
+    // Client-side check for existing IP in current branch
+    if (
+      branch?.publicIp?.trim() === cleanIp ||
+      branch?.networkIdentities?.some((n) => n.isActive && n.publicIp?.trim() === cleanIp)
+    ) {
+      toast.error(`IP address "${cleanIp}" already exists for this branch.`);
       return;
     }
 
@@ -223,7 +233,7 @@ export default function BranchDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          publicIp: manualIp.trim(),
+          publicIp: cleanIp,
           overrideReason: overrideReason.trim() || 'Manual Addition',
         }),
       });
@@ -236,7 +246,7 @@ export default function BranchDetailPage() {
         setManualIp('');
         setOverrideReason('');
       } else {
-        toast.error(data.error || 'Failed to add public IP.');
+        toast.error(data.error || 'IP address already exists.');
       }
     } catch {
       toast.error('Network error registering public IP.');

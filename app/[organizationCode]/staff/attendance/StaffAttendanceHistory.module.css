@@ -4,7 +4,7 @@
   min-height: 100vh;
   background-color: var(--bg-primary, #030712);
   color: var(--text-primary, #f9fafb);
-  padding: 32px;
+  padding: 20px 24px 60px 24px;
   max-width: 1280px;
   margin: 0 auto;
   width: 100%;

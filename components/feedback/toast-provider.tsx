@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -22,40 +22,71 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+const MAX_VISIBLE_TOASTS = 3;
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const activeTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const removeToast = useCallback((id: string) => {
+    const existingTimer = activeTimersRef.current.get(id);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      activeTimersRef.current.delete(id);
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   const showToast = useCallback(
     (message: string, type: ToastType = 'info', duration: number = 4500) => {
-      const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const id = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       setToasts((prev) => [...prev, { id, type, message, duration }]);
-
-      setTimeout(() => {
-        removeToast(id);
-      }, duration);
     },
-    [removeToast]
+    []
   );
+
+  // Manage auto-dismiss timers ONLY for currently visible (top 3) toasts
+  useEffect(() => {
+    const visibleToasts = toasts.slice(0, MAX_VISIBLE_TOASTS);
+    const visibleIds = new Set(visibleToasts.map((t) => t.id));
+
+    // Clear timers for toasts that are no longer in the top 3
+    activeTimersRef.current.forEach((timer, id) => {
+      if (!visibleIds.has(id)) {
+        clearTimeout(timer);
+        activeTimersRef.current.delete(id);
+      }
+    });
+
+    // Schedule auto-dismiss timer for newly visible toasts
+    visibleToasts.forEach((toast) => {
+      if (!activeTimersRef.current.has(toast.id)) {
+        const timer = setTimeout(() => {
+          removeToast(toast.id);
+        }, toast.duration || 4500);
+        activeTimersRef.current.set(toast.id, timer);
+      }
+    });
+  }, [toasts, removeToast]);
 
   const success = useCallback((msg: string) => showToast(msg, 'success'), [showToast]);
   const error = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
   const info = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
   const warning = useCallback((msg: string) => showToast(msg, 'warning'), [showToast]);
 
+  const visibleToasts = toasts.slice(0, MAX_VISIBLE_TOASTS);
+
   return (
     <ToastContext.Provider value={{ showToast, success, error, info, warning }}>
       {children}
-      {/* Toast Render Portal */}
+      {/* Toast Render Queue Portal (Max 3 visible line by line) */}
       <div
+        className="toast-container"
         style={{
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          zIndex: 9999,
+          zIndex: 99999,
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
@@ -64,27 +95,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           pointerEvents: 'none',
         }}
       >
-        {toasts.map((toast) => {
-          let bg = '#131b2e';
-          let border = '#1e293b';
+        {visibleToasts.map((toast) => {
+          let bg = 'rgba(19, 27, 46, 0.96)';
+          let border = '#38bdf8';
           let icon = <Info size={18} color="#38bdf8" />;
 
           if (toast.type === 'success') {
-            bg = 'rgba(6, 78, 59, 0.95)';
+            bg = 'rgba(6, 78, 59, 0.96)';
             border = '#059669';
             icon = <CheckCircle2 size={18} color="#34d399" />;
           } else if (toast.type === 'error') {
-            bg = 'rgba(136, 19, 55, 0.95)';
+            bg = 'rgba(136, 19, 55, 0.96)';
             border = '#e11d48';
             icon = <AlertCircle size={18} color="#fb7185" />;
           } else if (toast.type === 'warning') {
-            bg = 'rgba(120, 53, 15, 0.95)';
+            bg = 'rgba(120, 53, 15, 0.96)';
             border = '#d97706';
             icon = <AlertTriangle size={18} color="#fbbf24" />;
-          } else {
-            bg = 'rgba(19, 27, 46, 0.95)';
-            border = '#38bdf8';
-            icon = <Info size={18} color="#38bdf8" />;
           }
 
           return (
@@ -96,21 +123,25 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 color: '#f8fafc',
                 padding: '12px 16px',
                 borderRadius: '10px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.55)',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'space-between',
                 gap: '12px',
                 fontSize: '13.5px',
-                lineHeight: '1.4',
+                lineHeight: '1.45',
                 pointerEvents: 'auto',
-                backdropFilter: 'blur(12px)',
-                animation: 'toastIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                animation: 'toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: 'all 0.3s ease',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                {icon}
-                <span>{toast.message}</span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
+                <div style={{ marginTop: '2px', flexShrink: 0 }}>{icon}</div>
+                <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', width: '100%' }}>
+                  {toast.message}
+                </div>
               </div>
               <button
                 onClick={() => removeToast(toast.id)}
@@ -124,7 +155,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: '4px',
+                  flexShrink: 0,
                 }}
+                aria-label="Dismiss message"
               >
                 <X size={14} />
               </button>

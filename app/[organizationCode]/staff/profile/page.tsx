@@ -102,7 +102,7 @@ export default function StaffProfilePage() {
 
           <div className={styles.infoItem}>
             <span className={styles.label}>Email Address</span>
-            <span className={styles.value}>{staffProfile?.user?.email || '—'}</span>
+            <span className={styles.value}>{staffProfile?.user?.email || staffProfile?.email || '—'}</span>
           </div>
 
           <div className={styles.infoItem}>
