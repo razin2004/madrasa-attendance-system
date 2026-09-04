@@ -127,8 +127,9 @@
   white-space: nowrap;
 }
 .actionBtnSecondary:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .actionBtnWhatsapp {
@@ -149,6 +150,7 @@
 }
 .actionBtnWhatsapp:hover {
   background-color: rgba(37, 211, 102, 0.2);
+  transform: translateY(-1px);
 }
 
 .actionBtnPurple {
@@ -169,6 +171,7 @@
 }
 .actionBtnPurple:hover {
   background-color: rgba(192, 132, 252, 0.2);
+  transform: translateY(-1px);
 }
 
 .actionBtnDanger {
@@ -189,6 +192,7 @@
 }
 .actionBtnDanger:hover {
   background-color: rgba(239, 68, 68, 0.2);
+  transform: translateY(-1px);
 }
 
 .actionBtnSuccess {
@@ -209,11 +213,36 @@
 }
 .actionBtnSuccess:hover {
   background-color: rgba(16, 185, 129, 0.2);
+  transform: translateY(-1px);
 }
 
-@media (max-width: 768px) {
+.actionBtnDelete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  background-color: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #ef4444;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.actionBtnDelete:hover {
+  background-color: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.7);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+@media (max-width: 900px) {
   .headerBar {
-    padding: 16px;
+    padding: 16px 20px;
     flex-direction: column;
     align-items: stretch;
     gap: 14px;
@@ -221,18 +250,25 @@
   .actionButtonsGroup {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 8px;
   }
   .actionBtnSecondary,
   .actionBtnWhatsapp,
   .actionBtnPurple,
   .actionBtnDanger,
-  .actionBtnSuccess {
+  .actionBtnSuccess,
+  .actionBtnDelete {
     width: 100%;
     min-height: 40px;
     padding: 8px 10px;
     font-size: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .actionButtonsGroup {
+    grid-template-columns: repeat(2, 1fr);
   }
   .gridTwoCol {
     grid-template-columns: 1fr;
@@ -242,4 +278,5 @@
     padding: 16px;
   }
 }
+
 

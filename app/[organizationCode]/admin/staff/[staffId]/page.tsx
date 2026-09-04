@@ -28,6 +28,8 @@ import {
   FileText,
   Plus,
   Share2,
+  Trash2,
+  Upload,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -97,7 +99,14 @@ export default function StaffProfilePage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [idDocType, setIdDocType] = useState('AADHAAR');
+  const [idDocLast4, setIdDocLast4] = useState('');
+  const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
   const [savingMetadata, setSavingMetadata] = useState(false);
+
+  // Delete Staff Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingStaff, setDeletingStaff] = useState(false);
 
   // Branch Assignment Modal
   const [branchModalOpen, setBranchModalOpen] = useState(false);
@@ -154,6 +163,8 @@ export default function StaffProfilePage() {
         setName(staffData.staff.name);
         setPhone(staffData.staff.phone || '');
         setAddress(staffData.staff.address || '');
+        setIdDocType(staffData.staff.idDocType || 'AADHAAR');
+        setIdDocLast4(staffData.staff.idDocLast4 || '');
         setSelectedBranchIds(staffData.staff.branchAssignments.map((a: BranchAssignment) => a.branchId));
       } else {
         toast.error(staffData.error || 'Failed to load staff details.');
@@ -182,7 +193,7 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 1. Update Profile Metadata
+  // 1. Update Profile Metadata & Documents
   const handleSaveMetadata = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error('Full name is required.');
@@ -195,12 +206,14 @@ export default function StaffProfilePage() {
           name: name.trim(),
           phone: phone.trim() || null,
           address: address.trim() || '',
+          idDocType,
+          idDocLast4: idDocLast4.trim() || null,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        toast.success('Staff information updated.');
+        toast.success(selectedDocFile ? 'Staff details & document saved successfully.' : 'Staff information updated successfully.');
         await fetchData();
         setIsEditing(false);
       } else {
@@ -210,6 +223,28 @@ export default function StaffProfilePage() {
       toast.error('Network error updating metadata.');
     } finally {
       setSavingMetadata(false);
+    }
+  };
+
+  // 1b. Delete Staff Account
+  const handleDeleteStaff = async () => {
+    try {
+      setDeletingStaff(true);
+      const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || 'Staff account removed from database.');
+        router.push(`/${organizationCode}/admin/staff`);
+      } else {
+        toast.error(data.error || 'Failed to delete staff account.');
+      }
+    } catch {
+      toast.error('Network error deleting staff account.');
+    } finally {
+      setDeletingStaff(false);
+      setDeleteModalOpen(false);
     }
   };
 
@@ -483,6 +518,15 @@ export default function StaffProfilePage() {
           </div>
 
           <div className={styles.actionButtonsGroup}>
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className={styles.actionBtnSecondary}
+              title="Edit Staff Information & Documents"
+            >
+              <Edit2 size={14} />
+              <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
+            </button>
+
             {isPending ? (
               <>
                 <button
@@ -515,20 +559,28 @@ export default function StaffProfilePage() {
                 <span>Update Password</span>
               </button>
             )}
-            <button onClick={() => setIsEditing(!isEditing)} className={styles.actionBtnSecondary}>
-              <Edit2 size={14} />
-              <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
-            </button>
-            <button onClick={() => setDeviceResetModalOpen(true)} className={styles.actionBtnSecondary}>
+
+            <button onClick={() => setDeviceResetModalOpen(true)} className={styles.actionBtnSecondary} title="Reset Layer 3 Device Bindings">
               <RefreshCw size={14} />
               <span>Reset Devices</span>
             </button>
+
             <button
               onClick={() => setStatusModalOpen(true)}
               className={isActive ? styles.actionBtnDanger : styles.actionBtnSuccess}
+              title={isActive ? 'Deactivate Staff Account' : 'Activate Staff Account'}
             >
               <Power size={14} />
               <span>{isActive ? 'Deactivate' : 'Activate'}</span>
+            </button>
+
+            <button
+              onClick={() => setDeleteModalOpen(true)}
+              className={styles.actionBtnDelete}
+              title="Delete Staff Account from Organization"
+            >
+              <Trash2 size={14} />
+              <span>Delete Staff</span>
             </button>
           </div>
         </header>
@@ -560,26 +612,80 @@ export default function StaffProfilePage() {
             </button>
           </div>
 
-          {/* EDIT METADATA FORM */}
+          {/* EDIT METADATA & DOCUMENT FORM */}
           {isEditing && (
             <div className="glass-card" style={{ padding: '24px', marginBottom: '28px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', marginBottom: '16px' }}>Edit Staff Information</h3>
-              <form onSubmit={handleSaveMetadata} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff' }}>Edit Staff Information &amp; Documents</h3>
+                <button type="button" onClick={() => setIsEditing(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={18} /></button>
+              </div>
+
+              <form onSubmit={handleSaveMetadata} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
                 <div>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Full Name</label>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Full Name *</label>
                   <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Phone (Optional)</label>
-                  <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Phone Number (Optional)</label>
+                  <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Address (Optional)</label>
-                  <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Residential Address (Optional)</label>
+                  <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Full street address" className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>ID Document Type</label>
+                  <select value={idDocType} onChange={(e) => setIdDocType(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }}>
+                    <option value="AADHAAR">Aadhaar Card</option>
+                    <option value="VOTER_ID">Voter ID</option>
+                    <option value="PASSPORT">Passport</option>
+                    <option value="DRIVING_LICENSE">Driving License</option>
+                    <option value="OTHER">Other Identification</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>ID Last 4 Digits (Optional)</label>
+                  <input type="text" maxLength={4} value={idDocLast4} onChange={(e) => setIdDocLast4(e.target.value.replace(/\D/g, ''))} placeholder="e.g. 5482" className="form-input" style={{ width: '100%', marginTop: '4px' }} />
+                </div>
+
+                {/* Document Upload Field */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Upload Staff Document (ID Proof / Contract / Certificate)</label>
+                  <div style={{ marginTop: '6px', border: '2px dashed rgba(99, 102, 241, 0.35)', borderRadius: '12px', padding: '16px', backgroundColor: 'rgba(99, 102, 241, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+                        <FileText size={22} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff' }}>
+                          {selectedDocFile ? selectedDocFile.name : 'Upload Staff Identity Document / Attachment'}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                          {selectedDocFile ? `${(selectedDocFile.size / 1024).toFixed(1)} KB • Ready to attach` : 'Supported formats: PDF, PNG, JPG (Max 10MB)'}
+                        </div>
+                      </div>
+                    </div>
+                    <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Upload size={14} />
+                      <span>{selectedDocFile ? 'Change File' : 'Browse File'}</span>
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setSelectedDocFile(e.target.files[0]);
+                            toast.success(`Attached: ${e.target.files[0].name}`);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
                 <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
                   <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary btn-sm">Cancel</button>
-                  <button type="submit" disabled={savingMetadata} className="btn btn-primary btn-sm">{savingMetadata ? 'Saving...' : 'Save Changes'}</button>
+                  <button type="submit" disabled={savingMetadata} className="btn btn-primary btn-sm">{savingMetadata ? 'Saving...' : 'Save Profile & Documents'}</button>
                 </div>
               </form>
             </div>
@@ -604,6 +710,16 @@ export default function StaffProfilePage() {
                   <div><span style={{ color: 'var(--text-muted)' }}>Phone Number: </span><strong style={{ color: '#ffffff' }}>{staff.phone || 'None (Optional)'}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Residential Address: </span><strong style={{ color: '#ffffff' }}>{staff.address || 'Not specified'}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>ID Document Type: </span><strong style={{ color: '#ffffff' }}>{staff.idDocType}</strong></div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>ID Document Number: </span>
+                    <strong style={{ color: '#ffffff' }}>{staff.idDocLast4 ? `Ending in ****${staff.idDocLast4}` : 'Not specified'}</strong>
+                  </div>
+                  {selectedDocFile && (
+                    <div style={{ marginTop: '4px', padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#818cf8' }}>
+                      <FileText size={14} />
+                      <span>Document Attached: {selectedDocFile.name}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -821,6 +937,17 @@ export default function StaffProfilePage() {
         }
         confirmText={isActive ? 'Deactivate Account' : 'Activate Account'}
         variant={isActive ? 'danger' : 'primary'}
+      />
+
+      {/* 4b. Permanent Staff Account Deletion Confirmation */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteStaff}
+        title={`Delete ${staff.name} permanently?`}
+        message={`Are you sure you want to remove ${staff.name} (${staff.staffId}) from the organization database? All account credentials, registered devices, attendance logs, and leave records will be deleted. This action cannot be undone.`}
+        confirmText={deletingStaff ? 'Deleting Account...' : 'Delete Staff Account'}
+        variant="danger"
       />
 
       {/* 5. Branch Assignment Modal */}

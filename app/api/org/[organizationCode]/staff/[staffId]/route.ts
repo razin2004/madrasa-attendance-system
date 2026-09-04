@@ -91,7 +91,7 @@ export async function PATCH(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { name, phone, address } = body;
+    const { name, phone, address, idDocType, idDocLast4 } = body;
 
     const updateData: any = {};
     const changes: Record<string, { old: any; new: any }> = {};
@@ -110,27 +110,28 @@ export async function PATCH(
     }
 
     if (phone !== undefined) {
-      if (typeof phone !== 'string' || phone.trim().length < 8) {
+      const cleanPhone = typeof phone === 'string' && phone.trim() ? phone.trim() : null;
+      if (cleanPhone && cleanPhone.length < 8) {
         return NextResponse.json(
           { success: false, error: 'Valid phone number is required.' },
           { status: 400 }
         );
       }
-      const cleanPhone = phone.trim();
       if (cleanPhone !== existingStaff.phone) {
-        // Check duplicate phone in organization
-        const dupPhone = await prisma.staffProfile.findFirst({
-          where: {
-            organizationId: auth.organization.id,
-            phone: cleanPhone,
-            id: { not: existingStaff.id },
-          },
-        });
-        if (dupPhone) {
-          return NextResponse.json(
-            { success: false, error: `Phone number ${cleanPhone} is already assigned to another staff member.` },
-            { status: 409 }
-          );
+        if (cleanPhone) {
+          const dupPhone = await prisma.staffProfile.findFirst({
+            where: {
+              organizationId: auth.organization.id,
+              phone: cleanPhone,
+              id: { not: existingStaff.id },
+            },
+          });
+          if (dupPhone) {
+            return NextResponse.json(
+              { success: false, error: `Phone number ${cleanPhone} is already assigned to another staff member.` },
+              { status: 409 }
+            );
+          }
         }
         changes.phone = { old: existingStaff.phone, new: cleanPhone };
         updateData.phone = cleanPhone;
@@ -138,15 +139,28 @@ export async function PATCH(
     }
 
     if (address !== undefined) {
-      if (typeof address !== 'string' || address.trim().length < 3) {
-        return NextResponse.json(
-          { success: false, error: 'Address must be at least 3 characters.' },
-          { status: 400 }
-        );
+      const cleanAddress = typeof address === 'string' ? address.trim() : '';
+      if (cleanAddress !== existingStaff.address) {
+        changes.address = { old: existingStaff.address, new: cleanAddress };
+        updateData.address = cleanAddress;
       }
-      if (address.trim() !== existingStaff.address) {
-        changes.address = { old: existingStaff.address, new: address.trim() };
-        updateData.address = address.trim();
+    }
+
+    if (idDocType !== undefined && typeof idDocType === 'string') {
+      const validTypes = ['AADHAAR', 'VOTER_ID', 'PASSPORT', 'DRIVING_LICENSE', 'OTHER'];
+      if (validTypes.includes(idDocType)) {
+        if (idDocType !== existingStaff.idDocType) {
+          changes.idDocType = { old: existingStaff.idDocType, new: idDocType };
+          updateData.idDocType = idDocType;
+        }
+      }
+    }
+
+    if (idDocLast4 !== undefined) {
+      const cleanLast4 = typeof idDocLast4 === 'string' ? idDocLast4.trim().slice(0, 4) : null;
+      if (cleanLast4 !== existingStaff.idDocLast4) {
+        changes.idDocLast4 = { old: existingStaff.idDocLast4, new: cleanLast4 };
+        updateData.idDocLast4 = cleanLast4;
       }
     }
 
@@ -169,12 +183,12 @@ export async function PATCH(
     });
 
     // Also update name/phone on User record if changed
-    if (updateData.name || updateData.phone) {
+    if (updateData.name || updateData.phone !== undefined) {
       await prisma.user.update({
         where: { id: existingStaff.userId },
         data: {
           name: updateData.name || undefined,
-          phone: updateData.phone || undefined,
+          phone: updateData.phone !== undefined ? updateData.phone : undefined,
         },
       });
     }
@@ -208,3 +222,67 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { organizationCode: string; staffId: string } }
+) {
+  try {
+    const auth = await requireOrgAdmin(params.organizationCode);
+    if (!auth.authorized || !auth.organization || !auth.session) {
+      return NextResponse.json(
+        { success: false, error: auth.errorMessage },
+        { status: auth.errorStatus || 401 }
+      );
+    }
+
+    const existingStaff = await prisma.staffProfile.findFirst({
+      where: {
+        organizationId: auth.organization.id,
+        OR: [{ id: params.staffId }, { staffId: params.staffId }],
+      },
+    });
+
+    if (!existingStaff) {
+      return NextResponse.json(
+        { success: false, error: 'Staff member not found or access denied.' },
+        { status: 404 }
+      );
+    }
+
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+
+    // Record audit log before deleting
+    await recordAuditLog({
+      organizationId: auth.organization.id,
+      actorUserId: auth.session.user.id,
+      action: 'STAFF_DELETED',
+      entityType: 'StaffProfile',
+      entityId: existingStaff.id,
+      metadata: {
+        staffId: existingStaff.staffId,
+        name: existingStaff.name,
+        email: existingStaff.userId,
+      },
+      ipAddress: ip,
+      userAgent: request.headers.get('user-agent'),
+    });
+
+    // Deleting User automatically cascades and deletes StaffProfile, devices, assignments, attendance, leaves, etc.
+    await prisma.user.delete({
+      where: { id: existingStaff.userId },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Staff account ${existingStaff.name} (${existingStaff.staffId}) deleted successfully.`,
+    });
+  } catch (error: any) {
+    console.error('Delete staff error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete staff account.' },
+      { status: 500 }
+    );
+  }
+}
+
