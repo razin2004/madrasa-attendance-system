@@ -25,7 +25,6 @@ import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { useToast } from '@/components/feedback/toast-provider';
 import { openWhatsAppInvite } from '@/lib/whatsapp';
-import { normalizeEmail } from '@/lib/security';
 import styles from './StaffCreate.module.css';
 
 interface BranchItem {
@@ -364,8 +363,6 @@ export default function OnboardStaffPage() {
                       onClick={() => {
                         if (!firstName.trim()) return toast.error('First name is required.');
                         if (!email.trim() || !email.includes('@')) return toast.error('A valid email address is required.');
-                        const clean = normalizeEmail(email);
-                        setEmail(clean);
                         setStep(2);
                       }}
                       className="btn btn-primary btn-sm"
