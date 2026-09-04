@@ -371,7 +371,7 @@ export default function StaffDirectoryPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
-              onClick={fetchInitialData}
+              onClick={() => fetchInitialData()}
               disabled={loading}
               className="btn btn-secondary btn-sm"
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -468,7 +468,7 @@ export default function StaffDirectoryPage() {
               <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '20px' }}>
                 There was an error communicating with the staff management server.
               </p>
-              <button onClick={fetchInitialData} className="btn btn-primary btn-sm">
+              <button onClick={() => fetchInitialData()} className="btn btn-primary btn-sm">
                 Try Again
               </button>
             </div>
