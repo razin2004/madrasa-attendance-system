@@ -190,13 +190,20 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   const forcedProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
 
   // Order of Provider Execution:
-  // 1. Try Gmail SMTP first if credentials exist (guarantees native DKIM/SPF inbox delivery)
-  // 2. Fallback to Brevo Slot 1 and Brevo Slot 2
+  // - If SMTP credentials are set (e.g. Gmail SMTP), try SMTP first to guarantee native DKIM/SPF inbox delivery.
+  // - Fallback to Brevo Slot 1 and Brevo Slot 2.
   const providerOrder: ('BREVO_1' | 'BREVO_2' | 'SMTP')[] = [];
 
-  if (hasSmtpConfig) providerOrder.push('SMTP');
-  if (hasBrevo1) providerOrder.push('BREVO_1');
-  if (hasBrevo2) providerOrder.push('BREVO_2');
+  if (forcedProvider === 'brevo') {
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+  } else {
+    // Default mode: SMTP first (if configured for native DKIM inbox delivery), then Brevo API 1 & 2
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
+  }
 
   const attemptedErrors: string[] = [];
 
