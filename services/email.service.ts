@@ -190,19 +190,30 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   const forcedProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
 
   // Order of Provider Execution:
-  // - If SMTP credentials are set (e.g. Gmail SMTP), try SMTP first to guarantee native DKIM/SPF inbox delivery.
-  // - Fallback to Brevo Slot 1 and Brevo Slot 2.
+  // - If EMAIL_PROVIDER="smtp", force SMTP first.
+  // - If EMAIL_PROVIDER="brevo", force Brevo API (Slot 1 & 2) first.
+  // - In Development (local): Default to SMTP (Gmail SMTP) first.
+  // - In Production (cloud): Default to Brevo API (Slot 1 & 2) first with SMTP fallback.
   const providerOrder: ('BREVO_1' | 'BREVO_2' | 'SMTP')[] = [];
 
-  if (forcedProvider === 'brevo') {
+  if (forcedProvider === 'smtp') {
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
+  } else if (forcedProvider === 'brevo') {
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
     if (hasSmtpConfig) providerOrder.push('SMTP');
+  } else if (isDev) {
+    // Development Environment: Gmail SMTP first
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
   } else {
-    // Default mode: SMTP first (if configured for native DKIM inbox delivery), then Brevo API 1 & 2
-    if (hasSmtpConfig) providerOrder.push('SMTP');
+    // Production Environment: Brevo API first
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
+    if (hasSmtpConfig) providerOrder.push('SMTP');
   }
 
   const attemptedErrors: string[] = [];
