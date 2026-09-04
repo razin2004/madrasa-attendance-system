@@ -21,7 +21,8 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { newPassword, password } = body;
+    const { newPassword, password, sendEmailNotification } = body;
+    const shouldSendEmail = sendEmailNotification !== false;
 
     let targetPassword = ((newPassword || password) as string)?.trim() || '';
     if (targetPassword.length > 0) {
@@ -73,36 +74,41 @@ export async function POST(
       });
     });
 
-    // Send email notification to staff member
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const loginUrl = `${origin}/login`;
+    // Send email notification to staff member ONLY if checked
+    let emailSent = false;
+    if (shouldSendEmail) {
+      const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const loginUrl = `${origin}/login`;
 
-    await sendEmail({
-      recipient: staffProfile.user.email,
-      type: 'STAFF_PASSWORD_UPDATED',
-      subject: `Your ShiftGuard Password Has Been Updated - ${auth.organization.name}`,
-      htmlContent: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b0f19; color: #f8fafc; padding: 28px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-          <h2 style="color: #818cf8; margin-top: 0;">Password Updated</h2>
-          <p>Hello <strong>${staffProfile.name}</strong>,</p>
-          <p>Your account password for <strong>${auth.organization.name}</strong> has been updated by your organization administrator.</p>
-          
-          <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid rgba(255,255,255,0.1);">
-            <p style="margin: 4px 0;"><strong>Organization Code:</strong> <code style="color: #a5b4fc;">${auth.organization.organizationCode}</code></p>
-            <p style="margin: 4px 0;"><strong>Staff ID:</strong> <code style="color: #a5b4fc;">${staffProfile.staffId}</code></p>
-            <p style="margin: 4px 0;"><strong>Login Email:</strong> ${staffProfile.user.email}</p>
-            <p style="margin: 4px 0;"><strong>New Password:</strong> <code style="color: #34d399; font-size: 16px;">${targetPassword}</code></p>
+      const emailResult = await sendEmail({
+        recipient: staffProfile.user.email,
+        type: 'STAFF_PASSWORD_UPDATED',
+        subject: `Your ShiftGuard Password Has Been Updated - ${auth.organization.name}`,
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b0f19; color: #f8fafc; padding: 28px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <h2 style="color: #818cf8; margin-top: 0;">Password Updated</h2>
+            <p>Hello <strong>${staffProfile.name}</strong>,</p>
+            <p>Your account password for <strong>${auth.organization.name}</strong> has been updated by your organization administrator.</p>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid rgba(255,255,255,0.1);">
+              <p style="margin: 4px 0;"><strong>Organization Code:</strong> <code style="color: #a5b4fc;">${auth.organization.organizationCode}</code></p>
+              <p style="margin: 4px 0;"><strong>Staff ID:</strong> <code style="color: #a5b4fc;">${staffProfile.staffId}</code></p>
+              <p style="margin: 4px 0;"><strong>Login Email:</strong> ${staffProfile.user.email}</p>
+              <p style="margin: 4px 0;"><strong>New Password:</strong> <code style="color: #34d399; font-size: 16px;">${targetPassword}</code></p>
+            </div>
+
+            <p style="margin-top: 24px;">
+              <a href="${loginUrl}" style="background: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In to ShiftGuard</a>
+            </p>
+            <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">If you did not request this change, please contact your organization administrator immediately.</p>
           </div>
+        `,
+        textContent: `Hello ${staffProfile.name},\n\nYour account password for ${auth.organization.name} has been updated by your administrator.\n\nOrganization Code: ${auth.organization.organizationCode}\nStaff ID: ${staffProfile.staffId}\nEmail: ${staffProfile.user.email}\nNew Password: ${targetPassword}\n\nLogin Portal: ${loginUrl}`,
+        organizationId: auth.organization.id,
+      });
 
-          <p style="margin-top: 24px;">
-            <a href="${loginUrl}" style="background: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In to ShiftGuard</a>
-          </p>
-          <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">If you did not request this change, please contact your organization administrator immediately.</p>
-        </div>
-      `,
-      textContent: `Hello ${staffProfile.name},\n\nYour account password for ${auth.organization.name} has been updated by your administrator.\n\nOrganization Code: ${auth.organization.organizationCode}\nStaff ID: ${staffProfile.staffId}\nEmail: ${staffProfile.user.email}\nNew Password: ${targetPassword}\n\nLogin Portal: ${loginUrl}`,
-      organizationId: auth.organization.id,
-    });
+      emailSent = emailResult.success;
+    }
 
     // Record Audit Log
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
@@ -116,6 +122,7 @@ export async function POST(
         staffId: staffProfile.staffId,
         staffName: staffProfile.name,
         email: staffProfile.user.email,
+        emailSent,
       },
       ipAddress: ip,
       userAgent: request.headers.get('user-agent'),
@@ -126,7 +133,7 @@ export async function POST(
       message: `Password updated successfully for ${staffProfile.name}.`,
       updatedPassword: targetPassword,
       password: targetPassword,
-      emailSent: true,
+      emailSent,
       staff: {
         id: staffProfile.id,
         staffId: staffProfile.staffId,
