@@ -77,10 +77,13 @@ export function hashToken(token: string): string {
 }
 
 /**
- * Normalize email (lowercase and trimmed)
+ * Normalize email (lowercase, trimmed, and strip accidental www. prefix)
  */
 export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+  let clean = email.trim().toLowerCase();
+  clean = clean.replace(/^www\./i, '');
+  clean = clean.replace(/@www\./i, '@');
+  return clean;
 }
 
 /**
