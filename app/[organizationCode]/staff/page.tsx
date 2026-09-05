@@ -566,7 +566,7 @@ export default function StaffDashboardPage() {
       </header>
 
       {/* Main Container Body */}
-      <main style={{ padding: '16px 24px 80px 24px', maxWidth: '1240px', width: '100%', margin: '0 auto' }}>
+      <main className={styles.pageContent}>
         
 
 
