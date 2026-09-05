@@ -540,8 +540,6 @@ export default function StaffDashboardPage() {
                   <span style={{ color: '#cbd5e1' }}>{staffInfo?.user?.email || staffInfo?.email}</span>
                 </>
               )}
-              <span>&bull;</span>
-              <span style={{ color: '#cbd5e1' }}>{orgData?.name || orgCode}</span>
             </p>
           </div>
         </div>

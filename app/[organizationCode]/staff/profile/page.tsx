@@ -58,7 +58,7 @@ export default function StaffProfilePage() {
       sessionStorage.clear();
       setSigningOut(false);
       setShowSignOutModal(false);
-      router.push('/login');
+      router.push(`/${orgCode}/login`);
     }
   };
 

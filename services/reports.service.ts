@@ -301,8 +301,14 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       status = 'OFF DUTY';
     } else {
       // Scheduled to work, no punches, no leave, not holiday
-      if (isToday) {
-        // Check if shift start time has passed or if shift has ended
+      const targetDateMidnight = new Date(Date.UTC(targetDateObj.getUTCFullYear(), targetDateObj.getUTCMonth(), targetDateObj.getUTCDate()));
+      const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+      if (targetDateMidnight.getTime() > todayMidnight.getTime()) {
+        // Future date: NOT YET CLOCKED IN, never ABSENT
+        status = 'NOT YET CLOCKED IN';
+      } else if (isToday) {
+        // Current day ongoing check
         const shiftEndHour = schedule.endTime ? parseInt(schedule.endTime.split(':')[0], 10) : 17;
         const nowHour = now.getUTCHours();
         if (nowHour < shiftEndHour) {
@@ -575,7 +581,13 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
     } else if (!schedule.isScheduled) {
       rowStatus = 'OFF DUTY';
     } else {
-      if (isToday) {
+      const targetDateMidnight = new Date(Date.UTC(targetDateObj.getUTCFullYear(), targetDateObj.getUTCMonth(), targetDateObj.getUTCDate()));
+      const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+      if (targetDateMidnight.getTime() > todayMidnight.getTime()) {
+        // Future date: NOT YET CLOCKED IN, never ABSENT
+        rowStatus = 'NOT YET CLOCKED IN';
+      } else if (isToday) {
         const shiftEndHour = schedule.endTime ? parseInt(schedule.endTime.split(':')[0], 10) : 17;
         rowStatus = now.getUTCHours() < shiftEndHour ? 'NOT YET CLOCKED IN' : 'ABSENT';
       } else {

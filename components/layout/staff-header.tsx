@@ -36,7 +36,6 @@ export function StaffHeader({
     <header className={styles.topHeader}>
       <div className={styles.headerTitleArea}>
         <h1 className={styles.pageTitle}>{getPageTitle()}</h1>
-        <span className={styles.orgBadge}>{org}</span>
       </div>
 
       <div className={styles.headerActions}>
@@ -65,16 +64,6 @@ export function StaffHeader({
               : 'Verifying Security...'}
           </span>
         </div>
-
-        <button
-          type="button"
-          className={styles.signOutBtn}
-          onClick={onSignOut}
-          style={{ width: 'auto', padding: '6px 14px' }}
-        >
-          <LogOut size={16} />
-          <span style={{ fontSize: '0.8125rem' }}>Sign Out</span>
-        </button>
       </div>
     </header>
   );

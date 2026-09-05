@@ -31,6 +31,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       summary,
+      records: summary.records || [],
     });
   } catch (error: any) {
     console.error('Attendance history error:', error);
