@@ -36,6 +36,8 @@ import {
   AlertTriangle,
   ChevronRight,
   Sparkles,
+  UserCheck,
+  LayoutDashboard,
 } from 'lucide-react';
 
 interface Organization {
@@ -76,7 +78,7 @@ export default function SuperAdminDashboardPage() {
   const router = useRouter();
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<SuperAdminTab>('pending');
+  const [activeTab, setActiveTab] = useState<SuperAdminTab>('overview');
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [counts, setCounts] = useState({
@@ -92,12 +94,20 @@ export default function SuperAdminDashboardPage() {
   const [adminEmail, setAdminEmail] = useState('Super Admin');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Modals & Action State
+  // Governance Action Modals
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [actionType, setActionType] = useState<'VIEW' | 'APPROVE' | 'REJECT' | 'DEACTIVATE' | 'ACTIVATE' | 'DELETE' | null>(null);
   const [actionReason, setActionReason] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Change Org Admin State
+  const [isChangeAdminModalOpen, setIsChangeAdminModalOpen] = useState(false);
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminPhone, setNewAdminPhone] = useState('');
+  const [sendAdminInvite, setSendAdminInvite] = useState(true);
+  const [isUpdatingAdmin, setIsUpdatingAdmin] = useState(false);
 
   // Fetch Dashboard Data
   const fetchData = useCallback(async () => {
@@ -270,12 +280,53 @@ export default function SuperAdminDashboardPage() {
     }
   };
 
+  // Handle Changing Org Admin
+  const handleChangeAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrg) return;
+    if (!newAdminName.trim() || !newAdminEmail.trim()) {
+      toast.error('Admin name and email address are required.');
+      return;
+    }
+
+    setIsUpdatingAdmin(true);
+    try {
+      const res = await fetch(`/api/super-admin/organizations/${selectedOrg.id}/change-admin`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactPersonName: newAdminName.trim(),
+          contactEmail: newAdminEmail.trim(),
+          phone: newAdminPhone.trim(),
+          sendInvitation: sendAdminInvite,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Organization Admin updated successfully!');
+        if (data.organization) {
+          setSelectedOrg(data.organization);
+        }
+        setIsChangeAdminModalOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.error || 'Failed to update Organization Admin.');
+      }
+    } catch (err) {
+      toast.error('Network error updating Organization Admin.');
+    } finally {
+      setIsUpdatingAdmin(false);
+    }
+  };
+
   const closeModal = () => {
     setSelectedOrg(null);
     setActionType(null);
     setActionReason('');
     setDeleteConfirmText('');
     setIsProcessing(false);
+    setIsChangeAdminModalOpen(false);
   };
 
   // Real-time Search Filtering
@@ -344,104 +395,57 @@ export default function SuperAdminDashboardPage() {
 
         {/* Dashboard Body */}
         <main style={{ padding: '24px', flex: 1 }}>
-          {/* Interactive Top Summary Cards */}
-          <div className={styles.metricsGrid}>
+          {/* CONDITIONAL WARNING BANNER: Shown ONLY if there are pending requests */}
+          {counts.pending > 0 && (
             <div
-              className={`${styles.metricCard} ${activeTab === 'pending' ? styles.metricCardActive : ''}`}
-              onClick={() => setActiveTab('pending')}
+              style={{
+                marginBottom: '20px',
+                padding: '16px 20px',
+                borderRadius: '14px',
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                color: '#fbbf24',
+                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.12)',
+              }}
             >
-              <div className={styles.metricCardHeader}>
-                <span className={styles.metricTitle}>Pending Approvals</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div
-                  className={styles.metricIconBox}
-                  style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
                 >
-                  <Clock size={20} />
+                  <AlertTriangle size={20} color="#fbbf24" />
+                </div>
+                <div>
+                  <strong style={{ color: '#ffffff', fontSize: '14.5px', fontWeight: 800 }}>
+                    Attention Required: Pending Approvals
+                  </strong>
+                  <div style={{ fontSize: '12.5px', color: '#fcd34d', marginTop: '2px' }}>
+                    There {counts.pending === 1 ? 'is 1 organization application' : `are ${counts.pending} organization applications`} awaiting platform super admin verification.
+                  </div>
                 </div>
               </div>
-              <div className={styles.metricValue}>{counts.pending}</div>
-              <div className={styles.metricDescription}>Awaiting platform review</div>
+              <button
+                onClick={() => setActiveTab('pending')}
+                className="btn btn-warning btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', fontWeight: 700 }}
+              >
+                <span>Review Requests ({counts.pending})</span>
+                <ChevronRight size={15} />
+              </button>
             </div>
-
-            <div
-              className={`${styles.metricCard} ${activeTab === 'approved' ? styles.metricCardActive : ''}`}
-              onClick={() => setActiveTab('approved')}
-            >
-              <div className={styles.metricCardHeader}>
-                <span className={styles.metricTitle}>Active Organizations</span>
-                <div
-                  className={styles.metricIconBox}
-                  style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}
-                >
-                  <CheckCircle2 size={20} />
-                </div>
-              </div>
-              <div className={styles.metricValue}>{counts.approved}</div>
-              <div className={styles.metricDescription}>Active tenant workspaces</div>
-            </div>
-
-            <div
-              className={`${styles.metricCard} ${activeTab === 'suspended' ? styles.metricCardActive : ''}`}
-              onClick={() => setActiveTab('suspended')}
-            >
-              <div className={styles.metricCardHeader}>
-                <span className={styles.metricTitle}>Deactivated / Suspended</span>
-                <div
-                  className={styles.metricIconBox}
-                  style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}
-                >
-                  <Power size={20} />
-                </div>
-              </div>
-              <div className={styles.metricValue}>{counts.suspended || 0}</div>
-              <div className={styles.metricDescription}>Suspended organization access</div>
-            </div>
-
-            <div className={styles.metricCard}>
-              <div className={styles.metricCardHeader}>
-                <span className={styles.metricTitle}>Total Registered Branches</span>
-                <div
-                  className={styles.metricIconBox}
-                  style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}
-                >
-                  <MapPin size={20} />
-                </div>
-              </div>
-              <div className={styles.metricValue}>{counts.totalBranches || 0}</div>
-              <div className={styles.metricDescription}>Workplace geofenced locations</div>
-            </div>
-
-            <div className={styles.metricCard}>
-              <div className={styles.metricCardHeader}>
-                <span className={styles.metricTitle}>Total Staff Profiles</span>
-                <div
-                  className={styles.metricIconBox}
-                  style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', color: '#c084fc' }}
-                >
-                  <Users size={20} />
-                </div>
-              </div>
-              <div className={styles.metricValue}>{counts.totalStaff || 0}</div>
-              <div className={styles.metricDescription}>Registered staff members</div>
-            </div>
-
-            <div
-              className={`${styles.metricCard} ${activeTab === 'history' ? styles.metricCardActive : ''}`}
-              onClick={() => setActiveTab('history')}
-            >
-              <div className={styles.metricCardHeader}>
-                <span className={styles.metricTitle}>Governance Log Entries</span>
-                <div
-                  className={styles.metricIconBox}
-                  style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}
-                >
-                  <History size={20} />
-                </div>
-              </div>
-              <div className={styles.metricValue}>{auditLogs.length}</div>
-              <div className={styles.metricDescription}>Governance event history</div>
-            </div>
-          </div>
+          )}
 
           {/* ERROR STATE */}
           {hasError && !isLoading && (
@@ -471,6 +475,206 @@ export default function SuperAdminDashboardPage() {
 
           {!isLoading && !hasError && (
             <>
+              {/* TAB 0: PLATFORM OVERVIEW PANEL */}
+              {activeTab === 'overview' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {/* Metric Cards Panel */}
+                  <div className="glass-card" style={{ padding: '24px', borderRadius: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+                      <div>
+                        <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                          Platform Overview Panel
+                        </h2>
+                        <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                          Live metrics summary across all registered tenant organizations.
+                        </p>
+                      </div>
+                      <span className="badge badge-info" style={{ fontSize: '11px', fontWeight: 700 }}>
+                        Realtime Metrics
+                      </span>
+                    </div>
+
+                    <div className={styles.metricsGrid}>
+                      <div
+                        className={styles.metricCard}
+                        onClick={() => setActiveTab('pending')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className={styles.metricCardHeader}>
+                          <span className={styles.metricTitle}>Pending Approvals</span>
+                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+                            <Clock size={20} />
+                          </div>
+                        </div>
+                        <div className={styles.metricValue}>{counts.pending}</div>
+                        <div className={styles.metricDescription}>Awaiting platform review</div>
+                      </div>
+
+                      <div
+                        className={styles.metricCard}
+                        onClick={() => setActiveTab('approved')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className={styles.metricCardHeader}>
+                          <span className={styles.metricTitle}>Active Organizations</span>
+                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+                            <CheckCircle2 size={20} />
+                          </div>
+                        </div>
+                        <div className={styles.metricValue}>{counts.approved}</div>
+                        <div className={styles.metricDescription}>Active tenant workspaces</div>
+                      </div>
+
+                      <div
+                        className={styles.metricCard}
+                        onClick={() => setActiveTab('suspended')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className={styles.metricCardHeader}>
+                          <span className={styles.metricTitle}>Deactivated / Suspended</span>
+                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}>
+                            <Power size={20} />
+                          </div>
+                        </div>
+                        <div className={styles.metricValue}>{counts.suspended || 0}</div>
+                        <div className={styles.metricDescription}>Suspended organization access</div>
+                      </div>
+
+                      <div className={styles.metricCard}>
+                        <div className={styles.metricCardHeader}>
+                          <span className={styles.metricTitle}>Total Registered Branches</span>
+                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                            <MapPin size={20} />
+                          </div>
+                        </div>
+                        <div className={styles.metricValue}>{counts.totalBranches || 0}</div>
+                        <div className={styles.metricDescription}>Workplace geofenced locations</div>
+                      </div>
+
+                      <div className={styles.metricCard}>
+                        <div className={styles.metricCardHeader}>
+                          <span className={styles.metricTitle}>Total Staff Profiles</span>
+                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', color: '#c084fc' }}>
+                            <Users size={20} />
+                          </div>
+                        </div>
+                        <div className={styles.metricValue}>{counts.totalStaff || 0}</div>
+                        <div className={styles.metricDescription}>Registered staff members</div>
+                      </div>
+
+                      <div
+                        className={styles.metricCard}
+                        onClick={() => setActiveTab('history')}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className={styles.metricCardHeader}>
+                          <span className={styles.metricTitle}>Governance Log Entries</span>
+                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+                            <History size={20} />
+                          </div>
+                        </div>
+                        <div className={styles.metricValue}>{auditLogs.length}</div>
+                        <div className={styles.metricDescription}>Governance event history</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Overview Quick Previews Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                    {/* Active Workspaces Card */}
+                    <div className="glass-card" style={{ padding: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>Active Organizations</h3>
+                        <button onClick={() => setActiveTab('approved')} className="btn btn-ghost btn-xs" style={{ color: '#38bdf8' }}>
+                          View All ({approvedOrgs.length}) →
+                        </button>
+                      </div>
+                      {approvedOrgs.length === 0 ? (
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No active organizations yet.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {approvedOrgs.slice(0, 4).map((org) => (
+                            <div
+                              key={org.id}
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                backgroundColor: 'rgba(255,255,255,0.03)',
+                                border: '1px solid var(--border-subtle)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden' }}>
+                                  <OrgLogo logoUrl={org.logoUrl} name={org.name} size={16} />
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff' }}>{org.name}</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                    Admin: {org.contactPersonName || org.contactEmail}
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedOrg(org);
+                                  setActionType('VIEW');
+                                }}
+                                className="btn btn-secondary btn-xs"
+                              >
+                                <Eye size={13} /> Details
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Audit Logs Stream */}
+                    <div className="glass-card" style={{ padding: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>Recent Governance Activity</h3>
+                        <button onClick={() => setActiveTab('history')} className="btn btn-ghost btn-xs" style={{ color: '#818cf8' }}>
+                          Full Audit Log →
+                        </button>
+                      </div>
+                      {auditLogs.length === 0 ? (
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No governance logs recorded yet.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {auditLogs.slice(0, 4).map((log) => (
+                            <div
+                              key={log.id}
+                              style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                backgroundColor: 'rgba(255,255,255,0.02)',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <div>
+                                <span style={{ fontWeight: 700, color: '#ffffff' }}>{log.action}</span>
+                                <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>
+                                  ({log.organization?.name || 'Platform'})
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                                {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* TAB 1: PENDING APPROVALS */}
               {activeTab === 'pending' && (
                 <div>
@@ -1232,7 +1436,7 @@ export default function SuperAdminDashboardPage() {
       )}
 
       {/* MODAL 5: PREMIUM ORGANIZATION DETAILS POPUP (STAFF-PROFILE STYLE) */}
-      {selectedOrg && (actionType === 'REJECT' || actionType === 'VIEW') && (
+      {selectedOrg && (actionType === 'REJECT' || actionType === 'VIEW') && !isChangeAdminModalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div
             className="modal-content glass-card"
@@ -1342,8 +1546,25 @@ export default function SuperAdminDashboardPage() {
               }}
             >
               <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <User size={13} color="#818cf8" /> Contact Person
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <User size={13} color="#818cf8" /> Contact Person
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewAdminName(selectedOrg.contactPersonName || '');
+                      setNewAdminEmail(selectedOrg.contactEmail || '');
+                      setNewAdminPhone(selectedOrg.phone || '');
+                      setIsChangeAdminModalOpen(true);
+                    }}
+                    className="btn btn-secondary btn-xs"
+                    style={{ fontSize: '11px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title="Change primary Organization Admin"
+                  >
+                    <UserCheck size={12} />
+                    <span>Change Admin</span>
+                  </button>
                 </div>
                 <div style={{ color: '#ffffff', fontWeight: 700 }}>{selectedOrg.contactPersonName || 'N/A'}</div>
               </div>
@@ -1577,6 +1798,135 @@ export default function SuperAdminDashboardPage() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 6: CHANGE ORG ADMIN MODAL */}
+      {isChangeAdminModalOpen && selectedOrg && (
+        <div className="modal-overlay" onClick={() => setIsChangeAdminModalOpen(false)}>
+          <div
+            className="modal-content glass-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ padding: '28px', maxWidth: '480px', width: '100%', borderRadius: '16px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <UserCheck size={20} color="#818cf8" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                    Change Organization Admin
+                  </h3>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Reassign primary admin for <strong>{selectedOrg.name}</strong>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsChangeAdminModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleChangeAdmin}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label className="form-label" htmlFor="newAdminName" style={{ fontSize: '12.5px', fontWeight: 600, color: '#ffffff' }}>
+                  Admin Full Name
+                </label>
+                <input
+                  id="newAdminName"
+                  type="text"
+                  required
+                  placeholder="e.g. John Doe"
+                  value={newAdminName}
+                  onChange={(e) => setNewAdminName(e.target.value)}
+                  disabled={isUpdatingAdmin}
+                  className="form-input"
+                  style={{ width: '100%', marginTop: '4px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label className="form-label" htmlFor="newAdminEmail" style={{ fontSize: '12.5px', fontWeight: 600, color: '#ffffff' }}>
+                  Admin Email Address
+                </label>
+                <input
+                  id="newAdminEmail"
+                  type="email"
+                  required
+                  placeholder="e.g. admin@organization.com"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  disabled={isUpdatingAdmin}
+                  className="form-input"
+                  style={{ width: '100%', marginTop: '4px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" htmlFor="newAdminPhone" style={{ fontSize: '12.5px', fontWeight: 600, color: '#ffffff' }}>
+                  Phone Number (Optional)
+                </label>
+                <input
+                  id="newAdminPhone"
+                  type="tel"
+                  placeholder="e.g. +91 9876543210"
+                  value={newAdminPhone}
+                  onChange={(e) => setNewAdminPhone(e.target.value)}
+                  disabled={isUpdatingAdmin}
+                  className="form-input"
+                  style={{ width: '100%', marginTop: '4px' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="sendAdminInvite"
+                  type="checkbox"
+                  checked={sendAdminInvite}
+                  onChange={(e) => setSendAdminInvite(e.target.checked)}
+                  disabled={isUpdatingAdmin}
+                  style={{ width: '16px', height: '16px', accentColor: '#818cf8', cursor: 'pointer' }}
+                />
+                <label htmlFor="sendAdminInvite" style={{ fontSize: '12.5px', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                  Send account setup/invitation email to new admin
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsChangeAdminModalOpen(false)}
+                  disabled={isUpdatingAdmin}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingAdmin}
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {isUpdatingAdmin ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />}
+                  <span>{isUpdatingAdmin ? 'Updating...' : 'Save & Update Admin'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

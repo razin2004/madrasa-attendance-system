@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Clock, CheckCircle2, Power, XCircle, History } from 'lucide-react';
+import { Clock, CheckCircle2, Power, XCircle, History, LayoutDashboard } from 'lucide-react';
 import { SuperAdminTab } from './super-admin-sidebar';
 
 interface SuperAdminMobileNavProps {
@@ -21,6 +21,7 @@ export function SuperAdminMobileNav({
   counts = { pending: 0, approved: 0, suspended: 0, rejected: 0 },
 }: SuperAdminMobileNavProps) {
   const tabs = [
+    { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
     { id: 'pending' as const, label: 'Pending', icon: Clock, count: counts.pending },
     { id: 'approved' as const, label: 'Active', icon: CheckCircle2, count: counts.approved },
     { id: 'suspended' as const, label: 'Suspended', icon: Power, count: counts.suspended },

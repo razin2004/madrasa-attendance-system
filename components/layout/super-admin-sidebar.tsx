@@ -13,12 +13,13 @@ import {
   User,
   Power,
   Building2,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
 
 import { ConfirmationModal } from '../feedback/confirmation-modal';
 
-export type SuperAdminTab = 'pending' | 'approved' | 'suspended' | 'rejected' | 'history';
+export type SuperAdminTab = 'overview' | 'pending' | 'approved' | 'suspended' | 'rejected' | 'history';
 
 interface SuperAdminSidebarProps {
   activeTab: SuperAdminTab;
@@ -55,6 +56,11 @@ export function SuperAdminSidebar({
   };
 
   const navItems = [
+    {
+      id: 'overview' as const,
+      label: 'Platform Overview',
+      icon: LayoutDashboard,
+    },
     {
       id: 'pending' as const,
       label: 'Pending Approvals',
