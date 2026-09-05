@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
 import { normalizeEmail } from '@/lib/security';
 
-export type EmailProviderType = 'BREVO_SLOT_1' | 'BREVO_SLOT_2' | 'SMTP' | 'DEV_MOCK';
+export type EmailProviderType = 'RESEND' | 'BREVO_SLOT_1' | 'BREVO_SLOT_2' | 'SMTP' | 'DEV_MOCK';
 
 export interface SendEmailOptions {
   recipient: string;
@@ -78,6 +78,55 @@ async function sendViaBrevo(
   } catch (err: any) {
     const excMsg = err?.message || 'Brevo network exception';
     console.error(`❌ [BREVO EXCEPTION] ${excMsg}`);
+    return { success: false, error: excMsg };
+  }
+}
+
+/**
+ * Execute Resend transactional email API call
+ */
+async function sendViaResend(
+  apiKey: string,
+  senderEmail: string,
+  senderName: string,
+  recipient: string,
+  subject: string,
+  htmlContent: string,
+  textContent: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const cleanApiKey = apiKey.trim();
+    const cleanRecipient = recipient.trim().toLowerCase();
+    const fromAddress = senderEmail.includes('<') ? senderEmail : `${senderName} <${senderEmail}>`;
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${cleanApiKey}`,
+      },
+      body: JSON.stringify({
+        from: fromAddress,
+        to: [cleanRecipient],
+        subject,
+        html: htmlContent,
+        text: textContent,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok) {
+      return { success: true, messageId: data.id || 'resend-dispatched' };
+    } else {
+      const errorDetail = data.message || res.statusText;
+      const formattedErr = `Resend HTTP ${res.status}: ${errorDetail}`;
+      console.error(`❌ [RESEND API ERROR] ${formattedErr}`);
+      return { success: false, error: formattedErr };
+    }
+  } catch (err: any) {
+    const excMsg = err?.message || 'Resend network exception';
+    console.error(`❌ [RESEND EXCEPTION] ${excMsg}`);
     return { success: false, error: excMsg };
   }
 }
@@ -187,6 +236,10 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   let finalMessageId: string | undefined;
   let finalError: string | undefined;
 
+  const resendKey = process.env.RESEND_API_KEY?.trim();
+  const resendSender = process.env.RESEND_SENDER_EMAIL?.trim() || 'onboarding@resend.dev';
+  const hasResend = Boolean(resendKey && resendKey.length > 5);
+
   const key1 = process.env.BREVO_API_KEY?.trim();
   const key2 = process.env.BREVO_API_KEY_2?.trim();
   const hasBrevo1 = Boolean(key1 && key1.length > 10);
@@ -200,27 +253,35 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   const forcedProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
 
   // Order of Provider Execution:
-  // - If EMAIL_PROVIDER="smtp", force SMTP first.
+  // - If EMAIL_PROVIDER="resend", force Resend first.
   // - If EMAIL_PROVIDER="brevo", force Brevo API (Slot 1 & 2) first.
-  // - In Development (local): Default to SMTP (Gmail SMTP) first.
-  // - In Production (Render cloud): Default to Brevo API (Slot 1 & 2) first with SMTP fallback.
-  const providerOrder: ('BREVO_1' | 'BREVO_2' | 'SMTP')[] = [];
+  // - If EMAIL_PROVIDER="smtp", force SMTP first.
+  const providerOrder: ('RESEND' | 'BREVO_1' | 'BREVO_2' | 'SMTP')[] = [];
 
-  if (forcedProvider === 'smtp') {
+  if (forcedProvider === 'resend') {
+    if (hasResend) providerOrder.push('RESEND');
+    if (hasBrevo1) providerOrder.push('BREVO_1');
+    if (hasBrevo2) providerOrder.push('BREVO_2');
     if (hasSmtpConfig) providerOrder.push('SMTP');
+  } else if (forcedProvider === 'smtp') {
+    if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasResend) providerOrder.push('RESEND');
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
   } else if (forcedProvider === 'brevo') {
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
+    if (hasResend) providerOrder.push('RESEND');
     if (hasSmtpConfig) providerOrder.push('SMTP');
   } else if (isDev) {
     // Local Development Environment: Gmail SMTP first
     if (hasSmtpConfig) providerOrder.push('SMTP');
+    if (hasResend) providerOrder.push('RESEND');
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
   } else {
-    // Production Environment (Render): Brevo API first
+    // Production Environment (Render): Resend / Brevo API first
+    if (hasResend) providerOrder.push('RESEND');
     if (hasBrevo1) providerOrder.push('BREVO_1');
     if (hasBrevo2) providerOrder.push('BREVO_2');
     if (hasSmtpConfig) providerOrder.push('SMTP');
@@ -231,7 +292,25 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   for (const provider of providerOrder) {
     if (finalSuccess) break;
 
-    if (provider === 'BREVO_1' && key1) {
+    if (provider === 'RESEND' && resendKey) {
+      const r = await sendViaResend(
+        resendKey,
+        resendSender,
+        senderName,
+        normalizedRecipient,
+        options.subject,
+        options.htmlContent,
+        options.textContent
+      );
+      if (r.success) {
+        finalSuccess = true;
+        finalProvider = 'RESEND';
+        finalMessageId = r.messageId;
+        console.log(`✉️ [RESEND SUCCESS] Sent to: ${normalizedRecipient} | MessageID: ${r.messageId}`);
+      } else {
+        attemptedErrors.push(`Resend: ${r.error}`);
+      }
+    } else if (provider === 'BREVO_1' && key1) {
       const r = await sendViaBrevo(
         key1,
         senderName,
