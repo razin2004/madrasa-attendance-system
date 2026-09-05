@@ -83,8 +83,11 @@ export function isWithinGeofence(
     };
   }
 
-  // Strict boundary rule: distance <= configuredRadius
-  const isWithin = distanceMeters <= radiusMeters;
+  // Include a hardware GPS accuracy tolerance buffer (up to 30m) to absorb natural satellite jitter
+  const gpsTolerance = accuracyMeters ? Math.min(Math.max(accuracyMeters, 10), 30) : 15;
+  const effectiveAllowedRadius = radiusMeters + gpsTolerance;
+
+  const isWithin = distanceMeters <= effectiveAllowedRadius;
 
   return {
     isWithin,
