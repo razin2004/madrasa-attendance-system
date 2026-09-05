@@ -19,6 +19,7 @@ import {
   UserCheck,
   BarChart3,
   Settings,
+  RefreshCw,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
 
@@ -106,6 +107,12 @@ export function OrgAdminSidebar({
       href: `/${organizationCode}/admin/shifts`,
       icon: Clock,
       count: shiftPatternCount,
+      exact: true,
+    },
+    {
+      label: 'Shift Swapping',
+      href: `/${organizationCode}/admin/shifts/swaps`,
+      icon: RefreshCw,
       exact: false,
     },
     {

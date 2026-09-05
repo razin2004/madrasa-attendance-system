@@ -118,6 +118,15 @@ enum LeaveRequestStatus {
   CANCELLED
 }
 
+enum ShiftSwapStatus {
+  PENDING_PEER
+  PEER_ACCEPTED
+  PEER_REJECTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 // =========================================================================
 // Models
 // =========================================================================
@@ -153,6 +162,7 @@ model Organization {
   auditLogs         AuditLog[]
   emailLogs         EmailLog[]
   securityTokens    SecurityToken[]
+  shiftSwapRequests ShiftSwapRequest[]
 
   @@index([organizationCode])
   @@index([status])
@@ -271,6 +281,8 @@ model StaffProfile {
   adjustmentAudits   AttendanceAdjustmentAudit[]
   leaveRequests      LeaveRequest[]
   leaveBalances      LeaveBalance[]
+  requestedSwapRequests ShiftSwapRequest[] @relation("RequesterSwapRequests")
+  peerSwapRequests      ShiftSwapRequest[] @relation("PeerSwapRequests")
 
   @@unique([organizationId, staffId])
   @@index([organizationId])
@@ -696,4 +708,30 @@ model EmailLog {
   @@index([type])
   @@index([status])
   @@map("email_logs")
+}
+
+model ShiftSwapRequest {
+  id               String          @id @default(uuid())
+  organizationId   String
+  requesterId      String
+  peerId           String
+  targetDate       DateTime
+  reason           String?
+  status           ShiftSwapStatus @default(PENDING_PEER)
+  peerRespondedAt  DateTime?
+  adminReviewedBy  String?
+  adminReviewedAt  DateTime?
+  adminNote        String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requester    StaffProfile @relation("RequesterSwapRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  peer         StaffProfile @relation("PeerSwapRequests", fields: [peerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([requesterId])
+  @@index([peerId])
+  @@index([status])
+  @@map("shift_swap_requests")
 }

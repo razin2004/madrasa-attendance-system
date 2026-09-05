@@ -238,6 +238,25 @@ export default function ShiftPatternsPage() {
                   </Link>
 
                   <Link
+                    href={`/${organizationCode}/admin/shifts/swaps`}
+                    onClick={() => setHeaderMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <RefreshCw size={15} color="#38bdf8" />
+                    <span>Shift Swaps &amp; Substitutions</span>
+                  </Link>
+
+                  <Link
                     href={`/${organizationCode}/admin/roster`}
                     onClick={() => setHeaderMenuOpen(false)}
                     style={{
