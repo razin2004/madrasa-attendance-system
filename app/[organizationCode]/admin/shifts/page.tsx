@@ -257,7 +257,7 @@ export default function ShiftPatternsPage() {
                   </Link>
 
                   <Link
-                    href={`/${organizationCode}/admin/roster`}
+                    href={`/${organizationCode}/admin/shifts/roster`}
                     onClick={() => setHeaderMenuOpen(false)}
                     style={{
                       display: 'flex',

@@ -110,6 +110,12 @@ export function OrgAdminSidebar({
       exact: true,
     },
     {
+      label: 'Roster Calendar',
+      href: `/${organizationCode}/admin/shifts/roster`,
+      icon: Calendar,
+      exact: false,
+    },
+    {
       label: 'Shift Swapping',
       href: `/${organizationCode}/admin/shifts/swaps`,
       icon: RefreshCw,
