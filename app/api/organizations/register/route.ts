@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { normalizeEmail } from '@/lib/security';
+import { normalizeEmail, getAppBaseUrl } from '@/lib/security';
 import { validateImageFile, saveLogoFile } from '@/lib/storage';
 import { sendEmail } from '@/services/email.service';
 import {
@@ -215,7 +215,7 @@ export async function POST(request: Request) {
     if (!superAdminEmail) {
       console.error('Server Configuration Warning: SUPER_ADMIN_EMAIL environment variable is not set. Organization registration alert email was not dispatched.');
     } else {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://shiftguard.app';
+      const baseUrl = getAppBaseUrl(request);
       const reviewUrl = `${baseUrl}/super-admin/dashboard`;
 
       const superAdminTemplate = templateOrgRegistrationReceived({

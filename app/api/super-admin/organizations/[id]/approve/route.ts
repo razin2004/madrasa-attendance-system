@@ -5,6 +5,7 @@ import { getCurrentSession } from '@/lib/session';
 import {
   generateOrganizationCodeBase,
   hashToken,
+  getAppBaseUrl,
 } from '@/lib/security';
 import { sendEmail } from '@/services/email.service';
 import {
@@ -168,7 +169,7 @@ export async function POST(
     });
 
     // 6. Dispatch Two Separate Emails (Awaited for serverless runtime resilience)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://shiftguard.app';
+    const baseUrl = getAppBaseUrl(request);
     const setupUrl = `${baseUrl}/activate-account?token=${rawSetupToken}`;
     const loginUrl = `${baseUrl}/login`;
 
