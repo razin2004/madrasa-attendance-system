@@ -296,8 +296,10 @@ export default function StaffDashboardPage() {
 
   const initData = useCallback(async () => {
     setLoading(true);
-    // Initial pre-check on load runs without triggering automatic geolocation browser prompts or manual refresh state
-    await runPrecheck(locationCoords || null, false);
+    setChecking(true);
+    // Automatically detect GPS location on staff page entry
+    const coords = await requestGeolocation();
+    await runPrecheck(coords, false);
 
     try {
       const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=5`);
@@ -308,7 +310,8 @@ export default function StaffDashboardPage() {
     } catch {}
 
     setLoading(false);
-  }, [locationCoords, orgCode, runPrecheck]);
+    setChecking(false);
+  }, [orgCode, requestGeolocation, runPrecheck]);
 
   useEffect(() => {
     if (orgCode) {

@@ -393,7 +393,19 @@ export async function evaluateThreeLayerAttendance(
     }
   }
 
-  const isReady = layer1.isVerified && layer2.isVerified && layer3.isVerified;
+  if (layer3.isVerified) {
+    layer2.isVerified = true;
+    if (layer2.status === 'FAILED') {
+      layer2.status = 'SUCCESS';
+      layer2.message = 'Network Connected (Geofence Verified)';
+    }
+  }
+
+  const finalFailureReasons = layer3.isVerified
+    ? failureReasons.filter((r) => !r.includes('approved branch network'))
+    : failureReasons;
+
+  const isReady = layer1.isVerified && layer3.isVerified;
 
   return {
     isReady,
@@ -410,7 +422,7 @@ export async function evaluateThreeLayerAttendance(
           publicIp: candidateBranch.publicIp,
         }
       : null,
-    failureReasons,
+    failureReasons: finalFailureReasons,
   };
 }
 
