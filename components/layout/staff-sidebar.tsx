@@ -15,6 +15,7 @@ import {
   LogOut,
   Shield,
   ArrowLeftRight,
+  QrCode,
 } from 'lucide-react';
 import styles from './StaffLayout.module.css';
 
@@ -45,6 +46,12 @@ export function StaffSidebar({
       href: basePath,
       icon: LayoutDashboard,
       exact: true,
+    },
+    {
+      label: 'Digital Badge',
+      href: `${basePath}/badge`,
+      icon: QrCode,
+      exact: false,
     },
     {
       label: 'Attendance',

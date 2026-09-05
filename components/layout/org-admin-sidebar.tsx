@@ -20,6 +20,7 @@ import {
   BarChart3,
   Settings,
   RefreshCw,
+  QrCode,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
 
@@ -149,6 +150,12 @@ export function OrgAdminSidebar({
       label: 'Manual Attendance',
       href: `/${organizationCode}/admin/attendance/manual`,
       icon: UserCheck,
+      exact: false,
+    },
+    {
+      label: 'Attendance Kiosk',
+      href: `/${organizationCode}/admin/kiosk`,
+      icon: QrCode,
       exact: false,
     },
     {

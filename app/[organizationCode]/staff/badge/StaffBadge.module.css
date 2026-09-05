@@ -1,0 +1,289 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #060911;
+  color: #f1f5f9;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+}
+
+.mainContent {
+  flex: 1;
+  padding: 2.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow-y: auto;
+}
+
+.header {
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem 0;
+}
+
+.subtitle {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.badgeWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.badgeCard {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(20, 27, 45, 0.85) 0%, rgba(13, 18, 30, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.badgeCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #3b82f6, #6366f1, #8b5cf6);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.orgBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.orgLogo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.orgName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.verifiedPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 20px;
+}
+
+.profileSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.avatarRing {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.25);
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.staffName {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.25rem 0;
+}
+
+.staffRole {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+}
+
+.staffCodeBadge {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  color: #38bdf8;
+  padding: 0.3rem 0.8rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(56, 189, 248, 0.4);
+}
+
+.qrContainer {
+  background: #ffffff;
+  padding: 1.25rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.qrCodeSvg {
+  width: 180px;
+  height: 180px;
+}
+
+.qrHint {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cardFooter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.infoLabel {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.infoValue {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actionsBar {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.actionBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+.primaryBtn:hover {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  transform: translateY(-1px);
+}
+
+.secondaryBtn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .header, .actionsBar, nav, sidebar, header {
+    display: none !important;
+  }
+  .container {
+    background: #ffffff !important;
+  }
+  .badgeWrapper {
+    margin: 2rem auto;
+  }
+  .badgeCard {
+    border: 2px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+  .staffName, .orgName, .infoValue {
+    color: #000000 !important;
+  }
+  .staffRole, .infoLabel {
+    color: #475569 !important;
+  }
+}
