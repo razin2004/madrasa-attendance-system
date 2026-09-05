@@ -50,6 +50,9 @@ export default function RegisterBranchPage() {
   // Location State
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [latInput, setLatInput] = useState('');
+  const [lngInput, setLngInput] = useState('');
+  const [mapsPasteInput, setMapsPasteInput] = useState('');
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [locationCapturing, setLocationCapturing] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -94,6 +97,44 @@ export default function RegisterBranchPage() {
     }
   };
 
+  const handleLatChange = (val: string) => {
+    setLatInput(val);
+    const num = parseFloat(val.trim());
+    if (!isNaN(num) && num >= -90 && num <= 90) {
+      setLatitude(num);
+    } else {
+      setLatitude(null);
+    }
+  };
+
+  const handleLngChange = (val: string) => {
+    setLngInput(val);
+    const num = parseFloat(val.trim());
+    if (!isNaN(num) && num >= -180 && num <= 180) {
+      setLongitude(num);
+    } else {
+      setLongitude(null);
+    }
+  };
+
+  const handleGoogleMapsPaste = (val: string) => {
+    setMapsPasteInput(val);
+    const cleaned = val.trim();
+    if (!cleaned) return;
+    const parts = cleaned.split(',').map((s) => s.trim());
+    if (parts.length === 2) {
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+      if (!isNaN(lat) && lat >= -90 && lat <= 90 && !isNaN(lng) && lng >= -180 && lng <= 180) {
+        setLatInput(parts[0]);
+        setLngInput(parts[1]);
+        setLatitude(lat);
+        setLongitude(lng);
+        toast.success('Parsed exact coordinates from Google Maps!');
+      }
+    }
+  };
+
   const handleCaptureLocation = () => {
     if (!navigator.geolocation) {
       setLocationError('Browser Geolocation is not supported on this device.');
@@ -105,8 +146,12 @@ export default function RegisterBranchPage() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLatitude(lat);
+        setLongitude(lng);
+        setLatInput(lat.toString());
+        setLngInput(lng.toString());
         setAccuracy(position.coords.accuracy ? Math.round(position.coords.accuracy) : null);
         setLocationCapturing(false);
         toast.success('Current physical location captured successfully.');
@@ -318,8 +363,58 @@ export default function RegisterBranchPage() {
                 </div>
 
                 <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
-                  Allow location access while physically at the branch. ShiftGuard captures exact GPS coordinates to establish the attendance perimeter.
+                  Enter physical coordinates manually from Google Maps, or auto-detect using device location while at the branch site.
                 </p>
+
+                {/* Quick Paste from Google Maps */}
+                <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)' }}>
+                  <label className="form-label" style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: '#f8fafc', marginBottom: '4px' }}>
+                    Quick Paste from Google Maps
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 11.575266, 75.802210"
+                    value={mapsPasteInput}
+                    onChange={(e) => handleGoogleMapsPaste(e.target.value)}
+                    className="form-input"
+                    style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+                  />
+                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    💡 Right-click your building on Google Maps, click the coordinates to copy, and paste here!
+                  </p>
+                </div>
+
+                {/* Manual Lat/Lng Inputs */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <label className="form-label" style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: '#f8fafc', marginBottom: '4px' }}>
+                      Latitude <span style={{ color: 'var(--danger-text)' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 11.575266"
+                      value={latInput}
+                      onChange={(e) => handleLatChange(e.target.value)}
+                      className="form-input"
+                      style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: '#f8fafc', marginBottom: '4px' }}>
+                      Longitude <span style={{ color: 'var(--danger-text)' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 75.802210"
+                      value={lngInput}
+                      onChange={(e) => handleLngChange(e.target.value)}
+                      className="form-input"
+                      style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+                    />
+                  </div>
+                </div>
 
                 {locationError && (
                   <div
@@ -338,7 +433,7 @@ export default function RegisterBranchPage() {
                   >
                     <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
                     <div>
-                      <div style={{ fontWeight: 700 }}>Location permission is required</div>
+                      <div style={{ fontWeight: 700 }}>Location permission notice</div>
                       <div style={{ marginTop: '2px', color: 'var(--text-secondary)' }}>{locationError}</div>
                     </div>
                   </div>
@@ -349,18 +444,18 @@ export default function RegisterBranchPage() {
                     type="button"
                     onClick={handleCaptureLocation}
                     disabled={locationCapturing}
-                    className="btn btn-primary"
+                    className="btn btn-secondary btn-sm"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                   >
-                    {locationCapturing ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
-                    <span>{hasLocation ? 'Re-capture GPS Location' : 'Capture Current Physical Location'}</span>
+                    {locationCapturing ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+                    <span>Auto-Detect Current Browser GPS</span>
                   </button>
 
                   {hasLocation && (
                     <div style={{ fontSize: '13px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <CheckCircle2 size={16} />
                       <span>
-                        Lat: {latitude?.toFixed(6)}, Lng: {longitude?.toFixed(6)}
+                        Valid GPS: {latitude?.toFixed(6)}, {longitude?.toFixed(6)}
                       </span>
                     </div>
                   )}

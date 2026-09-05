@@ -124,9 +124,62 @@ export default function BranchDetailPage() {
   const [capturingGps, setCapturingGps] = useState(false);
   const [newLat, setNewLat] = useState<number | null>(null);
   const [newLng, setNewLng] = useState<number | null>(null);
+  const [newLatInput, setNewLatInput] = useState('');
+  const [newLngInput, setNewLngInput] = useState('');
+  const [mapsPasteInput, setMapsPasteInput] = useState('');
   const [newAccuracy, setNewAccuracy] = useState<number | null>(null);
   const [savingLocation, setSavingLocation] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
+
+  const openLocationModal = () => {
+    if (branch) {
+      setNewLat(branch.latitude);
+      setNewLng(branch.longitude);
+      setNewLatInput(branch.latitude !== null ? branch.latitude.toString() : '');
+      setNewLngInput(branch.longitude !== null ? branch.longitude.toString() : '');
+      setMapsPasteInput('');
+    }
+    setGpsError(null);
+    setLocationModalOpen(true);
+  };
+
+  const handleModalLatChange = (val: string) => {
+    setNewLatInput(val);
+    const num = parseFloat(val.trim());
+    if (!isNaN(num) && num >= -90 && num <= 90) {
+      setNewLat(num);
+    } else {
+      setNewLat(null);
+    }
+  };
+
+  const handleModalLngChange = (val: string) => {
+    setNewLngInput(val);
+    const num = parseFloat(val.trim());
+    if (!isNaN(num) && num >= -180 && num <= 180) {
+      setNewLng(num);
+    } else {
+      setNewLng(null);
+    }
+  };
+
+  const handleModalGoogleMapsPaste = (val: string) => {
+    setMapsPasteInput(val);
+    const cleaned = val.trim();
+    if (!cleaned) return;
+    const parts = cleaned.split(',').map((s) => s.trim());
+    if (parts.length === 2) {
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+      if (!isNaN(lat) && lat >= -90 && lat <= 90 && !isNaN(lng) && lng >= -180 && lng <= 180) {
+        setNewLatInput(parts[0]);
+        setNewLngInput(parts[1]);
+        setNewLat(lat);
+        setNewLng(lng);
+        toast.success('Parsed exact coordinates from Google Maps!');
+      }
+    }
+  };
 
   useEffect(() => {
     if (organizationCode && branchId) {
@@ -370,8 +423,12 @@ export default function BranchDetailPage() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setNewLat(pos.coords.latitude);
-        setNewLng(pos.coords.longitude);
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setNewLat(lat);
+        setNewLng(lng);
+        setNewLatInput(lat.toString());
+        setNewLngInput(lng.toString());
         setNewAccuracy(pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null);
         setCapturingGps(false);
       },
@@ -552,7 +609,7 @@ export default function BranchDetailPage() {
                   </button>
 
                   <button
-                    onClick={() => { setMenuOpen(false); setLocationModalOpen(true); }}
+                    onClick={() => { setMenuOpen(false); openLocationModal(); }}
                     className={styles.dropdownItem}
                   >
                     <Navigation size={15} />
@@ -791,13 +848,13 @@ export default function BranchDetailPage() {
               </div>
 
               <button
-                onClick={() => { setLocationModalOpen(true); handleCaptureGps(); }}
+                onClick={() => { openLocationModal(); }}
                 disabled={capturingGps}
                 className="btn btn-secondary btn-sm"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
                 <Navigation size={14} className={capturingGps ? 'animate-spin' : ''} />
-                <span>{capturingGps ? 'Capturing GPS...' : 'Re-capture GPS Location'}</span>
+                <span>Update / Re-capture GPS Location</span>
               </button>
             </div>
           </div>
@@ -979,12 +1036,12 @@ export default function BranchDetailPage() {
         </div>
       )}
 
-      {/* 5. Recapture Location Modal */}
+      {/* 5. Recapture / Edit Location Modal */}
       {locationModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', padding: '28px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '460px', padding: '28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Recapture GPS Geofence Location</h3>
+              <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Update GPS Geofence Location</h3>
               <button onClick={() => setLocationModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
 
@@ -994,26 +1051,64 @@ export default function BranchDetailPage() {
               </div>
             )}
 
-            <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Latitude:</span>
-                <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{newLat !== null ? newLat.toFixed(6) : 'Detecting...'}</strong>
+            {/* Quick Paste Google Maps */}
+            <div style={{ marginBottom: '14px' }}>
+              <label className="form-label" style={{ display: 'block', fontSize: '12.5px', color: '#ffffff', fontWeight: 600, marginBottom: '4px' }}>
+                Quick Paste from Google Maps
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 11.575266, 75.802210"
+                value={mapsPasteInput}
+                onChange={(e) => handleModalGoogleMapsPaste(e.target.value)}
+                className="form-input"
+                style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+              />
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Right-click your building on Google Maps to copy &amp; paste coordinates.
+              </p>
+            </div>
+
+            {/* Manual Lat/Lng Inputs */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <label className="form-label" style={{ display: 'block', fontSize: '12.5px', color: '#ffffff', fontWeight: 600, marginBottom: '4px' }}>
+                  Latitude
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 11.575266"
+                  value={newLatInput}
+                  onChange={(e) => handleModalLatChange(e.target.value)}
+                  className="form-input"
+                  style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+                />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Longitude:</span>
-                <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{newLng !== null ? newLng.toFixed(6) : 'Detecting...'}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Accuracy:</span>
-                <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{newAccuracy !== null ? `±${newAccuracy} m` : 'N/A'}</strong>
+              <div>
+                <label className="form-label" style={{ display: 'block', fontSize: '12.5px', color: '#ffffff', fontWeight: 600, marginBottom: '4px' }}>
+                  Longitude
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 75.802210"
+                  value={newLngInput}
+                  onChange={(e) => handleModalLngChange(e.target.value)}
+                  className="form-input"
+                  style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+                />
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={handleCaptureGps} disabled={capturingGps} className="btn btn-secondary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <RefreshCw size={13} className={capturingGps ? 'animate-spin' : ''} />
-                <span>{capturingGps ? 'Capturing...' : 'Re-Detect GPS'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', padding: '10px 14px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Auto-Detect Browser GPS:</span>
+              <button type="button" onClick={handleCaptureGps} disabled={capturingGps} className="btn btn-secondary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '4px 8px' }}>
+                <RefreshCw size={12} className={capturingGps ? 'animate-spin' : ''} />
+                <span>{capturingGps ? 'Detecting...' : 'Auto-Detect'}</span>
               </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setLocationModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
               <button type="button" onClick={handleSaveLocation} disabled={savingLocation || newLat === null} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                 {savingLocation ? <Loader2 size={14} className="animate-spin" /> : null}
                 <span>{savingLocation ? 'Saving...' : 'Save Location'}</span>
