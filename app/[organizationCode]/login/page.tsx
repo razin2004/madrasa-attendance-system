@@ -497,7 +497,7 @@ export default function TenantLoginPage() {
                     </>
                   ) : (
                     <>
-                      <span>Sign In to {branding?.name || 'Workspace'}</span>
+                      <span>Sign In to {orgCode ? orgCode.toUpperCase() : 'Workspace'}</span>
                       <ArrowRight size={16} />
                     </>
                   )}
