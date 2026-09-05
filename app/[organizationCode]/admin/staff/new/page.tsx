@@ -65,7 +65,7 @@ export default function OnboardStaffPage() {
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
 
   // Step 3: ID Document Collection
-  const [idDocType, setIdDocType] = useState('COLLEGE_ID');
+  const [idDocType, setIdDocType] = useState('AADHAAR');
   const [idFile, setIdFile] = useState<File | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
@@ -179,12 +179,13 @@ export default function OnboardStaffPage() {
   };
 
   const idDocTypeLabels: Record<string, string> = {
-    COLLEGE_ID: 'College ID Card',
-    GOVERNMENT_ID: 'Government ID Card',
     AADHAAR: 'Aadhaar Card',
+    VOTER_ID: 'Voter ID Card',
+    PASSPORT: 'Passport',
     DRIVING_LICENSE: 'Driving Licence',
-    VOTER_ID: 'Voter ID',
-    OTHER: 'Other ID Card',
+    COLLEGE_ID: 'College / Institutional ID Card',
+    GOVERNMENT_ID: 'Government ID Card',
+    OTHER: 'Other Identification Card',
   };
 
   return (
@@ -494,12 +495,13 @@ export default function OnboardStaffPage() {
                       className="form-input"
                       style={{ width: '100%' }}
                     >
-                      <option value="COLLEGE_ID">College ID Card</option>
-                      <option value="GOVERNMENT_ID">Government ID Card</option>
                       <option value="AADHAAR">Aadhaar Card</option>
+                      <option value="VOTER_ID">Voter ID Card</option>
+                      <option value="PASSPORT">Passport</option>
                       <option value="DRIVING_LICENSE">Driving Licence</option>
-                      <option value="VOTER_ID">Voter ID</option>
-                      <option value="OTHER">Other ID Card</option>
+                      <option value="COLLEGE_ID">College / Institutional ID Card</option>
+                      <option value="GOVERNMENT_ID">Government ID Card</option>
+                      <option value="OTHER">Other Identification Card</option>
                     </select>
                   </div>
 

@@ -101,12 +101,23 @@ export default function StaffProfilePage() {
   // Edit Metadata State
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [idDocType, setIdDocType] = useState('AADHAAR');
   const [idDocLast4, setIdDocLast4] = useState('');
   const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
   const [savingMetadata, setSavingMetadata] = useState(false);
+
+  const idDocTypeLabels: Record<string, string> = {
+    AADHAAR: 'Aadhaar Card',
+    VOTER_ID: 'Voter ID Card',
+    PASSPORT: 'Passport',
+    DRIVING_LICENSE: 'Driving Licence',
+    COLLEGE_ID: 'College / Institutional ID Card',
+    GOVERNMENT_ID: 'Government ID Card',
+    OTHER: 'Other Identification Card',
+  };
 
   // Delete Staff Modal State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -165,6 +176,7 @@ export default function StaffProfilePage() {
       if (staffData.success && staffData.staff) {
         setStaff(staffData.staff);
         setName(staffData.staff.name);
+        setEmail(staffData.staff.user?.email || '');
         setPhone(staffData.staff.phone || '');
         setAddress(staffData.staff.address || '');
         setIdDocType(staffData.staff.idDocType || 'AADHAAR');
@@ -201,6 +213,7 @@ export default function StaffProfilePage() {
   const handleSaveMetadata = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error('Full name is required.');
+    if (!email.trim() || !email.includes('@')) return toast.error('A valid email address is required.');
     try {
       setSavingMetadata(true);
       const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}`, {
@@ -208,6 +221,7 @@ export default function StaffProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
+          email: email.trim(),
           phone: phone.trim() || null,
           address: address.trim() || '',
           idDocType,
@@ -650,6 +664,10 @@ export default function StaffProfilePage() {
                   <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
                 <div>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Email Address (Account Login) *</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="staff@organization.com" className="form-input" style={{ width: '100%', marginTop: '4px' }} />
+                </div>
+                <div>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Phone Number (Optional)</label>
                   <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
@@ -661,10 +679,12 @@ export default function StaffProfilePage() {
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>ID Document Type</label>
                   <select value={idDocType} onChange={(e) => setIdDocType(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }}>
                     <option value="AADHAAR">Aadhaar Card</option>
-                    <option value="VOTER_ID">Voter ID</option>
+                    <option value="VOTER_ID">Voter ID Card</option>
                     <option value="PASSPORT">Passport</option>
-                    <option value="DRIVING_LICENSE">Driving License</option>
-                    <option value="OTHER">Other Identification</option>
+                    <option value="DRIVING_LICENSE">Driving Licence</option>
+                    <option value="COLLEGE_ID">College / Institutional ID Card</option>
+                    <option value="GOVERNMENT_ID">Government ID Card</option>
+                    <option value="OTHER">Other Identification Card</option>
                   </select>
                 </div>
                 <div>
@@ -733,7 +753,7 @@ export default function StaffProfilePage() {
                   <div><span style={{ color: 'var(--text-muted)' }}>Account Email: </span><strong style={{ color: '#ffffff' }}>{staff.user.email}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Phone Number: </span><strong style={{ color: '#ffffff' }}>{staff.phone || 'None (Optional)'}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Residential Address: </span><strong style={{ color: '#ffffff' }}>{staff.address || 'Not specified'}</strong></div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>ID Document Type: </span><strong style={{ color: '#ffffff' }}>{staff.idDocType}</strong></div>
+                  <div><span style={{ color: 'var(--text-muted)' }}>ID Document Type: </span><strong style={{ color: '#ffffff' }}>{idDocTypeLabels[staff.idDocType] || staff.idDocType}</strong></div>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>ID Document Number: </span>
                     <strong style={{ color: '#ffffff' }}>{staff.idDocLast4 ? `Ending in ****${staff.idDocLast4}` : 'Not specified'}</strong>

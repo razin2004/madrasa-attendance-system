@@ -81,6 +81,9 @@ export async function PATCH(
         organizationId: auth.organization.id,
         OR: [{ id: params.staffId }, { staffId: params.staffId }],
       },
+      include: {
+        user: true,
+      },
     });
 
     if (!existingStaff) {
@@ -91,10 +94,37 @@ export async function PATCH(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { name, phone, address, idDocType, idDocLast4 } = body;
+    const { name, email, phone, address, idDocType, idDocLast4 } = body;
 
     const updateData: any = {};
     const changes: Record<string, { old: any; new: any }> = {};
+    let newEmailToSet: string | null = null;
+
+    if (email !== undefined) {
+      const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      if (!cleanEmail || !cleanEmail.includes('@')) {
+        return NextResponse.json(
+          { success: false, error: 'A valid email address is required.' },
+          { status: 400 }
+        );
+      }
+      if (cleanEmail !== existingStaff.user.email.toLowerCase()) {
+        const dupUser = await prisma.user.findFirst({
+          where: {
+            email: cleanEmail,
+            id: { not: existingStaff.userId },
+          },
+        });
+        if (dupUser) {
+          return NextResponse.json(
+            { success: false, error: `Email address ${cleanEmail} is already assigned to another user account.` },
+            { status: 409 }
+          );
+        }
+        changes.email = { old: existingStaff.user.email, new: cleanEmail };
+        newEmailToSet = cleanEmail;
+      }
+    }
 
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length < 2) {
@@ -147,7 +177,7 @@ export async function PATCH(
     }
 
     if (idDocType !== undefined && typeof idDocType === 'string') {
-      const validTypes = ['AADHAAR', 'VOTER_ID', 'PASSPORT', 'DRIVING_LICENSE', 'OTHER'];
+      const validTypes = ['AADHAAR', 'VOTER_ID', 'PASSPORT', 'DRIVING_LICENSE', 'COLLEGE_ID', 'GOVERNMENT_ID', 'OTHER'];
       if (validTypes.includes(idDocType)) {
         if (idDocType !== existingStaff.idDocType) {
           changes.idDocType = { old: existingStaff.idDocType, new: idDocType };
@@ -164,7 +194,7 @@ export async function PATCH(
       }
     }
 
-    if (Object.keys(updateData).length === 0) {
+    if (Object.keys(updateData).length === 0 && !newEmailToSet) {
       return NextResponse.json({
         success: true,
         message: 'No changes detected.',
@@ -182,11 +212,12 @@ export async function PATCH(
       },
     });
 
-    // Also update name/phone on User record if changed
-    if (updateData.name || updateData.phone !== undefined) {
+    // Also update email, name, or phone on User record if changed
+    if (newEmailToSet || updateData.name || updateData.phone !== undefined) {
       await prisma.user.update({
         where: { id: existingStaff.userId },
         data: {
+          email: newEmailToSet || undefined,
           name: updateData.name || undefined,
           phone: updateData.phone !== undefined ? updateData.phone : undefined,
         },
