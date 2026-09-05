@@ -353,19 +353,12 @@ export async function evaluateThreeLayerAttendance(
       coordinates.accuracy
     );
 
-    // Check if Layer 2 Branch Wi-Fi Network is verified for this branch
-    const isWifiVerified = Boolean(layer2.isVerified && candidateBranch && candidateBranch.id === targetBranch.id);
-
-    if ((geoCheck.isWithin || isWifiVerified) && accuracy <= MAX_ACCURACY_THRESHOLD) {
-      const msg = isWifiVerified && !geoCheck.isWithin
-        ? `Inside ${targetBranch.name} • Verified via Branch Wi-Fi Network.`
-        : `Inside ${targetBranch.name} (Within Branch Boundary)`;
-
+    if (geoCheck.isWithin && accuracy <= MAX_ACCURACY_THRESHOLD) {
       layer3 = {
         isVerified: true,
         status: 'SUCCESS',
         title: 'Location Geofence',
-        message: msg,
+        message: `Inside ${targetBranch.name} (Within Branch Boundary)`,
         distanceMeters: geoCheck.distanceMeters,
         allowedRadiusMeters: targetBranch.geofenceRadiusMeters,
         accuracyMeters: accuracy,
