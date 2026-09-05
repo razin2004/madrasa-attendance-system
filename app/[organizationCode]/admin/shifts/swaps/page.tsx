@@ -29,6 +29,7 @@ import styles from './ShiftSwapsAdmin.module.css';
 interface SwapRequest {
   id: string;
   targetDate: string;
+  shiftPatternName?: string | null;
   reason: string | null;
   status: 'PENDING_PEER' | 'PEER_ACCEPTED' | 'PEER_REJECTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
   peerRespondedAt: string | null;
@@ -50,7 +51,12 @@ interface SwapRequest {
     phone: string | null;
     user: { email: string };
     branchAssignments?: { branch: { name: string } }[];
-  };
+  } | null;
+  recipients?: Array<{
+    id: string;
+    peer: { id: string; name: string; staffId: string };
+    status: string;
+  }>;
 }
 
 interface OrgBranding {
@@ -149,12 +155,15 @@ export default function ShiftSwapsAdminPage() {
   const filteredSwaps = swapRequests.filter((item) => {
     const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
     const q = searchQuery.toLowerCase().trim();
+    const peerMatch = item.peer
+      ? item.peer.name.toLowerCase().includes(q) || item.peer.staffId.toLowerCase().includes(q)
+      : false;
+
     const matchesSearch =
       !q ||
       item.requester.name.toLowerCase().includes(q) ||
       item.requester.staffId.toLowerCase().includes(q) ||
-      item.peer.name.toLowerCase().includes(q) ||
-      item.peer.staffId.toLowerCase().includes(q);
+      peerMatch;
 
     return matchesStatus && matchesSearch;
   });
@@ -301,11 +310,18 @@ export default function ShiftSwapsAdminPage() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Calendar size={18} color="#38bdf8" />
                         <div>
                           <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Target Shift Date</span>
-                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{targetDateFormatted}</div>
+                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
+                            {targetDateFormatted}
+                            {item.shiftPatternName && (
+                              <span style={{ fontSize: '12.5px', color: '#a5b4fc', marginLeft: '8px', fontWeight: 600 }}>
+                                ({item.shiftPatternName})
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -372,13 +388,21 @@ export default function ShiftSwapsAdminPage() {
                         <div style={{ fontSize: '11px', color: '#34d399', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
                           Substitute Colleague (Peer)
                         </div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{item.peer.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                          ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{item.peer.staffId}</span> | {item.peer.user.email}
-                        </div>
-                        {item.peer.branchAssignments?.[0] && (
-                          <div style={{ fontSize: '11.5px', color: '#38bdf8', marginTop: '3px' }}>
-                            Branch: {item.peer.branchAssignments[0].branch.name}
+                        {item.peer ? (
+                          <>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{item.peer.name}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                              ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{item.peer.staffId}</span> | {item.peer.user.email}
+                            </div>
+                            {item.peer.branchAssignments?.[0] && (
+                              <div style={{ fontSize: '11.5px', color: '#38bdf8', marginTop: '3px' }}>
+                                Branch: {item.peer.branchAssignments[0].branch.name}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div style={{ fontSize: '13px', color: '#fbbf24', fontStyle: 'italic' }}>
+                            Broadcast to {item.recipients?.length || 0} Colleagues (Pending First Acceptance)
                           </div>
                         )}
                       </div>
@@ -399,7 +423,7 @@ export default function ShiftSwapsAdminPage() {
                     )}
 
                     {/* Actions Bar for Admin */}
-                    {item.status === 'PEER_ACCEPTED' && (
+                    {item.status === 'PEER_ACCEPTED' && item.peer && (
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
                         <button
                           onClick={() => {
@@ -437,7 +461,7 @@ export default function ShiftSwapsAdminPage() {
       <OrgAdminMobileNav organizationCode={organizationCode} />
 
       {/* REVIEW CONFIRMATION MODAL */}
-      {selectedSwap && reviewAction && (
+      {selectedSwap && reviewAction && selectedSwap.peer && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '480px', width: '100%', borderRadius: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>

@@ -5,7 +5,7 @@ import { recordAuditLog } from '@/services/audit.service';
 
 export const dynamic = 'force-dynamic';
 
-// GET: Fetch shift swap requests for logged-in staff member
+// GET: Fetch shift swap requests, active shifts, and colleagues for logged-in staff member
 export async function GET(
   request: Request,
   { params }: { params: { organizationCode: string } }
@@ -45,8 +45,8 @@ export async function GET(
       );
     }
 
-    // Fetch outgoing (as requester) and incoming (as peer) swap requests
-    const [outgoingRequests, incomingRequests, colleagues] = await Promise.all([
+    // Fetch outgoing, incoming swap requests, active shift patterns, and colleagues
+    const [outgoingRequests, incomingRequests, shiftPatterns, colleagues] = await Promise.all([
       prisma.shiftSwapRequest.findMany({
         where: {
           organizationId: organization.id,
@@ -62,13 +62,29 @@ export async function GET(
               user: { select: { email: true } },
             },
           },
+          shiftPattern: { select: { id: true, name: true } },
+          recipients: {
+            include: {
+              peer: {
+                select: {
+                  id: true,
+                  staffId: true,
+                  name: true,
+                  user: { select: { email: true } },
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.shiftSwapRequest.findMany({
         where: {
           organizationId: organization.id,
-          peerId: currentStaff.id,
+          OR: [
+            { peerId: currentStaff.id },
+            { recipients: { some: { peerId: currentStaff.id } } },
+          ],
         },
         include: {
           requester: {
@@ -80,10 +96,41 @@ export async function GET(
               user: { select: { email: true } },
             },
           },
+          peer: {
+            select: {
+              id: true,
+              staffId: true,
+              name: true,
+              phone: true,
+              user: { select: { email: true } },
+            },
+          },
+          shiftPattern: { select: { id: true, name: true } },
+          recipients: {
+            include: {
+              peer: {
+                select: {
+                  id: true,
+                  staffId: true,
+                  name: true,
+                  user: { select: { email: true } },
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
-      // Also fetch list of colleagues in the same organization for initiating new swap requests
+      prisma.shiftPattern.findMany({
+        where: {
+          organizationId: organization.id,
+          isActive: true,
+        },
+        include: {
+          weeklyDays: true,
+        },
+        orderBy: { name: 'asc' },
+      }),
       prisma.staffProfile.findMany({
         where: {
           organizationId: organization.id,
@@ -99,6 +146,11 @@ export async function GET(
           branchAssignments: {
             include: { branch: { select: { name: true } } },
           },
+          shiftAssignments: {
+            include: {
+              shiftPattern: { select: { id: true, name: true } },
+            },
+          },
         },
         orderBy: { name: 'asc' },
       }),
@@ -113,6 +165,7 @@ export async function GET(
       },
       outgoingRequests,
       incomingRequests,
+      shiftPatterns,
       colleagues,
     });
   } catch (error: any) {
@@ -124,7 +177,7 @@ export async function GET(
   }
 }
 
-// POST: Initiate a new shift swap request
+// POST: Initiate a new shift swap request (supports single or multi-peer broadcast)
 export async function POST(
   request: Request,
   { params }: { params: { organizationCode: string } }
@@ -164,11 +217,24 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { peerStaffId, targetDate, reason } = body;
+    const { peerStaffId, peerStaffIds, shiftPatternId, shiftPatternName, targetDate, reason } = body;
 
-    if (!peerStaffId) {
+    // Build raw list of target peer IDs
+    let rawPeerIds: string[] = [];
+    if (Array.isArray(peerStaffIds) && peerStaffIds.length > 0) {
+      rawPeerIds = peerStaffIds;
+    } else if (typeof peerStaffId === 'string' && peerStaffId.trim()) {
+      rawPeerIds = [peerStaffId.trim()];
+    }
+
+    // Filter out duplicate IDs and self
+    const validPeerIds = Array.from(new Set(rawPeerIds)).filter(
+      (id) => id && id !== currentStaff.id
+    );
+
+    if (validPeerIds.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Colleague selection is required.' },
+        { success: false, error: 'Please select at least one colleague for the shift swap.' },
         { status: 400 }
       );
     }
@@ -180,28 +246,6 @@ export async function POST(
       );
     }
 
-    if (peerStaffId === currentStaff.id) {
-      return NextResponse.json(
-        { success: false, error: 'You cannot request a shift swap with yourself.' },
-        { status: 400 }
-      );
-    }
-
-    // Verify peer staff profile exists in same organization
-    const peerStaff = await prisma.staffProfile.findFirst({
-      where: {
-        id: peerStaffId,
-        organizationId: organization.id,
-      },
-    });
-
-    if (!peerStaff) {
-      return NextResponse.json(
-        { success: false, error: 'Selected colleague not found in organization.' },
-        { status: 404 }
-      );
-    }
-
     const parsedDate = new Date(targetDate);
     if (isNaN(parsedDate.getTime())) {
       return NextResponse.json(
@@ -210,24 +254,56 @@ export async function POST(
       );
     }
 
-    // Create ShiftSwapRequest
+    // Verify selected peer staff profiles exist in same organization
+    const peerStaffs = await prisma.staffProfile.findMany({
+      where: {
+        id: { in: validPeerIds },
+        organizationId: organization.id,
+      },
+      select: { id: true, name: true, staffId: true },
+    });
+
+    if (peerStaffs.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'None of the selected colleagues were found in your organization.' },
+        { status: 404 }
+      );
+    }
+
+    // Create ShiftSwapRequest with recipients
+    const primaryPeer = peerStaffs.length === 1 ? peerStaffs[0] : null;
+
     const swapRequest = await prisma.shiftSwapRequest.create({
       data: {
         organizationId: organization.id,
         requesterId: currentStaff.id,
-        peerId: peerStaff.id,
+        peerId: primaryPeer ? primaryPeer.id : null,
+        shiftPatternId: shiftPatternId || null,
+        shiftPatternName: shiftPatternName || null,
         targetDate: parsedDate,
         reason: reason ? reason.trim() : null,
         status: 'PENDING_PEER',
+        recipients: {
+          create: peerStaffs.map((p) => ({
+            peerId: p.id,
+            status: 'PENDING',
+          })),
+        },
       },
       include: {
         requester: { select: { name: true, staffId: true } },
         peer: { select: { name: true, staffId: true } },
+        recipients: {
+          include: {
+            peer: { select: { name: true, staffId: true } },
+          },
+        },
       },
     });
 
     // Record Audit Log
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const peerNamesStr = peerStaffs.map((p) => p.name).join(', ');
     await recordAuditLog({
       organizationId: organization.id,
       actorUserId: session.user.id,
@@ -236,8 +312,10 @@ export async function POST(
       entityId: swapRequest.id,
       metadata: {
         requesterName: currentStaff.name,
-        peerName: peerStaff.name,
+        peerNames: peerNamesStr,
+        invitedCount: peerStaffs.length,
         targetDate: parsedDate.toISOString(),
+        shiftPatternName,
       },
       ipAddress: ip,
       userAgent: request.headers.get('user-agent'),
@@ -245,7 +323,10 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Shift swap request sent to ${peerStaff.name}. Awaiting peer acceptance.`,
+      message:
+        peerStaffs.length === 1
+          ? `Shift swap request sent to ${peerStaffs[0].name}. Awaiting peer acceptance.`
+          : `Shift swap request sent to ${peerStaffs.length} colleagues (${peerNamesStr}). First colleague to accept will secure the shift swap.`,
       swapRequest,
     });
   } catch (error: any) {

@@ -18,23 +18,31 @@ import {
   Loader2,
   Users,
   Send,
-  MessageSquare,
+  ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
+import { StaffSidebar } from '@/components/layout/staff-sidebar';
+import { StaffMobileNav } from '@/components/layout/staff-mobile-nav';
+import { StaffHeader } from '@/components/layout/staff-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from './ShiftSwapsStaff.module.css';
 
-interface Colleague {
+interface ShiftSwapRecipient {
   id: string;
-  staffId: string;
-  name: string;
-  phone: string | null;
-  user: { email: string };
-  branchAssignments?: { branch: { name: string } }[];
+  peerId: string;
+  status: string;
+  peer: {
+    id: string;
+    staffId: string;
+    name: string;
+    user: { email: string };
+  };
 }
 
 interface OutgoingRequest {
   id: string;
   targetDate: string;
+  shiftPatternName: string | null;
   reason: string | null;
   status: 'PENDING_PEER' | 'PEER_ACCEPTED' | 'PEER_REJECTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
   createdAt: string;
@@ -44,12 +52,14 @@ interface OutgoingRequest {
     name: string;
     phone: string | null;
     user: { email: string };
-  };
+  } | null;
+  recipients?: ShiftSwapRecipient[];
 }
 
 interface IncomingRequest {
   id: string;
   targetDate: string;
+  shiftPatternName: string | null;
   reason: string | null;
   status: 'PENDING_PEER' | 'PEER_ACCEPTED' | 'PEER_REJECTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
   createdAt: string;
@@ -60,6 +70,11 @@ interface IncomingRequest {
     phone: string | null;
     user: { email: string };
   };
+  peer: {
+    id: string;
+    name: string;
+  } | null;
+  recipients?: ShiftSwapRecipient[];
 }
 
 export default function StaffShiftSwapsPage() {
@@ -69,17 +84,12 @@ export default function StaffShiftSwapsPage() {
   const toast = useToast();
 
   const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentStaff, setCurrentStaff] = useState<any>(null);
+
   const [outgoingRequests, setOutgoingRequests] = useState<OutgoingRequest[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<IncomingRequest[]>([]);
-  const [colleagues, setColleagues] = useState<Colleague[]>([]);
   const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING'>('INCOMING');
-
-  // New Swap Request Modal
-  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
-  const [selectedPeerId, setSelectedPeerId] = useState('');
-  const [targetDate, setTargetDate] = useState('');
-  const [reason, setReason] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Peer Respond Loading State
   const [respondingId, setRespondingId] = useState<string | null>(null);
@@ -91,9 +101,9 @@ export default function StaffShiftSwapsPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        setCurrentStaff(data.currentStaff);
         setOutgoingRequests(data.outgoingRequests || []);
         setIncomingRequests(data.incomingRequests || []);
-        setColleagues(data.colleagues || []);
       } else {
         toast.error(data.error || 'Failed to load shift swaps.');
       }
@@ -110,41 +120,6 @@ export default function StaffShiftSwapsPage() {
     }
   }, [organizationCode, fetchData]);
 
-  const handleCreateSwap = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedPeerId) return toast.error('Please select a colleague to swap with.');
-    if (!targetDate) return toast.error('Please select a shift target date.');
-
-    try {
-      setIsSubmitting(true);
-      const res = await fetch(`/api/org/${organizationCode}/staff/swaps`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          peerStaffId: selectedPeerId,
-          targetDate,
-          reason: reason.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success(data.message || 'Shift swap request sent!');
-        setIsNewModalOpen(false);
-        setSelectedPeerId('');
-        setTargetDate('');
-        setReason('');
-        fetchData();
-      } else {
-        toast.error(data.error || 'Failed to send shift swap request.');
-      }
-    } catch {
-      toast.error('Network error sending shift swap request.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handlePeerRespond = async (swapId: string, action: 'ACCEPT' | 'REJECT') => {
     try {
       setRespondingId(swapId);
@@ -156,7 +131,7 @@ export default function StaffShiftSwapsPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success(data.message || 'Response submitted.');
+        toast.success(data.message || 'Response submitted successfully!');
         fetchData();
       } else {
         toast.error(data.error || 'Failed to submit response.');
@@ -168,65 +143,91 @@ export default function StaffShiftSwapsPage() {
     }
   };
 
-  const pendingIncomingCount = incomingRequests.filter((r) => r.status === 'PENDING_PEER').length;
+  const handleSignOut = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    router.push(`/${organizationCode}/login`);
+  };
+
+  const pendingIncomingCount = incomingRequests.filter(
+    (r) =>
+      r.status === 'PENDING_PEER' &&
+      (!r.peer || r.peer.id === currentStaff?.id)
+  ).length;
 
   return (
     <div className={styles.container}>
+      <StaffSidebar
+        organizationCode={organizationCode}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        staffName={currentStaff?.name}
+        staffEmail={currentStaff?.staffId}
+        onSignOut={handleSignOut}
+      />
+
       <div className={styles.mainContent}>
-        {/* Header Bar */}
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => router.back()} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <ArrowLeft size={16} />
-            </button>
-            <div>
-              <h1 className={styles.title}>Shift Swapping &amp; Substitutions</h1>
-              <p className={styles.subtitle}>
-                Request colleagues to cover or swap workplace shifts with 2-step approval.
-              </p>
+        <StaffHeader
+          organizationCode={organizationCode}
+          staffName={currentStaff?.name}
+          onSignOut={handleSignOut}
+        />
+
+        <main className="pageMainContent" style={{ padding: '24px', maxWidth: '920px', margin: '0 auto' }}>
+          {/* Header Action Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button onClick={() => router.back()} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h1 className={styles.title} style={{ fontSize: '20px', fontWeight: 800 }}>
+                  Shift Swapping &amp; Substitute Requests
+                </h1>
+                <p className={styles.subtitle} style={{ fontSize: '13px' }}>
+                  Request colleagues for shift coverage with first-come peer acceptance &amp; 1-click admin approval.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <Link
+                href={`/${organizationCode}/staff/swaps/new`}
+                className="btn btn-primary btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 800, padding: '8px 16px' }}
+              >
+                <Plus size={16} />
+                <span>+ New Shift Swap Request</span>
+              </Link>
+
+              <button onClick={fetchData} disabled={loading} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              </button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button
-              onClick={() => setIsNewModalOpen(true)}
-              className="btn btn-primary btn-sm"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
-            >
-              <Plus size={16} />
-              <span>New Swap Request</span>
-            </button>
-
-            <button onClick={fetchData} disabled={loading} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </button>
-          </div>
-        </header>
-
-        <main className="pageMainContent" style={{ padding: '24px', maxWidth: '840px', margin: '0 auto' }}>
           {/* Incoming Notification Banner */}
           {pendingIncomingCount > 0 && (
             <div
               style={{
                 marginBottom: '20px',
-                padding: '14px 18px',
-                borderRadius: '12px',
+                padding: '16px 20px',
+                borderRadius: '14px',
                 backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 color: '#38bdf8',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Clock size={20} color="#38bdf8" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Clock size={22} color="#38bdf8" />
                 <div>
-                  <strong style={{ color: '#ffffff', fontSize: '14px' }}>
-                    {pendingIncomingCount} Incoming Shift Swap Request{pendingIncomingCount > 1 ? 's' : ''}
+                  <strong style={{ color: '#ffffff', fontSize: '14.5px' }}>
+                    {pendingIncomingCount} Incoming Shift Swap Invitation{pendingIncomingCount > 1 ? 's' : ''}
                   </strong>
-                  <div style={{ fontSize: '12px', color: '#bae6fd' }}>
-                    A colleague has asked you to cover/swap a shift.
+                  <div style={{ fontSize: '12.5px', color: '#bae6fd', marginTop: '2px' }}>
+                    A colleague has broadcasted a shift coverage request. First colleague to accept secures the swap.
                   </div>
                 </div>
               </div>
@@ -235,7 +236,7 @@ export default function StaffShiftSwapsPage() {
                 className="btn btn-primary btn-sm"
                 style={{ fontSize: '12px', fontWeight: 700 }}
               >
-                View Incoming
+                View Invites ({pendingIncomingCount})
               </button>
             </div>
           )}
@@ -245,19 +246,19 @@ export default function StaffShiftSwapsPage() {
             <button
               onClick={() => setActiveTab('INCOMING')}
               className={`btn btn-sm ${activeTab === 'INCOMING' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '13px' }}
             >
               <Users size={14} />
-              <span>Incoming Requests ({incomingRequests.length})</span>
+              <span>Incoming Invites ({incomingRequests.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('OUTGOING')}
               className={`btn btn-sm ${activeTab === 'OUTGOING' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '13px' }}
             >
               <Send size={14} />
-              <span>My Requests ({outgoingRequests.length})</span>
+              <span>My Sent Requests ({outgoingRequests.length})</span>
             </button>
           </div>
 
@@ -276,7 +277,7 @@ export default function StaffShiftSwapsPage() {
                       <CheckCircle2 size={32} color="#34d399" style={{ margin: '0 auto 12px auto' }} />
                       <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No Incoming Swap Invites</h3>
                       <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        No colleagues have requested you to cover a shift yet.
+                        You currently have no pending shift swap requests from colleagues.
                       </p>
                     </div>
                   ) : (
@@ -289,6 +290,18 @@ export default function StaffShiftSwapsPage() {
                           day: 'numeric',
                         });
                         const isResponding = respondingId === req.id;
+                        const isBroadCast = (req.recipients?.length || 0) > 1;
+
+                        // Check if accepted by someone else
+                        const acceptedByOther =
+                          req.status === 'PEER_ACCEPTED' &&
+                          req.peer &&
+                          req.peer.id !== currentStaff?.id;
+
+                        // Check current staff recipient status
+                        const myRecipientStatus = req.recipients?.find(
+                          (r) => r.peerId === currentStaff?.id
+                        )?.status;
 
                         return (
                           <div
@@ -297,11 +310,17 @@ export default function StaffShiftSwapsPage() {
                             style={{
                               padding: '20px',
                               borderRadius: '14px',
-                              border: req.status === 'PENDING_PEER' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid var(--border-subtle)',
-                              backgroundColor: req.status === 'PENDING_PEER' ? 'rgba(56, 189, 248, 0.04)' : 'rgba(13, 18, 31, 0.8)',
+                              border:
+                                req.status === 'PENDING_PEER' && !acceptedByOther
+                                  ? '1px solid rgba(56, 189, 248, 0.4)'
+                                  : '1px solid var(--border-subtle)',
+                              backgroundColor:
+                                req.status === 'PENDING_PEER' && !acceptedByOther
+                                  ? 'rgba(56, 189, 248, 0.04)'
+                                  : 'rgba(13, 18, 31, 0.8)',
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
                                   <User size={18} />
@@ -309,29 +328,63 @@ export default function StaffShiftSwapsPage() {
                                 <div>
                                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{req.requester.name}</div>
                                   <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                                    Staff ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{req.requester.staffId}</span>
+                                    Staff ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{req.requester.staffId}</span> | {req.requester.user.email}
                                   </div>
                                 </div>
                               </div>
 
-                              <span className={`badge ${req.status === 'APPROVED' ? 'badge-active' : req.status === 'PENDING_PEER' ? 'badge-pending' : 'badge-info'}`}>
-                                {req.status === 'PENDING_PEER' ? 'ACTION NEEDED (ACCEPT/DECLINE)' : req.status}
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {isBroadCast && (
+                                  <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', fontWeight: 700 }}>
+                                    Broadcast to {req.recipients?.length} Colleagues
+                                  </span>
+                                )}
+                                <span
+                                  className={`badge ${
+                                    req.status === 'APPROVED'
+                                      ? 'badge-active'
+                                      : acceptedByOther
+                                      ? 'badge-rejected'
+                                      : req.status === 'PENDING_PEER'
+                                      ? 'badge-pending'
+                                      : 'badge-info'
+                                  }`}
+                                >
+                                  {acceptedByOther
+                                    ? `ACCEPTED BY ${req.peer?.name.toUpperCase()}`
+                                    : req.status === 'PENDING_PEER'
+                                    ? 'ACTION NEEDED (ACCEPT / DECLINE)'
+                                    : req.status}
+                                </span>
+                              </div>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#38bdf8', fontWeight: 700, marginBottom: '10px' }}>
-                              <Calendar size={16} />
-                              <span>Target Shift Date: {targetDateFormatted}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#38bdf8', fontWeight: 700 }}>
+                                <Calendar size={16} />
+                                <span>Shift Date: {targetDateFormatted}</span>
+                              </div>
+                              {req.shiftPatternName && (
+                                <div style={{ fontSize: '13px', color: '#a5b4fc', fontWeight: 600 }}>
+                                  Shift: {req.shiftPatternName}
+                                </div>
+                              )}
                             </div>
 
                             {req.reason && (
                               <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '16px', padding: '8px 12px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                                <strong>Colleague Note:</strong> {req.reason}
+                                <strong>Reason Note:</strong> {req.reason}
+                              </div>
+                            )}
+
+                            {acceptedByOther && (
+                              <div style={{ fontSize: '12px', color: '#fbbf24', fontStyle: 'italic', marginBottom: '12px' }}>
+                                This shift request was accepted by {req.peer?.name} and is locked awaiting Org Admin approval.
                               </div>
                             )}
 
                             {/* Response Actions */}
-                            {req.status === 'PENDING_PEER' && (
+                            {req.status === 'PENDING_PEER' && !acceptedByOther && myRecipientStatus !== 'REJECTED' && (
                               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
                                 <button
                                   onClick={() => handlePeerRespond(req.id, 'REJECT')}
@@ -372,9 +425,9 @@ export default function StaffShiftSwapsPage() {
                       <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
                         You haven&apos;t initiated any shift swap requests yet.
                       </p>
-                      <button onClick={() => setIsNewModalOpen(true)} className="btn btn-primary btn-sm">
-                        Create Shift Swap Request
-                      </button>
+                      <Link href={`/${organizationCode}/staff/swaps/new`} className="btn btn-primary btn-sm">
+                        + Create New Shift Swap Request
+                      </Link>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -386,30 +439,89 @@ export default function StaffShiftSwapsPage() {
                           day: 'numeric',
                         });
 
+                        const recipientCount = req.recipients?.length || 0;
+                        const acceptedRecipient = req.recipients?.find((r) => r.status === 'ACCEPTED');
+
                         return (
                           <div key={req.id} className="glass-card" style={{ padding: '20px', borderRadius: '14px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
                               <div>
-                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Requested Colleague</span>
-                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{req.peer.name}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                                  Target Shift &amp; Recipients
+                                </div>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
+                                  {req.peer
+                                    ? `Direct Request to ${req.peer.name}`
+                                    : acceptedRecipient
+                                    ? `Accepted by ${acceptedRecipient.peer.name}`
+                                    : `Broadcast Sent to ${recipientCount} Colleagues`}
+                                </div>
                               </div>
 
-                              <span className={`badge ${req.status === 'APPROVED' ? 'badge-active' : req.status === 'PEER_ACCEPTED' ? 'badge-pending' : req.status === 'PENDING_PEER' ? 'badge-info' : 'badge-rejected'}`}>
+                              <span
+                                className={`badge ${
+                                  req.status === 'APPROVED'
+                                    ? 'badge-active'
+                                    : req.status === 'PEER_ACCEPTED'
+                                    ? 'badge-pending'
+                                    : req.status === 'PENDING_PEER'
+                                    ? 'badge-info'
+                                    : 'badge-rejected'
+                                }`}
+                              >
                                 {req.status === 'PENDING_PEER'
-                                  ? 'AWAITING PEER RESPONSE'
+                                  ? `AWAITING PEER ACCEPTANCE (${recipientCount} INVITED)`
                                   : req.status === 'PEER_ACCEPTED'
                                   ? 'PEER ACCEPTED (AWAITING ADMIN)'
                                   : req.status}
                               </span>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#38bdf8', fontWeight: 700, marginBottom: '8px' }}>
-                              <Calendar size={16} />
-                              <span>Shift Date: {targetDateFormatted}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#38bdf8', fontWeight: 700 }}>
+                                <Calendar size={16} />
+                                <span>Shift Date: {targetDateFormatted}</span>
+                              </div>
+                              {req.shiftPatternName && (
+                                <div style={{ fontSize: '13px', color: '#a5b4fc', fontWeight: 600 }}>
+                                  Shift: {req.shiftPatternName}
+                                </div>
+                              )}
                             </div>
 
+                            {/* Recipients List Pills */}
+                            {req.recipients && req.recipients.length > 0 && (
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                {req.recipients.map((r) => (
+                                  <span
+                                    key={r.id}
+                                    style={{
+                                      fontSize: '11px',
+                                      padding: '3px 8px',
+                                      borderRadius: '12px',
+                                      backgroundColor:
+                                        r.status === 'ACCEPTED'
+                                          ? 'rgba(52, 211, 153, 0.2)'
+                                          : r.status === 'REJECTED'
+                                          ? 'rgba(244, 63, 94, 0.2)'
+                                          : 'rgba(255,255,255,0.05)',
+                                      color:
+                                        r.status === 'ACCEPTED'
+                                          ? '#34d399'
+                                          : r.status === 'REJECTED'
+                                          ? '#f43f5e'
+                                          : 'var(--text-muted)',
+                                      border: '1px solid var(--border-subtle)',
+                                    }}
+                                  >
+                                    {r.peer.name}: {r.status}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
                             {req.reason && (
-                              <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                              <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '8px' }}>
                                 <strong>Reason Note:</strong> {req.reason}
                               </div>
                             )}
@@ -425,89 +537,7 @@ export default function StaffShiftSwapsPage() {
         </main>
       </div>
 
-      {/* NEW SHIFT SWAP MODAL */}
-      {isNewModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsNewModalOpen(false)}>
-          <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '480px', width: '100%', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
-                  <Plus size={20} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Request Shift Swap</h3>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Select colleague &amp; target shift date</div>
-                </div>
-              </div>
-              <button onClick={() => setIsNewModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
-            </div>
-
-            <form onSubmit={handleCreateSwap}>
-              {/* Select Colleague */}
-              <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label" style={{ fontSize: '12.5px', fontWeight: 600, color: '#ffffff' }}>
-                  Select Colleague / Peer <span style={{ color: 'var(--danger-text)' }}>*</span>
-                </label>
-                <select
-                  value={selectedPeerId}
-                  onChange={(e) => setSelectedPeerId(e.target.value)}
-                  required
-                  className="form-input"
-                  style={{ width: '100%', marginTop: '4px' }}
-                >
-                  <option value="">-- Choose a colleague --</option>
-                  {colleagues.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.staffId})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Target Shift Date */}
-              <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label" style={{ fontSize: '12.5px', fontWeight: 600, color: '#ffffff' }}>
-                  Shift Target Date <span style={{ color: 'var(--danger-text)' }}>*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                  min={new Date().toISOString().slice(0, 10)}
-                  className="form-input"
-                  style={{ width: '100%', marginTop: '4px' }}
-                />
-              </div>
-
-              {/* Reason */}
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="form-label" style={{ fontSize: '12.5px', fontWeight: 600, color: '#ffffff' }}>
-                  Reason Note (Optional)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Personal commitment / Exam schedule..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="form-input"
-                  style={{ width: '100%', marginTop: '4px', resize: 'vertical' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setIsNewModalOpen(false)} disabled={isSubmitting} className="btn btn-secondary btn-sm">
-                  Cancel
-                </button>
-                <button type="submit" disabled={isSubmitting} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
-                  {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                  <span>{isSubmitting ? 'Sending...' : 'Send Swap Request'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <StaffMobileNav organizationCode={organizationCode} />
     </div>
   );
 }

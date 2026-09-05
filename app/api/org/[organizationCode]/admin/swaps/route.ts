@@ -56,6 +56,12 @@ export async function GET(
             },
           },
         },
+        shiftPattern: { select: { id: true, name: true } },
+        recipients: {
+          include: {
+            peer: { select: { id: true, name: true, staffId: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

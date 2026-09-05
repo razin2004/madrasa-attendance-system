@@ -283,6 +283,7 @@ model StaffProfile {
   leaveBalances      LeaveBalance[]
   requestedSwapRequests ShiftSwapRequest[] @relation("RequesterSwapRequests")
   peerSwapRequests      ShiftSwapRequest[] @relation("PeerSwapRequests")
+  recipientSwapRequests ShiftSwapRecipient[] @relation("RecipientPeerSwaps")
 
   @@unique([organizationId, staffId])
   @@index([organizationId])
@@ -343,6 +344,7 @@ model ShiftPattern {
   organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   weeklyDays   WeeklyShiftDay[]
   assignments  ShiftAssignment[]
+  shiftSwapRequests ShiftSwapRequest[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -714,7 +716,9 @@ model ShiftSwapRequest {
   id               String          @id @default(uuid())
   organizationId   String
   requesterId      String
-  peerId           String
+  peerId           String?
+  shiftPatternId   String?
+  shiftPatternName String?
   targetDate       DateTime
   reason           String?
   status           ShiftSwapStatus @default(PENDING_PEER)
@@ -725,13 +729,33 @@ model ShiftSwapRequest {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  requester    StaffProfile @relation("RequesterSwapRequests", fields: [requesterId], references: [id], onDelete: Cascade)
-  peer         StaffProfile @relation("PeerSwapRequests", fields: [peerId], references: [id], onDelete: Cascade)
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requester    StaffProfile         @relation("RequesterSwapRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  peer         StaffProfile?        @relation("PeerSwapRequests", fields: [peerId], references: [id], onDelete: SetNull)
+  shiftPattern ShiftPattern?        @relation(fields: [shiftPatternId], references: [id], onDelete: SetNull)
+  recipients   ShiftSwapRecipient[]
 
   @@index([organizationId])
   @@index([requesterId])
   @@index([peerId])
+  @@index([shiftPatternId])
   @@index([status])
   @@map("shift_swap_requests")
+}
+
+model ShiftSwapRecipient {
+  id                 String   @id @default(uuid())
+  shiftSwapRequestId String
+  peerId             String
+  status             String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, EXPIRED
+  respondedAt        DateTime?
+  createdAt          DateTime @default(now())
+
+  shiftSwapRequest ShiftSwapRequest @relation(fields: [shiftSwapRequestId], references: [id], onDelete: Cascade)
+  peer             StaffProfile     @relation("RecipientPeerSwaps", fields: [peerId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftSwapRequestId, peerId])
+  @@index([shiftSwapRequestId])
+  @@index([peerId])
+  @@map("shift_swap_recipients")
 }

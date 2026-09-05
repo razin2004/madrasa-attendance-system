@@ -51,6 +51,7 @@ export async function PATCH(
       include: {
         requester: { select: { name: true, userId: true } },
         peer: { select: { name: true } },
+        recipients: true,
       },
     });
 
@@ -61,18 +62,20 @@ export async function PATCH(
       );
     }
 
-    // Verify current user is the peer assigned to respond
-    if (swapRequest.peerId !== currentStaff.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized: Only the assigned peer colleague can respond to this swap request.' },
-        { status: 403 }
-      );
-    }
+    // Check if current user is either the assigned peer or one of the invited recipients
+    const isAssignedPeer = swapRequest.peerId === currentStaff.id;
+    const recipientEntry = swapRequest.recipients.find(
+      (r) => r.peerId === currentStaff.id
+    );
 
-    if (swapRequest.status !== 'PENDING_PEER') {
+    if (!isAssignedPeer && !recipientEntry) {
       return NextResponse.json(
-        { success: false, error: `Swap request is already in status: ${swapRequest.status}.` },
-        { status: 400 }
+        {
+          success: false,
+          error:
+            'Unauthorized: You are not an invited colleague for this shift swap request.',
+        },
+        { status: 403 }
       );
     }
 
@@ -86,45 +89,135 @@ export async function PATCH(
       );
     }
 
-    const newStatus = action === 'ACCEPT' ? 'PEER_ACCEPTED' : 'PEER_REJECTED';
+    if (action === 'ACCEPT') {
+      // Check if swap request is already accepted by someone else
+      if (swapRequest.status !== 'PENDING_PEER' || (swapRequest.peerId && swapRequest.peerId !== currentStaff.id)) {
+        const acceptingPeerName = swapRequest.peer?.name || 'another colleague';
+        return NextResponse.json(
+          {
+            success: false,
+            error: `This shift swap request has already been accepted by ${acceptingPeerName} and is awaiting Org Admin approval.`,
+          },
+          { status: 409 }
+        );
+      }
 
-    const updatedSwap = await prisma.shiftSwapRequest.update({
-      where: { id: swapRequest.id },
-      data: {
-        status: newStatus,
-        peerRespondedAt: new Date(),
-      },
-      include: {
-        requester: { select: { name: true, staffId: true } },
-        peer: { select: { name: true, staffId: true } },
-      },
-    });
+      // Execute atomic transaction: set peerId, status = PEER_ACCEPTED, update recipient statuses
+      const updatedSwap = await prisma.$transaction(async (tx) => {
+        const updated = await tx.shiftSwapRequest.update({
+          where: { id: swapRequest.id },
+          data: {
+            peerId: currentStaff.id,
+            status: 'PEER_ACCEPTED',
+            peerRespondedAt: new Date(),
+          },
+          include: {
+            requester: { select: { name: true, staffId: true } },
+            peer: { select: { name: true, staffId: true } },
+            shiftPattern: { select: { name: true } },
+          },
+        });
 
-    // Record Audit Log
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-    await recordAuditLog({
-      organizationId: organization.id,
-      actorUserId: session.user.id,
-      action: action === 'ACCEPT' ? 'SHIFT_SWAP_PEER_ACCEPTED' : 'SHIFT_SWAP_PEER_REJECTED',
-      entityType: 'ShiftSwapRequest',
-      entityId: updatedSwap.id,
-      metadata: {
-        peerName: currentStaff.name,
-        requesterName: swapRequest.requester.name,
-        newStatus,
-      },
-      ipAddress: ip,
-      userAgent: request.headers.get('user-agent'),
-    }).catch(() => {});
+        // Mark current staff recipient record as ACCEPTED
+        await tx.shiftSwapRecipient.updateMany({
+          where: {
+            shiftSwapRequestId: swapRequest.id,
+            peerId: currentStaff.id,
+          },
+          data: {
+            status: 'ACCEPTED',
+            respondedAt: new Date(),
+          },
+        });
 
-    return NextResponse.json({
-      success: true,
-      message:
-        action === 'ACCEPT'
-          ? 'You accepted the shift swap request! It is now sent to Org Admin for final approval.'
-          : 'You declined the shift swap request.',
-      swapRequest: updatedSwap,
-    });
+        // Mark all other invited recipients as EXPIRED
+        await tx.shiftSwapRecipient.updateMany({
+          where: {
+            shiftSwapRequestId: swapRequest.id,
+            peerId: { not: currentStaff.id },
+          },
+          data: {
+            status: 'EXPIRED',
+          },
+        });
+
+        return updated;
+      });
+
+      // Audit Log
+      const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+      await recordAuditLog({
+        organizationId: organization.id,
+        actorUserId: session.user.id,
+        action: 'SHIFT_SWAP_PEER_ACCEPTED',
+        entityType: 'ShiftSwapRequest',
+        entityId: updatedSwap.id,
+        metadata: {
+          peerName: currentStaff.name,
+          requesterName: swapRequest.requester.name,
+          newStatus: 'PEER_ACCEPTED',
+        },
+        ipAddress: ip,
+        userAgent: request.headers.get('user-agent'),
+      }).catch(() => {});
+
+      return NextResponse.json({
+        success: true,
+        message:
+          'You successfully accepted the shift swap request! It has been submitted to Org Admin for 1-click final approval.',
+        swapRequest: updatedSwap,
+      });
+    } else {
+      // REJECT action
+      if (recipientEntry) {
+        await prisma.shiftSwapRecipient.update({
+          where: { id: recipientEntry.id },
+          data: {
+            status: 'REJECTED',
+            respondedAt: new Date(),
+          },
+        });
+      }
+
+      // Check if all recipients have rejected
+      const remainingPending = await prisma.shiftSwapRecipient.count({
+        where: {
+          shiftSwapRequestId: swapRequest.id,
+          status: 'PENDING',
+        },
+      });
+
+      let updatedSwapStatus = swapRequest.status;
+      if (remainingPending === 0 && swapRequest.status === 'PENDING_PEER') {
+        updatedSwapStatus = 'PEER_REJECTED';
+        await prisma.shiftSwapRequest.update({
+          where: { id: swapRequest.id },
+          data: { status: 'PEER_REJECTED' },
+        });
+      }
+
+      // Audit Log
+      const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+      await recordAuditLog({
+        organizationId: organization.id,
+        actorUserId: session.user.id,
+        action: 'SHIFT_SWAP_PEER_REJECTED',
+        entityType: 'ShiftSwapRequest',
+        entityId: swapRequest.id,
+        metadata: {
+          peerName: currentStaff.name,
+          requesterName: swapRequest.requester.name,
+          newStatus: updatedSwapStatus,
+        },
+        ipAddress: ip,
+        userAgent: request.headers.get('user-agent'),
+      }).catch(() => {});
+
+      return NextResponse.json({
+        success: true,
+        message: 'You declined the shift swap request.',
+      });
+    }
   } catch (error: any) {
     console.error('Peer respond to swap error:', error);
     return NextResponse.json(
