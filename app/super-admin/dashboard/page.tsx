@@ -1504,8 +1504,8 @@ export default function SuperAdminDashboardPage() {
               </button>
             </div>
 
-            {/* Quick Metrics Cards (Staff Profile Style) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            {/* Quick Metrics Cards (Branches & Staff Profiles) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
               <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', textAlign: 'center' }}>
                 <MapPin size={18} color="#38bdf8" style={{ margin: '0 auto 4px auto' }} />
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Branches</div>
@@ -1516,18 +1516,6 @@ export default function SuperAdminDashboardPage() {
                 <Users size={18} color="#c084fc" style={{ margin: '0 auto 4px auto' }} />
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Staff Profiles</div>
                 <div style={{ fontSize: '20px', fontWeight: 800, color: '#c084fc', marginTop: '2px' }}>{selectedOrg._count?.staffProfiles || 0}</div>
-              </div>
-
-              <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(52, 211, 153, 0.08)', border: '1px solid rgba(52, 211, 153, 0.25)', textAlign: 'center' }}>
-                <FileText size={18} color="#34d399" style={{ margin: '0 auto 4px auto' }} />
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Attendance Logs</div>
-                <div style={{ fontSize: '20px', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>{selectedOrg._count?.attendanceRecords || 0}</div>
-              </div>
-
-              <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.25)', textAlign: 'center' }}>
-                <Shield size={18} color="#fbbf24" style={{ margin: '0 auto 4px auto' }} />
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Admin Accounts</div>
-                <div style={{ fontSize: '20px', fontWeight: 800, color: '#fbbf24', marginTop: '2px' }}>{selectedOrg._count?.users || 0}</div>
               </div>
             </div>
 
