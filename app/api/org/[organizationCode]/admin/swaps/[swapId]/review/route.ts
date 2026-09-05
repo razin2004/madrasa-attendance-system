@@ -48,6 +48,19 @@ export async function PATCH(
       );
     }
 
+    if (action === 'APPROVE' && (!swapRequest.peerId || !swapRequest.peer)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Cannot approve a shift swap request that has not been accepted by a colleague.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const peerProfile = swapRequest.peer;
+    const peerId = swapRequest.peerId;
+
     const normalizedDate = new Date(swapRequest.targetDate);
     normalizedDate.setUTCHours(0, 0, 0, 0);
 
@@ -69,7 +82,7 @@ export async function PATCH(
       });
 
       // If approved, create shift overrides to swap shift assignments on the target date
-      if (action === 'APPROVE') {
+      if (action === 'APPROVE' && peerId && peerProfile) {
         // Upsert shift override for Requester
         await tx.staffShiftOverride.upsert({
           where: {
@@ -79,13 +92,13 @@ export async function PATCH(
             },
           },
           update: {
-            reason: `Shift swapped with ${swapRequest.peer.name} (${swapRequest.peer.staffId})`,
+            reason: `Shift swapped with ${peerProfile.name} (${peerProfile.staffId})`,
             createdBy: adminUserId,
           },
           create: {
             staffProfileId: swapRequest.requesterId,
             date: normalizedDate,
-            reason: `Shift swapped with ${swapRequest.peer.name} (${swapRequest.peer.staffId})`,
+            reason: `Shift swapped with ${peerProfile.name} (${peerProfile.staffId})`,
             createdBy: adminUserId,
           },
         });
@@ -94,7 +107,7 @@ export async function PATCH(
         await tx.staffShiftOverride.upsert({
           where: {
             staffProfileId_date: {
-              staffProfileId: swapRequest.peerId,
+              staffProfileId: peerId,
               date: normalizedDate,
             },
           },
@@ -103,7 +116,7 @@ export async function PATCH(
             createdBy: adminUserId,
           },
           create: {
-            staffProfileId: swapRequest.peerId,
+            staffProfileId: peerId,
             date: normalizedDate,
             reason: `Covering shift for ${swapRequest.requester.name} (${swapRequest.requester.staffId})`,
             createdBy: adminUserId,
@@ -124,7 +137,7 @@ export async function PATCH(
       entityId: result.id,
       metadata: {
         requesterName: swapRequest.requester.name,
-        peerName: swapRequest.peer.name,
+        peerName: peerProfile ? peerProfile.name : 'Unknown',
         targetDate: normalizedDate.toISOString(),
         adminNote: adminNote || null,
       },
@@ -135,8 +148,8 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       message:
-        action === 'APPROVE'
-          ? `Shift swap request approved successfully. Shift overrides registered for ${swapRequest.requester.name} and ${swapRequest.peer.name}.`
+        action === 'APPROVE' && peerProfile
+          ? `Shift swap request approved successfully. Shift overrides registered for ${swapRequest.requester.name} and ${peerProfile.name}.`
           : 'Shift swap request rejected.',
       swapRequest: result,
     });
