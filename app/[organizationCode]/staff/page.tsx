@@ -976,12 +976,13 @@ export default function StaffDashboardPage() {
             position: 'fixed',
             inset: 0,
             zIndex: 999999,
-            backgroundColor: 'rgba(3, 7, 18, 0.88)',
-            backdropFilter: 'blur(10px)',
+            backgroundColor: '#030712',
+            backgroundImage: 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(99, 102, 241, 0.2), rgba(3, 7, 18, 1))',
+            backdropFilter: 'blur(16px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '16px',
+            padding: '20px',
           }}
         >
           <div
