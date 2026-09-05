@@ -40,8 +40,8 @@ async function sendViaBrevo(
     
     // Ensure active verified Brevo sender email is used
     let cleanSenderEmail = senderEmail.trim().toLowerCase();
-    if (!cleanSenderEmail || cleanSenderEmail.includes('noreply')) {
-      cleanSenderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || 'doctorbooksystem@gmail.com';
+    if (!cleanSenderEmail) {
+      cleanSenderEmail = (process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || '').trim().toLowerCase();
     }
     const cleanSenderName = senderName.trim() || 'ShiftGuard';
     const cleanReplyTo = (replyToEmail || senderEmail || cleanSenderEmail).trim().toLowerCase();
