@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentSession } from '@/lib/session';
 import { recordAuditLog } from '@/services/audit.service';
+import { sendEmail } from '@/services/email.service';
+import { templateShiftSwapPeerAccepted } from '@/services/email-templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -160,6 +162,49 @@ export async function PATCH(
         ipAddress: ip,
         userAgent: request.headers.get('user-agent'),
       }).catch(() => {});
+
+      // Dispatch Notification Email to Org Admin (Non-blocking)
+      setTimeout(async () => {
+        try {
+          const orgAdmin = await prisma.user.findFirst({
+            where: {
+              organizationId: organization.id,
+              role: 'ORG_ADMIN',
+              status: 'ACTIVE',
+            },
+          });
+
+          if (orgAdmin?.email) {
+            const targetDateFormatted = new Date(swapRequest.targetDate).toLocaleDateString(undefined, {
+              weekday: 'short',
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            });
+            const reviewUrl = `https://shiftguard.app/${organization.organizationCode}/admin/shifts/swaps`;
+
+            const payload = templateShiftSwapPeerAccepted({
+              orgName: organization.name,
+              requesterName: swapRequest.requester.name,
+              peerName: currentStaff.name,
+              targetDate: targetDateFormatted,
+              shiftPatternName: swapRequest.shiftPatternName || 'Branch Shift',
+              reviewUrl,
+            });
+
+            await sendEmail({
+              organizationId: organization.id,
+              recipient: orgAdmin.email,
+              type: 'SHIFT_SWAP_PEER_ACCEPTED',
+              subject: payload.subject,
+              htmlContent: payload.html,
+              textContent: payload.text,
+            }).catch(() => {});
+          }
+        } catch (emailErr) {
+          console.error('Non-blocking peer accept email error:', emailErr);
+        }
+      }, 0);
 
       return NextResponse.json({
         success: true,

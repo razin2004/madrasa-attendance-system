@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentSession } from '@/lib/session';
 import { recordAuditLog } from '@/services/audit.service';
+import { sendEmail } from '@/services/email.service';
+import { templateShiftSwapRequested } from '@/services/email-templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -320,6 +322,48 @@ export async function POST(
       ipAddress: ip,
       userAgent: request.headers.get('user-agent'),
     }).catch(() => {});
+
+    // Dispatch Email Notifications to Invited Peers (Non-blocking)
+    setTimeout(async () => {
+      try {
+        const fullPeers = await prisma.staffProfile.findMany({
+          where: { id: { in: validPeerIds } },
+          select: { name: true, user: { select: { email: true } } },
+        });
+
+        const targetDateFormatted = parsedDate.toLocaleDateString(undefined, {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+        const swapUrl = `https://shiftguard.app/${organization.organizationCode}/staff/swaps`;
+
+        for (const p of fullPeers) {
+          if (p.user?.email) {
+            const emailPayload = templateShiftSwapRequested({
+              orgName: organization.name,
+              requesterName: currentStaff.name,
+              targetDate: targetDateFormatted,
+              shiftPatternName: shiftPatternName || 'Branch Shift',
+              reason,
+              swapUrl,
+            });
+
+            await sendEmail({
+              organizationId: organization.id,
+              recipient: p.user.email,
+              type: 'SHIFT_SWAP_REQUESTED',
+              subject: emailPayload.subject,
+              htmlContent: emailPayload.html,
+              textContent: emailPayload.text,
+            }).catch(() => {});
+          }
+        }
+      } catch (emailErr) {
+        console.error('Non-blocking shift swap email error:', emailErr);
+      }
+    }, 0);
 
     return NextResponse.json({
       success: true,

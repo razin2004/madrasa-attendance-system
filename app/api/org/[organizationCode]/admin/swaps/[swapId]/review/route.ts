@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireOrgAdmin } from '@/lib/tenant-auth';
 import { recordAuditLog } from '@/services/audit.service';
+import { sendEmail } from '@/services/email.service';
+import { templateShiftSwapReviewed } from '@/services/email-templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,6 +146,80 @@ export async function PATCH(
       ipAddress: ip,
       userAgent: request.headers.get('user-agent'),
     }).catch(() => {});
+
+    // Dispatch Notification Emails to Requester & Peer (Non-blocking)
+    setTimeout(async () => {
+      try {
+        const fullRequester = await prisma.staffProfile.findUnique({
+          where: { id: swapRequest.requesterId },
+          select: { name: true, user: { select: { email: true } } },
+        });
+
+        const fullPeer = peerId
+          ? await prisma.staffProfile.findUnique({
+              where: { id: peerId },
+              select: { name: true, user: { select: { email: true } } },
+            })
+          : null;
+
+        const targetDateFormatted = normalizedDate.toLocaleDateString(undefined, {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+        const loginUrl = `https://shiftguard.app/${auth.organization?.organizationCode}/staff/swaps`;
+        const finalStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+
+        // 1. Notify Requester
+        if (fullRequester?.user?.email) {
+          const reqPayload = templateShiftSwapReviewed({
+            orgName: auth.organization!.name,
+            staffName: fullRequester.name,
+            otherPartyName: fullPeer ? fullPeer.name : 'Substitute Peer',
+            status: finalStatus,
+            targetDate: targetDateFormatted,
+            shiftPatternName: swapRequest.shiftPatternName || 'Branch Shift',
+            adminNote,
+            loginUrl,
+          });
+
+          await sendEmail({
+            organizationId: auth.organization!.id,
+            recipient: fullRequester.user.email,
+            type: 'SHIFT_SWAP_REVIEWED',
+            subject: reqPayload.subject,
+            htmlContent: reqPayload.html,
+            textContent: reqPayload.text,
+          }).catch(() => {});
+        }
+
+        // 2. Notify Peer
+        if (fullPeer?.user?.email) {
+          const peerPayload = templateShiftSwapReviewed({
+            orgName: auth.organization!.name,
+            staffName: fullPeer.name,
+            otherPartyName: fullRequester ? fullRequester.name : 'Original Shift Holder',
+            status: finalStatus,
+            targetDate: targetDateFormatted,
+            shiftPatternName: swapRequest.shiftPatternName || 'Branch Shift',
+            adminNote,
+            loginUrl,
+          });
+
+          await sendEmail({
+            organizationId: auth.organization!.id,
+            recipient: fullPeer.user.email,
+            type: 'SHIFT_SWAP_REVIEWED',
+            subject: peerPayload.subject,
+            htmlContent: peerPayload.html,
+            textContent: peerPayload.text,
+          }).catch(() => {});
+        }
+      } catch (emailErr) {
+        console.error('Non-blocking admin swap review email error:', emailErr);
+      }
+    }, 0);
 
     return NextResponse.json({
       success: true,

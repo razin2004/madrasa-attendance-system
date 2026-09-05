@@ -1147,3 +1147,200 @@ New Official Email: ${data.newEmail}
 
   return { subject, html, text };
 }
+
+/**
+ * 25. Shift Swap Requested Email (Sent to Invited Peers)
+ */
+export function templateShiftSwapRequested(data: {
+  orgName: string;
+  requesterName: string;
+  targetDate: string;
+  shiftPatternName: string;
+  reason?: string | null;
+  swapUrl: string;
+}): EmailTemplatePayload {
+  const subject = `ShiftGuard — Shift Coverage Request from ${data.requesterName} (${data.targetDate})`;
+  const html = emailWrapper(
+    'Shift Coverage Request',
+    `
+    <h2 class="title" style="color: #38bdf8;">Shift Coverage Request 🔄</h2>
+    <p>Hello,</p>
+    <p>Your colleague <strong>${data.requesterName}</strong> has invited you for a shift swap / coverage request at <strong>${data.orgName}</strong>:</p>
+
+    <div class="box" style="border-left: 4px solid #38bdf8;">
+      <div class="credential-item">
+        <div class="credential-label">Requester</div>
+        <div class="credential-value" style="color: #ffffff;">${data.requesterName}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Target Shift Date</div>
+        <div class="credential-value" style="color: #38bdf8;">${data.targetDate}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Shift Pattern</div>
+        <div class="credential-value" style="color: #818cf8;">${data.shiftPatternName}</div>
+      </div>
+      ${
+        data.reason
+          ? `
+      <div class="credential-item">
+        <div class="credential-label">Message / Reason</div>
+        <div style="color: #cbd5e1; font-size: 13.5px;">${data.reason}</div>
+      </div>
+      `
+          : ''
+      }
+    </div>
+
+    <div style="text-align: center;">
+      <a href="${data.swapUrl}" class="btn">View &amp; Accept Shift Swap &rarr;</a>
+    </div>
+
+    <p style="font-size: 12.5px; color: #94a3b8; text-align: center;">
+      ⚡ Note: This is a first-come-first-served broadcast. The first colleague to accept secures the shift swap request.
+    </p>
+    `
+  );
+
+  const text = `
+SHIFTGUARD — SHIFT COVERAGE REQUEST
+
+Colleague ${data.requesterName} requested shift coverage at ${data.orgName}:
+Target Date: ${data.targetDate}
+Shift: ${data.shiftPatternName}
+${data.reason ? `Reason: ${data.reason}\n` : ''}
+Accept Shift Swap:
+${data.swapUrl}
+  `.trim();
+
+  return { subject, html, text };
+}
+
+/**
+ * 26. Shift Swap Peer Accepted (Sent to Org Admin)
+ */
+export function templateShiftSwapPeerAccepted(data: {
+  orgName: string;
+  requesterName: string;
+  peerName: string;
+  targetDate: string;
+  shiftPatternName: string;
+  reviewUrl: string;
+}): EmailTemplatePayload {
+  const subject = `ShiftGuard — Action Needed: Shift Swap Accepted (${data.requesterName} ↔ ${data.peerName})`;
+  const html = emailWrapper(
+    'Shift Swap Awaiting Approval',
+    `
+    <h2 class="title" style="color: #818cf8;">Shift Swap Awaiting Org Admin Approval 🛡️</h2>
+    <p>A shift swap request in <strong>${data.orgName}</strong> has been accepted by a peer colleague and requires your final 1-click approval:</p>
+
+    <div class="box" style="border-left: 4px solid #818cf8;">
+      <div class="credential-item">
+        <div class="credential-label">Original Shift Holder (Requester)</div>
+        <div class="credential-value" style="color: #ffffff;">${data.requesterName}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Substitute Colleague (Accepted Peer)</div>
+        <div class="credential-value" style="color: #34d399;">${data.peerName}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Target Shift Date</div>
+        <div class="credential-value" style="color: #38bdf8;">${data.targetDate}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Shift Pattern</div>
+        <div style="color: #a5b4fc; font-weight: 700; font-size: 14px;">${data.shiftPatternName}</div>
+      </div>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="${data.reviewUrl}" class="btn">Approve &amp; Swap Shift &rarr;</a>
+    </div>
+    `
+  );
+
+  const text = `
+SHIFTGUARD — SHIFT SWAP AWAITING APPROVAL
+
+Requester: ${data.requesterName}
+Substitute Peer: ${data.peerName}
+Target Date: ${data.targetDate}
+Shift: ${data.shiftPatternName}
+
+Review & Approve:
+${data.reviewUrl}
+  `.trim();
+
+  return { subject, html, text };
+}
+
+/**
+ * 27. Shift Swap Reviewed by Admin (Sent to Requester & Peer)
+ */
+export function templateShiftSwapReviewed(data: {
+  orgName: string;
+  staffName: string;
+  otherPartyName: string;
+  status: 'APPROVED' | 'REJECTED';
+  targetDate: string;
+  shiftPatternName: string;
+  adminNote?: string | null;
+  loginUrl: string;
+}): EmailTemplatePayload {
+  const isApproved = data.status === 'APPROVED';
+  const subject = `ShiftGuard — Shift Swap Request ${isApproved ? 'Approved ✓' : 'Rejected'}: ${data.targetDate}`;
+  const html = emailWrapper(
+    `Shift Swap ${isApproved ? 'Approved' : 'Rejected'}`,
+    `
+    <h2 class="title" style="color: ${isApproved ? '#34d399' : '#fb7185'};">
+      Shift Swap Request ${isApproved ? 'Approved ✓' : 'Not Approved'}
+    </h2>
+    <p>Hello <strong>${data.staffName}</strong>,</p>
+    <p>The shift swap request for <strong>${data.targetDate}</strong> (${data.shiftPatternName}) involving <strong>${data.otherPartyName}</strong> has been <strong>${data.status.toLowerCase()}</strong> by your organization administrator.</p>
+
+    <div class="box" style="border-left: 4px solid ${isApproved ? '#34d399' : '#f43f5e'};">
+      <div class="credential-item">
+        <div class="credential-label">Status</div>
+        <div><span class="badge ${isApproved ? 'badge-success' : 'badge-danger'}">${data.status}</span></div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Target Shift Date</div>
+        <div class="credential-value" style="color: #ffffff;">${data.targetDate}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Shift Pattern</div>
+        <div style="color: #a5b4fc; font-weight: 700; font-size: 14px;">${data.shiftPatternName}</div>
+      </div>
+      ${
+        data.adminNote
+          ? `
+      <div class="credential-item">
+        <div class="credential-label">Admin Review Note</div>
+        <div style="color: #cbd5e1; font-size: 13.5px;">${data.adminNote}</div>
+      </div>
+      `
+          : ''
+      }
+    </div>
+
+    <div style="text-align: center;">
+      <a href="${data.loginUrl}" class="btn">View Shift Schedule &rarr;</a>
+    </div>
+    `
+  );
+
+  const text = `
+SHIFTGUARD — SHIFT SWAP ${data.status}
+
+Hello ${data.staffName},
+
+The shift swap request for ${data.targetDate} (${data.shiftPatternName}) with ${data.otherPartyName} was ${data.status.toLowerCase()}.
+${data.adminNote ? `Admin Note: ${data.adminNote}\n` : ''}
+
+View Schedule:
+${data.loginUrl}
+  `.trim();
+
+  return { subject, html, text };
+}
+
