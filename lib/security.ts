@@ -81,7 +81,6 @@ export function hashToken(token: string): string {
  */
 export function normalizeEmail(email: string): string {
   let clean = email.trim().toLowerCase();
-  clean = clean.replace(/^www\./i, '');
   clean = clean.replace(/@www\./i, '@');
   return clean;
 }
