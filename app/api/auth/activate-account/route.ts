@@ -49,6 +49,7 @@ export async function GET(request: Request) {
         name: securityToken.user.name,
         email: securityToken.user.email,
         orgName: securityToken.user.organization?.name || 'ShiftGuard Workspace',
+        role: securityToken.user.role,
       },
     });
   } catch (error: any) {

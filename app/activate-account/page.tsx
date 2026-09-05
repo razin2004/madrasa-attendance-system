@@ -24,7 +24,7 @@ function ActivateAccountForm() {
 
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const [tokenError, setTokenError] = useState<string | null>(null);
-  const [userInfo, setUserInfo] = useState<{ name: string; email: string; orgName: string } | null>(null);
+  const [userInfo, setUserInfo] = useState<{ name: string; email: string; orgName: string; role?: string } | null>(null);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -164,25 +164,27 @@ function ActivateAccountForm() {
             Your account password has been created successfully. You can now log in using your email address and password.
           </p>
 
-          {/* First Login Device Notice Box */}
-          <div
-            style={{
-              backgroundColor: 'rgba(99, 102, 241, 0.08)',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
-              borderRadius: '10px',
-              padding: '16px',
-              textAlign: 'left',
-              marginBottom: '24px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#818cf8', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
-              <Lock size={16} />
-              <span>Notice on First Sign-In &amp; Device Setup</span>
+          {/* First Login Device Notice Box (Only for Staff / Non-Org-Admin setup) */}
+          {userInfo?.role !== 'ORG_ADMIN' && (
+            <div
+              style={{
+                backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: '10px',
+                padding: '16px',
+                textAlign: 'left',
+                marginBottom: '24px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#818cf8', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
+                <Lock size={16} />
+                <span>Notice on First Sign-In &amp; Device Setup</span>
+              </div>
+              <p style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.5', margin: 0 }}>
+                When you log in for the first time, a <strong>Device Authorization Popup</strong> will appear. Confirming it will register your current phone or browser as your official <strong>Layer 3 Security Device</strong> for attendance verification.
+              </p>
             </div>
-            <p style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.5', margin: 0 }}>
-              When you log in for the first time, a <strong>Device Authorization Popup</strong> will appear. Confirming it will register your current phone or browser as your official <strong>Layer 3 Security Device</strong> for attendance verification.
-            </p>
-          </div>
+          )}
 
           <Link href="/login" className="btn btn-primary" style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <span>Proceed to Sign In</span>
