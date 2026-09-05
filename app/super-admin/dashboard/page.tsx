@@ -34,6 +34,8 @@ import {
   MapPin,
   FileText,
   AlertTriangle,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 
 interface Organization {
@@ -515,7 +517,7 @@ export default function SuperAdminDashboardPage() {
                                 Status
                               </th>
                               <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
-                                Actions &amp; Governance
+                                Action
                               </th>
                             </tr>
                           </thead>
@@ -560,38 +562,16 @@ export default function SuperAdminDashboardPage() {
                                   <span className="badge badge-pending">PENDING</span>
                                 </td>
                                 <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                                  <div style={{ display: 'inline-flex', gap: '8px' }}>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrg(org);
-                                        setActionType('VIEW');
-                                      }}
-                                      className="btn btn-secondary btn-sm"
-                                    >
-                                      <Eye size={14} />
-                                      <span>Review</span>
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrg(org);
-                                        setActionType('APPROVE');
-                                      }}
-                                      className="btn btn-success btn-sm"
-                                    >
-                                      <Check size={14} />
-                                      <span>Approve</span>
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrg(org);
-                                        setActionType('REJECT');
-                                      }}
-                                      className="btn btn-danger btn-sm"
-                                    >
-                                      <X size={14} />
-                                      <span>Reject</span>
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrg(org);
+                                      setActionType('VIEW');
+                                    }}
+                                    className="btn btn-secondary btn-sm"
+                                  >
+                                    <Eye size={14} />
+                                    <span>Details</span>
+                                  </button>
                                 </td>
                               </tr>
                             ))}
@@ -618,30 +598,17 @@ export default function SuperAdminDashboardPage() {
                             <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
                               <strong>Submitted:</strong> {new Date(org.createdAt).toLocaleDateString()}
                             </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setActionType('APPROVE');
-                                }}
-                                className="btn btn-success btn-sm"
-                                style={{ flex: 1 }}
-                              >
-                                <Check size={14} />
-                                <span>Approve</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setActionType('REJECT');
-                                }}
-                                className="btn btn-danger btn-sm"
-                                style={{ flex: 1 }}
-                              >
-                                <X size={14} />
-                                <span>Reject</span>
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => {
+                                setSelectedOrg(org);
+                                setActionType('VIEW');
+                              }}
+                              className="btn btn-secondary btn-sm"
+                              style={{ width: '100%' }}
+                            >
+                              <Eye size={14} />
+                              <span>Details</span>
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -677,7 +644,7 @@ export default function SuperAdminDashboardPage() {
                                 Status
                               </th>
                               <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
-                                Actions &amp; Governance
+                                Action
                               </th>
                             </tr>
                           </thead>
@@ -782,51 +749,19 @@ export default function SuperAdminDashboardPage() {
                                   <span className="badge badge-active">ACTIVE</span>
                                 </td>
 
-                                {/* 5. Actions */}
+                                {/* 5. Action */}
                                 <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                                  <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrg(org);
-                                        setActionType('VIEW');
-                                      }}
-                                      className="btn btn-secondary btn-sm"
-                                      title="View Details"
-                                    >
-                                      <Eye size={14} />
-                                      <span>Details</span>
-                                    </button>
-                                    <Link
-                                      href={`/${org.organizationCode}/login`}
-                                      target="_blank"
-                                      className="btn btn-ghost btn-sm"
-                                      style={{ color: '#38bdf8' }}
-                                      title="Tenant Portal Login"
-                                    >
-                                      <ExternalLink size={14} />
-                                    </Link>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrg(org);
-                                        setActionType('DEACTIVATE');
-                                      }}
-                                      className="btn btn-warning btn-sm"
-                                      title="Deactivate Organization"
-                                    >
-                                      <Power size={14} />
-                                      <span>Deactivate</span>
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrg(org);
-                                        setActionType('DELETE');
-                                      }}
-                                      className="btn btn-danger btn-sm"
-                                      title="Delete Organization"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrg(org);
+                                      setActionType('VIEW');
+                                    }}
+                                    className="btn btn-secondary btn-sm"
+                                    title="View Organization Details & Actions"
+                                  >
+                                    <Eye size={14} />
+                                    <span>Details</span>
+                                  </button>
                                 </td>
                               </tr>
                             ))}
@@ -866,38 +801,16 @@ export default function SuperAdminDashboardPage() {
                               Contact: {org.contactPersonName} ({org.contactEmail})
                             </div>
 
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                              <button
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setActionType('VIEW');
-                                }}
-                                className="btn btn-secondary btn-sm"
-                                style={{ flex: 1 }}
-                              >
-                                <Eye size={14} /> Details
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setActionType('DEACTIVATE');
-                                }}
-                                className="btn btn-warning btn-sm"
-                                style={{ flex: 1 }}
-                              >
-                                <Power size={14} /> Deactivate
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setActionType('DELETE');
-                                }}
-                                className="btn btn-danger btn-sm"
-                                style={{ padding: '6px 12px' }}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => {
+                                setSelectedOrg(org);
+                                setActionType('VIEW');
+                              }}
+                              className="btn btn-secondary btn-sm"
+                              style={{ width: '100%' }}
+                            >
+                              <Eye size={14} /> Details
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -932,7 +845,7 @@ export default function SuperAdminDashboardPage() {
                                 Status
                               </th>
                               <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
-                                Actions &amp; Governance
+                                Action
                               </th>
                             </tr>
                           </thead>
@@ -1001,27 +914,16 @@ export default function SuperAdminDashboardPage() {
                                 </td>
 
                                 <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                                  <div style={{ display: 'inline-flex', gap: '6px' }}>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrg(org);
-                                        setActionType('ACTIVATE');
-                                      }}
-                                      className="btn btn-success btn-sm"
-                                    >
-                                      <CheckCircle2 size={14} />
-                                      <span>Reactivate</span>
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrg(org);
-                                        setActionType('DELETE');
-                                      }}
-                                      className="btn btn-danger btn-sm"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrg(org);
+                                      setActionType('VIEW');
+                                    }}
+                                    className="btn btn-secondary btn-sm"
+                                  >
+                                    <Eye size={14} />
+                                    <span>Details</span>
+                                  </button>
                                 </td>
                               </tr>
                             ))}
@@ -1050,28 +952,16 @@ export default function SuperAdminDashboardPage() {
                               Reason: {org.rejectionReason || 'Deactivated by Super Admin'}
                             </div>
 
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setActionType('ACTIVATE');
-                                }}
-                                className="btn btn-success btn-sm"
-                                style={{ flex: 1 }}
-                              >
-                                <CheckCircle2 size={14} /> Reactivate
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setActionType('DELETE');
-                                }}
-                                className="btn btn-danger btn-sm"
-                                style={{ padding: '6px 12px' }}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => {
+                                setSelectedOrg(org);
+                                setActionType('VIEW');
+                              }}
+                              className="btn btn-secondary btn-sm"
+                              style={{ width: '100%' }}
+                            >
+                              <Eye size={14} /> Details
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -1105,7 +995,7 @@ export default function SuperAdminDashboardPage() {
                               Status
                             </th>
                             <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
-                              Actions &amp; Governance
+                              Action
                             </th>
                           </tr>
                         </thead>
@@ -1137,26 +1027,16 @@ export default function SuperAdminDashboardPage() {
                                 <span className="badge badge-rejected">REJECTED</span>
                               </td>
                               <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                                <div style={{ display: 'inline-flex', gap: '6px' }}>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedOrg(org);
-                                      setActionType('ACTIVATE');
-                                    }}
-                                    className="btn btn-secondary btn-sm"
-                                  >
-                                    <span>Re-evaluate</span>
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedOrg(org);
-                                      setActionType('DELETE');
-                                    }}
-                                    className="btn btn-danger btn-sm"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
+                                <button
+                                  onClick={() => {
+                                    setSelectedOrg(org);
+                                    setActionType('VIEW');
+                                  }}
+                                  className="btn btn-secondary btn-sm"
+                                >
+                                  <Eye size={14} />
+                                  <span>Details</span>
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -1351,35 +1231,62 @@ export default function SuperAdminDashboardPage() {
         </div>
       )}
 
-      {/* MODAL 5: VIEW DETAILS / REJECT MODAL */}
+      {/* MODAL 5: PREMIUM ORGANIZATION DETAILS POPUP (STAFF-PROFILE STYLE) */}
       {selectedOrg && (actionType === 'REJECT' || actionType === 'VIEW') && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '32px', maxWidth: '560px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div
+            className="modal-content glass-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              padding: '32px',
+              maxWidth: '680px',
+              width: '100%',
+              borderRadius: '20px',
+              border: '1px solid rgba(99, 102, 241, 0.35)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.9)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Header Banner */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div
                   style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '12px',
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '16px',
                     backgroundColor: 'rgba(255,255,255,0.05)',
                     border: '1px solid var(--border-medium)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     overflow: 'hidden',
+                    flexShrink: 0,
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
                   }}
                 >
-                  <OrgLogo logoUrl={selectedOrg.logoUrl} name={selectedOrg.name} size={24} />
+                  <OrgLogo logoUrl={selectedOrg.logoUrl} name={selectedOrg.name} size={28} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff' }}>
+                  <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px' }}>
                     {selectedOrg.name}
-                  </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  </h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
                     {selectedOrg.organizationCode && (
-                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#38bdf8', fontWeight: 700 }}>
-                        {selectedOrg.organizationCode}
+                      <span
+                        style={{
+                          fontSize: '11.5px',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 800,
+                          color: '#38bdf8',
+                          backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                          border: '1px solid rgba(6, 182, 212, 0.35)',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        CODE: {selectedOrg.organizationCode}
                       </span>
                     )}
                     <span className={`badge badge-${selectedOrg.status.toLowerCase()}`}>
@@ -1388,71 +1295,156 @@ export default function SuperAdminDashboardPage() {
                   </div>
                 </div>
               </div>
-              <button onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={18} />
+              <button onClick={closeModal} className="btn btn-ghost btn-sm" style={{ padding: '6px', color: 'var(--text-muted)' }}>
+                <X size={20} />
               </button>
             </div>
 
-            {/* Quick Metrics Grid in Details Modal */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
-              <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Branches</div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>{selectedOrg._count?.branches || 0}</div>
+            {/* Quick Metrics Cards (Staff Profile Style) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+              <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', textAlign: 'center' }}>
+                <MapPin size={18} color="#38bdf8" style={{ margin: '0 auto 4px auto' }} />
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Branches</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>{selectedOrg._count?.branches || 0}</div>
               </div>
-              <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Staff Members</div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#c084fc', marginTop: '2px' }}>{selectedOrg._count?.staffProfiles || 0}</div>
+
+              <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(192, 132, 252, 0.08)', border: '1px solid rgba(192, 132, 252, 0.25)', textAlign: 'center' }}>
+                <Users size={18} color="#c084fc" style={{ margin: '0 auto 4px auto' }} />
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Staff Profiles</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#c084fc', marginTop: '2px' }}>{selectedOrg._count?.staffProfiles || 0}</div>
               </div>
-              <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Attendance Log</div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>{selectedOrg._count?.attendanceRecords || 0}</div>
+
+              <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(52, 211, 153, 0.08)', border: '1px solid rgba(52, 211, 153, 0.25)', textAlign: 'center' }}>
+                <FileText size={18} color="#34d399" style={{ margin: '0 auto 4px auto' }} />
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Attendance Logs</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>{selectedOrg._count?.attendanceRecords || 0}</div>
+              </div>
+
+              <div style={{ padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.25)', textAlign: 'center' }}>
+                <Shield size={18} color="#fbbf24" style={{ margin: '0 auto 4px auto' }} />
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Admin Accounts</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#fbbf24', marginTop: '2px' }}>{selectedOrg._count?.users || 0}</div>
               </div>
             </div>
 
+            {/* Information Grid Box */}
             <div
               style={{
-                backgroundColor: 'rgba(13, 18, 31, 0.8)',
+                backgroundColor: 'rgba(13, 18, 31, 0.85)',
                 border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
+                borderRadius: '14px',
                 padding: '20px',
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                 gap: '16px',
                 marginBottom: '24px',
                 fontSize: '13.5px',
               }}
             >
               <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
-                  Contact Person
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <User size={13} color="#818cf8" /> Contact Person
                 </div>
-                <div style={{ color: '#f8fafc', fontWeight: 600 }}>{selectedOrg.contactPersonName || 'N/A'}</div>
+                <div style={{ color: '#ffffff', fontWeight: 700 }}>{selectedOrg.contactPersonName || 'N/A'}</div>
               </div>
+
               <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
-                  Phone
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Mail size={13} color="#38bdf8" /> Contact Email
                 </div>
-                <div style={{ color: '#f8fafc', fontWeight: 600 }}>{selectedOrg.phone || 'N/A'}</div>
+                <div style={{ color: '#38bdf8', fontWeight: 700, wordBreak: 'break-all' }}>{selectedOrg.contactEmail || 'N/A'}</div>
               </div>
+
               <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
-                  Contact Email
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Phone size={13} color="#34d399" /> Phone Number
                 </div>
-                <div style={{ color: '#38bdf8', fontWeight: 600 }}>{selectedOrg.contactEmail || 'N/A'}</div>
+                <div style={{ color: '#ffffff', fontWeight: 700 }}>{selectedOrg.phone || 'N/A'}</div>
               </div>
+
               <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
-                  Registered Date
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={13} color="#c084fc" /> Registration Date
                 </div>
-                <div style={{ color: '#94a3b8' }}>{new Date(selectedOrg.createdAt).toLocaleString()}</div>
+                <div style={{ color: '#cbd5e1' }}>{new Date(selectedOrg.createdAt).toLocaleString()}</div>
               </div>
+
+              {selectedOrg.reviewedBy && (
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>
+                    Reviewed By
+                  </div>
+                  <div style={{ color: '#cbd5e1' }}>{selectedOrg.reviewedBy}</div>
+                </div>
+              )}
+
+              {selectedOrg.approvedAt && (
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>
+                    Approved At
+                  </div>
+                  <div style={{ color: '#cbd5e1' }}>{new Date(selectedOrg.approvedAt).toLocaleString()}</div>
+                </div>
+              )}
             </div>
+
+            {/* Suspended or Rejected Reason Alert Box */}
+            {(selectedOrg.status === 'SUSPENDED' || selectedOrg.status === 'REJECTED') && selectedOrg.rejectionReason && (
+              <div
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#f87171',
+                  fontSize: '13px',
+                  marginBottom: '24px',
+                }}
+              >
+                <strong style={{ color: '#ffffff', display: 'block', marginBottom: '2px' }}>
+                  {selectedOrg.status === 'SUSPENDED' ? 'Deactivation Reason Note:' : 'Rejection Guidance Note:'}
+                </strong>
+                {selectedOrg.rejectionReason}
+              </div>
+            )}
+
+            {/* Direct Tenant Login Portal Card */}
+            {selectedOrg.organizationCode && selectedOrg.status === 'ACTIVE' && (
+              <div
+                style={{
+                  padding: '16px 20px',
+                  borderRadius: '14px',
+                  backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Tenant Login Portal</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Access this organization&apos;s workspace portal URL: <strong>/{selectedOrg.organizationCode}/login</strong>
+                  </div>
+                </div>
+                <Link
+                  href={`/${selectedOrg.organizationCode}/login`}
+                  target="_blank"
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <span>Open Portal</span>
+                  <ExternalLink size={14} />
+                </Link>
+              </div>
+            )}
 
             {actionType === 'REJECT' && (
               <div style={{ marginBottom: '24px' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" htmlFor="rejectionReason">
-                    Rejection Reason Guidance
+                  <label className="form-label" htmlFor="rejectionReason" style={{ fontWeight: 700, color: '#ffffff' }}>
+                    Rejection Guidance Note
                   </label>
                   <textarea
                     id="rejectionReason"
@@ -1462,55 +1454,125 @@ export default function SuperAdminDashboardPage() {
                     onChange={(e) => setActionReason(e.target.value)}
                     disabled={isProcessing}
                     className="form-input"
-                    style={{ resize: 'vertical' }}
+                    style={{ resize: 'vertical', marginTop: '6px' }}
                   />
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
+            {/* Bottom Actions Bar (All Governance Actions inside Details Popup) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
               <button type="button" onClick={closeModal} disabled={isProcessing} className="btn btn-secondary btn-sm">
                 Close
               </button>
 
+              {/* PENDING ACTIONS */}
               {actionType === 'VIEW' && selectedOrg.status === 'PENDING' && (
                 <>
                   <button
                     type="button"
                     onClick={() => setActionType('REJECT')}
                     className="btn btn-danger btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    Reject Application
+                    <X size={14} />
+                    <span>Reject Application</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActionType('APPROVE')}
+                    onClick={() => handleApprove()}
+                    disabled={isProcessing}
                     className="btn btn-success btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    Approve Application
+                    {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                    <span>{isProcessing ? 'Approving...' : 'Approve Application'}</span>
                   </button>
                 </>
               )}
 
+              {/* ACTIVE ACTIONS */}
               {actionType === 'VIEW' && selectedOrg.status === 'ACTIVE' && (
-                <button
-                  type="button"
-                  onClick={() => setActionType('DEACTIVATE')}
-                  className="btn btn-warning btn-sm"
-                >
-                  <Power size={14} /> Deactivate
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActionType('DEACTIVATE')}
+                    className="btn btn-warning btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Power size={14} />
+                    <span>Deactivate</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActionType('DELETE')}
+                    className="btn btn-danger btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
+                </>
               )}
 
+              {/* SUSPENDED ACTIONS */}
+              {actionType === 'VIEW' && selectedOrg.status === 'SUSPENDED' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActionType('ACTIVATE')}
+                    className="btn btn-success btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>Reactivate</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActionType('DELETE')}
+                    className="btn btn-danger btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
+                </>
+              )}
+
+              {/* REJECTED ACTIONS */}
+              {actionType === 'VIEW' && selectedOrg.status === 'REJECTED' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActionType('ACTIVATE')}
+                    className="btn btn-success btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <RefreshCw size={14} />
+                    <span>Re-evaluate / Activate</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActionType('DELETE')}
+                    className="btn btn-danger btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
+                </>
+              )}
+
+              {/* SUBMIT REJECT FORM */}
               {actionType === 'REJECT' && (
                 <button
                   type="button"
                   onClick={handleReject}
                   disabled={isProcessing}
                   className="btn btn-danger btn-sm"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
-                  {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
+                  {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
                   <span>{isProcessing ? 'Rejecting...' : 'Reject Organization'}</span>
                 </button>
               )}
