@@ -18,11 +18,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get('status');
 
-    // 2. Fetch Counts for Badges
-    const [pendingCount, activeCount, rejectedCount] = await Promise.all([
+    // 2. Fetch Counts for Badges & Summary Stats
+    const [pendingCount, activeCount, rejectedCount, suspendedCount, totalBranches, totalStaff] = await Promise.all([
       prisma.organization.count({ where: { status: 'PENDING' } }),
       prisma.organization.count({ where: { status: 'ACTIVE' } }),
       prisma.organization.count({ where: { status: 'REJECTED' } }),
+      prisma.organization.count({ where: { status: 'SUSPENDED' } }),
+      prisma.branch.count(),
+      prisma.staffProfile.count(),
     ]);
 
     // 3. Fetch Organizations based on filter
@@ -35,6 +38,14 @@ export async function GET(request: Request) {
       where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
+        _count: {
+          select: {
+            branches: true,
+            staffProfiles: true,
+            users: true,
+            attendanceRecords: true,
+          },
+        },
         users: {
           select: {
             id: true,
@@ -47,15 +58,22 @@ export async function GET(request: Request) {
       },
     });
 
-    // 4. Fetch Audit History
+    // 4. Fetch Governance Audit History
     const auditLogs = await prisma.auditLog.findMany({
       where: {
         action: {
-          in: ['ORGANIZATION_REGISTERED', 'ORGANIZATION_APPROVED', 'ORGANIZATION_REJECTED'],
+          in: [
+            'ORGANIZATION_REGISTERED',
+            'ORGANIZATION_APPROVED',
+            'ORGANIZATION_REJECTED',
+            'ORGANIZATION_DEACTIVATED',
+            'ORGANIZATION_ACTIVATED',
+            'ORGANIZATION_DELETED',
+          ],
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 100,
       include: {
         organization: {
           select: {
@@ -78,6 +96,9 @@ export async function GET(request: Request) {
         pending: pendingCount,
         approved: activeCount,
         rejected: rejectedCount,
+        suspended: suspendedCount,
+        totalBranches,
+        totalStaff,
       },
       organizations,
       auditLogs,

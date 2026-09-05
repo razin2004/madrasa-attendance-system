@@ -1,14 +1,16 @@
 'use client';
 
 import React from 'react';
-import { Clock, CheckCircle2, XCircle, History } from 'lucide-react';
+import { Clock, CheckCircle2, Power, XCircle, History } from 'lucide-react';
+import { SuperAdminTab } from './super-admin-sidebar';
 
 interface SuperAdminMobileNavProps {
-  activeTab: 'pending' | 'approved' | 'rejected' | 'history';
-  onTabChange: (tab: 'pending' | 'approved' | 'rejected' | 'history') => void;
+  activeTab: SuperAdminTab;
+  onTabChange: (tab: SuperAdminTab) => void;
   counts?: {
     pending: number;
     approved: number;
+    suspended?: number;
     rejected: number;
   };
 }
@@ -16,13 +18,14 @@ interface SuperAdminMobileNavProps {
 export function SuperAdminMobileNav({
   activeTab,
   onTabChange,
-  counts = { pending: 0, approved: 0, rejected: 0 },
+  counts = { pending: 0, approved: 0, suspended: 0, rejected: 0 },
 }: SuperAdminMobileNavProps) {
   const tabs = [
     { id: 'pending' as const, label: 'Pending', icon: Clock, count: counts.pending },
-    { id: 'approved' as const, label: 'Approved', icon: CheckCircle2, count: counts.approved },
+    { id: 'approved' as const, label: 'Active', icon: CheckCircle2, count: counts.approved },
+    { id: 'suspended' as const, label: 'Suspended', icon: Power, count: counts.suspended },
     { id: 'rejected' as const, label: 'Rejected', icon: XCircle, count: counts.rejected },
-    { id: 'history' as const, label: 'History', icon: History },
+    { id: 'history' as const, label: 'Audit', icon: History },
   ];
 
   return (

@@ -71,6 +71,8 @@ export async function POST(
           error:
             organization.status === 'PENDING'
               ? 'This organization registration is currently under review by Super Admin.'
+              : organization.status === 'SUSPENDED'
+              ? 'This organization account has been deactivated by Super Admin. Please contact support or your system administrator for assistance.'
               : `This organization is currently ${organization.status.toLowerCase()}.`,
         },
         { status: 403 }

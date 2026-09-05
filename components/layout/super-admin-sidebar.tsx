@@ -11,17 +11,22 @@ import {
   History,
   LogOut,
   User,
+  Power,
+  Building2,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
 
 import { ConfirmationModal } from '../feedback/confirmation-modal';
 
+export type SuperAdminTab = 'pending' | 'approved' | 'suspended' | 'rejected' | 'history';
+
 interface SuperAdminSidebarProps {
-  activeTab: 'pending' | 'approved' | 'rejected' | 'history';
-  onTabChange: (tab: 'pending' | 'approved' | 'rejected' | 'history') => void;
+  activeTab: SuperAdminTab;
+  onTabChange: (tab: SuperAdminTab) => void;
   counts?: {
     pending: number;
     approved: number;
+    suspended?: number;
     rejected: number;
   };
   adminEmail?: string;
@@ -30,7 +35,7 @@ interface SuperAdminSidebarProps {
 export function SuperAdminSidebar({
   activeTab,
   onTabChange,
-  counts = { pending: 0, approved: 0, rejected: 0 },
+  counts = { pending: 0, approved: 0, suspended: 0, rejected: 0 },
   adminEmail = 'Super Admin',
 }: SuperAdminSidebarProps) {
   const router = useRouter();
@@ -59,9 +64,16 @@ export function SuperAdminSidebar({
     },
     {
       id: 'approved' as const,
-      label: 'Approved Organizations',
+      label: 'Active Organizations',
       icon: CheckCircle2,
       count: counts.approved,
+    },
+    {
+      id: 'suspended' as const,
+      label: 'Deactivated / Suspended',
+      icon: Power,
+      count: counts.suspended || 0,
+      badgeColor: counts.suspended && counts.suspended > 0 ? '#f87171' : undefined,
     },
     {
       id: 'rejected' as const,

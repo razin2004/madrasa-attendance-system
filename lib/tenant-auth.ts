@@ -57,7 +57,12 @@ export async function requireOrgAdmin(organizationCode: string): Promise<TenantA
     return {
       authorized: false,
       errorStatus: 403,
-      errorMessage: `Organization is currently ${organization.status.toLowerCase()}.`,
+      errorMessage:
+        organization.status === 'SUSPENDED'
+          ? 'This organization account has been deactivated by Super Admin. Please contact support or your system administrator for assistance.'
+          : organization.status === 'PENDING'
+          ? 'This organization registration is currently under review by Super Admin.'
+          : `Organization is currently ${organization.status.toLowerCase()}.`,
     };
   }
 
@@ -138,7 +143,12 @@ export async function requireStaff(organizationCode: string): Promise<StaffAuthR
     return {
       authorized: false,
       errorStatus: 403,
-      errorMessage: `Organization is currently ${organization.status.toLowerCase()}.`,
+      errorMessage:
+        organization.status === 'SUSPENDED'
+          ? 'This organization account has been deactivated by Super Admin. Please contact support or your system administrator for assistance.'
+          : organization.status === 'PENDING'
+          ? 'This organization registration is currently under review by Super Admin.'
+          : `Organization is currently ${organization.status.toLowerCase()}.`,
     };
   }
 
