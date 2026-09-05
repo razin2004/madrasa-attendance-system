@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Clock, CalendarDays, FileText, User } from 'lucide-react';
+import { LayoutDashboard, Clock, CalendarDays, FileText, User, ArrowLeftRight } from 'lucide-react';
 import styles from './StaffLayout.module.css';
 
 interface StaffMobileNavProps {
@@ -27,6 +27,12 @@ export function StaffMobileNav({ organizationCode }: StaffMobileNavProps) {
       href: `${basePath}/attendance`,
       icon: Clock,
       exact: true,
+    },
+    {
+      label: 'Swaps',
+      href: `${basePath}/swaps`,
+      icon: ArrowLeftRight,
+      exact: false,
     },
     {
       label: 'Leave',

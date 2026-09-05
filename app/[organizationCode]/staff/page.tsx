@@ -25,6 +25,7 @@ import {
   Navigation,
   Activity,
   Check,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
@@ -553,6 +554,13 @@ export default function StaffDashboardPage() {
             <RefreshCw size={14} className={checking ? 'animate-spin' : ''} color="#a5b4fc" />
             <span>{checking ? 'Verifying...' : 'Re-verify'}</span>
           </button>
+          <Link
+            href={`/${orgCode}/staff/swaps`}
+            className={styles.headerButton}
+          >
+            <ArrowLeftRight size={14} color="#818cf8" />
+            <span>Shift Swaps</span>
+          </Link>
           <Link
             href={`/${orgCode}/staff/attendance`}
             className={styles.headerButton}

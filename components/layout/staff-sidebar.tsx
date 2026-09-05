@@ -14,6 +14,7 @@ import {
   ChevronRight,
   LogOut,
   Shield,
+  ArrowLeftRight,
 } from 'lucide-react';
 import styles from './StaffLayout.module.css';
 
@@ -50,6 +51,12 @@ export function StaffSidebar({
       href: `${basePath}/attendance`,
       icon: Clock,
       exact: true,
+    },
+    {
+      label: 'Shift Swapping',
+      href: `${basePath}/swaps`,
+      icon: ArrowLeftRight,
+      exact: false,
     },
     {
       label: 'Leave',

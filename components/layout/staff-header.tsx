@@ -22,6 +22,7 @@ export function StaffHeader({
   const org = organizationCode.toUpperCase();
 
   const getPageTitle = () => {
+    if (pathname.includes('/staff/swaps')) return 'Staff Shift Swapping & Coverage';
     if (pathname.includes('/staff/attendance/correction')) return 'Submit Correction Request';
     if (pathname.includes('/staff/attendance/corrections')) return 'Correction Requests';
     if (pathname.includes('/staff/attendance')) return 'Attendance History';
