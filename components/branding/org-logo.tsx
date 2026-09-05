@@ -25,7 +25,8 @@ export function OrgLogo({ logoUrl, name, size = 20, className, style }: OrgLogoP
     return (
       <img
         src={logoUrl}
-        alt={cleanName}
+        alt=""
+        aria-hidden="true"
         className={className}
         style={{
           width: '100%',
@@ -48,11 +49,12 @@ export function OrgLogo({ logoUrl, name, size = 20, className, style }: OrgLogoP
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(56, 189, 248, 0.25) 100%)',
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(56, 189, 248, 0.3) 100%)',
         color: '#38bdf8',
         fontWeight: 800,
         fontSize: `${Math.max(12, Math.round(size * 0.7))}px`,
         userSelect: 'none',
+        borderRadius: 'inherit',
         ...style,
       }}
     >

@@ -502,26 +502,34 @@ export default function SuperAdminDashboardPage() {
                         <table className="data-table">
                           <thead>
                             <tr>
-                              <th>Organization</th>
-                              <th>Contact Person</th>
-                              <th>Contact Email</th>
-                              <th>Phone</th>
-                              <th>Submitted</th>
-                              <th>Status</th>
-                              <th style={{ textAlign: 'right' }}>Actions</th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Organization
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Primary Contact
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Submitted Date
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Status
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
+                                Actions &amp; Governance
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {pendingOrgs.map((org) => (
-                              <tr key={org.id}>
-                                <td>
+                              <tr key={org.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                <td style={{ padding: '16px 20px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <div
                                       style={{
                                         width: '40px',
                                         height: '40px',
-                                        borderRadius: '8px',
-                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                        borderRadius: '10px',
+                                        backgroundColor: 'rgba(255,255,255,0.03)',
                                         border: '1px solid var(--border-subtle)',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -532,19 +540,26 @@ export default function SuperAdminDashboardPage() {
                                     >
                                       <OrgLogo logoUrl={org.logoUrl} name={org.name} size={20} />
                                     </div>
-                                    <span style={{ fontWeight: 700, color: '#ffffff' }}>{org.name}</span>
+                                    <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '14.5px' }}>{org.name}</span>
                                   </div>
                                 </td>
-                                <td style={{ color: 'var(--text-primary)' }}>{org.contactPersonName}</td>
-                                <td style={{ color: 'var(--text-secondary)' }}>{org.contactEmail}</td>
-                                <td style={{ color: 'var(--text-secondary)' }}>{org.phone}</td>
-                                <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+                                    <User size={13} color="var(--text-muted)" />
+                                    <span>{org.contactPersonName || 'N/A'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                                    <Mail size={12} color="var(--text-muted)" />
+                                    <span>{org.contactEmail || 'N/A'}</span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '16px 20px', color: 'var(--text-muted)', fontSize: '12.5px' }}>
                                   {new Date(org.createdAt).toLocaleDateString()}
                                 </td>
-                                <td>
+                                <td style={{ padding: '16px 20px' }}>
                                   <span className="badge badge-pending">PENDING</span>
                                 </td>
-                                <td style={{ textAlign: 'right' }}>
+                                <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                   <div style={{ display: 'inline-flex', gap: '8px' }}>
                                     <button
                                       onClick={() => {
@@ -590,17 +605,17 @@ export default function SuperAdminDashboardPage() {
                           <div key={org.id} className={styles.mobileOrgCard}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '36px', height: '36px', borderRadius: '8px', overflow: 'hidden' }}>
+                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden' }}>
                                   <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
                                 </div>
-                                <span style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>{org.name}</span>
+                                <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>{org.name}</span>
                               </div>
                               <span className="badge badge-pending">PENDING</span>
                             </div>
                             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                              <strong>Contact:</strong> {org.contactPersonName} &bull; {org.contactEmail}
+                              <strong>Contact:</strong> {org.contactPersonName} ({org.contactEmail})
                             </div>
-                            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
                               <strong>Submitted:</strong> {new Date(org.createdAt).toLocaleDateString()}
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
@@ -649,75 +664,134 @@ export default function SuperAdminDashboardPage() {
                         <table className="data-table">
                           <thead>
                             <tr>
-                              <th>Code</th>
-                              <th>Organization</th>
-                              <th>Branches</th>
-                              <th>Staff Members</th>
-                              <th>Contact Person</th>
-                              <th>Email</th>
-                              <th style={{ textAlign: 'right' }}>Actions &amp; Governance</th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Organization &amp; Code
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Primary Contact
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Workforce &amp; Geofence
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Status
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
+                                Actions &amp; Governance
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {approvedOrgs.map((org) => (
-                              <tr key={org.id}>
-                                <td>
-                                  <span
-                                    style={{
-                                      fontFamily: 'var(--font-mono)',
-                                      fontWeight: 700,
-                                      color: '#38bdf8',
-                                      backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                                      border: '1px solid rgba(6, 182, 212, 0.3)',
-                                      padding: '3px 8px',
-                                      borderRadius: '4px',
-                                    }}
-                                  >
-                                    {org.organizationCode}
-                                  </span>
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <tr key={org.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                {/* 1. Organization & Code */}
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <div
                                       style={{
-                                        width: '36px',
-                                        height: '36px',
-                                        borderRadius: '8px',
-                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '10px',
+                                        backgroundColor: 'rgba(255,255,255,0.03)',
+                                        border: '1px solid var(--border-subtle)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         overflow: 'hidden',
+                                        flexShrink: 0,
                                       }}
                                     >
-                                      <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
+                                      <OrgLogo logoUrl={org.logoUrl} name={org.name} size={20} />
                                     </div>
-                                    <span style={{ fontWeight: 700, color: '#ffffff' }}>{org.name}</span>
+                                    <div>
+                                      <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '14.5px' }}>{org.name}</div>
+                                      {org.organizationCode && (
+                                        <span
+                                          style={{
+                                            fontSize: '10.5px',
+                                            fontFamily: 'var(--font-mono)',
+                                            fontWeight: 800,
+                                            color: '#38bdf8',
+                                            backgroundColor: 'rgba(6, 182, 212, 0.12)',
+                                            border: '1px solid rgba(6, 182, 212, 0.3)',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            marginTop: '3px',
+                                            display: 'inline-block',
+                                          }}
+                                        >
+                                          CODE: {org.organizationCode}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </td>
-                                <td>
-                                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                                    <MapPin size={14} />
-                                    {org._count?.branches || 0} Branches
-                                  </span>
+
+                                {/* 2. Primary Contact */}
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+                                    <User size={13} color="var(--text-muted)" />
+                                    <span>{org.contactPersonName || 'N/A'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                                    <Mail size={12} color="var(--text-muted)" />
+                                    <span>{org.contactEmail || 'N/A'}</span>
+                                  </div>
                                 </td>
-                                <td>
-                                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#c084fc', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                                    <Users size={14} />
-                                    {org._count?.staffProfiles || 0} Staff
-                                  </span>
+
+                                {/* 3. Workforce & Geofence */}
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '12px',
+                                        fontWeight: 700,
+                                        padding: '3px 9px',
+                                        borderRadius: '6px',
+                                        backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                                        color: '#38bdf8',
+                                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                      }}
+                                    >
+                                      <MapPin size={12} /> {org._count?.branches || 0} {org._count?.branches === 1 ? 'Branch' : 'Branches'}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: '12px',
+                                        fontWeight: 700,
+                                        padding: '3px 9px',
+                                        borderRadius: '6px',
+                                        backgroundColor: 'rgba(192, 132, 252, 0.12)',
+                                        color: '#c084fc',
+                                        border: '1px solid rgba(192, 132, 252, 0.25)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                      }}
+                                    >
+                                      <Users size={12} /> {org._count?.staffProfiles || 0} Staff
+                                    </span>
+                                  </div>
                                 </td>
-                                <td>{org.contactPersonName}</td>
-                                <td style={{ color: 'var(--text-secondary)' }}>{org.contactEmail}</td>
-                                <td style={{ textAlign: 'right' }}>
-                                  <div style={{ display: 'inline-flex', gap: '6px' }}>
+
+                                {/* 4. Status */}
+                                <td style={{ padding: '16px 20px' }}>
+                                  <span className="badge badge-active">ACTIVE</span>
+                                </td>
+
+                                {/* 5. Actions */}
+                                <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                  <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                                     <button
                                       onClick={() => {
                                         setSelectedOrg(org);
                                         setActionType('VIEW');
                                       }}
                                       className="btn btn-secondary btn-sm"
-                                      title="View Organization Details"
+                                      title="View Details"
                                     >
                                       <Eye size={14} />
                                       <span>Details</span>
@@ -727,7 +801,7 @@ export default function SuperAdminDashboardPage() {
                                       target="_blank"
                                       className="btn btn-ghost btn-sm"
                                       style={{ color: '#38bdf8' }}
-                                      title="Open Tenant Login Portal"
+                                      title="Tenant Portal Login"
                                     >
                                       <ExternalLink size={14} />
                                     </Link>
@@ -737,7 +811,7 @@ export default function SuperAdminDashboardPage() {
                                         setActionType('DEACTIVATE');
                                       }}
                                       className="btn btn-warning btn-sm"
-                                      title="Deactivate / Suspend Organization"
+                                      title="Deactivate Organization"
                                     >
                                       <Power size={14} />
                                       <span>Deactivate</span>
@@ -766,13 +840,13 @@ export default function SuperAdminDashboardPage() {
                           <div key={org.id} className={styles.mobileOrgCard}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '36px', height: '36px', borderRadius: '8px', overflow: 'hidden' }}>
+                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden' }}>
                                   <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
                                 </div>
                                 <div>
                                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{org.name}</div>
                                   <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#38bdf8', fontWeight: 700 }}>
-                                    {org.organizationCode}
+                                    CODE: {org.organizationCode}
                                   </span>
                                 </div>
                               </div>
@@ -845,61 +919,88 @@ export default function SuperAdminDashboardPage() {
                         <table className="data-table">
                           <thead>
                             <tr>
-                              <th>Code</th>
-                              <th>Organization</th>
-                              <th>Branches</th>
-                              <th>Staff Members</th>
-                              <th>Deactivation Reason</th>
-                              <th>Deactivated By</th>
-                              <th style={{ textAlign: 'right' }}>Actions</th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Organization &amp; Code
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Primary Contact
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Deactivation Reason
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Status
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
+                                Actions &amp; Governance
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {suspendedOrgs.map((org) => (
-                              <tr key={org.id}>
-                                <td>
-                                  <span
-                                    style={{
-                                      fontFamily: 'var(--font-mono)',
-                                      fontWeight: 700,
-                                      color: '#f87171',
-                                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                                      padding: '3px 8px',
-                                      borderRadius: '4px',
-                                    }}
-                                  >
-                                    {org.organizationCode}
-                                  </span>
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <tr key={org.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <div
                                       style={{
-                                        width: '36px',
-                                        height: '36px',
-                                        borderRadius: '8px',
-                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '10px',
+                                        backgroundColor: 'rgba(255,255,255,0.03)',
+                                        border: '1px solid var(--border-subtle)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         overflow: 'hidden',
+                                        flexShrink: 0,
                                       }}
                                     >
-                                      <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
+                                      <OrgLogo logoUrl={org.logoUrl} name={org.name} size={20} />
                                     </div>
-                                    <span style={{ fontWeight: 700, color: '#ffffff' }}>{org.name}</span>
+                                    <div>
+                                      <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '14.5px' }}>{org.name}</div>
+                                      {org.organizationCode && (
+                                        <span
+                                          style={{
+                                            fontSize: '10.5px',
+                                            fontFamily: 'var(--font-mono)',
+                                            fontWeight: 800,
+                                            color: '#f87171',
+                                            backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            marginTop: '3px',
+                                            display: 'inline-block',
+                                          }}
+                                        >
+                                          CODE: {org.organizationCode}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </td>
-                                <td>{org._count?.branches || 0} Branches</td>
-                                <td>{org._count?.staffProfiles || 0} Staff</td>
-                                <td style={{ color: '#f87171', fontSize: '13px' }}>
+
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+                                    <User size={13} color="var(--text-muted)" />
+                                    <span>{org.contactPersonName || 'N/A'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                                    <Mail size={12} color="var(--text-muted)" />
+                                    <span>{org.contactEmail || 'N/A'}</span>
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: '16px 20px', color: '#f87171', fontSize: '13px' }}>
                                   {org.rejectionReason || 'Deactivated by Super Admin'}
                                 </td>
-                                <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                                  {org.reviewedBy || 'Super Admin'}
+
+                                <td style={{ padding: '16px 20px' }}>
+                                  <span className="badge badge-danger">SUSPENDED</span>
                                 </td>
-                                <td style={{ textAlign: 'right' }}>
+
+                                <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                   <div style={{ display: 'inline-flex', gap: '6px' }}>
                                     <button
                                       onClick={() => {
@@ -934,12 +1035,12 @@ export default function SuperAdminDashboardPage() {
                           <div key={org.id} className={styles.mobileOrgCard}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '36px', height: '36px', borderRadius: '8px', overflow: 'hidden' }}>
+                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden' }}>
                                   <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
                                 </div>
                                 <div>
                                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{org.name}</div>
-                                  <span style={{ fontSize: '11px', color: '#f87171', fontWeight: 700 }}>{org.organizationCode}</span>
+                                  <span style={{ fontSize: '11px', color: '#f87171', fontWeight: 700 }}>CODE: {org.organizationCode}</span>
                                 </div>
                               </div>
                               <span className="badge badge-danger">SUSPENDED</span>
@@ -991,31 +1092,51 @@ export default function SuperAdminDashboardPage() {
                       <table className="data-table">
                         <thead>
                           <tr>
-                            <th>Organization</th>
-                            <th>Contact Person</th>
-                            <th>Contact Email</th>
-                            <th>Rejected Date</th>
-                            <th>Reviewed By</th>
-                            <th>Rejection Reason</th>
-                            <th style={{ textAlign: 'right' }}>Actions</th>
+                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                              Organization
+                            </th>
+                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                              Primary Contact
+                            </th>
+                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                              Rejection Reason
+                            </th>
+                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                              Status
+                            </th>
+                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
+                              Actions &amp; Governance
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           {rejectedOrgs.map((org) => (
-                            <tr key={org.id}>
-                              <td style={{ fontWeight: 700, color: '#ffffff' }}>{org.name}</td>
-                              <td>{org.contactPersonName}</td>
-                              <td style={{ color: 'var(--text-secondary)' }}>{org.contactEmail}</td>
-                              <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                                {org.rejectedAt ? new Date(org.rejectedAt).toLocaleDateString() : 'N/A'}
+                            <tr key={org.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                              <td style={{ padding: '16px 20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                                    <OrgLogo logoUrl={org.logoUrl} name={org.name} size={20} />
+                                  </div>
+                                  <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '14.5px' }}>{org.name}</span>
+                                </div>
                               </td>
-                              <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                                {org.reviewedBy || 'Super Admin'}
+                              <td style={{ padding: '16px 20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+                                  <User size={13} color="var(--text-muted)" />
+                                  <span>{org.contactPersonName || 'N/A'}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                                  <Mail size={12} color="var(--text-muted)" />
+                                  <span>{org.contactEmail || 'N/A'}</span>
+                                </div>
                               </td>
-                              <td style={{ color: 'var(--danger-text)', fontSize: '13px' }}>
+                              <td style={{ padding: '16px 20px', color: 'var(--danger-text)', fontSize: '13px' }}>
                                 {org.rejectionReason || 'No reason specified'}
                               </td>
-                              <td style={{ textAlign: 'right' }}>
+                              <td style={{ padding: '16px 20px' }}>
+                                <span className="badge badge-rejected">REJECTED</span>
+                              </td>
+                              <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                 <div style={{ display: 'inline-flex', gap: '6px' }}>
                                   <button
                                     onClick={() => {
@@ -1053,20 +1174,20 @@ export default function SuperAdminDashboardPage() {
                     <table className="data-table">
                       <thead>
                         <tr>
-                          <th>Timestamp</th>
-                          <th>Action</th>
-                          <th>Entity</th>
-                          <th>Target / Organization</th>
-                          <th>Actor</th>
+                          <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Timestamp</th>
+                          <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Action</th>
+                          <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Entity</th>
+                          <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Target Organization</th>
+                          <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Actor</th>
                         </tr>
                       </thead>
                       <tbody>
                         {auditLogs.map((log) => (
-                          <tr key={log.id}>
-                            <td style={{ color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                          <tr key={log.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                            <td style={{ padding: '16px 20px', color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
                               {new Date(log.createdAt).toLocaleString()}
                             </td>
-                            <td>
+                            <td style={{ padding: '16px 20px' }}>
                               <span
                                 className={`badge ${
                                   log.action.includes('APPROVED') || log.action.includes('ACTIVATED')
@@ -1079,11 +1200,11 @@ export default function SuperAdminDashboardPage() {
                                 {log.action}
                               </span>
                             </td>
-                            <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{log.entityType}</td>
-                            <td style={{ color: '#ffffff', fontWeight: 600 }}>
+                            <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '13px' }}>{log.entityType}</td>
+                            <td style={{ padding: '16px 20px', color: '#ffffff', fontWeight: 600 }}>
                               {log.organization?.name || log.metadata?.organizationName || log.metadata?.name || log.entityId || 'N/A'}
                             </td>
-                            <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                            <td style={{ padding: '16px 20px', color: 'var(--text-muted)', fontSize: '12px' }}>
                               {log.actorUser?.email || 'Super Admin'}
                             </td>
                           </tr>
