@@ -394,7 +394,7 @@ export default function StaffDirectoryPage() {
               }}
               title="Staff Directory Actions Menu"
             >
-              <Menu size={18} />
+              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
 
             {headerMenuOpen && (

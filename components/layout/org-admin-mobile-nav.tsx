@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Building,
   Settings,
+  RefreshCw,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
 
@@ -79,6 +80,12 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
       href: `/${organizationCode}/admin/roster`,
       icon: Calendar,
       subtext: 'View weekly staff allocation matrix',
+    },
+    {
+      label: 'Shift Swapping',
+      href: `/${organizationCode}/admin/shifts/swaps`,
+      icon: RefreshCw,
+      subtext: 'Review & approve peer shift swap requests',
     },
     {
       label: 'Leave Management',
@@ -283,29 +290,49 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
         })}
 
         {/* More Menu Trigger */}
-        <button
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Open full admin menu"
-          aria-expanded={drawerOpen}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '3px',
-            color: drawerOpen ? '#818cf8' : 'var(--text-muted)',
-            fontSize: '11px',
-            fontWeight: drawerOpen ? 700 : 500,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            flex: 1,
-            padding: '6px 0',
-          }}
-        >
-          <Menu size={19} color={drawerOpen ? '#818cf8' : 'var(--text-muted)'} />
-          <span>More</span>
-        </button>
+        {(() => {
+          const isSecondaryActive = secondaryItems.some((item) => pathname.startsWith(item.href));
+          const isMoreActive = drawerOpen || isSecondaryActive;
+          return (
+            <button
+              onClick={() => setDrawerOpen(!drawerOpen)}
+              aria-label={drawerOpen ? 'Close navigation menu' : 'Open full admin menu'}
+              aria-expanded={drawerOpen}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '3px',
+                color: isMoreActive ? '#818cf8' : 'var(--text-muted)',
+                fontSize: '11px',
+                fontWeight: isMoreActive ? 700 : 500,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                flex: 1,
+                padding: '6px 0',
+                position: 'relative',
+              }}
+            >
+              {isMoreActive && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    width: '24px',
+                    height: '2.5px',
+                    backgroundColor: '#818cf8',
+                    borderRadius: '2px',
+                    boxShadow: '0 0 8px #818cf8',
+                  }}
+                />
+              )}
+              {drawerOpen ? <X size={19} color="#818cf8" /> : <Menu size={19} color={isMoreActive ? '#818cf8' : 'var(--text-muted)'} />}
+              <span>{drawerOpen ? 'Close' : 'More'}</span>
+            </button>
+          );
+        })()}
       </nav>
     </>
   );

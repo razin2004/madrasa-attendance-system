@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -15,6 +15,7 @@ import {
   FileText,
   Loader2,
   Menu,
+  X,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -37,6 +38,7 @@ export default function DateRangeReportPage() {
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
   const router = useRouter();
   const toast = useToast();
+  const headerMenuRef = useRef<HTMLDivElement>(null);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const sevenDaysAgoStr = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -49,6 +51,20 @@ export default function DateRangeReportPage() {
   const [source, setSource] = useState('');
   const [search, setSearch] = useState('');
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    if (headerMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [headerMenuOpen]);
 
   const [staffList, setStaffList] = useState<StaffOption[]>([]);
   const [branchList, setBranchList] = useState<BranchOption[]>([]);
@@ -143,10 +159,8 @@ export default function DateRangeReportPage() {
 
       <div className={styles.mainContent}>
         <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Link href={`/${organizationCode}/admin/reports`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <ArrowLeft size={16} />
-            </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ color: '#38bdf8', fontSize: '14px', lineHeight: 1 }}>●</span>
             <div>
               <h1 className={styles.title}>Custom Date Range Attendance Report</h1>
               <p className={styles.subtitle}>
@@ -155,8 +169,9 @@ export default function DateRangeReportPage() {
             </div>
           </div>
 
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={headerMenuRef}>
             <button
+              type="button"
               onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
               className="btn btn-secondary btn-sm"
               style={{
@@ -174,106 +189,101 @@ export default function DateRangeReportPage() {
               }}
               title="Custom Range Actions"
             >
-              <Menu size={18} />
+              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
 
             {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
+              <div
+                className="glass-card"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  zIndex: 1000,
+                  minWidth: '220px',
+                  padding: '6px',
+                  backgroundColor: '#0d121f',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    handleCsvExport();
+                  }}
+                  disabled={exportingCsv}
                   style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    zIndex: 1000,
-                    minWidth: '220px',
-                    padding: '6px',
-                    backgroundColor: '#0d121f',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    border: 'none',
+                    background: 'none',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
                   }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      handleCsvExport();
-                    }}
-                    disabled={exportingCsv}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <Download size={15} color="#34d399" />
-                    <span>{exportingCsv ? 'Preparing CSV...' : 'Export Range CSV'}</span>
-                  </button>
+                  <Download size={15} color="#34d399" />
+                  <span>{exportingCsv ? 'Preparing CSV...' : 'Export Range CSV'}</span>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      handlePdfExport();
-                    }}
-                    disabled={exportingPdf}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <Printer size={15} color="#38bdf8" />
-                    <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save Range PDF'}</span>
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    handlePdfExport();
+                  }}
+                  disabled={exportingPdf}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    border: 'none',
+                    background: 'none',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Printer size={15} color="#38bdf8" />
+                  <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save Range PDF'}</span>
+                </button>
 
-                  <Link
-                    href={`/${organizationCode}/admin/reports`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <ArrowLeft size={15} color="#818cf8" />
-                    <span>Reports Dashboard</span>
-                  </Link>
-                </div>
-              </>
+                <Link
+                  href={`/${organizationCode}/admin/reports`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <ArrowLeft size={15} color="#818cf8" />
+                  <span>Reports Dashboard</span>
+                </Link>
+              </div>
             )}
           </div>
         </header>
@@ -352,16 +362,41 @@ export default function DateRangeReportPage() {
 
           <form
             onSubmit={handleSearchSubmit}
-            style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '180px' }}
+            style={{ display: 'flex', gap: '6px', flex: 1, minWidth: '180px' }}
           >
-            <input
-              type="text"
-              className={styles.input}
-              style={{ flex: 1 }}
-              placeholder="Search staff name or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div style={{ position: 'relative', flex: 1 }}>
+              <input
+                type="text"
+                className={styles.input}
+                style={{ width: '100%', paddingRight: search ? '28px' : '10px' }}
+                placeholder="Search staff..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                  }}
+                  title="Clear search"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
             <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '8px 12px' }}>
               <Search size={14} />
             </button>
@@ -378,7 +413,7 @@ export default function DateRangeReportPage() {
           </button>
         </div>
 
-        {/* Report Data Table */}
+        {/* Report Data Container */}
         <div className={styles.tableCard}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
@@ -396,97 +431,170 @@ export default function DateRangeReportPage() {
               </p>
             </div>
           ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.th}>Staff Member</th>
-                  <th className={styles.th}>Date</th>
-                  <th className={styles.th}>Branch</th>
-                  <th className={styles.th}>Shift Roster</th>
-                  <th className={styles.th}>Clock In</th>
-                  <th className={styles.th}>Clock Out</th>
-                  <th className={styles.th}>Status</th>
-                  <th className={styles.th}>Source</th>
-                  <th className={styles.th}>Details</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Desktop Table View */}
+              <div className={styles.desktopTableView}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th className={styles.th}>Staff Member</th>
+                      <th className={styles.th}>Date</th>
+                      <th className={styles.th}>Branch</th>
+                      <th className={styles.th}>Shift Roster</th>
+                      <th className={styles.th}>Clock In</th>
+                      <th className={styles.th}>Clock Out</th>
+                      <th className={styles.th}>Status</th>
+                      <th className={styles.th}>Source</th>
+                      <th className={styles.th}>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.rows.map((row: any, idx: number) => {
+                      const statusKey = row.status.replace(/ /g, '_');
+                      return (
+                        <tr
+                          key={idx}
+                          onClick={() => {
+                            if (row.staffProfileId || row.staffId) {
+                              router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
+                            }
+                          }}
+                          style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                        >
+                          <td className={styles.td}>
+                            <div style={{ fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
+                          </td>
+
+                          <td className={styles.td}>
+                            <div style={{ fontSize: '12.5px', color: '#f8fafc' }}>{row.date}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{row.dayOfWeek}</div>
+                          </td>
+
+                          <td className={styles.td}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <MapPin size={13} color="#38bdf8" />
+                              <span style={{ color: '#f8fafc' }}>{row.branchName}</span>
+                            </span>
+                          </td>
+
+                          <td className={styles.td}>
+                            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                              {row.shiftPatternName}
+                            </span>
+                          </td>
+
+                          <td className={styles.td}>
+                            <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{row.clockInTime || '—'}</strong>
+                          </td>
+
+                          <td className={styles.td}>
+                            <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>{row.clockOutTime || '—'}</strong>
+                          </td>
+
+                          <td className={styles.td}>
+                            <span className={`${styles.statusBadge} ${styles[`status${statusKey}`]}`}>
+                              {row.status}
+                            </span>
+                          </td>
+
+                          <td className={styles.td}>
+                            {row.source !== '—' ? (
+                              <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>
+                                {row.source}
+                              </span>
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)' }}>—</span>
+                            )}
+                          </td>
+
+                          <td className={styles.td} style={{ fontSize: '12px' }}>
+                            {row.leaveTypeName && (
+                              <div style={{ color: '#38bdf8', fontWeight: 600 }}>
+                                {row.leaveTypeName}
+                              </div>
+                            )}
+                            {row.manualReason && (
+                              <div style={{ color: '#fbbf24', fontStyle: 'italic' }}>
+                                &ldquo;{row.manualReason}&rdquo;
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card Feed View */}
+              <div className={styles.mobileCardFeed}>
                 {report.rows.map((row: any, idx: number) => {
                   const statusKey = row.status.replace(/ /g, '_');
                   return (
-                    <tr
+                    <div
                       key={idx}
+                      className={styles.reportCardItem}
                       onClick={() => {
                         if (row.staffProfileId || row.staffId) {
                           router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
                         }
                       }}
-                      style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
                     >
-                      <td className={styles.td}>
-                        <div style={{ fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
-                      </td>
-
-                      <td className={styles.td}>
-                        <div style={{ fontSize: '12.5px', color: '#f8fafc' }}>{row.date}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{row.dayOfWeek}</div>
-                      </td>
-
-                      <td className={styles.td}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          <MapPin size={13} color="#38bdf8" />
-                          <span style={{ color: '#f8fafc' }}>{row.branchName}</span>
-                        </span>
-                      </td>
-
-                      <td className={styles.td}>
-                        <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                          {row.shiftPatternName}
-                        </span>
-                      </td>
-
-                      <td className={styles.td}>
-                        <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{row.clockInTime || '—'}</strong>
-                      </td>
-
-                      <td className={styles.td}>
-                        <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>{row.clockOutTime || '—'}</strong>
-                      </td>
-
-                      <td className={styles.td}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
+                          <div style={{ fontSize: '11px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>
+                            ID: {row.staffId} • {row.date} ({row.dayOfWeek})
+                          </div>
+                        </div>
                         <span className={`${styles.statusBadge} ${styles[`status${statusKey}`]}`}>
                           {row.status}
                         </span>
-                      </td>
+                      </div>
 
-                      <td className={styles.td}>
-                        {row.source !== '—' ? (
-                          <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>
-                            {row.source}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>—</span>
-                        )}
-                      </td>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={12} color="#38bdf8" />
+                          <span>{row.branchName}</span>
+                        </span>
+                        <span>•</span>
+                        <span>{row.shiftPatternName}</span>
+                      </div>
 
-                      <td className={styles.td} style={{ fontSize: '12px' }}>
-                        {row.leaveTypeName && (
-                          <div style={{ color: '#38bdf8', fontWeight: 600 }}>
-                            {row.leaveTypeName}
+                      <div className={styles.clockGrid}>
+                        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '6px 10px', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clock In</div>
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#34d399', fontFamily: 'var(--font-mono)' }}>
+                            {row.clockInTime || '—'}
                           </div>
-                        )}
-                        {row.manualReason && (
-                          <div style={{ color: '#fbbf24', fontStyle: 'italic' }}>
-                            &ldquo;{row.manualReason}&rdquo;
+                        </div>
+                        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '6px 10px', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clock Out</div>
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>
+                            {row.clockOutTime || '—'}
                           </div>
-                        )}
-                      </td>
-                    </tr>
+                        </div>
+                      </div>
+
+                      {(row.source !== '—' || row.leaveTypeName || row.manualReason) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed rgba(255, 255, 255, 0.08)', fontSize: '11px' }}>
+                          <div>
+                            {row.leaveTypeName && <span style={{ color: '#38bdf8', fontWeight: 600 }}>{row.leaveTypeName}</span>}
+                            {row.manualReason && <span style={{ color: '#fbbf24', fontStyle: 'italic', marginLeft: '4px' }}>&ldquo;{row.manualReason}&rdquo;</span>}
+                          </div>
+                          {row.source !== '—' && (
+                            <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>
+                              {row.source}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
         </main>

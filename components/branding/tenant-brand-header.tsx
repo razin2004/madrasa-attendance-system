@@ -24,8 +24,10 @@ export function TenantBrandHeader({
       <div
         className="tenant-brand-logo-box"
         style={{
+          width: '56px',
+          height: '56px',
           margin: '0 auto 12px auto',
-          borderRadius: '12px',
+          borderRadius: '14px',
           background: 'rgba(19, 27, 46, 0.9)',
           border: '1px solid var(--border-medium)',
           display: 'flex',
@@ -44,7 +46,7 @@ export function TenantBrandHeader({
               width: '100%',
               height: '100%',
               objectFit: 'contain',
-              padding: '4px',
+              padding: '6px',
               display: 'block',
             }}
             onError={() => setImgFailed(true)}

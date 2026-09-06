@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Filter,
   Users,
+  Menu,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -71,18 +72,35 @@ export default function ShiftSwapsAdminPage() {
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
   const router = useRouter();
   const toast = useToast();
+  const headerMenuRef = useRef<HTMLDivElement>(null);
 
   const [branding, setBranding] = useState<OrgBranding | null>(null);
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('PEER_ACCEPTED');
   const [searchQuery, setSearchQuery] = useState('');
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   // Modal Review State
   const [selectedSwap, setSelectedSwap] = useState<SwapRequest | null>(null);
   const [reviewAction, setReviewAction] = useState<'APPROVE' | 'REJECT' | null>(null);
   const [adminNote, setAdminNote] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Header Menu Click Outside Dismissal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    if (headerMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [headerMenuOpen]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -179,12 +197,10 @@ export default function ShiftSwapsAdminPage() {
       />
 
       <div className={styles.mainContent}>
-        {/* Header Bar */}
+        {/* Sticky Mobile Header Bar */}
         <header className={styles.headerBar}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Link href={`/${organizationCode}/admin/shifts`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <ArrowLeft size={16} />
-            </Link>
+            <span style={{ color: '#38bdf8', fontSize: '14px', lineHeight: 1 }}>●</span>
             <div>
               <h1 className={styles.title}>Shift Swapping &amp; Substitutions</h1>
               <p className={styles.subtitle}>
@@ -193,36 +209,142 @@ export default function ShiftSwapsAdminPage() {
             </div>
           </div>
 
-          <button onClick={fetchData} disabled={loading} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span>Refresh</span>
-          </button>
+          <div style={{ position: 'relative' }} ref={headerMenuRef}>
+            <button
+              type="button"
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
+                padding: 0,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-medium)',
+                color: '#ffffff',
+                cursor: 'pointer',
+              }}
+              title="Shift Swap Actions Menu"
+            >
+              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+
+            {headerMenuOpen && (
+              <div
+                className="glass-card"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  zIndex: 1000,
+                  minWidth: '200px',
+                  padding: '6px',
+                  backgroundColor: '#0d121f',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    fetchData();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#34d399',
+                    border: 'none',
+                    background: 'none',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+                  <span>Refresh Swaps</span>
+                </button>
+
+                <Link
+                  href={`/${organizationCode}/admin/shifts`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <Clock size={15} color="#818cf8" />
+                  <span>Shifts &amp; Roster</span>
+                </Link>
+
+                <Link
+                  href={`/${organizationCode}/admin/shifts/roster`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <Calendar size={15} color="#38bdf8" />
+                  <span>Roster Calendar</span>
+                </Link>
+              </div>
+            )}
+          </div>
         </header>
 
-        <main className="pageMainContent" style={{ padding: '24px' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1200px', padding: '16px' }}>
           {/* Action Needed Banner */}
           {pendingAdminCount > 0 && (
             <div
               style={{
-                marginBottom: '24px',
-                padding: '16px 20px',
+                marginBottom: '20px',
+                padding: '16px',
                 borderRadius: '14px',
                 backgroundColor: 'rgba(99, 102, 241, 0.12)',
                 border: '1px solid rgba(99, 102, 241, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
                 color: '#818cf8',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Clock size={22} color="#818cf8" />
                 <div>
-                  <strong style={{ color: '#ffffff', fontSize: '14.5px' }}>
-                    {pendingAdminCount} {pendingAdminCount === 1 ? 'Shift Swap' : 'Shift Swaps'} Awaiting Org Admin Approval
+                  <strong style={{ color: '#ffffff', fontSize: '14px' }}>
+                    {pendingAdminCount} {pendingAdminCount === 1 ? 'Shift Swap' : 'Shift Swaps'} Awaiting Approval
                   </strong>
-                  <div style={{ fontSize: '12.5px', color: '#c7d2fe', marginTop: '2px' }}>
-                    Peers have accepted these swap requests. Approving will automatically update target shift schedules.
+                  <div style={{ fontSize: '12px', color: '#c7d2fe', marginTop: '2px' }}>
+                    Peers have accepted these swap requests. Approving will automatically reassign target shifts.
                   </div>
                 </div>
               </div>
@@ -236,13 +358,13 @@ export default function ShiftSwapsAdminPage() {
             </div>
           )}
 
-          {/* Filter Bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Filter Bar & Search */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+            <div className={styles.filterScroll}>
               {[
                 { id: 'PEER_ACCEPTED', label: `Action Needed (${pendingAdminCount})` },
-                { id: 'PENDING_PEER', label: 'Pending Peer Response' },
-                { id: 'APPROVED', label: 'Approved Swaps' },
+                { id: 'PENDING_PEER', label: 'Pending Peer' },
+                { id: 'APPROVED', label: 'Approved' },
                 { id: 'REJECTED', label: 'Rejected' },
                 { id: 'ALL', label: 'All History' },
               ].map((t) => (
@@ -250,38 +372,61 @@ export default function ShiftSwapsAdminPage() {
                   key={t.id}
                   onClick={() => setStatusFilter(t.id)}
                   className={`btn btn-sm ${statusFilter === t.id ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ borderRadius: '8px', fontSize: '12.5px' }}
+                  style={{ borderRadius: '8px', fontSize: '12px', whiteSpace: 'nowrap', padding: '6px 12px' }}
                 >
                   {t.label}
                 </button>
               ))}
             </div>
 
-            <div style={{ position: 'relative', width: '260px' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '300px' }}>
               <input
                 type="text"
-                placeholder="Search staff name or ID..."
+                placeholder="Search staff..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="form-input"
-                style={{ width: '100%', paddingLeft: '36px', fontSize: '13px' }}
+                style={{ width: '100%', paddingLeft: '34px', paddingRight: searchQuery ? '28px' : '10px', fontSize: '13px', height: '36px' }}
               />
-              <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '11px' }} />
+              <Search size={14} color="var(--text-muted)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                  }}
+                  title="Clear search"
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Swap Requests Cards / List */}
+          {/* Swap Requests Feed */}
           {loading ? (
-            <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
+            <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
               <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 12px auto', color: '#818cf8' }} />
-              <p style={{ color: 'var(--text-secondary)' }}>Loading shift swap requests...</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading shift swap requests...</p>
             </div>
           ) : filteredSwaps.length === 0 ? (
-            <div className="glass-card" style={{ padding: '60px 24px', textAlign: 'center' }}>
+            <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
               <CheckCircle2 size={32} color="#34d399" style={{ margin: '0 auto 12px auto' }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No Shift Swap Requests Found</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                There are no shift swap records matching the selected status filter.
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: 0 }}>No Shift Swap Requests Found</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', margin: 0 }}>
+                There are no shift swap records matching the selected filter.
               </p>
             </div>
           ) : (
@@ -299,7 +444,7 @@ export default function ShiftSwapsAdminPage() {
                     key={item.id}
                     className="glass-card"
                     style={{
-                      padding: '20px',
+                      padding: '16px',
                       borderRadius: '14px',
                       border:
                         item.status === 'PEER_ACCEPTED'
@@ -309,15 +454,15 @@ export default function ShiftSwapsAdminPage() {
                         item.status === 'PEER_ACCEPTED' ? 'rgba(99, 102, 241, 0.04)' : 'rgba(13, 18, 31, 0.8)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Calendar size={18} color="#38bdf8" />
                         <div>
-                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Target Shift Date</span>
-                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Target Shift Date</span>
+                          <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
                             {targetDateFormatted}
                             {item.shiftPatternName && (
-                              <span style={{ fontSize: '12.5px', color: '#a5b4fc', marginLeft: '8px', fontWeight: 600 }}>
+                              <span style={{ fontSize: '12px', color: '#a5b4fc', marginLeft: '6px', fontWeight: 600 }}>
                                 ({item.shiftPatternName})
                               </span>
                             )}
@@ -336,12 +481,12 @@ export default function ShiftSwapsAdminPage() {
                             ? 'badge-info'
                             : 'badge-rejected'
                         }`}
-                        style={{ fontSize: '11.5px', padding: '4px 10px' }}
+                        style={{ fontSize: '11px', padding: '3px 8px' }}
                       >
                         {item.status === 'PEER_ACCEPTED'
-                          ? 'ACTION NEEDED (PEER ACCEPTED)'
+                          ? 'ACTION NEEDED'
                           : item.status === 'PENDING_PEER'
-                          ? 'AWAITING PEER ACCEPTANCE'
+                          ? 'AWAITING PEER'
                           : item.status}
                       </span>
                     </div>
@@ -350,59 +495,51 @@ export default function ShiftSwapsAdminPage() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                        gap: '16px',
-                        padding: '16px',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '12px',
+                        padding: '12px',
                         borderRadius: '10px',
                         backgroundColor: 'rgba(255,255,255,0.02)',
                         border: '1px solid var(--border-subtle)',
-                        marginBottom: '16px',
+                        marginBottom: '12px',
                       }}
                     >
                       {/* Requester */}
                       <div>
-                        <div style={{ fontSize: '11px', color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
-                          Requester (Original Shift Holder)
+                        <div style={{ fontSize: '10px', color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>
+                          Requester (Original)
                         </div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{item.requester.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                          ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{item.requester.staffId}</span> | {item.requester.user.email}
+                        <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff' }}>{item.requester.name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{item.requester.staffId}</span>
                         </div>
                         {item.requester.branchAssignments?.[0] && (
-                          <div style={{ fontSize: '11.5px', color: '#38bdf8', marginTop: '3px' }}>
-                            Branch: {item.requester.branchAssignments[0].branch.name}
+                          <div style={{ fontSize: '11px', color: '#38bdf8', marginTop: '2px' }}>
+                            {item.requester.branchAssignments[0].branch.name}
                           </div>
                         )}
                       </div>
 
-                      {/* Arrow / Swap Icon */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ padding: '8px 14px', borderRadius: '20px', backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>Swapping with</span>
-                          <ArrowRight size={14} />
-                        </div>
-                      </div>
-
                       {/* Peer */}
                       <div>
-                        <div style={{ fontSize: '11px', color: '#34d399', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
-                          Substitute Colleague (Peer)
+                        <div style={{ fontSize: '10px', color: '#34d399', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>
+                          Substitute Peer
                         </div>
                         {item.peer ? (
                           <>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{item.peer.name}</div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                              ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{item.peer.staffId}</span> | {item.peer.user.email}
+                            <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff' }}>{item.peer.name}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                              ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{item.peer.staffId}</span>
                             </div>
                             {item.peer.branchAssignments?.[0] && (
-                              <div style={{ fontSize: '11.5px', color: '#38bdf8', marginTop: '3px' }}>
-                                Branch: {item.peer.branchAssignments[0].branch.name}
+                              <div style={{ fontSize: '11px', color: '#38bdf8', marginTop: '2px' }}>
+                                {item.peer.branchAssignments[0].branch.name}
                               </div>
                             )}
                           </>
                         ) : (
-                          <div style={{ fontSize: '13px', color: '#fbbf24', fontStyle: 'italic' }}>
-                            Broadcast to {item.recipients?.length || 0} Colleagues (Pending First Acceptance)
+                          <div style={{ fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
+                            Broadcast to {item.recipients?.length || 0} Colleagues
                           </div>
                         )}
                       </div>
@@ -410,30 +547,30 @@ export default function ShiftSwapsAdminPage() {
 
                     {/* Swap Reason Note */}
                     {item.reason && (
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px', padding: '8px 12px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                        <strong>Reason:</strong> {item.reason}
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px', padding: '6px 10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
+                        <strong>Reason:</strong> &ldquo;{item.reason}&rdquo;
                       </div>
                     )}
 
-                    {/* Admin Note if already reviewed */}
+                    {/* Admin Note if reviewed */}
                     {item.adminNote && (
-                      <div style={{ fontSize: '12.5px', color: '#c7d2fe', marginBottom: '16px', padding: '8px 12px', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '6px' }}>
+                      <div style={{ fontSize: '12px', color: '#c7d2fe', marginBottom: '12px', padding: '6px 10px', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '6px' }}>
                         <strong>Admin Note:</strong> {item.adminNote}
                       </div>
                     )}
 
                     {/* Actions Bar for Admin */}
                     {item.status === 'PEER_ACCEPTED' && item.peer && (
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
                         <button
                           onClick={() => {
                             setSelectedSwap(item);
                             setReviewAction('REJECT');
                           }}
                           className="btn btn-danger btn-sm"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', fontSize: '12px' }}
                         >
-                          <X size={14} />
+                          <X size={13} />
                           <span>Reject Swap</span>
                         </button>
 
@@ -443,10 +580,10 @@ export default function ShiftSwapsAdminPage() {
                             setReviewAction('APPROVE');
                           }}
                           className="btn btn-success btn-sm"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 700, padding: '6px 12px', fontSize: '12px' }}
                         >
-                          <Check size={14} />
-                          <span>Approve &amp; Swap Shift</span>
+                          <Check size={13} />
+                          <span>Approve &amp; Swap</span>
                         </button>
                       </div>
                     )}
@@ -462,26 +599,26 @@ export default function ShiftSwapsAdminPage() {
 
       {/* REVIEW CONFIRMATION MODAL */}
       {selectedSwap && reviewAction && selectedSwap.peer && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '480px', width: '100%', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div className="modal-overlay" onClick={closeModal} style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ padding: '24px', maxWidth: '440px', width: '100%', borderRadius: '16px', backgroundColor: '#0d121f' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <ShieldCheck size={22} color={reviewAction === 'APPROVE' ? '#34d399' : '#f87171'} />
-                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
                   {reviewAction === 'APPROVE' ? 'Approve Shift Swap?' : 'Reject Shift Swap?'}
                 </h3>
               </div>
-              <button onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+              <button onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}><X size={18} /></button>
             </div>
 
-            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '16px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '14px' }}>
               {reviewAction === 'APPROVE'
                 ? `Approving will reassign the shift on ${new Date(selectedSwap.targetDate).toLocaleDateString()} between ${selectedSwap.requester.name} and ${selectedSwap.peer.name}.`
                 : `Are you sure you want to reject this shift swap request?`}
             </p>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label className="form-label" style={{ fontSize: '12.5px', fontWeight: 600, color: '#ffffff' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff' }}>
                 Admin Review Note (Optional)
               </label>
               <textarea

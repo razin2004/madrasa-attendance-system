@@ -327,18 +327,18 @@
     margin-bottom: 18px;
   }
 
-  /* Top KPI Widgets: 4 Mini-Boxes in a Single Row */
+  /* Top KPI Widgets: 2 Cards per Row on Mobile */
   .metricsGrid {
     display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 4px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
     margin-bottom: 16px !important;
   }
 
   .metricCard {
-    padding: 8px 6px !important;
-    border-radius: 8px !important;
-    border-left-width: 2px !important;
+    padding: 12px 10px !important;
+    border-radius: 12px !important;
+    border-left-width: 3px !important;
   }
 
   .metricHeader {
@@ -346,46 +346,54 @@
   }
 
   .metricHeader > div {
-    padding: 4px !important;
-    border-radius: 6px !important;
+    padding: 6px !important;
+    border-radius: 8px !important;
   }
 
   .metricHeader svg {
-    width: 14px !important;
-    height: 14px !important;
+    width: 16px !important;
+    height: 16px !important;
   }
 
   .metricTitle {
-    font-size: 10px !important;
+    font-size: 10.5px !important;
     letter-spacing: 0px !important;
-    color: var(--text-muted, #6b7280) !important;
+    color: var(--text-muted, #94a3b8) !important;
     text-transform: uppercase !important;
   }
 
   .metricValue {
-    font-size: 16px !important;
-    font-weight: 800 !important;
-    margin-bottom: 0px !important;
+    font-size: 20px !important;
+    font-weight: 900 !important;
+    margin-bottom: 2px !important;
   }
 
   .metricSubtext {
-    display: none !important;
+    display: flex !important;
+    font-size: 10.5px !important;
+    color: #94a3b8 !important;
   }
 
-  /* Quick Actions 4 Compact Grid Boxes */
+  /* Quick Actions Swipable Horizontal Carousel on Mobile */
   .quickActionsGrid {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 6px !important;
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 12px !important;
+    padding-bottom: 10px !important;
     margin-bottom: 20px !important;
+    touch-action: pan-x !important;
   }
 
   .quickActionCard {
-    padding: 10px 6px !important;
-    border-radius: 10px !important;
-    text-align: center;
-    align-items: center;
-    justify-content: center;
+    flex: 0 0 85% !important;
+    min-width: 260px !important;
+    scroll-snap-align: start !important;
+    padding: 18px 16px !important;
+    border-radius: 16px !important;
+    text-align: left !important;
+    align-items: stretch !important;
   }
 
   .alertCard {

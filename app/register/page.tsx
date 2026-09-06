@@ -665,14 +665,14 @@ export default function RegisterOrganizationPage() {
                     {errors.phone && <div className="form-error">{errors.phone}</div>}
                   </div>
 
-                  <div style={{ marginTop: '32px' }}>
+                  <div style={{ marginTop: '28px' }}>
                     <button
                       type="button"
                       onClick={handleNextStep}
                       className="btn btn-primary"
-                      style={{ width: '100%', padding: '14px', fontSize: '15px' }}
+                      style={{ width: '100%', padding: '12px 16px', fontSize: '14px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                     >
-                      <span>Continue to Step 2 (Administrator)</span>
+                      <span>Next: Admin Contact</span>
                       <ArrowRight size={16} />
                     </button>
                   </div>
@@ -768,12 +768,12 @@ export default function RegisterOrganizationPage() {
                     {errors.contactEmail && <div className="form-error">{errors.contactEmail}</div>}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '28px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={handlePrevStep}
                       className="btn btn-secondary"
-                      style={{ flex: 1, padding: '14px', textAlign: 'center' }}
+                      style={{ flex: 1, padding: '12px', textAlign: 'center', fontSize: '13.5px' }}
                     >
                       <ArrowLeft size={16} />
                       <span>Back</span>
@@ -783,9 +783,9 @@ export default function RegisterOrganizationPage() {
                       type="button"
                       onClick={handleNextStep}
                       className="btn btn-primary"
-                      style={{ flex: 2, padding: '14px' }}
+                      style={{ flex: 1.5, padding: '12px 16px', fontSize: '14px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                     >
-                      <span>Continue to Step 3 (Branding)</span>
+                      <span>Next: Branding</span>
                       <ArrowRight size={16} />
                     </button>
                   </div>
@@ -996,8 +996,6 @@ export default function RegisterOrganizationPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

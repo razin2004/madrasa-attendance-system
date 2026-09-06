@@ -368,18 +368,42 @@ export default function SuperAdminDashboardPage() {
 
       {/* Main Content Area */}
       <div className={styles.mainContent}>
-        {/* Top Header Bar */}
+        {/* Sticky Top Main Header Bar (Exact match to ShiftGuard Main Header) */}
         <header className={styles.headerBar}>
-          <div className={styles.headerMobileTitleGroup}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className={styles.headerSuperAdminBadge}>
-                <Shield size={11} /> Super Admin
-              </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)',
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src="/logo.svg"
+                alt="ShiftGuard Logo"
+                style={{ width: '26px', height: '26px', objectFit: 'contain' }}
+              />
             </div>
-            <h1 className={styles.headerTitle}>Platform Governance</h1>
-            <p className={styles.headerSubtitle}>
-              Monitor organization accounts, approvals, staff profiles, and branch metrics.
-            </p>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.4px', color: '#ffffff' }}>
+                  ShiftGuard
+                </span>
+                <span className={styles.headerSuperAdminBadge}>
+                  <Shield size={10} /> Super Admin
+                </span>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                Control Panel &amp; Governance
+              </div>
+            </div>
           </div>
 
           <div className={styles.headerControls}>
@@ -402,10 +426,10 @@ export default function SuperAdminDashboardPage() {
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-              <span>Refresh</span>
+              <span className="desktop-only">Refresh</span>
             </button>
 
-            {/* Mobile Hamburger Drawer Toggle Button */}
+            {/* Mobile Line Button (Hamburger Menu) */}
             <button
               type="button"
               onClick={() => setIsMobileDrawerOpen(true)}
@@ -418,16 +442,15 @@ export default function SuperAdminDashboardPage() {
           </div>
         </header>
 
-
         {/* Dashboard Body */}
-        <main style={{ padding: '24px', flex: 1 }}>
+        <main style={{ padding: '16px', flex: 1 }}>
           {/* CONDITIONAL WARNING BANNER: Shown ONLY if there are pending requests */}
           {counts.pending > 0 && (
             <div
               style={{
-                marginBottom: '20px',
-                padding: '16px 20px',
-                borderRadius: '14px',
+                marginBottom: '16px',
+                padding: '12px 16px',
+                borderRadius: '12px',
                 backgroundColor: 'rgba(245, 158, 11, 0.12)',
                 border: '1px solid rgba(245, 158, 11, 0.35)',
                 display: 'flex',
@@ -435,15 +458,14 @@ export default function SuperAdminDashboardPage() {
                 justifyContent: 'space-between',
                 gap: '12px',
                 color: '#fbbf24',
-                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.12)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div
                   style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
                     backgroundColor: 'rgba(245, 158, 11, 0.2)',
                     display: 'flex',
                     alignItems: 'center',
@@ -451,37 +473,34 @@ export default function SuperAdminDashboardPage() {
                     flexShrink: 0,
                   }}
                 >
-                  <AlertTriangle size={20} color="#fbbf24" />
+                  <AlertTriangle size={18} color="#fbbf24" />
                 </div>
                 <div>
-                  <strong style={{ color: '#ffffff', fontSize: '14.5px', fontWeight: 800 }}>
-                    Attention Required: Pending Approvals
+                  <strong style={{ color: '#ffffff', fontSize: '13.5px', fontWeight: 800 }}>
+                    Attention: Pending Approvals ({counts.pending})
                   </strong>
-                  <div style={{ fontSize: '12.5px', color: '#fcd34d', marginTop: '2px' }}>
-                    There {counts.pending === 1 ? 'is 1 organization application' : `are ${counts.pending} organization applications`} awaiting platform super admin verification.
-                  </div>
                 </div>
               </div>
               <button
                 onClick={() => setActiveTab('pending')}
-                className="btn btn-warning btn-sm"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', fontWeight: 700 }}
+                className="btn btn-warning btn-xs"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: 700 }}
               >
-                <span>Review Requests ({counts.pending})</span>
-                <ChevronRight size={15} />
+                <span>Review ({counts.pending})</span>
+                <ChevronRight size={14} />
               </button>
             </div>
           )}
 
           {/* ERROR STATE */}
           {hasError && !isLoading && (
-            <div className="glass-card" style={{ padding: '40px', textAlign: 'center', margin: '20px 0' }}>
-              <AlertCircle size={36} color="var(--danger-text)" style={{ margin: '0 auto 12px auto' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>
-                Unable to load organization records
+            <div className="glass-card" style={{ padding: '32px 20px', textAlign: 'center', margin: '16px 0' }}>
+              <AlertCircle size={32} color="var(--danger-text)" style={{ margin: '0 auto 10px auto' }} />
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>
+                Unable to load records
               </h3>
-              <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '20px' }}>
-                Something went wrong while retrieving data from the platform server.
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
+                Something went wrong while retrieving data from server.
               </p>
               <button onClick={fetchData} className="btn btn-primary btn-sm">
                 Try Again
@@ -491,9 +510,9 @@ export default function SuperAdminDashboardPage() {
 
           {/* LOADING SKELETON */}
           {isLoading && (
-            <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 12px auto' }} />
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+            <div className="glass-card" style={{ padding: '36px 20px', textAlign: 'center' }}>
+              <Loader2 size={28} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 10px auto' }} />
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                 Loading platform applications...
               </div>
             </div>
@@ -503,143 +522,102 @@ export default function SuperAdminDashboardPage() {
             <>
               {/* TAB 0: PLATFORM OVERVIEW PANEL */}
               {activeTab === 'overview' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  {/* Metric Cards Panel */}
-                  <div className="glass-card" style={{ padding: '24px', borderRadius: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-                      <div>
-                        <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                          Platform Overview Panel
-                        </h2>
-                        <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                          Live metrics summary across all registered tenant organizations.
-                        </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Metric Cards Panel (2 per row on mobile) */}
+                  <div className={styles.metricsGrid}>
+                    <div
+                      className={styles.metricCard}
+                      onClick={() => setActiveTab('pending')}
+                    >
+                      <div className={styles.metricCardHeader}>
+                        <span className={styles.metricTitle}>Pending</span>
+                        <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+                          <Clock size={16} />
+                        </div>
                       </div>
-                      <span className="badge badge-info" style={{ fontSize: '11px', fontWeight: 700 }}>
-                        Realtime Metrics
-                      </span>
+                      <div className={styles.metricValue}>{counts.pending}</div>
+                      <div className={styles.metricDescription}>Awaiting review</div>
                     </div>
 
-                    <div className={styles.metricsGrid}>
-                      <div
-                        className={styles.metricCard}
-                        onClick={() => setActiveTab('pending')}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <div className={styles.metricCardHeader}>
-                          <span className={styles.metricTitle}>Pending Approvals</span>
-                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
-                            <Clock size={20} />
-                          </div>
+                    <div
+                      className={styles.metricCard}
+                      onClick={() => setActiveTab('approved')}
+                    >
+                      <div className={styles.metricCardHeader}>
+                        <span className={styles.metricTitle}>Active</span>
+                        <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+                          <CheckCircle2 size={16} />
                         </div>
-                        <div className={styles.metricValue}>{counts.pending}</div>
-                        <div className={styles.metricDescription}>Awaiting platform review</div>
                       </div>
+                      <div className={styles.metricValue}>{counts.approved}</div>
+                      <div className={styles.metricDescription}>Active tenants</div>
+                    </div>
 
-                      <div
-                        className={styles.metricCard}
-                        onClick={() => setActiveTab('approved')}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <div className={styles.metricCardHeader}>
-                          <span className={styles.metricTitle}>Active Organizations</span>
-                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
-                            <CheckCircle2 size={20} />
-                          </div>
+                    <div
+                      className={styles.metricCard}
+                      onClick={() => setActiveTab('suspended')}
+                    >
+                      <div className={styles.metricCardHeader}>
+                        <span className={styles.metricTitle}>Suspended</span>
+                        <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}>
+                          <Power size={16} />
                         </div>
-                        <div className={styles.metricValue}>{counts.approved}</div>
-                        <div className={styles.metricDescription}>Active tenant workspaces</div>
                       </div>
+                      <div className={styles.metricValue}>{counts.suspended || 0}</div>
+                      <div className={styles.metricDescription}>Deactivated access</div>
+                    </div>
 
-                      <div
-                        className={styles.metricCard}
-                        onClick={() => setActiveTab('suspended')}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <div className={styles.metricCardHeader}>
-                          <span className={styles.metricTitle}>Deactivated / Suspended</span>
-                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}>
-                            <Power size={20} />
-                          </div>
+                    <div
+                      className={styles.metricCard}
+                      onClick={() => setActiveTab('history')}
+                    >
+                      <div className={styles.metricCardHeader}>
+                        <span className={styles.metricTitle}>Audit Logs</span>
+                        <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+                          <History size={16} />
                         </div>
-                        <div className={styles.metricValue}>{counts.suspended || 0}</div>
-                        <div className={styles.metricDescription}>Suspended organization access</div>
                       </div>
-
-                      <div className={styles.metricCard}>
-                        <div className={styles.metricCardHeader}>
-                          <span className={styles.metricTitle}>Total Registered Branches</span>
-                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
-                            <MapPin size={20} />
-                          </div>
-                        </div>
-                        <div className={styles.metricValue}>{counts.totalBranches || 0}</div>
-                        <div className={styles.metricDescription}>Workplace geofenced locations</div>
-                      </div>
-
-                      <div className={styles.metricCard}>
-                        <div className={styles.metricCardHeader}>
-                          <span className={styles.metricTitle}>Total Staff Profiles</span>
-                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', color: '#c084fc' }}>
-                            <Users size={20} />
-                          </div>
-                        </div>
-                        <div className={styles.metricValue}>{counts.totalStaff || 0}</div>
-                        <div className={styles.metricDescription}>Registered staff members</div>
-                      </div>
-
-                      <div
-                        className={styles.metricCard}
-                        onClick={() => setActiveTab('history')}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <div className={styles.metricCardHeader}>
-                          <span className={styles.metricTitle}>Governance Log Entries</span>
-                          <div className={styles.metricIconBox} style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
-                            <History size={20} />
-                          </div>
-                        </div>
-                        <div className={styles.metricValue}>{auditLogs.length}</div>
-                        <div className={styles.metricDescription}>Governance event history</div>
-                      </div>
+                      <div className={styles.metricValue}>{auditLogs.length}</div>
+                      <div className={styles.metricDescription}>Governance history</div>
                     </div>
                   </div>
 
                   {/* Overview Quick Previews Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
                     {/* Active Workspaces Card */}
-                    <div className="glass-card" style={{ padding: '20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>Active Organizations</h3>
+                    <div className="glass-card" style={{ padding: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#ffffff', margin: 0 }}>Active Organizations</h3>
                         <button onClick={() => setActiveTab('approved')} className="btn btn-ghost btn-xs" style={{ color: '#38bdf8' }}>
                           View All ({approvedOrgs.length}) →
                         </button>
                       </div>
                       {approvedOrgs.length === 0 ? (
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No active organizations yet.</p>
+                        <p style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>No active organizations yet.</p>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {approvedOrgs.slice(0, 4).map((org) => (
                             <div
                               key={org.id}
                               style={{
-                                padding: '10px 14px',
+                                padding: '10px 12px',
                                 borderRadius: '10px',
                                 backgroundColor: 'rgba(255,255,255,0.03)',
                                 border: '1px solid var(--border-subtle)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
+                                gap: '8px',
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
                                   <OrgLogo logoUrl={org.logoUrl} name={org.name} size={16} />
                                 </div>
-                                <div>
-                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff' }}>{org.name}</div>
-                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                    Admin: {org.contactPersonName || org.contactEmail}
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{org.name}</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {org.contactPersonName || org.contactEmail}
                                   </div>
                                 </div>
                               </div>
@@ -649,8 +627,10 @@ export default function SuperAdminDashboardPage() {
                                   setActionType('VIEW');
                                 }}
                                 className="btn btn-secondary btn-xs"
+                                style={{ padding: '4px 8px', fontSize: '11.5px', flexShrink: 0 }}
                               >
-                                <Eye size={13} /> Details
+                                <Eye size={13} />
+                                <span>Details</span>
                               </button>
                             </div>
                           ))}
@@ -658,40 +638,44 @@ export default function SuperAdminDashboardPage() {
                       )}
                     </div>
 
-                    {/* Audit Logs Stream */}
-                    <div className="glass-card" style={{ padding: '20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>Recent Governance Activity</h3>
+                    {/* Recent Governance Activity Stream (Item 6 Format) */}
+                    <div className="glass-card" style={{ padding: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#ffffff', margin: 0 }}>Recent Governance Activity</h3>
                         <button onClick={() => setActiveTab('history')} className="btn btn-ghost btn-xs" style={{ color: '#818cf8' }}>
                           Full Audit Log →
                         </button>
                       </div>
                       {auditLogs.length === 0 ? (
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No governance logs recorded yet.</p>
+                        <p style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>No governance logs recorded yet.</p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {auditLogs.slice(0, 4).map((log) => (
                             <div
                               key={log.id}
                               style={{
-                                padding: '8px 12px',
-                                borderRadius: '8px',
+                                padding: '10px 12px',
+                                borderRadius: '10px',
                                 backgroundColor: 'rgba(255,255,255,0.02)',
-                                fontSize: '12px',
+                                border: '1px solid var(--border-subtle)',
                                 display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
+                                flexDirection: 'column',
+                                gap: '4px',
                               }}
                             >
-                              <div>
-                                <span style={{ fontWeight: 700, color: '#ffffff' }}>{log.action}</span>
-                                <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>
-                                  ({log.organization?.name || 'Platform'})
+                              {/* Line 1: Action on left, timestamp on right */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '12px', letterSpacing: '0.2px' }}>
+                                  {log.action}
+                                </span>
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                  {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
-                              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
-                                {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
+                              {/* Line 2: Org name at bottom of line 1 */}
+                              <div style={{ fontSize: '11.5px', color: '#38bdf8', fontWeight: 600 }}>
+                                {log.organization?.name || log.metadata?.organizationName || log.metadata?.name || 'Platform Level'}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1417,7 +1401,8 @@ export default function SuperAdminDashboardPage() {
               {/* TAB 5: AUDIT HISTORY */}
               {activeTab === 'history' && (
                 <div>
-                  <div className="table-container glass-card">
+                  {/* Desktop Table View */}
+                  <div className={`table-container glass-card ${styles.tableContainerDesktop}`}>
                     <table className="data-table">
                       <thead>
                         <tr>
@@ -1436,14 +1421,16 @@ export default function SuperAdminDashboardPage() {
                             </td>
                             <td style={{ padding: '16px 20px' }}>
                               <span
-                                className={`badge ${
-                                  log.action.includes('APPROVED') || log.action.includes('ACTIVATED')
-                                    ? 'badge-active'
-                                    : log.action.includes('REJECTED') || log.action.includes('DEACTIVATED') || log.action.includes('DELETED')
-                                    ? 'badge-rejected'
-                                    : 'badge-info'
-                                }`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontWeight: 700,
+                                  fontSize: '12px',
+                                  color: log.action.includes('APPROVED') || log.action.includes('ACTIVATED') ? '#34d399' : log.action.includes('REJECTED') || log.action.includes('DEACTIVATED') || log.action.includes('DELETED') ? '#f87171' : '#38bdf8'
+                                }}
                               >
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: log.action.includes('APPROVED') || log.action.includes('ACTIVATED') ? '#10b981' : log.action.includes('REJECTED') || log.action.includes('DEACTIVATED') || log.action.includes('DELETED') ? '#ef4444' : '#38bdf8' }} />
                                 {log.action}
                               </span>
                             </td>
@@ -1458,6 +1445,41 @@ export default function SuperAdminDashboardPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Mobile Card List View */}
+                  <div className={styles.mobileCardList}>
+                    {auditLogs.map((log) => (
+                      <div key={log.id} className={styles.mobileOrgCard}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontWeight: 700,
+                              fontSize: '12.5px',
+                              color: log.action.includes('APPROVED') || log.action.includes('ACTIVATED') ? '#34d399' : log.action.includes('REJECTED') || log.action.includes('DEACTIVATED') || log.action.includes('DELETED') ? '#f87171' : '#38bdf8'
+                            }}
+                          >
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: log.action.includes('APPROVED') || log.action.includes('ACTIVATED') ? '#10b981' : log.action.includes('REJECTED') || log.action.includes('DEACTIVATED') || log.action.includes('DELETED') ? '#ef4444' : '#38bdf8' }} />
+                            {log.action}
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+                          {log.organization?.name || log.metadata?.organizationName || log.metadata?.name || 'Platform Governance'}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                          <span>Entity: {log.entityType}</span>
+                          <span>Actor: {log.actorUser?.email || 'Super Admin'}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1609,10 +1631,10 @@ export default function SuperAdminDashboardPage() {
       {selectedOrg && (actionType === 'REJECT' || actionType === 'VIEW') && !isChangeAdminModalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div
-            className="modal-content glass-card"
+            className={`modal-content glass-card ${actionType === 'VIEW' ? styles.fullScreenMobileModal : ''}`}
             onClick={(e) => e.stopPropagation()}
             style={{
-              padding: '32px',
+              padding: '24px',
               maxWidth: '680px',
               width: '100%',
               borderRadius: '20px',

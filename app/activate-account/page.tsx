@@ -314,10 +314,10 @@ export default function ActivateAccountPage() {
     <div className={styles.container}>
       <div className={styles.wrapper}>
         <div className={styles.header}>
-          <div className={styles.logoContainer}>
-            <Shield size={28} color="#ffffff" />
+          <div className={styles.logoContainer} style={{ background: 'transparent', border: 'none' }}>
+            <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
           </div>
-          <h1 className={styles.title}>ShiftGuard</h1>
+          <h1 className={styles.title}>Shift<span style={{ color: '#38bdf8' }}>Guard</span></h1>
           <p className={styles.subtitle}>Staff Account Setup &amp; Password Creation</p>
         </div>
 

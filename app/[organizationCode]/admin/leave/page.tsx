@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -18,6 +18,8 @@ import {
   Loader2,
   ChevronRight,
   Menu,
+  X,
+  CalendarDays,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -51,7 +53,24 @@ export default function AdminLeavePage() {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<LeaveRequestItem[]>([]);
   const [orgData, setOrgData] = useState<any>(null);
+
+  // Header Menu Dropdown & Backdrop Listener
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    if (headerMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [headerMenuOpen]);
 
   useEffect(() => {
     fetch(`/api/org/${organizationCode}/branding`)
@@ -103,108 +122,90 @@ export default function AdminLeavePage() {
       />
 
       <div className={styles.mainContent}>
-        {/* Header */}
+        {/* Mobile Header */}
         <header className={styles.header}>
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px', margin: 0 }}>Leave Management</h1>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              Review leave requests, monitor staffing coverage, and manage employee leave.
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#10b981',
+                boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px', margin: 0 }}>
+                Leave Management
+              </h1>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px', margin: 0 }}>
+                Review requests, staffing coverage &amp; employee leave
+              </p>
+            </div>
           </div>
 
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={headerMenuRef}>
             <button
               onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
               className="btn btn-secondary btn-sm"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-              title="Leave Management Actions Menu"
+              style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
+              aria-label="Toggle Leave Action Menu"
             >
-              <Menu size={18} />
+              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
 
             {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+              <div
+                className={styles.headerMenuDropdown}
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  width: '220px',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
+                  borderRadius: '12px',
+                  padding: '8px',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                  zIndex: 100,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                <Link
+                  href={`/${organizationCode}/admin/leave/manual`}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
                   onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    zIndex: 1000,
-                    minWidth: '200px',
-                    padding: '6px',
-                    backgroundColor: '#0d121f',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
-                  }}
                 >
-                  <Link
-                    href={`/${organizationCode}/admin/attendance`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                    }}
-                  >
-                    <Plus size={15} color="#818cf8" />
-                    <span>Record Manual Leave</span>
-                  </Link>
+                  <Plus size={15} color="#818cf8" />
+                  <span>Record Manual Leave</span>
+                </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      fetchLeaveRequests();
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
-                    <span>Refresh Requests</span>
-                  </button>
-                </div>
-              </>
+                <button
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    fetchLeaveRequests();
+                  }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+                >
+                  <RefreshCw size={15} color="#10b981" className={loading ? 'animate-spin' : ''} />
+                  <span>Refresh Requests</span>
+                </button>
+
+                <Link
+                  href={`/${organizationCode}/admin/roster`}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                >
+                  <CalendarDays size={15} color="#38bdf8" />
+                  <span>Roster Calendar</span>
+                </Link>
+              </div>
             )}
           </div>
         </header>
@@ -242,21 +243,59 @@ export default function AdminLeavePage() {
             ))}
           </div>
 
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '200px' }}>
-            <input
-              type="text"
-              className="form-input"
-              style={{ flex: 1, height: '36px', fontSize: '13px' }}
-              placeholder="Search staff name or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '8px 12px' }}>
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '200px', position: 'relative' }}>
+            <div style={{ position: 'relative', width: '100%' }}>
+              <Search
+                size={14}
+                style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  fontSize: '12.5px',
+                  paddingLeft: '32px',
+                  paddingRight: search ? '28px' : '10px',
+                  backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                }}
+                placeholder="Search staff name or ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    fetchLeaveRequests();
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                  }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+            <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '8px 12px', borderRadius: '8px' }}>
               <Search size={14} />
             </button>
           </form>
 
-          <button onClick={fetchLeaveRequests} className="btn btn-secondary btn-sm" style={{ padding: '8px 12px' }}>
+          <button onClick={fetchLeaveRequests} className="btn btn-secondary btn-sm" style={{ padding: '8px 12px', borderRadius: '8px' }}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
@@ -336,9 +375,22 @@ export default function AdminLeavePage() {
                   >
                     <div className={styles.cardHeader}>
                       <div>
-                        <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '14.5px' }}>{item.staff.name}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>
-                          ID: {item.staff.staffId}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <strong style={{ color: '#ffffff', fontSize: '14px' }}>{item.staff.name}</strong>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '10.5px',
+                              fontWeight: 800,
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                              color: '#818cf8',
+                              border: '1px solid rgba(99, 102, 241, 0.25)',
+                            }}
+                          >
+                            {item.staff.staffId}
+                          </span>
                         </div>
                       </div>
                       <span className={`${styles.statusPill} ${styles[item.status.toLowerCase()]}`}>
@@ -357,11 +409,20 @@ export default function AdminLeavePage() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px' }}>
-                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    {item.reason && (
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        &ldquo;{item.reason}&rdquo;
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>
                         {new Date(item.startDate).toLocaleDateString()} – {new Date(item.endDate).toLocaleDateString()}
                       </span>
-                      <ChevronRight size={16} color="#818cf8" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#818cf8', fontWeight: 600 }}>
+                        <span>Review</span>
+                        <ChevronRight size={14} color="#818cf8" />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -374,3 +435,4 @@ export default function AdminLeavePage() {
     </div>
   );
 }
+

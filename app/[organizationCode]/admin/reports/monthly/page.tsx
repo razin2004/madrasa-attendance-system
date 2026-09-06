@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -16,6 +16,8 @@ import {
   FileText,
   Loader2,
   Menu,
+  X,
+  ChevronRight,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -46,7 +48,24 @@ export default function MonthlyReportPage() {
   const [branchId, setBranchId] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [source, setSource] = useState<string>('');
+
+  // Header Menu Dropdown & Click Outside Ref
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    if (headerMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [headerMenuOpen]);
 
   const [staffList, setStaffList] = useState<StaffOption[]>([]);
   const [branchList, setBranchList] = useState<BranchOption[]>([]);
@@ -188,15 +207,23 @@ export default function MonthlyReportPage() {
       />
 
       <div className={styles.mainContent}>
+        {/* Sticky Mobile Header */}
         <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Link href={`/${organizationCode}/admin/reports`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <ArrowLeft size={16} />
-            </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#10b981',
+                boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
+                flexShrink: 0,
+              }}
+            />
             <div>
-              <h1 className={styles.title}>Employee Monthly Attendance Report</h1>
+              <h1 className={styles.title}>Employee Monthly Report</h1>
               <p className={styles.subtitle}>
-                Monthly calendar breakdown &amp; metrics for{' '}
+                Monthly breakdown for{' '}
                 <strong
                   onClick={() => selectedStaffId && router.push(`/${organizationCode}/admin/staff/${selectedStaffId}`)}
                   style={{ cursor: 'pointer', color: '#818cf8', textDecoration: 'underline' }}
@@ -204,430 +231,438 @@ export default function MonthlyReportPage() {
                 >
                   {report?.staff?.name || 'Selected Employee'}
                 </strong>{' '}
-                (ID: {report?.staff?.staffId || '—'})
+                ({report?.staff?.staffId || '—'})
               </p>
             </div>
           </div>
 
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={headerMenuRef}>
             <button
               onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
               className="btn btn-secondary btn-sm"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-              title="Monthly Report Actions"
+              style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
+              aria-label="Toggle Monthly Report Menu"
             >
-              <Menu size={18} />
+              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
 
             {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    zIndex: 1000,
-                    minWidth: '220px',
-                    padding: '6px',
-                    backgroundColor: '#0d121f',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
+              <div
+                className={styles.headerMenuDropdown}
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  width: '220px',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
+                  borderRadius: '12px',
+                  padding: '8px',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                  zIndex: 100,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    handlePayrollCsvExport();
                   }}
+                  disabled={exportingPayroll}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#34d399', fontSize: '12.5px' }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      handlePayrollCsvExport();
-                    }}
-                    disabled={exportingPayroll}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#34d399',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <FileText size={15} color="#34d399" />
-                    <span>{exportingPayroll ? 'Preparing Payroll...' : 'Export Payroll CSV'}</span>
-                  </button>
+                  <FileText size={15} color="#34d399" />
+                  <span>{exportingPayroll ? 'Preparing Payroll...' : 'Export Payroll CSV'}</span>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      handleCsvExport();
-                    }}
-                    disabled={exportingCsv}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <Download size={15} color="#34d399" />
-                    <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    handleCsvExport();
+                  }}
+                  disabled={exportingCsv}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+                >
+                  <Download size={15} color="#34d399" />
+                  <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      handlePdfExport();
-                    }}
-                    disabled={exportingPdf}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <Printer size={15} color="#38bdf8" />
-                    <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save PDF'}</span>
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    handlePdfExport();
+                  }}
+                  disabled={exportingPdf}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+                >
+                  <Printer size={15} color="#38bdf8" />
+                  <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save PDF'}</span>
+                </button>
 
-                  <Link
-                    href={`/${organizationCode}/admin/reports`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <ArrowLeft size={15} color="#818cf8" />
-                    <span>Reports Dashboard</span>
-                  </Link>
-                </div>
-              </>
+                <Link
+                  href={`/${organizationCode}/admin/reports`}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                >
+                  <ArrowLeft size={15} color="#818cf8" />
+                  <span>Reports Dashboard</span>
+                </Link>
+              </div>
             )}
           </div>
         </header>
 
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
-
-        {/* Monthly Summary Metrics Bar */}
-        <div className={styles.metricsGrid}>
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #3b82f6' }}>
-            <div className={styles.metricLabel}>Working Days</div>
-            <div className={styles.metricValue}>{metrics?.workingDaysCount || 0}</div>
-          </div>
-
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #10b981' }}>
-            <div className={styles.metricLabel}>Present Days</div>
-            <div className={styles.metricValue} style={{ color: '#34d399' }}>
-              {metrics?.presentDaysCount || 0}
+          {/* Monthly Summary Metrics Bar */}
+          <div className={styles.metricsGrid}>
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #3b82f6' }}>
+              <div className={styles.metricLabel}>Working Days</div>
+              <div className={styles.metricValue}>{metrics?.workingDaysCount || 0}</div>
             </div>
-          </div>
 
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #f59e0b' }}>
-            <div className={styles.metricLabel}>Partial Days</div>
-            <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
-              {metrics?.partialDaysCount || 0}
-            </div>
-          </div>
-
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #38bdf8' }}>
-            <div className={styles.metricLabel}>Approved Leave</div>
-            <div className={styles.metricValue} style={{ color: '#38bdf8' }}>
-              {metrics?.leaveDaysCount || 0}
-            </div>
-          </div>
-
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #818cf8' }}>
-            <div className={styles.metricLabel}>Holidays</div>
-            <div className={styles.metricValue} style={{ color: '#818cf8' }}>
-              {metrics?.holidayDaysCount || 0}
-            </div>
-          </div>
-
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #ef4444' }}>
-            <div className={styles.metricLabel}>Absent Days</div>
-            <div className={styles.metricValue} style={{ color: '#f87171' }}>
-              {metrics?.absentDaysCount || 0}
-            </div>
-          </div>
-
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #059669' }}>
-            <div className={styles.metricLabel}>Normal Verified</div>
-            <div className={styles.metricValue} style={{ color: '#34d399' }}>
-              {metrics?.normalEntriesCount || 0}
-            </div>
-          </div>
-
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #d97706' }}>
-            <div className={styles.metricLabel}>Manual / Adjusted</div>
-            <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
-              {(metrics?.manualEntriesCount || 0) + (metrics?.adjustedEntriesCount || 0)}
-            </div>
-          </div>
-        </div>
-
-        {/* Payroll Hours Breakdown Banner */}
-        {payrollSummary && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', margin: '0 32px 24px 32px' }}>
-            <div style={{ background: 'rgba(52, 211, 153, 0.08)', border: '1px solid rgba(52, 211, 153, 0.25)', borderRadius: '10px', padding: '14px 18px' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#34d399', fontWeight: 700 }}>Total Hours Worked</div>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
-                {payrollSummary.hoursMetrics.actualWorkedFormatted}
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginLeft: '6px' }}>({payrollSummary.hoursMetrics.actualHoursWorked} hrs)</span>
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #10b981' }}>
+              <div className={styles.metricLabel}>Present</div>
+              <div className={styles.metricValue} style={{ color: '#34d399' }}>
+                {metrics?.presentDaysCount || 0}
               </div>
             </div>
 
-            <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '10px', padding: '14px 18px' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#38bdf8', fontWeight: 700 }}>Total Scheduled Shift Hours</div>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
-                {payrollSummary.hoursMetrics.scheduledHours} hrs
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #f59e0b' }}>
+              <div className={styles.metricLabel}>Partial</div>
+              <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
+                {metrics?.partialDaysCount || 0}
               </div>
             </div>
 
-            <div style={{ background: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.25)', borderRadius: '10px', padding: '14px 18px' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#fbbf24', fontWeight: 700 }}>Total Overtime Worked</div>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
-                {payrollSummary.hoursMetrics.overtimeFormatted}
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #38bdf8' }}>
+              <div className={styles.metricLabel}>Leave</div>
+              <div className={styles.metricValue} style={{ color: '#38bdf8' }}>
+                {metrics?.leaveDaysCount || 0}
+              </div>
+            </div>
+
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #818cf8' }}>
+              <div className={styles.metricLabel}>Holidays</div>
+              <div className={styles.metricValue} style={{ color: '#818cf8' }}>
+                {metrics?.holidayDaysCount || 0}
+              </div>
+            </div>
+
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #ef4444' }}>
+              <div className={styles.metricLabel}>Absent</div>
+              <div className={styles.metricValue} style={{ color: '#f87171' }}>
+                {metrics?.absentDaysCount || 0}
+              </div>
+            </div>
+
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #059669' }}>
+              <div className={styles.metricLabel}>Normal</div>
+              <div className={styles.metricValue} style={{ color: '#34d399' }}>
+                {metrics?.normalEntriesCount || 0}
+              </div>
+            </div>
+
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #d97706' }}>
+              <div className={styles.metricLabel}>Manual / Adjust</div>
+              <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
+                {(metrics?.manualEntriesCount || 0) + (metrics?.adjustedEntriesCount || 0)}
               </div>
             </div>
           </div>
-        )}
 
-        {/* Filter Bar */}
-        <div className={styles.filterBar}>
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>Select Staff:</span>
-            <select
-              className={styles.select}
-              value={selectedStaffId}
-              onChange={(e) => setSelectedStaffId(e.target.value)}
-            >
-              {staffList.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.staffId})
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Payroll Hours Breakdown Banner */}
+          {payrollSummary && (
+            <div className={styles.payrollGrid}>
+              <div style={{ background: 'rgba(52, 211, 153, 0.08)', border: '1px solid rgba(52, 211, 153, 0.25)', borderRadius: '10px', padding: '12px 14px' }}>
+                <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#34d399', fontWeight: 700 }}>Total Hours Worked</div>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', marginTop: '3px' }}>
+                  {payrollSummary.hoursMetrics.actualWorkedFormatted}
+                  <span style={{ fontSize: '11.5px', fontWeight: 500, color: 'var(--text-secondary)', marginLeft: '6px' }}>({payrollSummary.hoursMetrics.actualHoursWorked} hrs)</span>
+                </div>
+              </div>
 
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>Month:</span>
-            <select
-              className={styles.select}
-              value={month}
-              onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-            >
-              {months.map((m) => (
-                <option key={m.num} value={m.num}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '10px', padding: '12px 14px' }}>
+                <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#38bdf8', fontWeight: 700 }}>Scheduled Shift Hours</div>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', marginTop: '3px' }}>
+                  {payrollSummary.hoursMetrics.scheduledHours} hrs
+                </div>
+              </div>
 
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>Year:</span>
-            <select
-              className={styles.select}
-              value={year}
-              onChange={(e) => setYear(parseInt(e.target.value, 10))}
-            >
-              {[2025, 2026, 2027].map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>Branch:</span>
-            <select
-              className={styles.select}
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-            >
-              <option value="">All Branches</option>
-              {branchList.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={fetchReport}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '8px 12px' }}
-            title="Refresh"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-
-        {/* Monthly Log Table */}
-        <div className={styles.tableCard}>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 12px auto' }} />
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Calculating monthly report...</p>
+              <div style={{ background: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.25)', borderRadius: '10px', padding: '12px 14px' }}>
+                <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#fbbf24', fontWeight: 700 }}>Overtime Worked</div>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', marginTop: '3px' }}>
+                  {payrollSummary.hoursMetrics.overtimeFormatted}
+                </div>
+              </div>
             </div>
-          ) : !report?.daysRows || report.daysRows.length === 0 ? (
-            <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <Calendar size={36} color="var(--text-muted)" style={{ margin: '0 auto 12px auto' }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: '0 0 4px 0' }}>
-                No attendance data available for this month
-              </h3>
-            </div>
-          ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.th}>Date</th>
-                  <th className={styles.th}>Day</th>
-                  <th className={styles.th}>Shift Pattern</th>
-                  <th className={styles.th}>Branch</th>
-                  <th className={styles.th}>Clock In</th>
-                  <th className={styles.th}>Clock Out</th>
-                  <th className={styles.th}>Status</th>
-                  <th className={styles.th}>Source</th>
-                  <th className={styles.th}>Leave / Reason Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.daysRows.map((row: any, idx: number) => {
-                  const statusKey = row.status.replace(/ /g, '_');
-                  return (
-                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                      <td className={styles.td}>
-                        <strong style={{ color: '#ffffff' }}>{row.date.slice(8, 10)}</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '4px' }}>
-                          ({row.date.slice(0, 7)})
-                        </span>
-                      </td>
-
-                      <td className={styles.td}>
-                        <span style={{ color: '#cbd5e1' }}>{row.dayOfWeek}</span>
-                      </td>
-
-                      <td className={styles.td}>
-                        <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                          {row.shiftPatternName}
-                        </span>
-                      </td>
-
-                      <td className={styles.td}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <MapPin size={12} color="#38bdf8" />
-                          <span style={{ color: '#f8fafc' }}>{row.branchName}</span>
-                        </span>
-                      </td>
-
-                      <td className={styles.td}>
-                        <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{row.clockInTime || '—'}</strong>
-                      </td>
-
-                      <td className={styles.td}>
-                        <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>{row.clockOutTime || '—'}</strong>
-                      </td>
-
-                      <td className={styles.td}>
-                        <span className={`${styles.statusBadge} ${styles[`status${statusKey}`]}`}>
-                          {row.status}
-                        </span>
-                      </td>
-
-                      <td className={styles.td}>
-                        {row.source !== '—' ? (
-                          <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>
-                            {row.source}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>—</span>
-                        )}
-                      </td>
-
-                      <td className={styles.td} style={{ fontSize: '12px' }}>
-                        {row.leaveTypeName && (
-                          <span style={{ color: '#38bdf8', fontWeight: 600 }}>
-                            {row.leaveTypeName}
-                          </span>
-                        )}
-                        {row.manualReason && (
-                          <span style={{ color: '#fbbf24', fontStyle: 'italic', marginLeft: '6px' }}>
-                            &ldquo;{row.manualReason}&rdquo;
-                          </span>
-                        )}
-                        {row.adjustmentReason && (
-                          <span style={{ color: '#38bdf8', fontStyle: 'italic', marginLeft: '6px' }}>
-                            &ldquo;{row.adjustmentReason}&rdquo;
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           )}
-        </div>
+
+          {/* Filter Bar */}
+          <div className={styles.filterBar}>
+            <div className={styles.filterGroup}>
+              <div className={styles.filterItem} style={{ gridColumn: 'span 2' }}>
+                <span className={styles.filterLabel}>Select Employee</span>
+                <select
+                  className={styles.select}
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  {staffList.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.staffId})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.filterItem}>
+                <span className={styles.filterLabel}>Month</span>
+                <select
+                  className={styles.select}
+                  value={month}
+                  onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                >
+                  {months.map((m) => (
+                    <option key={m.num} value={m.num}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.filterItem}>
+                <span className={styles.filterLabel}>Year</span>
+                <select
+                  className={styles.select}
+                  value={year}
+                  onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                >
+                  {[2025, 2026, 2027].map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.filterItem}>
+                <span className={styles.filterLabel}>Branch</span>
+                <select
+                  className={styles.select}
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                >
+                  <option value="">All Branches</option>
+                  {branchList.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={fetchReport}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '0 12px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Refresh Report"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+
+          {/* Monthly Log Container */}
+          <div className={styles.tableCard}>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 12px auto' }} />
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Calculating monthly report...</p>
+              </div>
+            ) : !report?.daysRows || report.daysRows.length === 0 ? (
+              <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+                <Calendar size={36} color="var(--text-muted)" style={{ margin: '0 auto 12px auto' }} />
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: '0 0 4px 0' }}>
+                  No attendance data available for this month
+                </h3>
+              </div>
+            ) : (
+              <>
+                {/* Desktop Table View */}
+                <div className={styles.desktopTableView}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th className={styles.th}>Date</th>
+                        <th className={styles.th}>Day</th>
+                        <th className={styles.th}>Shift Pattern</th>
+                        <th className={styles.th}>Branch</th>
+                        <th className={styles.th}>Clock In</th>
+                        <th className={styles.th}>Clock Out</th>
+                        <th className={styles.th}>Status</th>
+                        <th className={styles.th}>Source</th>
+                        <th className={styles.th}>Leave / Reason Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.daysRows.map((row: any, idx: number) => {
+                        const statusKey = row.status.replace(/ /g, '_');
+                        return (
+                          <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                            <td className={styles.td}>
+                              <strong style={{ color: '#ffffff' }}>{row.date.slice(8, 10)}</strong>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '4px' }}>
+                                ({row.date.slice(0, 7)})
+                              </span>
+                            </td>
+
+                            <td className={styles.td}>
+                              <span style={{ color: '#cbd5e1' }}>{row.dayOfWeek}</span>
+                            </td>
+
+                            <td className={styles.td}>
+                              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                                {row.shiftPatternName}
+                              </span>
+                            </td>
+
+                            <td className={styles.td}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <MapPin size={12} color="#38bdf8" />
+                                <span style={{ color: '#f8fafc' }}>{row.branchName}</span>
+                              </span>
+                            </td>
+
+                            <td className={styles.td}>
+                              <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{row.clockInTime || '—'}</strong>
+                            </td>
+
+                            <td className={styles.td}>
+                              <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>{row.clockOutTime || '—'}</strong>
+                            </td>
+
+                            <td className={styles.td}>
+                              <span className={`${styles.statusBadge} ${styles[`status${statusKey}`]}`}>
+                                {row.status}
+                              </span>
+                            </td>
+
+                            <td className={styles.td}>
+                              {row.source !== '—' ? (
+                                <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>
+                                  {row.source}
+                                </span>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)' }}>—</span>
+                              )}
+                            </td>
+
+                            <td className={styles.td} style={{ fontSize: '12px' }}>
+                              {row.leaveTypeName && (
+                                <span style={{ color: '#38bdf8', fontWeight: 600 }}>
+                                  {row.leaveTypeName}
+                                </span>
+                              )}
+                              {row.manualReason && (
+                                <span style={{ color: '#fbbf24', fontStyle: 'italic', marginLeft: '6px' }}>
+                                  &ldquo;{row.manualReason}&rdquo;
+                                </span>
+                              )}
+                              {row.adjustmentReason && (
+                                <span style={{ color: '#38bdf8', fontStyle: 'italic', marginLeft: '6px' }}>
+                                  &ldquo;{row.adjustmentReason}&rdquo;
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card Feed View */}
+                <div className={styles.mobileCardFeed}>
+                  {report.daysRows.map((row: any, idx: number) => {
+                    const statusKey = row.status.replace(/ /g, '_');
+                    return (
+                      <div key={idx} className={styles.reportCardItem}>
+                        {/* Header: Date & Day + Status */}
+                        <div className={styles.cardHeader}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <strong style={{ color: '#ffffff', fontSize: '15px' }}>{row.date}</strong>
+                              <span style={{ fontSize: '12px', color: '#818cf8', fontWeight: 700 }}>({row.dayOfWeek})</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                              <MapPin size={11} color="#38bdf8" />
+                              <span>{row.branchName}</span>
+                              <span style={{ margin: '0 2px' }}>&bull;</span>
+                              <span>{row.shiftPatternName}</span>
+                            </div>
+                          </div>
+
+                          <span className={`${styles.statusBadge} ${styles[`status${statusKey}`]}`}>
+                            {row.status}
+                          </span>
+                        </div>
+
+                        {/* Clock In / Out Box */}
+                        <div className={styles.clockGrid}>
+                          <div>
+                            <span className={styles.clockLabel}>Clock In</span>
+                            <span className={styles.clockVal} style={{ color: '#34d399' }}>{row.clockInTime || '—'}</span>
+                          </div>
+                          <div>
+                            <span className={styles.clockLabel}>Clock Out</span>
+                            <span className={styles.clockVal} style={{ color: '#fbbf24' }}>{row.clockOutTime || '—'}</span>
+                          </div>
+                          <div>
+                            <span className={styles.clockLabel}>Source</span>
+                            <span className={styles.clockVal}>
+                              {row.source !== '—' ? (
+                                <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>
+                                  {row.source}
+                                </span>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>—</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        {(row.leaveTypeName || row.manualReason || row.adjustmentReason) && (
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            {row.leaveTypeName && <span style={{ color: '#38bdf8', fontWeight: 600, marginRight: '6px' }}>{row.leaveTypeName}</span>}
+                            {(row.manualReason || row.adjustmentReason) && (
+                              <span style={{ fontStyle: 'italic', color: '#fbbf24' }}>
+                                &ldquo;{row.manualReason || row.adjustmentReason}&rdquo;
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </main>
       </div>
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>
   );
 }
+

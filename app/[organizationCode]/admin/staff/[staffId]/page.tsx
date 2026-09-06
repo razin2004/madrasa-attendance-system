@@ -516,18 +516,17 @@ export default function StaffProfilePage() {
                   {staff.staffId}
                 </span>
                 <span
+                  title={isPending ? 'Setup Pending' : isActive ? 'Active' : 'Inactive'}
                   style={{
-                    padding: '3px 10px',
-                    borderRadius: '9999px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    backgroundColor: isPending ? 'rgba(245, 158, 11, 0.15)' : isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: isPending ? '#fbbf24' : isActive ? '#34d399' : '#f87171',
-                    border: `1px solid ${isPending ? 'rgba(245, 158, 11, 0.3)' : isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    width: '9px',
+                    height: '9px',
+                    borderRadius: '50%',
+                    backgroundColor: isPending ? '#fbbf24' : isActive ? '#34d399' : '#f87171',
+                    boxShadow: isActive ? '0 0 8px #34d399' : 'none',
+                    display: 'inline-block',
+                    marginLeft: '2px',
                   }}
-                >
-                  {isPending ? 'SETUP PENDING' : isActive ? 'ACTIVE' : 'INACTIVE'}
-                </span>
+                />
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                 {staff.user.email}
@@ -542,7 +541,7 @@ export default function StaffProfilePage() {
               className={styles.menuTriggerBtn}
               title="Staff Options & Actions"
             >
-              <Menu size={20} />
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
             {menuOpen && (
@@ -785,7 +784,7 @@ export default function StaffProfilePage() {
                     <Building size={18} color="#38bdf8" />
                     Assigned Workplace Branches
                   </h3>
-                  <button onClick={() => setBranchModalOpen(true)} className="btn btn-secondary btn-sm">Edit Assignments</button>
+                  <button onClick={() => setBranchModalOpen(true)} className="btn btn-secondary btn-sm" style={{ padding: '4px 10px', fontSize: '12px' }}>Edit</button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -830,10 +829,10 @@ export default function StaffProfilePage() {
               )}
 
               {/* Assign Shift Form */}
-              <form onSubmit={handleSaveShiftAssignment} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '16px', alignItems: 'end' }}>
-                <div>
+              <form onSubmit={handleSaveShiftAssignment} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', alignItems: 'end' }}>
+                <div style={{ flex: 1, minWidth: '180px' }}>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Select Shift Pattern</label>
-                  <select value={selectedShiftPatternId} onChange={(e) => setSelectedShiftPatternId(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }}>
+                  <select value={selectedShiftPatternId} onChange={(e) => setSelectedShiftPatternId(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', height: '36px', fontSize: '13px' }}>
                     <option value="">-- Choose Shift Pattern --</option>
                     {shiftPatterns.map((p) => {
                       const workDay = p.weeklyDays?.find((w: any) => !w.isHoliday);
@@ -844,11 +843,13 @@ export default function StaffProfilePage() {
                     })}
                   </select>
                 </div>
-                <div>
+                <div style={{ minWidth: '140px' }}>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Effective Date</label>
-                  <input type="date" value={shiftEffectiveFrom} onChange={(e) => setShiftEffectiveFrom(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px' }} />
+                  <input type="date" value={shiftEffectiveFrom} onChange={(e) => setShiftEffectiveFrom(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', height: '36px', fontSize: '13px' }} />
                 </div>
-                <button type="submit" disabled={savingShift} className="btn btn-primary btn-sm">{savingShift ? 'Saving...' : 'Assign Shift'}</button>
+                <div>
+                  <button type="submit" disabled={savingShift} className="btn btn-primary btn-sm" style={{ height: '36px', padding: '0 16px', width: '100%', justifyContent: 'center' }}>{savingShift ? 'Saving...' : 'Assign Shift'}</button>
+                </div>
               </form>
             </div>
           )}
@@ -861,15 +862,6 @@ export default function StaffProfilePage() {
                   <Smartphone size={20} color="#34d399" />
                   <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Registered Security Device</h3>
                 </div>
-
-                <button
-                  onClick={() => setDeviceResetModalOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <RefreshCw size={14} />
-                  <span>Reset Registered Device</span>
-                </button>
               </div>
 
               {allDevices.length > 0 ? (
@@ -934,14 +926,6 @@ export default function StaffProfilePage() {
                         </div>
 
                         <div className={styles.deviceActionRow}>
-                          <button
-                            onClick={() => setDeviceResetModalOpen(true)}
-                            className="btn btn-secondary btn-sm"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                          >
-                            <RefreshCw size={14} />
-                            <span>Reset Device Lock</span>
-                          </button>
                           <button
                             onClick={() => setDeviceToRemove(d)}
                             className="btn btn-danger btn-sm"

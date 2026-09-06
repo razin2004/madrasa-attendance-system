@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useToast } from '../../../components/feedback/toast-provider';
-import { OrgAdminSidebar } from '../../../components/layout/org-admin-sidebar';
-import { OrgAdminMobileNav } from '../../../components/layout/org-admin-mobile-nav';
-import { LiveAttendanceFeed } from '../../../components/dashboard/live-attendance-feed';
-import { BranchStaffingBanner } from '../../../components/dashboard/branch-staffing-banner';
+import { useParams, useRouter } from 'next/navigation';
+import { useToast } from '@/components/feedback/toast-provider';
+import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
+import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { BranchStaffingBanner } from '@/components/dashboard/branch-staffing-banner';
+import { LiveAttendanceFeed } from '@/components/dashboard/live-attendance-feed';
+import { Footer } from '@/components/layout/footer';
+import { OrgLogo } from '@/components/branding/org-logo';
 import styles from './AdminDashboard.module.css';
 import {
   Building2,
@@ -204,17 +206,54 @@ export default function OrgAdminLandingPage() {
 
       {/* Main Content Area */}
       <div className={styles.mainContent}>
-        {/* Top Header Bar */}
+        {/* Sticky Top Main Header Bar (Exact match to ShiftGuard Main Header) */}
         <header className={styles.headerBar}>
-          <div>
-            <h1 className={styles.headerTitle}>
-              Organization Operations Dashboard
-            </h1>
-            <p className={styles.headerSubtitle}>
-              <span>ShiftGuard Multi-Tenant Operations Workspace</span>
-              <span>&bull;</span>
-              <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{orgData?.name || orgCode}</span>
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)',
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src="/logo.svg"
+                alt="ShiftGuard Logo"
+                style={{ width: '26px', height: '26px', objectFit: 'contain' }}
+              />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.3px', color: '#ffffff' }}>
+                  {orgData?.name || orgCode}
+                </span>
+                <span
+                  style={{
+                    fontSize: '9.5px',
+                    fontWeight: 800,
+                    color: '#818cf8',
+                    background: 'rgba(99, 102, 241, 0.15)',
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  <Shield size={10} style={{ display: 'inline', marginRight: '3px' }} />
+                  Org Admin
+                </span>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                Operations Dashboard
+              </div>
+            </div>
           </div>
 
           <div style={{ position: 'relative' }}>
@@ -234,7 +273,8 @@ export default function OrgAdminLandingPage() {
                 color: '#ffffff',
                 cursor: 'pointer',
               }}
-              title="Dashboard Actions Menu"
+              title="Dashboard Control Menu"
+              aria-label="Dashboard Control Menu"
             >
               <Menu size={18} />
             </button>
@@ -508,7 +548,7 @@ export default function OrgAdminLandingPage() {
                   </div>
                   <div className={styles.metricSubtext}>
                     <ShieldCheck size={14} color="#34d399" />
-                    <span>Hardware cryptographic secrets</span>
+                    <span>Hardware secrets</span>
                   </div>
                 </div>
               </div>
@@ -530,11 +570,16 @@ export default function OrgAdminLandingPage() {
                     </div>
                   </div>
 
-                  <Link href={`/${orgCode}/admin/leave`} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '12px' }}>
-                    <span>View All Leave ({pendingLeaveCount})</span>
-                    <ArrowRight size={14} />
+                  <Link
+                    href={`/${orgCode}/admin/leave`}
+                    className="btn btn-secondary btn-xs"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px', fontSize: '11px', padding: '3px 8px' }}
+                  >
+                    <span>View All ({pendingLeaveCount})</span>
+                    <ArrowRight size={12} />
                   </Link>
-                </div>                {pendingLeaveRequests.length === 0 ? (
+                </div>
+                {pendingLeaveRequests.length === 0 ? (
                   <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
                     <CheckCircle2 size={32} color="#34d399" style={{ margin: '0 auto 10px auto' }} />
                     <div>All pending leave applications have been reviewed.</div>
@@ -554,7 +599,7 @@ export default function OrgAdminLandingPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {pendingLeaveRequests.map((req, i) => (
+                          {pendingLeaveRequests.map((req: any, i: number) => (
                             <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
                               <td style={{ padding: '14px 20px', fontWeight: 700, color: '#ffffff' }}>
                                 {req.staffProfile?.name || 'Staff Member'}
@@ -589,7 +634,7 @@ export default function OrgAdminLandingPage() {
 
                     {/* Mobile Responsive Cards */}
                     <div className={styles.cardsMobile}>
-                      {pendingLeaveRequests.map((req, i) => (
+                      {pendingLeaveRequests.map((req: any, i: number) => (
                         <div
                           key={i}
                           style={{
@@ -657,9 +702,13 @@ export default function OrgAdminLandingPage() {
                     </div>
                   </div>
 
-                  <Link href={`/${orgCode}/admin/attendance/corrections`} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '12px' }}>
-                    <span>View All Corrections ({pendingCorrectionsCount})</span>
-                    <ArrowRight size={14} />
+                  <Link
+                    href={`/${orgCode}/admin/attendance/corrections`}
+                    className="btn btn-secondary btn-xs"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px', fontSize: '11px', padding: '3px 8px' }}
+                  >
+                    <span>View All ({pendingCorrectionsCount})</span>
+                    <ArrowRight size={12} />
                   </Link>
                 </div>
 
@@ -683,7 +732,7 @@ export default function OrgAdminLandingPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {pendingCorrections.map((req, i) => (
+                          {pendingCorrections.map((req: any, i: number) => (
                             <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
                               <td style={{ padding: '14px 20px', fontWeight: 700, color: '#ffffff' }}>
                                 {req.staff?.name || 'Staff Member'}
@@ -717,7 +766,7 @@ export default function OrgAdminLandingPage() {
 
                     {/* Mobile Responsive Cards */}
                     <div className={styles.cardsMobile}>
-                      {pendingCorrections.map((req, i) => (
+                      {pendingCorrections.map((req: any, i: number) => (
                         <div
                           key={i}
                           style={{
@@ -862,7 +911,7 @@ export default function OrgAdminLandingPage() {
               </div>
 
               {/* 3-LAYER SECURITY ARCHITECTURE PANEL */}
-              <div className="glass-card" style={{ padding: '28px', borderRadius: '20px' }}>
+              <div className="glass-card" style={{ padding: '28px', borderRadius: '20px', marginBottom: '32px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
                   <ShieldCheck size={20} color="#818cf8" />
                   <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
@@ -904,6 +953,9 @@ export default function OrgAdminLandingPage() {
               </div>
             </>
           )}
+
+          {/* Overview Dashboard Exclusive Footer */}
+          <Footer />
         </main>
       </div>
 

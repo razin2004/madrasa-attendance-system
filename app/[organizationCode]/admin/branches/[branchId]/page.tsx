@@ -557,18 +557,17 @@ export default function BranchDetailPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <h1 className={styles.title}>{branch.name}</h1>
                 <span
+                  title={isActive ? 'Active' : 'Inactive'}
                   style={{
-                    padding: '3px 10px',
-                    borderRadius: '9999px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    backgroundColor: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: isActive ? '#34d399' : '#f87171',
-                    border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    width: '9px',
+                    height: '9px',
+                    borderRadius: '50%',
+                    backgroundColor: isActive ? '#34d399' : '#f87171',
+                    boxShadow: isActive ? '0 0 8px #34d399' : 'none',
+                    display: 'inline-block',
+                    marginLeft: '2px',
                   }}
-                >
-                  {isActive ? 'ACTIVE' : 'INACTIVE'}
-                </span>
+                />
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                 {branch.address}
@@ -583,7 +582,7 @@ export default function BranchDetailPage() {
               className={styles.menuTriggerBtn}
               title="Branch Options & Actions"
             >
-              <Menu size={20} />
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
             {menuOpen && (
@@ -690,7 +689,7 @@ export default function BranchDetailPage() {
               <div className={styles.panelHeader}>
                 <h3 className={styles.panelTitle}>
                   <Network size={18} color="#38bdf8" />
-                  Approved Network Security (Layer 1)
+                  Approved Network Security
                 </h3>
                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(6, 182, 212, 0.12)', color: '#38bdf8' }}>
                   {branch.ipSource || 'AUTO_DETECTED'}
@@ -710,12 +709,11 @@ export default function BranchDetailPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
                   {/* PRIMARY PUBLIC IP CARD */}
                   {primaryIp ? (
-                    <div style={{ padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Star size={14} color="#38bdf8" fill="#38bdf8" />
                           <span style={{ fontSize: '14.5px', fontWeight: 800, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>{primaryIp}</span>
-                          <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', textTransform: 'uppercase' }}>Primary IP</span>
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#cbd5e1', marginTop: '2px' }}>
                           Default branch network identifier
@@ -765,7 +763,7 @@ export default function BranchDetailPage() {
                     const isPromoting = settingPrimaryIp === n.publicIp;
                     const isRemoving = removingIp === n.publicIp;
                     return (
-                      <div key={n.id} style={{ padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div key={n.id} style={{ padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                         <div>
                           <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{n.publicIp}</span>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{n.overrideReason || 'Secondary IP'}</div>
@@ -801,7 +799,7 @@ export default function BranchDetailPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setRecaptureConfirmOpen(true)}
                   disabled={recapturingIp}
@@ -818,7 +816,7 @@ export default function BranchDetailPage() {
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
                     <Key size={14} />
-                    <span>+ Add Additional IP</span>
+                    <span>Add Additional IP</span>
                   </button>
                 )}
               </div>
@@ -829,7 +827,7 @@ export default function BranchDetailPage() {
               <div className={styles.panelHeader}>
                 <h3 className={styles.panelTitle}>
                   <Navigation size={18} color="#34d399" />
-                  Location Security &amp; Geofence (Layer 2)
+                  Location &amp; Geofence Security
                 </h3>
                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#34d399' }}>
                   ✓ {branch.geofenceRadiusMeters} m Radius

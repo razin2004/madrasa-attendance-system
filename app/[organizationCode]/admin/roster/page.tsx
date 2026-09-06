@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -18,6 +18,9 @@ import {
   Plus,
   Loader2,
   X,
+  Menu,
+  Search,
+  CalendarDays,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -83,6 +86,26 @@ export default function RosterCalendarPage() {
   const [branding, setBranding] = useState<any>(null);
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const [search, setSearch] = useState<string>('');
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
+
+  // Header Menu Dropdown & Outside Click Handling
+  const [headerMenuOpen, setHeaderMenuOpen] = useState<boolean>(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    if (headerMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [headerMenuOpen]);
 
   // Week Navigation
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
@@ -170,6 +193,16 @@ export default function RosterCalendarPage() {
   weekEnd.setDate(currentWeekStart.getDate() + 6);
   const weekLabel = `${currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
+  // Filtered Staff Rows for Search Query
+  const filteredStaffRows = rosterData?.staffRows.filter((staff) => {
+    const query = search.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      staff.name.toLowerCase().includes(query) ||
+      staff.staffId.toLowerCase().includes(query)
+    );
+  }) || [];
+
   return (
     <div className={styles.container}>
       {/* Sidebar */}
@@ -181,37 +214,102 @@ export default function RosterCalendarPage() {
 
       {/* Main Content */}
       <div className={styles.mainContent}>
-        {/* Header */}
+        {/* Mobile-Optimized Header */}
         <header className={styles.header}>
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px' }}>
-              Roster Calendar
-            </h1>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              View weekly shift allocations, verify minimum staffing levels, and inspect day-level overrides.
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#10b981',
+                boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Roster Calendar
+              </h1>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px', margin: 0 }}>
+                Weekly shift allocations &amp; day overrides
+              </p>
+            </div>
           </div>
 
-          <Link
-            href={`/${organizationCode}/admin/shifts`}
-            className="btn btn-secondary btn-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Clock size={14} />
-            <span>Manage Shift Patterns</span>
-          </Link>
+          <div style={{ position: 'relative' }} ref={headerMenuRef}>
+            <button
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
+              aria-label="Toggle Roster Menu"
+            >
+              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+
+            {headerMenuOpen && (
+              <div
+                className={styles.headerMenuDropdown}
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  width: '220px',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
+                  borderRadius: '12px',
+                  padding: '8px',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                  zIndex: 100,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                <Link
+                  href={`/${organizationCode}/admin/shifts`}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                >
+                  <Clock size={15} color="#818cf8" />
+                  <span>Manage Shift Patterns</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    fetchRoster();
+                  }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+                >
+                  <RefreshCw size={15} color="#10b981" />
+                  <span>Refresh Roster Data</span>
+                </button>
+                <Link
+                  href={`/${organizationCode}/admin/attendance/daily`}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                  onClick={() => setHeaderMenuOpen(false)}
+                >
+                  <CalendarDays size={15} color="#38bdf8" />
+                  <span>Daily Attendance</span>
+                </Link>
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
-          {/* Controls Bar: Week Navigator & Branch Filters */}
+          {/* Controls Bar: Week Navigator, Search & Branch Filters */}
           <div className={styles.controlsBar}>
             {/* Week Navigator */}
             <div className={styles.weekNavigator}>
               <button
                 onClick={handlePrevWeek}
                 className="btn btn-ghost btn-sm"
-                style={{ padding: '4px 8px' }}
+                style={{ padding: '5px 8px' }}
                 title="Previous Week"
               >
                 <ChevronLeft size={16} />
@@ -220,7 +318,7 @@ export default function RosterCalendarPage() {
               <button
                 onClick={handleCurrentWeek}
                 className="btn btn-ghost btn-sm"
-                style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc', padding: '4px 10px' }}
+                style={{ fontSize: '12.5px', fontWeight: 700, color: '#f8fafc', padding: '5px 8px' }}
               >
                 {weekLabel}
               </button>
@@ -228,42 +326,99 @@ export default function RosterCalendarPage() {
               <button
                 onClick={handleNextWeek}
                 className="btn btn-ghost btn-sm"
-                style={{ padding: '4px 8px' }}
+                style={{ padding: '5px 8px' }}
                 title="Next Week"
               >
                 <ChevronRight size={16} />
               </button>
+
+              <button
+                onClick={handleCurrentWeek}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', marginLeft: '2px' }}
+              >
+                Today
+              </button>
             </div>
 
-            {/* Branch Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                <MapPin size={14} />
-                <span>Branch Filter:</span>
+            {/* Filters Bar: Search & Branch */}
+            <div className={styles.filterSection}>
+              {/* Search Bar */}
+              <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
+                <Search
+                  size={14}
+                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search staff by name or ID..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="form-input"
+                  style={{
+                    height: '36px',
+                    paddingLeft: '32px',
+                    paddingRight: search ? '28px' : '10px',
+                    fontSize: '12.5px',
+                    width: '100%',
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                  }}
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '2px',
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
-              <select
-                value={selectedBranchId}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-                className="form-input"
-                style={{
-                  height: '38px',
-                  padding: '6px 32px 6px 12px',
-                  fontSize: '13px',
-                  minWidth: '200px',
-                  color: '#ffffff',
-                  backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                  border: '1px solid var(--border-medium)',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+
+              {/* Branch Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <MapPin
+                    size={14}
+                    style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }}
+                  />
+                  <select
+                    value={selectedBranchId}
+                    onChange={(e) => setSelectedBranchId(e.target.value)}
+                    className="form-input"
+                    style={{
+                      height: '36px',
+                      padding: '4px 28px 4px 30px',
+                      fontSize: '12.5px',
+                      minWidth: '160px',
+                      color: '#ffffff',
+                      backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -306,7 +461,7 @@ export default function RosterCalendarPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rosterData.staffRows.map((staff) => (
+                    {filteredStaffRows.map((staff) => (
                       <tr key={staff.profileId}>
                         {/* Staff Member Cell */}
                         <td>
@@ -382,97 +537,154 @@ export default function RosterCalendarPage() {
 
               {/* MOBILE RESPONSIVE ROSTER */}
               <div className={styles.mobileRosterContainer}>
-                {/* Horizontal Day Tabs */}
-                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                {/* Horizontal Day Selector Tabs */}
+                <div className={styles.dayTabsContainer}>
                   {rosterData.days.map((d, idx) => {
                     const isSelected = mobileSelectedDateIdx === idx;
+                    const scheduledCount = rosterData.summary.scheduledCountByDay[d.date] || 0;
                     return (
                       <button
                         key={d.date}
                         onClick={() => setMobileSelectedDateIdx(idx)}
-                        style={{
-                          flex: 1,
-                          minWidth: '60px',
-                          padding: '8px 4px',
-                          borderRadius: '8px',
-                          border: isSelected ? '1px solid #4f46e5' : '1px solid var(--border-subtle)',
-                          backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'rgba(13, 18, 31, 0.8)',
-                          color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '2px',
-                          cursor: 'pointer',
-                        }}
+                        className={`${styles.dayTab} ${isSelected ? styles.dayTabSelected : ''}`}
                       >
-                        <span style={{ fontSize: '11px', fontWeight: 700 }}>{WEEKDAY_NAMES[d.weekday]}</span>
-                        <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)' }}>{d.date.slice(8)}</span>
+                        <span style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: isSelected ? '#a5b4fc' : 'var(--text-muted)' }}>
+                          {WEEKDAY_NAMES[d.weekday]}
+                        </span>
+                        <span style={{ fontSize: '13px', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                          {d.date.slice(8)}
+                        </span>
+                        {scheduledCount > 0 && (
+                          <span
+                            style={{
+                              fontSize: '9.5px',
+                              fontWeight: 700,
+                              padding: '1px 5px',
+                              borderRadius: '10px',
+                              backgroundColor: isSelected ? '#4f46e5' : 'rgba(255,255,255,0.1)',
+                              color: '#ffffff',
+                              marginTop: '2px',
+                            }}
+                          >
+                            {scheduledCount}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Selected Day Cards */}
+                {/* Selected Day Breakdown Cards */}
                 {rosterData.days[mobileSelectedDateIdx] && (
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>
-                        {WEEKDAY_NAMES[rosterData.days[mobileSelectedDateIdx].weekday]},{' '}
-                        {rosterData.days[mobileSelectedDateIdx].date}
-                      </h3>
+                      <div>
+                        <h3 style={{ fontSize: '14.5px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                          {WEEKDAY_NAMES[rosterData.days[mobileSelectedDateIdx].weekday]},{' '}
+                          {rosterData.days[mobileSelectedDateIdx].date}
+                        </h3>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {rosterData.summary.scheduledCountByDay[rosterData.days[mobileSelectedDateIdx].date] || 0} Scheduled Staff
+                        </span>
+                      </div>
                       <Link
                         href={`/${organizationCode}/admin/roster/${rosterData.days[mobileSelectedDateIdx].date}`}
                         className="btn btn-secondary btn-sm"
-                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                        style={{ fontSize: '11px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px' }}
                       >
-                        Day Breakdown
+                        <Eye size={12} />
+                        <span>Day Breakdown</span>
                       </Link>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {rosterData.staffRows.map((staff) => {
-                        const daySchedule = staff.days[mobileSelectedDateIdx];
-                        if (!daySchedule) return null;
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {filteredStaffRows.length === 0 ? (
+                        <div className="glass-card" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                          No matching staff found for &quot;{search}&quot;.
+                        </div>
+                      ) : (
+                        filteredStaffRows.map((staff) => {
+                          const daySchedule = staff.days[mobileSelectedDateIdx];
+                          if (!daySchedule) return null;
 
-                        return (
-                          <div
-                            key={staff.profileId}
-                            className="glass-card"
-                            style={{
-                              padding: '14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8', fontWeight: 700 }}>
-                                  {staff.staffId}
-                                </span>
-                                <strong style={{ color: '#ffffff', fontSize: '13.5px' }}>{staff.name}</strong>
-                              </div>
-                              {staff.branches.length > 0 && (
-                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                  {staff.branches.map((b) => b.name).join(', ')}
+                          return (
+                            <div
+                              key={staff.profileId}
+                              className="glass-card"
+                              style={{
+                                padding: '12px 14px',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '10px',
+                              }}
+                            >
+                              {/* Staff Info */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                {/* Line 1: Name + Staff ID */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <strong style={{ color: '#ffffff', fontSize: '13.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {staff.name}
+                                  </strong>
+                                  <span
+                                    style={{
+                                      fontFamily: 'var(--font-mono)',
+                                      fontSize: '10.5px',
+                                      fontWeight: 800,
+                                      padding: '1px 6px',
+                                      borderRadius: '4px',
+                                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                      color: '#818cf8',
+                                      border: '1px solid rgba(99, 102, 241, 0.25)',
+                                    }}
+                                  >
+                                    {staff.staffId}
+                                  </span>
                                 </div>
-                              )}
-                            </div>
 
-                            <div>
-                              {daySchedule.isScheduled && !daySchedule.isHoliday ? (
-                                <span className={styles.cellWorking}>
-                                  {daySchedule.startTime} – {daySchedule.endTime}
-                                </span>
-                              ) : daySchedule.isScheduled && daySchedule.isHoliday ? (
-                                <span className={styles.cellHoliday}>HOLIDAY</span>
-                              ) : (
-                                <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>No Shift</span>
-                              )}
+                                {/* Line 2: Branch Info */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                                  <MapPin size={11} style={{ flexShrink: 0 }} />
+                                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {staff.branches.length > 0 ? staff.branches.map((b) => b.name).join(', ') : 'All Branches'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Line 3 / Right: Shift Details */}
+                              <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                                <Link
+                                  href={`/${organizationCode}/admin/roster/${daySchedule.date}`}
+                                  style={{ textDecoration: 'none' }}
+                                >
+                                  {daySchedule.isScheduled && !daySchedule.isHoliday ? (
+                                    <div className={`${styles.cellWorking} ${daySchedule.isOvernight ? styles.cellOvernight : ''} ${daySchedule.hasOverride ? styles.cellOverride : ''}`}>
+                                      <span style={{ fontSize: '11.5px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                                        {daySchedule.startTime} – {daySchedule.endTime}
+                                      </span>
+                                      {daySchedule.isOvernight && (
+                                        <span style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '1px' }}>
+                                          <Moon size={9} />
+                                          <span>Overnight</span>
+                                        </span>
+                                      )}
+                                      {daySchedule.hasOverride && <span className={styles.overrideTag}>Override</span>}
+                                    </div>
+                                  ) : daySchedule.isScheduled && daySchedule.isHoliday ? (
+                                    <div className={`${styles.cellHoliday} ${daySchedule.hasOverride ? styles.cellOverride : ''}`}>
+                                      <span>HOLIDAY</span>
+                                      {daySchedule.hasOverride && <span className={styles.overrideTag}>Override</span>}
+                                    </div>
+                                  ) : (
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '11.5px', fontStyle: 'italic' }}>Off</span>
+                                  )}
+                                </Link>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 )}
@@ -487,3 +699,4 @@ export default function RosterCalendarPage() {
     </div>
   );
 }
+

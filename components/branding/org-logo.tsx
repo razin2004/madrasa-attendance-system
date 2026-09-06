@@ -31,7 +31,7 @@ export function OrgLogo({ logoUrl, name, size = 20, className, style }: OrgLogoP
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover',
+          objectFit: 'contain',
           display: 'block',
           ...style,
         }}

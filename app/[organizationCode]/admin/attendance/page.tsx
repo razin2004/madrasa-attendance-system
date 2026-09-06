@@ -149,7 +149,7 @@ export default function AdminAttendancePage() {
               }}
               title="Attendance Actions Menu"
             >
-              <Menu size={18} />
+              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
 
             {headerMenuOpen && (

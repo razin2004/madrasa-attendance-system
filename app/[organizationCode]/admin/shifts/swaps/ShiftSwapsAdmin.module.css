@@ -44,9 +44,23 @@
     padding: 12px 16px;
   }
   .title {
-    font-size: 17px;
+    font-size: 16px;
   }
   .subtitle {
     display: none;
   }
 }
+
+.filterScroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.filterScroll::-webkit-scrollbar {
+  display: none;
+}
+

@@ -466,18 +466,17 @@ export default function ShiftPatternDetailPage() {
                   {pattern.name}
                 </h1>
                 <span
+                  title={isActive ? 'Active' : 'Inactive'}
                   style={{
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    backgroundColor: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: isActive ? '#34d399' : '#f87171',
-                    border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    width: '9px',
+                    height: '9px',
+                    borderRadius: '50%',
+                    backgroundColor: isActive ? '#34d399' : '#f87171',
+                    boxShadow: isActive ? '0 0 8px #34d399' : 'none',
+                    display: 'inline-block',
+                    marginLeft: '2px',
                   }}
-                >
-                  {isActive ? 'ACTIVE' : 'INACTIVE'}
-                </span>
+                />
               </div>
               <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                 {pattern.description || 'Recurring weekly schedule configuration'}
@@ -492,7 +491,7 @@ export default function ShiftPatternDetailPage() {
               className={styles.menuTriggerBtn}
               title="Shift Pattern Actions & Options"
             >
-              <Menu size={20} />
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
             {menuOpen && (
@@ -590,32 +589,32 @@ export default function ShiftPatternDetailPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Section 1: Weekly Schedule Grid */}
             <div className="glass-card" style={{ padding: '28px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
-                    <Calendar size={18} />
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+                      <Calendar size={18} />
+                    </div>
+                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                      Weekly Working Schedule
+                    </h2>
                   </div>
-                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>
-                    Weekly Working Schedule
-                  </h2>
-                </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                    <ShieldCheck size={14} color="#38bdf8" />
-                    <span>Min Staff: <strong>{pattern.minimumStaffingThreshold}</strong></span>
-                  </div>
                   <button
                     onClick={() => {
                       initEditingDays(pattern.weeklyDays);
                       setScheduleModalOpen(true);
                     }}
                     className="btn btn-secondary btn-sm"
-                    style={{ fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    style={{ padding: '6px 8px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Edit Weekly Schedule"
                   >
-                    <Edit2 size={13} />
-                    <span>Edit Schedule</span>
+                    <Edit2 size={14} />
                   </button>
+                </div>
+
+                <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', paddingLeft: '42px' }}>
+                  Min Staff Required: <strong style={{ color: '#ffffff' }}>{pattern.minimumStaffingThreshold}</strong>
                 </div>
               </div>
 
@@ -671,24 +670,11 @@ export default function ShiftPatternDetailPage() {
                     <Users size={18} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                       Assigned Workforce ({pattern.assignments.length})
                     </h2>
                   </div>
                 </div>
-
-                <button
-                  onClick={() => {
-                    setConflictError(null);
-                    setAssignModalOpen(true);
-                  }}
-                  disabled={!isActive}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <Plus size={14} />
-                  <span>Assign Staff</span>
-                </button>
               </div>
 
               {pattern.assignments.length === 0 ? (
@@ -703,6 +689,9 @@ export default function ShiftPatternDetailPage() {
                     <div key={assignment.id} className={styles.staffItem}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
+                            {assignment.staffProfile.name}
+                          </span>
                           <span
                             style={{
                               fontFamily: 'var(--font-mono)',
@@ -716,21 +705,15 @@ export default function ShiftPatternDetailPage() {
                           >
                             {assignment.staffProfile.staffId}
                           </span>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>
-                            {assignment.staffProfile.name}
-                          </span>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                          <MapPin size={11} color="#38bdf8" />
                           <span>
-                            Effective: {assignment.effectiveFrom.slice(0, 10)} {assignment.effectiveTo ? `to ${assignment.effectiveTo.slice(0, 10)}` : '(Ongoing)'}
+                            {assignment.staffProfile.branchAssignments?.length > 0
+                              ? assignment.staffProfile.branchAssignments.map((b) => b.branch.name).join(', ')
+                              : 'Unassigned Branch'}
                           </span>
-                          {assignment.staffProfile.branchAssignments.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <MapPin size={11} color="#38bdf8" />
-                              <span>{assignment.staffProfile.branchAssignments.map((b) => b.branch.name).join(', ')}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
 

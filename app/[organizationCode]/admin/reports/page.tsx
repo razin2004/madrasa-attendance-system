@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Loader2,
   Menu,
+  X,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -27,6 +28,21 @@ export default function ReportsDashboardPage() {
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    if (headerMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [headerMenuOpen]);
 
   useEffect(() => {
     Promise.all([
@@ -52,15 +68,19 @@ export default function ReportsDashboardPage() {
       <div className={styles.mainContent}>
         {/* Header */}
         <header className={styles.headerBar} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 className={styles.title}>Reports &amp; Analytics</h1>
-            <p className={styles.subtitle}>
-              Review attendance, workforce coverage, leave, and operational activity across your organization.
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ color: '#38bdf8', fontSize: '14px', lineHeight: 1 }}>●</span>
+            <div>
+              <h1 className={styles.title}>Reports &amp; Analytics</h1>
+              <p className={styles.subtitle}>
+                Review attendance, workforce coverage, leave, and operational activity across your organization.
+              </p>
+            </div>
           </div>
 
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={headerMenuRef}>
             <button
+              type="button"
               onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
               className="btn btn-secondary btn-sm"
               style={{
@@ -78,33 +98,28 @@ export default function ReportsDashboardPage() {
               }}
               title="Reports & Analytics Menu"
             >
-              <Menu size={18} />
+              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
 
             {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    zIndex: 1000,
-                    minWidth: '220px',
-                    padding: '6px',
-                    backgroundColor: '#0d121f',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
-                  }}
-                >
+              <div
+                className="glass-card"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  zIndex: 1000,
+                  minWidth: '220px',
+                  padding: '6px',
+                  backgroundColor: '#0d121f',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                }}
+              >
                   <Link
                     href={`/${organizationCode}/admin/attendance`}
                     onClick={() => setHeaderMenuOpen(false)}
@@ -181,7 +196,6 @@ export default function ReportsDashboardPage() {
                     <span>Custom Range Report</span>
                   </Link>
                 </div>
-              </>
             )}
           </div>
         </header>

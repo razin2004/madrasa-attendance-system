@@ -16,22 +16,37 @@
 
 .headerBar,
 .header {
-  padding: 20px 32px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: rgba(13, 18, 31, 0.85);
+  background-color: rgba(13, 18, 31, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   position: sticky;
   top: 0;
   z-index: 50;
-  gap: 16px;
+  gap: 12px;
+}
+
+.headerMenuDropdown {
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.4px;
@@ -39,27 +54,27 @@
 }
 
 .subtitle {
-  font-size: 13px;
+  font-size: 11.5px;
   color: var(--text-secondary, #9ca3af);
   margin-top: 2px;
 }
 
 .metricsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-  margin: 24px 32px 0 32px;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  margin: 20px 32px 0 32px;
 }
 
 .metricCard {
-  padding: 16px;
+  padding: 12px 14px;
   border-radius: var(--radius-md, 12px);
   background: var(--bg-card, rgba(17, 24, 39, 0.65));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
 }
 
 .metricLabel {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--text-muted, #6b7280);
   text-transform: uppercase;
@@ -70,6 +85,14 @@
   font-weight: 800;
   color: #ffffff;
   margin-top: 2px;
+  font-family: var(--font-mono);
+}
+
+.payrollGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 20px 32px 0 32px;
 }
 
 .filterBar {
@@ -82,6 +105,13 @@
   margin-bottom: 20px;
 }
 
+.filterGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
 .filterItem {
   display: flex;
   align-items: center;
@@ -89,7 +119,7 @@
 }
 
 .filterLabel {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-muted, #6b7280);
 }
@@ -97,11 +127,11 @@
 .input, .select {
   height: 36px;
   padding: 0 10px;
-  border-radius: var(--radius-sm, 8px);
-  background-color: var(--bg-input, rgba(17, 24, 39, 0.8));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12.5px;
   outline: none;
 }
 
@@ -111,6 +141,7 @@
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
   background: var(--bg-card, rgba(17, 24, 39, 0.65));
   overflow-x: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .table {
@@ -124,7 +155,7 @@
   background-color: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
   color: var(--text-muted, #6b7280);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   text-align: left;
@@ -136,11 +167,61 @@
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
 }
 
+.desktopTableView {
+  display: block;
+}
+
+.mobileCardFeed {
+  display: none;
+}
+
+.reportCardItem {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.clockGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.clockLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  display: block;
+}
+
+.clockVal {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  display: block;
+  margin-top: 2px;
+}
+
 .sourceBadge {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   font-family: var(--font-mono, monospace);
 }
@@ -164,33 +245,39 @@
   display: inline-block;
   padding: 3px 10px;
   border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .statusPRESENT {
   background: rgba(16, 185, 129, 0.15);
   color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .statusPARTIAL {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .statusABSENT {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .statusAPPROVED_LEAVE, .statusLEAVE {
   background: rgba(168, 85, 247, 0.15);
   color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .statusHOLIDAY {
   background: rgba(255, 255, 255, 0.08);
   color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 @media (max-width: 768px) {
@@ -202,18 +289,20 @@
     justify-content: space-between;
   }
   .title {
-    font-size: 18px;
+    font-size: 17px;
   }
   .subtitle {
-    display: none;
+    display: block;
+    font-size: 11px;
   }
   .metricsGrid {
     grid-template-columns: repeat(4, 1fr);
     gap: 6px;
-    margin: 16px 14px 0 14px;
+    margin: 14px 16px 0 16px;
   }
   .metricCard {
-    padding: 8px 6px;
+    padding: 8px 4px;
+    text-align: center;
     border-radius: 8px;
   }
   .metricLabel {
@@ -224,19 +313,55 @@
     white-space: nowrap;
   }
   .metricValue {
-    font-size: 15px;
+    font-size: 16px;
     margin-top: 2px;
+  }
+  .payrollGrid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin: 14px 16px 0 16px;
   }
   .filterBar {
     flex-direction: column;
     align-items: stretch;
-    margin-left: 14px;
-    margin-right: 14px;
+    margin-left: 16px;
+    margin-right: 16px;
+    gap: 10px;
+  }
+  .filterGroup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .filterItem {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .filterLabel {
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+  .select, .input {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 36px;
+  }
+  .desktopTableView {
+    display: none;
+  }
+  .mobileCardFeed {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
   .tableCard {
-    margin-left: 14px;
-    margin-right: 14px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    margin-left: 16px;
+    margin-right: 16px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 }
+

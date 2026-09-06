@@ -182,20 +182,26 @@
     gap: 12px;
   }
   .title {
-    font-size: 18px;
+    font-size: 17px;
+    word-break: break-word;
+  }
+  .panelTitle {
+    font-size: 14.5px;
   }
   .gridTwoCol {
     grid-template-columns: 1fr;
     gap: 16px;
   }
   .panelCard {
-    padding: 16px;
+    padding: 14px;
+    overflow-x: hidden;
   }
   .mapPreviewContainer {
     height: 180px !important;
   }
   .coordinateValue {
     font-size: 12px !important;
+    word-break: break-all;
   }
 }
 
@@ -203,8 +209,11 @@
   .headerBar {
     padding: 10px 12px;
   }
+  .panelTitle {
+    font-size: 13.5px;
+  }
   .mapPreviewContainer {
-    height: 180px !important;
+    height: 170px !important;
   }
 }
 
