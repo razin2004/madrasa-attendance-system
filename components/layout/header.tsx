@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Shield, Building2, LogIn } from 'lucide-react';
+import { Building2, LogIn } from 'lucide-react';
 
 export function Header() {
   return (
@@ -10,10 +10,10 @@ export function Header() {
       style={{
         position: 'sticky',
         top: 0,
-        zIndex: 100,
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-        backgroundColor: 'rgba(3, 7, 18, 0.88)',
+        zIndex: 1000,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        backgroundColor: 'rgba(3, 7, 18, 0.92)',
         borderBottom: '1px solid var(--border-subtle)',
       }}
     >
@@ -95,8 +95,8 @@ export function Header() {
           </div>
         </Link>
 
-        {/* Action Buttons (Visible on both Desktop & Mobile) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Action Buttons (Visible on Desktop, hidden on mobile via .desktop-header-actions) */}
+        <div className="desktop-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link
             href="/login"
             className="btn btn-secondary btn-sm"

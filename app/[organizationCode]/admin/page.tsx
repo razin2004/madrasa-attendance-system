@@ -176,20 +176,36 @@ export default function OrgAdminLandingPage() {
     }
   }, [orgCode]);
 
-  // Greeting Generator
-  const greeting = (() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  })();
+  const [mounted, setMounted] = useState(false);
+  const [greeting, setGreeting] = useState('Welcome');
+  const [formattedDate, setFormattedDate] = useState('');
 
-  const formattedDate = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  useEffect(() => {
+    setMounted(true);
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 18) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+
+    setFormattedDate(
+      new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    );
+  }, []);
+
+  const formatDateSafely = (dateStr: any) => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+    } catch {
+      return '—';
+    }
+  };
 
   return (
     <div className={styles.layoutContainer}>
@@ -476,7 +492,7 @@ export default function OrgAdminLandingPage() {
                                 </span>
                               </td>
                               <td style={{ padding: '14px 20px', color: '#cbd5e1', fontSize: '12.5px' }}>
-                                {new Date(req.startDate).toLocaleDateString()} &ndash; {new Date(req.endDate).toLocaleDateString()}
+                                {formatDateSafely(req.startDate)} &ndash; {formatDateSafely(req.endDate)}
                                 <div style={{ fontSize: '11px', color: '#818cf8', fontWeight: 700 }}>({req.daysCount} {req.daysCount === 1 ? 'day' : 'days'})</div>
                               </td>
                               <td style={{ padding: '14px 20px', color: '#94a3b8', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -527,7 +543,7 @@ export default function OrgAdminLandingPage() {
                           </div>
 
                           <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
-                            📅 {new Date(req.startDate).toLocaleDateString()} – {new Date(req.endDate).toLocaleDateString()} ({req.daysCount} days)
+                            📅 {formatDateSafely(req.startDate)} – {formatDateSafely(req.endDate)} ({req.daysCount} days)
                           </div>
 
                           {req.reason && (

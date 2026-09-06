@@ -643,18 +643,22 @@ input[type="button"]:active:not(:disabled) {
 
 @media (max-width: 768px) {
   .tenant-brand-logo-box {
-    width: 40px !important;
-    height: 40px !important;
+    width: 48px !important;
+    height: 48px !important;
   }
   :root {
     --header-height: 56px;
   }
 
-  .container {
-    padding: 0 16px;
+  header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
   }
 
-
+  .desktop-header-actions {
+    display: none !important;
+  }
 
   /* Prevent iOS auto-zoom on input focus & enforce touch target height */
   .form-input,

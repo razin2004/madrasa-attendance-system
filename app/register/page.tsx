@@ -340,9 +340,6 @@ export default function RegisterOrganizationPage() {
         <div className="container" style={{ maxWidth: '640px' }}>
           {/* Header Banner */}
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <div style={{ margin: '0 auto 12px auto', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
-            </div>
             <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px' }}>
               Register your Organization
             </h1>

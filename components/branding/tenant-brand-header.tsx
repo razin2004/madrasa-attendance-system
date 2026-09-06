@@ -20,7 +20,7 @@ export function TenantBrandHeader({
 
   return (
     <div style={{ textAlign: 'center', marginBottom: '20px', width: '100%' }}>
-      {/* Auto-scaling Logo (40px on mobile via class, 56px default) */}
+      {/* Auto-scaling Logo Box */}
       <div
         className="tenant-brand-logo-box"
         style={{
@@ -36,6 +36,7 @@ export function TenantBrandHeader({
           overflow: 'hidden',
           boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
           position: 'relative',
+          padding: '6px',
         }}
       >
         {logoUrl && !imgFailed ? (
@@ -43,16 +44,30 @@ export function TenantBrandHeader({
             src={logoUrl}
             alt={`${orgName} Logo`}
             style={{
-              width: '100%',
-              height: '100%',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
               objectFit: 'contain',
-              padding: '6px',
               display: 'block',
+              margin: 'auto',
             }}
             onError={() => setImgFailed(true)}
           />
         ) : (
-          <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+          <img
+            src="/logo.svg"
+            alt="ShiftGuard Attendance Logo"
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              display: 'block',
+              margin: 'auto',
+            }}
+          />
         )}
       </div>
 
