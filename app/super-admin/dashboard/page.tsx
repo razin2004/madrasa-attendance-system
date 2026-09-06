@@ -38,6 +38,13 @@ import {
   Sparkles,
   UserCheck,
   LayoutDashboard,
+  Edit3,
+  ShieldAlert,
+  Menu,
+  Settings,
+  Activity,
+  LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface Organization {
@@ -93,6 +100,8 @@ export default function SuperAdminDashboardPage() {
   const [hasError, setHasError] = useState(false);
   const [adminEmail, setAdminEmail] = useState('Super Admin');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
 
   // Governance Action Modals
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
@@ -361,7 +370,12 @@ export default function SuperAdminDashboardPage() {
       <div className={styles.mainContent}>
         {/* Top Header Bar */}
         <header className={styles.headerBar}>
-          <div>
+          <div className={styles.headerMobileTitleGroup}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className={styles.headerSuperAdminBadge}>
+                <Shield size={11} /> Super Admin
+              </span>
+            </div>
             <h1 className={styles.headerTitle}>Platform Governance</h1>
             <p className={styles.headerSubtitle}>
               Monitor organization accounts, approvals, staff profiles, and branch metrics.
@@ -390,8 +404,20 @@ export default function SuperAdminDashboardPage() {
               <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
               <span>Refresh</span>
             </button>
+
+            {/* Mobile Hamburger Drawer Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className={styles.hamburgerBtn}
+              title="Control Panel"
+              aria-label="Control Panel"
+            >
+              <Menu size={20} />
+            </button>
           </div>
         </header>
+
 
         {/* Dashboard Body */}
         <main style={{ padding: '24px', flex: 1 }}>
@@ -789,30 +815,59 @@ export default function SuperAdminDashboardPage() {
                           <div key={org.id} className={styles.mobileOrgCard}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden' }}>
+                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
                                   <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
                                 </div>
-                                <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>{org.name}</span>
+                                <div>
+                                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{org.name}</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                    Contact: {org.contactPersonName || org.contactEmail}
+                                  </div>
+                                </div>
                               </div>
                               <span className="badge badge-pending">PENDING</span>
                             </div>
-                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                              <strong>Contact:</strong> {org.contactPersonName} ({org.contactEmail})
+
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                              <div style={{ flex: 1, padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Branches</div>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>{org._count?.branches || 0}</div>
+                              </div>
+                              <div style={{ flex: 1, padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(192, 132, 252, 0.08)', border: '1px solid rgba(192, 132, 252, 0.2)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Active Staff</div>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#c084fc', marginTop: '2px' }}>{org._count?.staffProfiles || 0}</div>
+                              </div>
                             </div>
-                            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-                              <strong>Submitted:</strong> {new Date(org.createdAt).toLocaleDateString()}
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('VIEW'); }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="View Details"
+                                aria-label="View Details"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button
+                                onClick={() => { setSelectedOrg(org); handleApprove(); }}
+                                className="btn btn-success btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="Approve Organization"
+                                aria-label="Approve Organization"
+                              >
+                                <Check size={16} />
+                              </button>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('REJECT'); }}
+                                className="btn btn-danger btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="Reject Application"
+                                aria-label="Reject Application"
+                              >
+                                <X size={16} />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => {
-                                setSelectedOrg(org);
-                                setActionType('VIEW');
-                              }}
-                              className="btn btn-secondary btn-sm"
-                              style={{ width: '100%' }}
-                            >
-                              <Eye size={14} />
-                              <span>Details</span>
-                            </button>
                           </div>
                         ))}
                       </div>
@@ -979,42 +1034,67 @@ export default function SuperAdminDashboardPage() {
                           <div key={org.id} className={styles.mobileOrgCard}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden' }}>
+                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
                                   <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
                                 </div>
                                 <div>
                                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{org.name}</div>
-                                  <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#38bdf8', fontWeight: 700 }}>
-                                    CODE: {org.organizationCode}
-                                  </span>
+                                  {org.organizationCode && (
+                                    <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#38bdf8', fontWeight: 700 }}>
+                                      CODE: {org.organizationCode}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <span className="badge badge-active">ACTIVE</span>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', backgroundColor: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-                              <div style={{ flex: 1, fontSize: '12.5px', color: '#38bdf8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <MapPin size={14} /> {org._count?.branches || 0} Branches
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                              <div style={{ flex: 1, padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Branches</div>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>{org._count?.branches || 0}</div>
                               </div>
-                              <div style={{ flex: 1, fontSize: '12.5px', color: '#c084fc', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Users size={14} /> {org._count?.staffProfiles || 0} Staff
+                              <div style={{ flex: 1, padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(192, 132, 252, 0.08)', border: '1px solid rgba(192, 132, 252, 0.2)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Active Staff</div>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#c084fc', marginTop: '2px' }}>{org._count?.staffProfiles || 0}</div>
                               </div>
                             </div>
 
-                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-                              Contact: {org.contactPersonName} ({org.contactEmail})
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('VIEW'); }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="View Details"
+                                aria-label="View Details"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedOrg(org);
+                                  setNewAdminName(org.contactPersonName || '');
+                                  setNewAdminEmail(org.contactEmail || '');
+                                  setNewAdminPhone(org.phone || '');
+                                  setIsChangeAdminModalOpen(true);
+                                }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="Edit Admin"
+                                aria-label="Edit Admin"
+                              >
+                                <Edit3 size={16} />
+                              </button>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('DEACTIVATE'); }}
+                                className="btn btn-warning btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="Deactivate Organization"
+                                aria-label="Deactivate Organization"
+                              >
+                                <ShieldAlert size={16} />
+                              </button>
                             </div>
-
-                            <button
-                              onClick={() => {
-                                setSelectedOrg(org);
-                                setActionType('VIEW');
-                              }}
-                              className="btn btn-secondary btn-sm"
-                              style={{ width: '100%' }}
-                            >
-                              <Eye size={14} /> Details
-                            </button>
                           </div>
                         ))}
                       </div>
@@ -1141,7 +1221,7 @@ export default function SuperAdminDashboardPage() {
                           <div key={org.id} className={styles.mobileOrgCard}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden' }}>
+                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
                                   <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
                                 </div>
                                 <div>
@@ -1152,20 +1232,50 @@ export default function SuperAdminDashboardPage() {
                               <span className="badge badge-danger">SUSPENDED</span>
                             </div>
 
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                              <div style={{ flex: 1, padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Branches</div>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>{org._count?.branches || 0}</div>
+                              </div>
+                              <div style={{ flex: 1, padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(192, 132, 252, 0.08)', border: '1px solid rgba(192, 132, 252, 0.2)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Active Staff</div>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#c084fc', marginTop: '2px' }}>{org._count?.staffProfiles || 0}</div>
+                              </div>
+                            </div>
+
                             <div style={{ fontSize: '12.5px', color: '#f87171', marginBottom: '12px', padding: '8px 12px', backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRadius: '6px' }}>
                               Reason: {org.rejectionReason || 'Deactivated by Super Admin'}
                             </div>
 
-                            <button
-                              onClick={() => {
-                                setSelectedOrg(org);
-                                setActionType('VIEW');
-                              }}
-                              className="btn btn-secondary btn-sm"
-                              style={{ width: '100%' }}
-                            >
-                              <Eye size={14} /> Details
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('VIEW'); }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="View Details"
+                                aria-label="View Details"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('ACTIVATE'); }}
+                                className="btn btn-success btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="Reactivate Organization"
+                                aria-label="Reactivate Organization"
+                              >
+                                <Power size={16} />
+                              </button>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('DELETE'); }}
+                                className="btn btn-danger btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="Delete Organization"
+                                aria-label="Delete Organization"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1182,71 +1292,124 @@ export default function SuperAdminDashboardPage() {
                       <p style={{ color: 'var(--text-secondary)' }}>No rejected applications.</p>
                     </div>
                   ) : (
-                    <div className="table-container glass-card">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                              Organization
-                            </th>
-                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                              Primary Contact
-                            </th>
-                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                              Rejection Reason
-                            </th>
-                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                              Status
-                            </th>
-                            <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
-                              Action
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rejectedOrgs.map((org) => (
-                            <tr key={org.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                              <td style={{ padding: '16px 20px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
-                                    <OrgLogo logoUrl={org.logoUrl} name={org.name} size={20} />
-                                  </div>
-                                  <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '14.5px' }}>{org.name}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: '16px 20px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
-                                  <User size={13} color="var(--text-muted)" />
-                                  <span>{org.contactPersonName || 'N/A'}</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
-                                  <Mail size={12} color="var(--text-muted)" />
-                                  <span>{org.contactEmail || 'N/A'}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: '16px 20px', color: 'var(--danger-text)', fontSize: '13px' }}>
-                                {org.rejectionReason || 'No reason specified'}
-                              </td>
-                              <td style={{ padding: '16px 20px' }}>
-                                <span className="badge badge-rejected">REJECTED</span>
-                              </td>
-                              <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                                <button
-                                  onClick={() => {
-                                    setSelectedOrg(org);
-                                    setActionType('VIEW');
-                                  }}
-                                  className="btn btn-secondary btn-sm"
-                                >
-                                  <Eye size={14} />
-                                  <span>Details</span>
-                                </button>
-                              </td>
+                    <>
+                      <div className={`table-container glass-card ${styles.tableContainerDesktop}`}>
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Organization
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Primary Contact
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Rejection Reason
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                Status
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '11.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>
+                                Action
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {rejectedOrgs.map((org) => (
+                              <tr key={org.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                                      <OrgLogo logoUrl={org.logoUrl} name={org.name} size={20} />
+                                    </div>
+                                    <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '14.5px' }}>{org.name}</span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+                                    <User size={13} color="var(--text-muted)" />
+                                    <span>{org.contactPersonName || 'N/A'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                                    <Mail size={12} color="var(--text-muted)" />
+                                    <span>{org.contactEmail || 'N/A'}</span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '16px 20px', color: 'var(--danger-text)', fontSize: '13px' }}>
+                                  {org.rejectionReason || 'No reason specified'}
+                                </td>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <span className="badge badge-rejected">REJECTED</span>
+                                </td>
+                                <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrg(org);
+                                      setActionType('VIEW');
+                                    }}
+                                    className="btn btn-secondary btn-sm"
+                                  >
+                                    <Eye size={14} />
+                                    <span>Details</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile View */}
+                      <div className={styles.mobileCardList}>
+                        {rejectedOrgs.map((org) => (
+                          <div key={org.id} className={styles.mobileOrgCard}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                                  <OrgLogo logoUrl={org.logoUrl} name={org.name} size={18} />
+                                </div>
+                                <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{org.name}</span>
+                              </div>
+                              <span className="badge badge-rejected">REJECTED</span>
+                            </div>
+
+                            <div style={{ fontSize: '12.5px', color: '#f87171', marginBottom: '12px', padding: '8px 12px', backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRadius: '6px' }}>
+                              Reason: {org.rejectionReason || 'No reason specified'}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('VIEW'); }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="View Details"
+                                aria-label="View Details"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('ACTIVATE'); }}
+                                className="btn btn-success btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="Re-evaluate / Activate"
+                                aria-label="Re-evaluate / Activate"
+                              >
+                                <RefreshCw size={16} />
+                              </button>
+                              <button
+                                onClick={() => { setSelectedOrg(org); setActionType('DELETE'); }}
+                                className="btn btn-danger btn-sm"
+                                style={{ padding: '8px 12px' }}
+                                title="Delete Organization"
+                                aria-label="Delete Organization"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -1925,6 +2088,108 @@ export default function SuperAdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Mobile Slide-Over Control Panel Drawer */}
+      {isMobileDrawerOpen && (
+        <div className={styles.mobileDrawerOverlay} onClick={() => setIsMobileDrawerOpen(false)}>
+          <div className={styles.mobileControlDrawer} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ShieldCheck size={22} color="#818cf8" />
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                  Control Panel
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsMobileDrawerOpen(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Authenticated Account Info Card */}
+            <div
+              style={{
+                padding: '14px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                marginBottom: '20px',
+              }}
+            >
+              <div style={{ fontSize: '11px', color: '#818cf8', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>
+                Authenticated Account
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', wordBreak: 'break-all' }}>
+                {adminEmail}
+              </div>
+              <span className="badge badge-info" style={{ marginTop: '8px', fontSize: '10px' }}>
+                Platform Super Admin
+              </span>
+            </div>
+
+            {/* Navigation & Control Action Items */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
+              <button
+                onClick={() => {
+                  toast.info('Global system configuration & feature flags are active.');
+                  setIsMobileDrawerOpen(false);
+                }}
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '12px 16px', width: '100%' }}
+              >
+                <Settings size={18} color="#38bdf8" />
+                <span>Global Settings</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('history');
+                  setIsMobileDrawerOpen(false);
+                }}
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '12px 16px', width: '100%' }}
+              >
+                <History size={18} color="#c084fc" />
+                <span>Audit Logs ({auditLogs.length})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  toast.success('All core services, database, & authentication services are operational.');
+                  setIsMobileDrawerOpen(false);
+                }}
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '12px 16px', width: '100%' }}
+              >
+                <Activity size={18} color="#34d399" />
+                <span>System Health</span>
+              </button>
+            </div>
+
+            {/* Drawer Footer: Logout */}
+            <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-subtle)', marginTop: 'auto' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                  } catch (e) {
+                    // Ignore
+                  }
+                  router.push('/super-admin/login');
+                }}
+                className="btn btn-danger"
+                style={{ width: '100%', justifyContent: 'center', gap: '8px' }}
+              >
+                <LogOut size={16} />
+                <span>Sign Out / Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

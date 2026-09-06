@@ -22,11 +22,14 @@ import {
   HelpCircle,
   Menu,
   RefreshCw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { useToast } from '@/components/feedback/toast-provider';
 import { OrgLogo } from '@/components/branding/org-logo';
+import styles from './AdminSettings.module.css';
 
 export default function AdminSettingsPage() {
   const params = useParams();
@@ -38,6 +41,17 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [orgData, setOrgData] = useState<any>(null);
+
+  // Mobile Accordion State
+  const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
+    identity: true,
+    rules: true,
+    contact: true,
+  });
+
+  const toggleSection = (key: string) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // Form State
   const [name, setName] = useState('');
@@ -361,206 +375,224 @@ export default function AdminSettingsPage() {
         ) : (
           <form onSubmit={handleSubmit}>
             {/* BRANDING LOGO & IDENTITY CARD */}
-            <div className="glass-card" style={{ padding: '28px', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Building2 size={18} color="#38bdf8" />
-                <span>Organization Identity &amp; Logo</span>
-              </h2>
-
-              {/* Logo Preview & Uploader Box */}
-              <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginBottom: '24px', padding: '20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '16px', backgroundColor: '#0d121f', border: '2px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-                  <OrgLogo logoUrl={logoUrl} name={name || 'Organization Logo'} size={36} />
-                  {uploadingLogo && (
-                    <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Loader2 size={24} className="animate-spin text-indigo-400" />
-                    </div>
-                  )}
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader} onClick={() => toggleSection('identity')}>
+                <div className={styles.sectionHeaderTitle}>
+                  <Building2 size={18} color="#38bdf8" />
+                  <span>Organization Identity &amp; Logo</span>
                 </div>
-
-                <div style={{ flex: 1, minWidth: '220px' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff' }}>{name || 'Organization Name'}</div>
-                  <div style={{ fontSize: '12px', color: '#38bdf8', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                    Workspace Code: {organizationCode}
-                  </div>
-
-                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      accept="image/png, image/jpeg, image/webp, image/svg+xml"
-                      style={{ display: 'none' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingLogo}
-                      className="btn btn-secondary btn-sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
-                    >
-                      <Upload size={14} />
-                      <span>{logoUrl ? 'Change Logo Image' : 'Upload Logo Image'}</span>
-                    </button>
-                    {logoUrl && (
-                      <span style={{ fontSize: '11.5px', color: '#34d399', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <CheckCircle2 size={13} /> Logo Uploaded
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                    Supported formats: PNG, JPG, WEBP, SVG (Max 2MB).
-                  </div>
+                <div className={styles.accordionChevron}>
+                  {openSections.identity ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
               </div>
 
-              {/* READONLY ORGANIZATION NAME */}
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label className="form-label" style={{ margin: 0 }}>
-                    Organization Name (Read-Only)
-                  </label>
-                  <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10.5px' }}>
-                    <Lock size={11} /> Locked after approval
-                  </span>
+              <div className={`${styles.sectionBody} ${!openSections.identity ? styles.sectionBodyHidden : ''}`}>
+                {/* Logo Preview & Uploader Box */}
+                <div className={styles.logoUploaderBox}>
+                  <div className={styles.logoPreview}>
+                    <OrgLogo logoUrl={logoUrl} name={name || 'Organization Logo'} size={36} />
+                    {uploadingLogo && (
+                      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Loader2 size={24} className="animate-spin text-indigo-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: '200px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff' }}>{name || 'Organization Name'}</div>
+                    <div style={{ fontSize: '12px', color: '#38bdf8', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+                      Workspace Code: {organizationCode}
+                    </div>
+
+                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingLogo}
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}
+                      >
+                        <Upload size={14} />
+                        <span>{logoUrl ? 'Change Logo' : 'Upload Logo'}</span>
+                      </button>
+                      {logoUrl && (
+                        <span style={{ fontSize: '11.5px', color: '#34d399', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle2 size={13} /> Logo Uploaded
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={name}
-                    readOnly
-                    disabled
-                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', color: 'var(--text-muted)', cursor: 'not-allowed', paddingRight: '40px' }}
-                  />
-                  <Lock size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '14px', top: '12px' }} />
+
+                {/* READONLY ORGANIZATION NAME */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>
+                      Organization Name (Read-Only)
+                    </label>
+                    <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10.5px' }}>
+                      <Lock size={11} /> Locked
+                    </span>
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={name}
+                      readOnly
+                      disabled
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', color: 'var(--text-muted)', cursor: 'not-allowed', paddingRight: '40px' }}
+                    />
+                    <Lock size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '14px', top: '12px' }} />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* DEFAULT WORKSPACE SETTINGS */}
-            <div className="glass-card" style={{ padding: '28px', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Compass size={18} color="#c084fc" />
-                <span>Default Workspace Rules &amp; Limits</span>
-              </h2>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
-                <div className="form-group">
-                  <label className="form-label">Default Geofence Radius (Meters)</label>
-                  <input
-                    type="number"
-                    min={20}
-                    max={1000}
-                    className="form-input"
-                    value={defaultGeofenceRadius}
-                    onChange={(e) => setDefaultGeofenceRadius(Number(e.target.value))}
-                  />
-                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Default allowed GPS distance perimeter for branch clock-in verification.
-                  </p>
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader} onClick={() => toggleSection('rules')}>
+                <div className={styles.sectionHeaderTitle}>
+                  <Compass size={18} color="#c084fc" />
+                  <span>Default Workspace Rules &amp; Limits</span>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Daily Attendance Cycle Limit</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={5}
-                    className="form-input"
-                    value={defaultMaxDailyCycles}
-                    onChange={(e) => setDefaultMaxDailyCycles(Number(e.target.value))}
-                  />
-                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    1 Cycle = 1 Clock In &amp; 1 Clock Out session per workday.
-                  </p>
+                <div className={styles.accordionChevron}>
+                  {openSections.rules ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
+              </div>
 
-                <div className="form-group">
-                  <label className="form-label">Attendance Correction Request Window (Days)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    className="form-input"
-                    value={attendanceCorrectionWindowDays}
-                    onChange={(e) => setAttendanceCorrectionWindowDays(Number(e.target.value))}
-                  />
-                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Staff can request attendance correction up to this many days after punch date.
-                  </p>
+              <div className={`${styles.sectionBody} ${!openSections.rules ? styles.sectionBodyHidden : ''}`}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Default Geofence Radius (Meters)</label>
+                    <input
+                      type="number"
+                      min={20}
+                      max={1000}
+                      className="form-input"
+                      value={defaultGeofenceRadius}
+                      onChange={(e) => setDefaultGeofenceRadius(Number(e.target.value))}
+                    />
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Default allowed GPS distance perimeter for branch clock-in verification.
+                    </p>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Daily Attendance Cycle Limit</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={5}
+                      className="form-input"
+                      value={defaultMaxDailyCycles}
+                      onChange={(e) => setDefaultMaxDailyCycles(Number(e.target.value))}
+                    />
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      1 Cycle = 1 Clock In &amp; 1 Clock Out session per workday.
+                    </p>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Attendance Correction Window (Days)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      className="form-input"
+                      value={attendanceCorrectionWindowDays}
+                      onChange={(e) => setAttendanceCorrectionWindowDays(Number(e.target.value))}
+                    />
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Staff can request attendance correction up to this many days after punch date.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* CONTACT & ADMINISTRATIVE PROFILE */}
-            <div className="glass-card" style={{ padding: '28px', marginBottom: '28px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={18} color="#34d399" />
-                <span>Contact Profiles &amp; Administrative Email</span>
-              </h2>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div className="form-group">
-                  <label className="form-label">Contact Person Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={contactPersonName}
-                    onChange={(e) => setContactPersonName(e.target.value)}
-                    placeholder="Administrator full name"
-                  />
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader} onClick={() => toggleSection('contact')}>
+                <div className={styles.sectionHeaderTitle}>
+                  <User size={18} color="#34d399" />
+                  <span>Contact Profiles &amp; Administrative Email</span>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Contact Phone</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+1 555-0199"
-                  />
+                <div className={styles.accordionChevron}>
+                  {openSections.contact ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
               </div>
 
-              {/* CONTACT EMAIL WITH DUAL OTP VERIFICATION TRIGGER */}
-              <div className="form-group" style={{ marginBottom: 0, marginTop: '10px' }}>
-                <label className="form-label">Official Contact Email</label>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <input
-                    type="email"
-                    className="form-input"
-                    value={contactEmail}
-                    readOnly
-                    disabled
-                    style={{ flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.03)', color: '#ffffff' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewEmail('');
-                      setOldEmailOtp('');
-                      setNewEmailOtp('');
-                      setModalError(null);
-                      setOtpStep('ENTER_NEW_EMAIL');
-                      setShowEmailModal(true);
-                    }}
-                    className="btn btn-secondary btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-                  >
-                    <Mail size={14} />
-                    <span>Change Email (Dual OTP)</span>
-                  </button>
+              <div className={`${styles.sectionBody} ${!openSections.contact ? styles.sectionBodyHidden : ''}`}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Contact Person Name</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={contactPersonName}
+                      onChange={(e) => setContactPersonName(e.target.value)}
+                      placeholder="Administrator full name"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Contact Phone</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+1 555-0199"
+                    />
+                  </div>
                 </div>
-                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                  Security policy: Verification codes will be sent to BOTH your current email and new email. Both OTPs are required to complete the change.
-                </p>
+
+                {/* CONTACT EMAIL WITH DUAL OTP VERIFICATION TRIGGER */}
+                <div className="form-group" style={{ marginBottom: 0, marginTop: '10px' }}>
+                  <label className="form-label">Official Contact Email</label>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={contactEmail}
+                      readOnly
+                      disabled
+                      style={{ flex: 1, minWidth: '180px', backgroundColor: 'rgba(255, 255, 255, 0.03)', color: '#ffffff' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewEmail('');
+                        setOldEmailOtp('');
+                        setNewEmailOtp('');
+                        setModalError(null);
+                        setOtpStep('ENTER_NEW_EMAIL');
+                        setShowEmailModal(true);
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+                    >
+                      <Mail size={14} />
+                      <span>Change Email (Dual OTP)</span>
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                    Security policy: Verification codes will be sent to BOTH your current email and new email.
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Submit Action */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            {/* Sticky Submit Action Bar */}
+            <div className={styles.submitBar}>
               <button
                 type="submit"
                 disabled={saving}

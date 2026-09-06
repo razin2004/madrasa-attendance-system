@@ -131,23 +131,25 @@ export default function StaffApplyLeavePage() {
             </div>
           </div>
 
-          {/* Section 2: Date Range */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+          {/* Section 2: Date Range Side-by-Side 2-Col Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '20px' }}>
             <div className="form-group">
-              <label className="form-label">Start Date *</label>
+              <label className="form-label" style={{ fontSize: '12.5px', marginBottom: '4px' }}>Start Date *</label>
               <input
                 type="date"
                 className="form-input"
+                style={{ fontSize: '13px', padding: '8px 10px', width: '100%' }}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">End Date *</label>
+              <label className="form-label" style={{ fontSize: '12.5px', marginBottom: '4px' }}>End Date *</label>
               <input
                 type="date"
                 className="form-input"
+                style={{ fontSize: '13px', padding: '8px 10px', width: '100%' }}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />

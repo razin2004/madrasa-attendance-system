@@ -210,6 +210,14 @@ export default function RosterDayDetailPage() {
             </div>
           ) : (
             <>
+              {/* Conflict Warning Alert */}
+              {data.counts.workingStaff === 0 && (
+                <div style={{ padding: '12px 14px', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertTriangle size={16} color="#f87171" style={{ flexShrink: 0 }} />
+                  <span><strong style={{ color: '#ffffff' }}>Staffing Conflict Warning:</strong> Zero staff are scheduled for duty on {data.weekday}, {dateStr}. Consider assigning staff or adjusting shift patterns.</span>
+                </div>
+              )}
+
               {/* Metrics Grid */}
               <div className={styles.metricsGrid}>
                 <div className="glass-card" style={{ padding: '18px', borderLeft: '3px solid #818cf8' }}>

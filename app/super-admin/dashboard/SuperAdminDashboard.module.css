@@ -17,7 +17,7 @@
 .headerBar {
   height: 72px;
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  background-color: rgba(13, 18, 31, 0.85);
+  background-color: rgba(13, 18, 31, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   display: flex;
@@ -26,7 +26,7 @@
   padding: 0 28px;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 40;
   gap: 16px;
 }
 
@@ -48,6 +48,47 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.headerMobileTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.headerSuperAdminBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.hamburgerBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.hamburgerBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-medium);
 }
 
 .searchInputWrapper {
@@ -149,32 +190,123 @@
 .mobileCardList {
   display: none;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .mobileOrgCard {
-  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+  background: var(--bg-card, rgba(17, 24, 39, 0.75));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
   border-radius: var(--radius-md, 12px);
-  padding: 20px;
+  padding: 14px 12px;
+}
+
+/* Mobile Slide-Over Control Panel Drawer */
+.mobileDrawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.mobileControlDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  max-width: 85vw;
+  background-color: #0b0f19;
+  border-left: 1px solid var(--border-medium, rgba(255, 255, 255, 0.16));
+  z-index: 100000;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (max-width: 768px) {
   .headerBar {
-    padding: 0 16px;
+    padding: 12px 14px;
     height: auto;
-    min-height: 64px;
-    flex-wrap: wrap;
-    padding-top: 12px;
-    padding-bottom: 12px;
+    min-height: 56px;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
   }
+
+  .hamburgerBtn {
+    display: flex !important;
+  }
+
   .searchInputWrapper {
-    width: 100%;
+    display: none !important;
   }
+
   .tableContainerDesktop {
-    display: none;
+    display: none !important;
   }
+
   .mobileCardList {
-    display: flex;
+    display: flex !important;
+  }
+
+  /* 4-in-a-Row KPI Micro-Card Grid on Mobile */
+  .metricsGrid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .metricCard {
+    padding: 8px 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .metricCardHeader {
+    margin-bottom: 4px !important;
+  }
+
+  .metricIconBox {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 6px !important;
+  }
+
+  .metricIconBox svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .metricTitle {
+    font-size: 10px !important;
+    letter-spacing: 0px !important;
+    color: var(--text-muted, #6b7280) !important;
+    text-transform: uppercase !important;
+  }
+
+  .metricValue {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    margin-bottom: 0px !important;
+  }
+
+  .metricDescription {
+    display: none !important;
   }
 }
+

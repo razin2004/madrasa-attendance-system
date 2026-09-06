@@ -324,6 +324,33 @@
   color: #ef4444;
 }
 
+.techValue {
+  word-break: break-all !important;
+  overflow-wrap: anywhere !important;
+  max-width: 100% !important;
+}
+
+.deviceCard {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.deviceActionRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 @media (max-width: 768px) {
   .headerBar {
     padding: 12px 16px;
@@ -339,11 +366,23 @@
   .panelCard {
     padding: 16px;
   }
+  .deviceActionRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .deviceActionRow > button {
+    width: 100% !important;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
   .headerBar {
     padding: 10px 12px;
+  }
+  .deviceCard {
+    padding: 14px;
   }
 }
 

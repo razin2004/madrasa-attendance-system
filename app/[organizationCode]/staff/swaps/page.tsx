@@ -335,16 +335,18 @@ export default function StaffShiftSwapsPage() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#38bdf8', fontWeight: 700 }}>
-                            <Calendar size={16} />
-                            <span>Shift Date: {targetDateFormatted}</span>
+                        {/* Side-by-Side Shift Comparison Mini-Boxes */}
+                        <div className={styles.swapComparisonGrid}>
+                          <div className={styles.swapMiniBox}>
+                            <div className={styles.swapMiniBoxTitle}>Colleague's Shift</div>
+                            <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
+                            <div style={{ fontSize: '11px', color: '#a5b4fc', marginTop: '2px' }}>{req.shiftPatternName || 'Scheduled Shift'}</div>
                           </div>
-                          {req.shiftPatternName && (
-                            <div style={{ fontSize: '13px', color: '#a5b4fc', fontWeight: 600 }}>
-                              Shift: {req.shiftPatternName}
-                            </div>
-                          )}
+                          <div className={styles.swapMiniBox}>
+                            <div className={styles.swapMiniBoxTitle}>My Assigned Shift</div>
+                            <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
+                            <div style={{ fontSize: '11px', color: '#34d399', marginTop: '2px' }}>Offered for Swap</div>
+                          </div>
                         </div>
 
                         {req.reason && (
@@ -453,16 +455,18 @@ export default function StaffShiftSwapsPage() {
                           </span>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#38bdf8', fontWeight: 700 }}>
-                            <Calendar size={16} />
-                            <span>Shift Date: {targetDateFormatted}</span>
+                        {/* Side-by-Side Shift Comparison Mini-Boxes */}
+                        <div className={styles.swapComparisonGrid}>
+                          <div className={styles.swapMiniBox}>
+                            <div className={styles.swapMiniBoxTitle}>My Current Shift</div>
+                            <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
+                            <div style={{ fontSize: '11px', color: '#38bdf8', marginTop: '2px' }}>{req.shiftPatternName || 'Scheduled Shift'}</div>
                           </div>
-                          {req.shiftPatternName && (
-                            <div style={{ fontSize: '13px', color: '#a5b4fc', fontWeight: 600 }}>
-                              Shift: {req.shiftPatternName}
-                            </div>
-                          )}
+                          <div className={styles.swapMiniBox}>
+                            <div className={styles.swapMiniBoxTitle}>Target Cover Shift</div>
+                            <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
+                            <div style={{ fontSize: '11px', color: '#c084fc', marginTop: '2px' }}>Requested Coverage</div>
+                          </div>
                         </div>
 
                         {/* Recipients List Pills */}

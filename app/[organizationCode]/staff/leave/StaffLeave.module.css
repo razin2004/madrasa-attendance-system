@@ -128,17 +128,26 @@
   }
 
   .balanceGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
   }
 
   .balanceCard {
-    padding: 12px 14px;
-    border-radius: 12px;
+    padding: 10px 8px;
+    border-radius: 10px;
+    text-align: center;
   }
 
   .balanceVal {
-    font-size: 24px;
+    font-size: 18px;
+  }
+
+  .balanceLabel {
+    font-size: 10px;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .filterBar button {

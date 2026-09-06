@@ -127,10 +127,10 @@ export default function CommonLoginPage() {
       <div className={styles.wrapper}>
         {/* ShiftGuard Branding Header */}
         <div className={styles.header}>
-          <div className={styles.logoContainer}>
-            <Shield size={28} color="#ffffff" />
+          <div className={styles.logoContainer} style={{ background: 'transparent', border: 'none' }}>
+            <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
           </div>
-          <h1 className={styles.title}>ShiftGuard</h1>
+          <h1 className={styles.title}>Shift<span style={{ color: '#38bdf8' }}>Guard</span></h1>
           <p className={styles.subtitle}>Sign in to access your account workspace</p>
         </div>
 

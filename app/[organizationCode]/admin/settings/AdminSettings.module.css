@@ -1,0 +1,162 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: 80px;
+}
+
+.headerBar {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(13, 18, 31, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin-bottom: 28px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
+.sectionCard {
+  background: rgba(17, 24, 39, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.sectionHeader {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.sectionHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.accordionChevron {
+  display: none;
+  color: #818cf8;
+}
+
+.sectionBody {
+  margin-top: 20px;
+}
+
+.logoUploaderBox {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  flex-wrap: wrap;
+}
+
+.logoPreview {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background-color: #0d121f;
+  border: 2px solid var(--border-medium, rgba(255, 255, 255, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.submitBar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .headerBar {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
+  .subtitle {
+    display: none;
+  }
+  .sectionCard {
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .accordionChevron {
+    display: block;
+  }
+  .sectionBodyHidden {
+    display: none;
+  }
+  .logoUploaderBox {
+    padding: 12px;
+    gap: 12px;
+    max-height: 120px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .logoPreview {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+  }
+  .submitBar {
+    position: sticky;
+    bottom: 12px;
+    z-index: 60;
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  }
+  .submitBar button {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+  }
+}

@@ -113,7 +113,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 6px 2px;
+  padding: 5px 3px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
@@ -121,27 +121,43 @@
 }
 
 .dayPillWorking {
-  background-color: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background-color: rgba(99, 102, 241, 0.22);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.45);
 }
 
 .dayPillOvernight {
-  background-color: rgba(168, 85, 247, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.3);
+  background-color: rgba(168, 85, 247, 0.22);
+  color: #e9d5ff;
+  border: 1px solid rgba(168, 85, 247, 0.45);
 }
 
 .dayPillHoliday {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: rgba(255, 255, 255, 0.04);
   color: var(--text-muted, #6b7280);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
 }
 
 .timeTag {
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 700;
   margin-top: 2px;
+  line-height: 1.2;
+}
+
+.timePillBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  background-color: rgba(99, 102, 241, 0.25);
+  color: #ffffff;
+  border: 1px solid rgba(99, 102, 241, 0.5);
 }
 
 .thresholdBadge {
@@ -185,13 +201,13 @@
     grid-template-columns: 1fr;
   }
   .daysGrid {
-    gap: 2px;
+    gap: 3px;
   }
   .dayPill {
-    padding: 4px 1px;
-    font-size: 10px;
+    padding: 4px 2px;
+    font-size: 11px !important;
   }
   .timeTag {
-    font-size: 9px;
+    font-size: 11px !important;
   }
 }

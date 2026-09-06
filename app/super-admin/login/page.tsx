@@ -172,16 +172,10 @@ export default function SuperAdminLoginPage() {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '52px',
-              height: '52px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 8px 24px rgba(99, 102, 241, 0.35)',
               marginBottom: '16px',
             }}
           >
-            <Shield size={26} color="#ffffff" />
+            <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
           </Link>
           <h1
             style={{
@@ -192,7 +186,7 @@ export default function SuperAdminLoginPage() {
               marginBottom: '6px',
             }}
           >
-            Super Admin Console
+            Shift<span style={{ color: '#38bdf8' }}>Guard</span> Super Admin Console
           </h1>
           <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
             Platform governance and organization approvals

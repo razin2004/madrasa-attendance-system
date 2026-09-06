@@ -143,8 +143,8 @@ function ActivateAccountForm() {
         <div style={{ textAlign: 'center', padding: '12px 0' }}>
           <div
             style={{
-              width: '52px',
-              height: '52px',
+              width: '48px',
+              height: '48px',
               borderRadius: '50%',
               backgroundColor: 'rgba(52, 211, 153, 0.15)',
               display: 'flex',
@@ -155,7 +155,7 @@ function ActivateAccountForm() {
               border: '1px solid rgba(52, 211, 153, 0.3)',
             }}
           >
-            <CheckCircle2 size={30} />
+            <CheckCircle2 size={26} />
           </div>
           <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#f8fafc', marginBottom: '8px' }}>
             Password Set &amp; Account Activated!
@@ -186,7 +186,7 @@ function ActivateAccountForm() {
             </div>
           )}
 
-          <Link href="/login" className="btn btn-primary" style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <Link href="/login" className="btn btn-primary" style={{ width: '100%', minHeight: '42px', padding: '10px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px' }}>
             <span>Proceed to Sign In</span>
             <ArrowRight size={16} />
           </Link>

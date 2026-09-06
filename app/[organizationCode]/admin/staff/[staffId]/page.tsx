@@ -749,14 +749,14 @@ export default function StaffProfilePage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13.5px' }}>
                   <div><span style={{ color: 'var(--text-muted)' }}>Staff Name: </span><strong style={{ color: '#ffffff' }}>{staff.name}</strong></div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>Staff ID: </span><strong style={{ color: '#818cf8', fontFamily: 'var(--font-mono)' }}>{staff.staffId}</strong></div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>Account Email: </span><strong style={{ color: '#ffffff' }}>{staff.user.email}</strong></div>
+                  <div><span style={{ color: 'var(--text-muted)' }}>Staff ID: </span><strong className={styles.techValue} style={{ color: '#818cf8', fontFamily: 'var(--font-mono)' }}>{staff.staffId}</strong></div>
+                  <div><span style={{ color: 'var(--text-muted)' }}>Account Email: </span><strong className={styles.techValue} style={{ color: '#ffffff' }}>{staff.user.email}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Phone Number: </span><strong style={{ color: '#ffffff' }}>{staff.phone || 'None (Optional)'}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Residential Address: </span><strong style={{ color: '#ffffff' }}>{staff.address || 'Not specified'}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>ID Document Type: </span><strong style={{ color: '#ffffff' }}>{idDocTypeLabels[staff.idDocType] || staff.idDocType}</strong></div>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>ID Document Number: </span>
-                    <strong style={{ color: '#ffffff' }}>{staff.idDocLast4 ? `Ending in ****${staff.idDocLast4}` : 'Not specified'}</strong>
+                    <strong className={styles.techValue} style={{ color: '#ffffff' }}>{staff.idDocLast4 ? `Ending in ****${staff.idDocLast4}` : 'Not specified'}</strong>
                   </div>
                   {selectedDocFile && (
                     <div style={{ marginTop: '4px', padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#818cf8' }}>
@@ -874,21 +874,10 @@ export default function StaffProfilePage() {
 
               {allDevices.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {allDevices.slice(0, 1).map((d: any) => {
+                  {allDevices.map((d: any) => {
                     const isRegistered = d.status === 'REGISTERED';
                     return (
-                      <div
-                        key={d.id}
-                        style={{
-                          padding: '18px 20px',
-                          borderRadius: '14px',
-                          backgroundColor: isRegistered ? 'rgba(255, 255, 255, 0.03)' : 'rgba(251, 191, 36, 0.04)',
-                          border: `1px solid ${isRegistered ? 'rgba(255, 255, 255, 0.08)' : 'rgba(251, 191, 36, 0.25)'}`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
+                      <div key={d.id} className={styles.deviceCard}>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                             <span
@@ -922,25 +911,46 @@ export default function StaffProfilePage() {
                               {isRegistered ? '✓ Active' : 'Awaiting Login'}
                             </span>
                           </div>
-                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
+
+                          <div className={styles.techValue} style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
                             {isRegistered ? (
                               <>
-                                Registered: {d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}
-                                {d.lastUsedAt && ` • Last Used: ${new Date(d.lastUsedAt).toLocaleString()}`}
+                                <div>Registered: {d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}{d.lastUsedAt && ` • Last Used: ${new Date(d.lastUsedAt).toLocaleString()}`}</div>
+                                {d.hardwareId && (
+                                  <div className={styles.techValue} style={{ marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
+                                    Hardware ID: {d.hardwareId}
+                                  </div>
+                                )}
+                                {d.deviceFingerprint && (
+                                  <div className={styles.techValue} style={{ marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
+                                    Fingerprint: {d.deviceFingerprint}
+                                  </div>
+                                )}
                               </>
                             ) : (
                               <>Pending device authorization on next staff login.</>
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={() => setDeviceToRemove(d)}
-                          className="btn btn-danger btn-sm"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
-                        >
-                          <X size={14} />
-                          <span>Remove</span>
-                        </button>
+
+                        <div className={styles.deviceActionRow}>
+                          <button
+                            onClick={() => setDeviceResetModalOpen(true)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            <RefreshCw size={14} />
+                            <span>Reset Device Lock</span>
+                          </button>
+                          <button
+                            onClick={() => setDeviceToRemove(d)}
+                            className="btn btn-danger btn-sm"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <X size={14} />
+                            <span>Unbind Device</span>
+                          </button>
+                        </div>
                       </div>
                     );
                   })}

@@ -143,6 +143,22 @@
   flex-shrink: 0;
 }
 
+.filterToggleBtn {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 5px;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
   .headerBar {
     padding: 12px 16px;
@@ -160,14 +176,20 @@
   .filterSearchRow {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 8px;
+  }
+  .filterToggleBtn {
+    display: flex;
   }
   .tabsGroup {
-    display: flex;
+    display: none;
     overflow-x: auto;
     width: 100%;
     -webkit-overflow-scrolling: touch;
     white-space: nowrap;
+  }
+  .tabsGroupOpen {
+    display: flex !important;
   }
   .tabButton {
     flex-shrink: 0;

@@ -91,12 +91,12 @@ export function StaffSidebar({
     <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
       <div className={styles.sidebarHeader}>
         <Link href={basePath} className={styles.logoArea}>
-          <div className={styles.logoIcon}>
-            <Shield size={20} />
+          <div className={styles.logoIcon} style={{ background: 'transparent', border: 'none' }}>
+            <img src="/logo.svg" alt="ShiftGuard Logo" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
           </div>
           {!isCollapsed && (
             <div className={styles.brandText}>
-              <span className={styles.brandName}>ShiftGuard</span>
+              <span className={styles.brandName}>Shift<span style={{ color: '#38bdf8' }}>Guard</span></span>
               <span className={styles.brandRole}>Staff Portal</span>
             </div>
           )}

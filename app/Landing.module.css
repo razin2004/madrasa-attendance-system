@@ -180,15 +180,39 @@
   }
 
   .featureGrid {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .featureCard {
+    padding: 10px 8px !important;
+  }
+
+  .featureCard h3,
+  .featureGrid h3 {
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .featureCard p,
+  .featureGrid p {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
   }
 
   .featureIconBox {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    margin-bottom: 10px;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .featureIconBox svg,
+  .featureGrid svg {
+    width: 16px !important;
+    height: 16px !important;
   }
 
   .howItWorksGrid {

@@ -38,6 +38,7 @@ export default function AdminLeaveReviewPage() {
   // Approval & Rejection Modal States
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDocModal, setShowDocModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
 
@@ -273,6 +274,29 @@ export default function AdminLeaveReviewPage() {
               </div>
             </div>
 
+            {/* Document / Medical Certificate Attachment */}
+            {(requestDetails.documentUrl || requestDetails.attachmentUrl || requestDetails.certificateUrl) && (
+              <div className="glass-card" style={{ padding: '20px', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={16} color="#38bdf8" />
+                  <span>Medical Certificate / Proof Document</span>
+                </h2>
+                <div
+                  onClick={() => setShowDocModal(true)}
+                  style={{ cursor: 'pointer', overflow: 'hidden', borderRadius: '10px', border: '1px solid var(--border-medium)', background: '#0d121f', position: 'relative' }}
+                >
+                  <img
+                    src={requestDetails.documentUrl || requestDetails.attachmentUrl || requestDetails.certificateUrl}
+                    alt="Leave Proof Attachment"
+                    style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
+                  />
+                  <div style={{ position: 'absolute', bottom: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.75)', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    Tap for Fullscreen
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ACTION CONTROLS */}
             {requestDetails.status === 'PENDING' && (
               <div className={styles.actionsCard}>
@@ -298,6 +322,35 @@ export default function AdminLeaveReviewPage() {
           </div>
         )}
       </div>
+
+      {/* FULLSCREEN ATTACHMENT MODAL */}
+      {showDocModal && (
+        <div
+          onClick={() => setShowDocModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
+            <img
+              src={requestDetails?.documentUrl || requestDetails?.attachmentUrl || requestDetails?.certificateUrl}
+              alt="Fullscreen Document Preview"
+              style={{ maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', borderRadius: '8px' }}
+            />
+            <p style={{ color: '#ffffff', textAlign: 'center', fontSize: '12px', marginTop: '8px' }}>
+              Tap anywhere to close
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* APPROVAL MODAL */}
       <ConfirmationModal

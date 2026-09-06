@@ -131,6 +131,7 @@ export default function ShiftRosterPage() {
   const [viewMode, setViewMode] = useState<'WEEKLY' | 'MONTHLY'>('WEEKLY');
   const [weekOffset, setWeekOffset] = useState<number>(0);
   const [showConflictsOnly, setShowConflictsOnly] = useState(false);
+  const [selectedDateIndex, setSelectedDateIndex] = useState(0);
 
   const fetchRosterData = useCallback(async () => {
     try {
@@ -368,7 +369,112 @@ export default function ShiftRosterPage() {
               </p>
             </div>
           ) : (
-            <div className={styles.rosterTableWrapper}>
+            <>
+              {/* MOBILE DAY-SELECTOR STRIP */}
+              <div className={styles.daySelectorStrip}>
+                {rosterData.datesList.map((dStr, idx) => {
+                  const d = new Date(dStr);
+                  const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
+                  const dateNum = d.getDate();
+                  const isSelected = selectedDateIndex === idx;
+
+                  return (
+                    <button
+                      key={dStr}
+                      type="button"
+                      onClick={() => setSelectedDateIndex(idx)}
+                      className={`${styles.daySelectorItem} ${isSelected ? styles.daySelectorItemActive : ''}`}
+                    >
+                      <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>{dayName}</span>
+                      <span style={{ fontSize: '15px', fontWeight: 800, marginTop: '2px' }}>{dateNum}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* MOBILE VERTICAL SHIFT CARDS VIEW */}
+              <div className={styles.mobileDayRosterView}>
+                {rosterData.staffProfiles.map((staff) => {
+                  const targetDateStr = rosterData.datesList[selectedDateIndex] || rosterData.datesList[0];
+                  const d = new Date(targetDateStr);
+                  const weekdayStr = weekdayMap[d.getDay()];
+                  const primaryAssignment = staff.shiftAssignments[0];
+                  const pattern = primaryAssignment?.shiftPattern;
+                  const branchName = staff.branchAssignments?.[0]?.branch.name || 'General Branch';
+
+                  // Leave Check
+                  const leaveMatch = rosterData.leaveRequests.find((l) => {
+                    const s = new Date(l.startDate);
+                    const e = new Date(l.endDate);
+                    s.setUTCHours(0, 0, 0, 0);
+                    e.setUTCHours(23, 59, 59, 999);
+                    return l.staffProfileId === staff.id && d >= s && d <= e;
+                  });
+
+                  // Swap Check
+                  const swapMatch = rosterData.approvedSwaps.find((s) => {
+                    const sDate = new Date(s.targetDate).toISOString().split('T')[0];
+                    const curDate = d.toISOString().split('T')[0];
+                    return sDate === curDate && (s.requester.id === staff.id || s.peer.id === staff.id);
+                  });
+
+                  const weeklyDay = pattern?.weeklyDays.find((w) => w.weekday === weekdayStr);
+                  const isScheduled = Boolean(weeklyDay && !weeklyDay.isHoliday);
+
+                  let statusBadge = (
+                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)' }}>
+                      DAY OFF
+                    </span>
+                  );
+                  let timeLabel = 'No Shift';
+
+                  if (leaveMatch) {
+                    statusBadge = (
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                        ON LEAVE ({leaveMatch.type})
+                      </span>
+                    );
+                    timeLabel = 'Approved Leave';
+                  } else if (swapMatch) {
+                    statusBadge = (
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                        SHIFT SWAP
+                      </span>
+                    );
+                    timeLabel = swapMatch.shiftPattern?.name || 'Swapped Shift';
+                  } else if (isScheduled && weeklyDay) {
+                    statusBadge = (
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                        {pattern?.name || 'SCHEDULED'}
+                      </span>
+                    );
+                    timeLabel = weeklyDay.startTime && weeklyDay.endTime ? `${weeklyDay.startTime} - ${weeklyDay.endTime}` : 'Regular Shift';
+                  }
+
+                  return (
+                    <div key={staff.id} className={styles.mobileDayCard}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontWeight: 800, fontSize: '13px' }}>
+                          {staff.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{staff.name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ID: {staff.staffId} • {branchName}</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        {statusBadge}
+                        <div style={{ fontSize: '11.5px', fontFamily: 'var(--font-mono)', color: '#cbd5e1', marginTop: '4px' }}>
+                          {timeLabel}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* DESKTOP ROSTER MATRIX TABLE */}
+              <div className={styles.rosterTableWrapper}>
               <table className={styles.rosterTable}>
                 <thead>
                   <tr>
@@ -486,7 +592,8 @@ export default function ShiftRosterPage() {
                 </tbody>
               </table>
             </div>
-          )}
+          </>
+        )}
         </main>
       </div>
 

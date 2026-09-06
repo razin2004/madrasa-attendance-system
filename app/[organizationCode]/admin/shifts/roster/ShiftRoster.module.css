@@ -137,6 +137,52 @@
   margin-bottom: 20px;
 }
 
+.daySelectorStrip {
+  display: none;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 4px 0 12px 0;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 16px;
+}
+
+.daySelectorItem {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 64px;
+}
+
+.daySelectorItemActive {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #818cf8;
+}
+
+.mobileDayRosterView {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobileDayCard {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 @media (max-width: 768px) {
   .headerBar {
     padding: 12px 16px;
@@ -147,15 +193,13 @@
   .subtitle {
     display: none;
   }
-  .staffCol {
-    min-width: 140px;
-    font-size: 12px;
+  .daySelectorStrip {
+    display: flex;
   }
-  .dateCol {
-    min-width: 100px;
+  .mobileDayRosterView {
+    display: flex;
   }
-  .cellCard {
-    padding: 6px 4px;
-    font-size: 11px;
+  .rosterTableWrapper {
+    display: none;
   }
 }

@@ -7,6 +7,7 @@ import {
   Users,
   Plus,
   Search,
+  Filter,
   MapPin,
   Smartphone,
   ShieldAlert,
@@ -97,6 +98,7 @@ export default function StaffDirectoryPage() {
   const [whatsappLoadingId, setWhatsappLoadingId] = useState<string | null>(null);
   const [passwordModalStaff, setPasswordModalStaff] = useState<StaffItem | null>(null);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const handleResendInvite = async (staffId: string, email: string) => {
     try {
@@ -504,26 +506,7 @@ export default function StaffDirectoryPage() {
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Filters & Search */}
           <div className={styles.filterSearchRow}>
-            {/* Filter Tabs */}
-            <div className={styles.tabsGroup}>
-              {[
-                { id: 'ALL', label: `All Staff (${counts.total})` },
-                { id: 'ACTIVE', label: `Active (${counts.active})` },
-                { id: 'DEVICE_REGISTERED', label: `Device Bound (${counts.deviceRegistered})` },
-                { id: 'RESET_REQUIRED', label: `Reset Req (${counts.deviceResetRequired})` },
-                { id: 'INACTIVE', label: `Inactive (${counts.inactive})` },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setFilter(tab.id as any)}
-                  className={`${styles.tabButton} ${filter === tab.id ? styles.tabButtonActive : ''}`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search Input */}
+            {/* Search Input with Filter Button for Mobile */}
             <div className={styles.searchInputWrapper}>
               <Search size={15} className={styles.searchIcon} />
               <input
@@ -538,7 +521,7 @@ export default function StaffDirectoryPage() {
                   onClick={() => setSearch('')}
                   style={{
                     position: 'absolute',
-                    right: '10px',
+                    right: '40px',
                     top: '9px',
                     background: 'none',
                     border: 'none',
@@ -549,6 +532,36 @@ export default function StaffDirectoryPage() {
                   <X size={14} />
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setFilterDrawerOpen(!filterDrawerOpen)}
+                className={styles.filterToggleBtn}
+                title="Toggle Filters"
+              >
+                <Filter size={15} color={filter !== 'ALL' ? '#818cf8' : 'currentColor'} />
+              </button>
+            </div>
+
+            {/* Filter Tabs (Collapsible on mobile) */}
+            <div className={`${styles.tabsGroup} ${filterDrawerOpen ? styles.tabsGroupOpen : ''}`}>
+              {[
+                { id: 'ALL', label: `All Staff (${counts.total})` },
+                { id: 'ACTIVE', label: `Active (${counts.active})` },
+                { id: 'DEVICE_REGISTERED', label: `Device Bound (${counts.deviceRegistered})` },
+                { id: 'RESET_REQUIRED', label: `Reset Req (${counts.deviceResetRequired})` },
+                { id: 'INACTIVE', label: `Inactive (${counts.inactive})` },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setFilter(tab.id as any);
+                    setHeaderMenuOpen(false);
+                  }}
+                  className={`${styles.tabButton} ${filter === tab.id ? styles.tabButtonActive : ''}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 

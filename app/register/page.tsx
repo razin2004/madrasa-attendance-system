@@ -340,20 +340,8 @@ export default function RegisterOrganizationPage() {
         <div className="container" style={{ maxWidth: '640px' }}>
           {/* Header Banner */}
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                margin: '0 auto 12px auto',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 8px 24px rgba(99, 102, 241, 0.35)',
-              }}
-            >
-              <Building2 size={22} color="#ffffff" />
+            <div style={{ margin: '0 auto 12px auto', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
             </div>
             <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px' }}>
               Register your Organization
@@ -365,9 +353,32 @@ export default function RegisterOrganizationPage() {
 
           {/* Wizard Step Progress Bar */}
           <div style={{ marginBottom: '20px' }}>
+            {/* Mobile Progress Bar (<640px) */}
+            <div className="mobile-step-progress" style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#818cf8' }}>
+                  Step {currentStep} of 3
+                </span>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  {currentStep === 1 ? '1. Organization Details' : currentStep === 2 ? '2. Admin Contact' : '3. Logo & Submission'}
+                </span>
+              </div>
+              <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    height: '100%',
+                    backgroundColor: '#4f46e5',
+                    width: `${(currentStep / 3) * 100}%`,
+                    transition: 'width 0.3s ease',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Desktop Step Pills (>640px) */}
             <div
+              className="desktop-step-pills"
               style={{
-                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginBottom: '8px',

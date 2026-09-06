@@ -132,17 +132,26 @@
   text-decoration: underline;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .container {
-    padding: 16px 12px;
+    padding: 16px 10px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wrapper {
+    width: 92% !important;
+    max-width: 400px !important;
+    margin: 0 auto;
   }
   .header {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   .logoContainer {
-    width: 48px;
-    height: 48px;
-    margin-bottom: 12px;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 10px;
     border-radius: 12px;
   }
   .title {
@@ -151,10 +160,22 @@
     margin-bottom: 4px;
   }
   .subtitle {
-    font-size: 12.5px;
+    font-size: 12px;
   }
   .card {
-    padding: 22px 16px;
+    padding: 16px 14px !important;
     border-radius: 16px;
+    width: 100%;
+  }
+  .card :global(.form-input),
+  .card input[type="text"],
+  .card input[type="email"],
+  .card input[type="password"],
+  .card select,
+  .card textarea {
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 8px 10px 8px 36px !important;
+    font-size: 14px !important;
   }
 }

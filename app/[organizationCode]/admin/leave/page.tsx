@@ -227,7 +227,7 @@ export default function AdminLeavePage() {
 
         {/* Filter Bar */}
         <div className={styles.filterBar}>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div className={styles.chipTabsContainer}>
             {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((st) => (
               <button
                 key={st}
@@ -235,13 +235,14 @@ export default function AdminLeavePage() {
                 className={`btn btn-sm ${
                   (st === 'ALL' && !statusFilter) || statusFilter === st ? 'btn-primary' : 'btn-secondary'
                 }`}
+                style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}
               >
                 {st}
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '220px' }}>
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '200px' }}>
             <input
               type="text"
               className="form-input"
@@ -260,7 +261,7 @@ export default function AdminLeavePage() {
           </button>
         </div>
 
-        {/* Request Queue Table */}
+        {/* Request Queue Container */}
         <div className={styles.tableCard}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
@@ -278,47 +279,94 @@ export default function AdminLeavePage() {
               </p>
             </div>
           ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.th}>Staff Member</th>
-                  <th className={styles.th}>Leave Type</th>
-                  <th className={styles.th}>Date Range</th>
-                  <th className={styles.th}>Duration</th>
-                  <th className={styles.th}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Desktop Table View */}
+              <div className={styles.desktopTableView}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th className={styles.th}>Staff Member</th>
+                      <th className={styles.th}>Leave Type</th>
+                      <th className={styles.th}>Date Range</th>
+                      <th className={styles.th}>Duration</th>
+                      <th className={styles.th}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requests.map((item) => (
+                      <tr
+                        key={item.id}
+                        onClick={() => router.push(`/${organizationCode}/admin/leave/${item.id}`)}
+                        style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+                      >
+                        <td className={styles.td}>
+                          <div style={{ fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>
+                            ID: {item.staff.staffId}
+                          </div>
+                        </td>
+                        <td className={styles.td}>
+                          <span style={{ fontWeight: 600, color: '#f8fafc' }}>{item.leaveType}</span>
+                        </td>
+                        <td className={styles.td} style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          {new Date(item.startDate).toLocaleDateString()} – {new Date(item.endDate).toLocaleDateString()}
+                        </td>
+                        <td className={styles.td}>
+                          <strong style={{ color: '#818cf8' }}>{item.daysCount} days</strong>
+                        </td>
+                        <td className={styles.td}>
+                          <span className={`${styles.statusPill} ${styles[item.status.toLowerCase()]}`}>
+                            {item.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card Feed View */}
+              <div className={styles.mobileCardFeed}>
                 {requests.map((item) => (
-                  <tr
+                  <div
                     key={item.id}
+                    className={styles.leaveCard}
                     onClick={() => router.push(`/${organizationCode}/admin/leave/${item.id}`)}
-                    style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+                    style={{ cursor: 'pointer' }}
                   >
-                    <td className={styles.td}>
-                      <div style={{ fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>
-                        ID: {item.staff.staffId}
+                    <div className={styles.cardHeader}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '14.5px' }}>{item.staff.name}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>
+                          ID: {item.staff.staffId}
+                        </div>
                       </div>
-                    </td>
-                    <td className={styles.td}>
-                      <span style={{ fontWeight: 600, color: '#f8fafc' }}>{item.leaveType}</span>
-                    </td>
-                    <td className={styles.td} style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      {new Date(item.startDate).toLocaleDateString()} – {new Date(item.endDate).toLocaleDateString()}
-                    </td>
-                    <td className={styles.td}>
-                      <strong style={{ color: '#818cf8' }}>{item.daysCount} days</strong>
-                    </td>
-                    <td className={styles.td}>
                       <span className={`${styles.statusPill} ${styles[item.status.toLowerCase()]}`}>
                         {item.status}
                       </span>
-                    </td>
-                  </tr>
+                    </div>
+
+                    <div className={styles.stackedInfo}>
+                      <div className={styles.stackedCol}>
+                        <span className={styles.colLabel}>Leave Type</span>
+                        <span className={styles.colVal} style={{ color: '#fbbf24' }}>{item.leaveType}</span>
+                      </div>
+                      <div className={styles.stackedCol}>
+                        <span className={styles.colLabel}>Duration</span>
+                        <span className={styles.colVal} style={{ color: '#38bdf8' }}>{item.daysCount} days</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px' }}>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        {new Date(item.startDate).toLocaleDateString()} – {new Date(item.endDate).toLocaleDateString()}
+                      </span>
+                      <ChevronRight size={16} color="#818cf8" />
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { Building2 } from 'lucide-react';
 
 interface TenantBrandHeaderProps {
@@ -20,13 +19,13 @@ export function TenantBrandHeader({
   const [imgFailed, setImgFailed] = React.useState(false);
 
   return (
-    <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+    <div style={{ textAlign: 'center', marginBottom: '20px', width: '100%' }}>
+      {/* Auto-scaling Logo (40px on mobile via class, 56px default) */}
       <div
+        className="tenant-brand-logo-box"
         style={{
-          width: '72px',
-          height: '72px',
-          margin: '0 auto 16px auto',
-          borderRadius: '16px',
+          margin: '0 auto 12px auto',
+          borderRadius: '12px',
           background: 'rgba(19, 27, 46, 0.9)',
           border: '1px solid var(--border-medium)',
           display: 'flex',
@@ -38,36 +37,48 @@ export function TenantBrandHeader({
         }}
       >
         {logoUrl && !imgFailed ? (
-            <img
-              src={logoUrl}
-              alt={`${orgName} Logo`}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                padding: '0',
-                display: 'block',
-              }}
-              onError={() => setImgFailed(true)}
-            />
+          <img
+            src={logoUrl}
+            alt={`${orgName} Logo`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              padding: '4px',
+              display: 'block',
+            }}
+            onError={() => setImgFailed(true)}
+          />
         ) : (
-          <Building2 size={36} color="#818cf8" />
+          <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
         )}
       </div>
 
       <h1
         style={{
-          fontSize: '22px',
+          fontSize: '20px',
           fontWeight: 800,
           color: '#ffffff',
           letterSpacing: '-0.3px',
           marginBottom: '6px',
+          overflowWrap: 'anywhere',
+          wordBreak: 'break-word',
+          padding: '0 4px',
         }}
       >
         {orgName}
       </h1>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          padding: '0 4px',
+        }}
+      >
         <span
           style={{
             fontFamily: 'var(--font-mono)',
@@ -79,12 +90,20 @@ export function TenantBrandHeader({
             padding: '2px 8px',
             borderRadius: '4px',
             letterSpacing: '0.5px',
+            whiteSpace: 'nowrap',
           }}
         >
           {organizationCode}
         </span>
         {subtitle && (
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+          <span
+            style={{
+              fontSize: '12.5px',
+              color: 'var(--text-secondary)',
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
+            }}
+          >
             {subtitle}
           </span>
         )}

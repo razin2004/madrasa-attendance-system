@@ -83,7 +83,7 @@ export function MobileTopHeader({
                 onError={() => setLogoFailed(true)}
               />
             ) : (
-              <Shield size={18} color="#ffffff" />
+              <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
             )}
           </div>
         )}

@@ -297,7 +297,7 @@ export default function AdminAttendanceCorrectionsPage() {
           </div>
         </div>
 
-        {/* Request Queue Table */}
+        {/* Request Queue Container */}
         <div className={styles.tableCard}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
@@ -315,56 +315,161 @@ export default function AdminAttendanceCorrectionsPage() {
               </p>
             </div>
           ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.th}>Staff Member</th>
-                  <th className={styles.th}>Affected Date</th>
-                  <th className={styles.th}>Problem Type</th>
-                  <th className={styles.th}>Requested Time</th>
-                  <th className={styles.th}>Reason</th>
-                  <th className={styles.th} style={{ textAlign: 'right' }}>Status / Action</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Desktop Table View */}
+              <div className={styles.desktopTableView}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th className={styles.th}>Staff Member</th>
+                      <th className={styles.th}>Affected Date</th>
+                      <th className={styles.th}>Problem Type</th>
+                      <th className={styles.th}>Requested Time</th>
+                      <th className={styles.th}>Reason</th>
+                      <th className={styles.th} style={{ textAlign: 'right' }}>Status / Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requests.map((item) => {
+                      const isPending = item.status === 'PENDING';
+                      const isProcessing = processingId === item.id;
+
+                      return (
+                        <tr key={item.id} className={styles.tr}>
+                          <td
+                            className={styles.td}
+                            onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
+                            style={{ cursor: 'pointer' }}
+                            title="View Staff Profile"
+                          >
+                            <div className={styles.staffName} style={{ color: '#818cf8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>{item.staff.name}</div>
+                            <div className={styles.staffId}>ID: {item.staff.staffId}</div>
+                          </td>
+                          <td className={styles.td} style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                            {item.date}
+                          </td>
+                          <td className={styles.td}>
+                            <span className={`${styles.badge} ${styles.badgePENDING}`}>
+                              {item.type}
+                            </span>
+                          </td>
+                          <td className={styles.td} style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)' }}>
+                            In: <span style={{ color: '#34d399', fontWeight: 700 }}>{item.requestedClockIn || '—'}</span> &bull; Out:{' '}
+                            <span style={{ color: '#fbbf24', fontWeight: 700 }}>{item.requestedClockOut || '—'}</span>
+                          </td>
+                          <td className={styles.td} style={{ fontSize: '12.5px', color: '#94a3b8', fontStyle: 'italic', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            &ldquo;{item.reason}&rdquo;
+                          </td>
+                          <td className={styles.td} style={{ textAlign: 'right' }}>
+                            {isPending ? (
+                              <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <Link
+                                  href={`/${organizationCode}/admin/attendance/corrections/${item.id}`}
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
+                                >
+                                  <ArrowRight size={13} />
+                                  <span>Review</span>
+                                </Link>
+                                <button
+                                  onClick={() => handleAction(item.id, 'approve')}
+                                  disabled={isProcessing}
+                                  className="btn btn-success btn-sm"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 12px', fontSize: '12px', borderRadius: '8px' }}
+                                >
+                                  {isProcessing ? <Loader2 size={12} className="animate-spin" /> : <Check size={14} />}
+                                  <span>Approve</span>
+                                </button>
+                                <button
+                                  onClick={() => handleAction(item.id, 'reject')}
+                                  disabled={isProcessing}
+                                  className="btn btn-danger btn-sm"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 12px', fontSize: '12px', borderRadius: '8px' }}
+                                >
+                                  {isProcessing ? <Loader2 size={12} className="animate-spin" /> : <X size={14} />}
+                                  <span>Reject</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                <Link
+                                  href={`/${organizationCode}/admin/attendance/corrections/${item.id}`}
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
+                                >
+                                  <ArrowRight size={13} />
+                                  <span>Details</span>
+                                </Link>
+                                <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
+                                  {item.status}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card Feed View */}
+              <div className={styles.mobileCardFeed}>
                 {requests.map((item) => {
                   const isPending = item.status === 'PENDING';
                   const isProcessing = processingId === item.id;
 
                   return (
-                    <tr key={item.id} className={styles.tr}>
-                      <td
-                        className={styles.td}
-                        onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
-                        style={{ cursor: 'pointer' }}
-                        title="View Staff Profile"
-                      >
-                        <div className={styles.staffName} style={{ color: '#818cf8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>{item.staff.name}</div>
-                        <div className={styles.staffId}>ID: {item.staff.staffId}</div>
-                      </td>
-                      <td className={styles.td} style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                        {item.date}
-                      </td>
-                      <td className={styles.td}>
-                        <span className={`${styles.badge} ${styles.badgePENDING}`}>
-                          {item.type}
+                    <div key={item.id} className={styles.requestCard}>
+                      <div className={styles.cardHeader}>
+                        <div
+                          onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div className={styles.staffName} style={{ color: '#818cf8' }}>{item.staff.name}</div>
+                          <div className={styles.staffId}>ID: {item.staff.staffId}</div>
+                        </div>
+                        <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
+                          {item.status}
                         </span>
-                      </td>
-                      <td className={styles.td} style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)' }}>
-                        In: <span style={{ color: '#34d399', fontWeight: 700 }}>{item.requestedClockIn || '—'}</span> &bull; Out:{' '}
-                        <span style={{ color: '#fbbf24', fontWeight: 700 }}>{item.requestedClockOut || '—'}</span>
-                      </td>
-                      <td className={styles.td} style={{ fontSize: '12.5px', color: '#94a3b8', fontStyle: 'italic', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        &ldquo;{item.reason}&rdquo;
-                      </td>
-                      <td className={styles.td} style={{ textAlign: 'right' }}>
-                        {isPending ? (
-                          <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      </div>
+
+                      <div className={styles.stackedGrid}>
+                        <div className={styles.stackedCol}>
+                          <span className={styles.colLabel}>Date &amp; Type</span>
+                          <span className={styles.colVal}>{item.date}</span>
+                          <span className={styles.typeSub}>{item.type}</span>
+                        </div>
+                        <div className={styles.stackedCol}>
+                          <span className={styles.colLabel}>Requested Time</span>
+                          <span className={styles.colValTime}>In: <strong style={{ color: '#34d399' }}>{item.requestedClockIn || '—'}</strong></span>
+                          <span className={styles.colValTime}>Out: <strong style={{ color: '#fbbf24' }}>{item.requestedClockOut || '—'}</strong></span>
+                        </div>
+                      </div>
+
+                      {item.reason && (
+                        <div className={styles.reasonQuote}>
+                          &ldquo;{item.reason}&rdquo;
+                        </div>
+                      )}
+
+                      <div className={styles.cardActions}>
+                        <Link
+                          href={`/${organizationCode}/admin/attendance/corrections/${item.id}`}
+                          className="btn btn-secondary btn-sm"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '12px', borderRadius: '8px' }}
+                        >
+                          <ArrowRight size={13} />
+                          <span>Review Details</span>
+                        </Link>
+
+                        {isPending && (
+                          <div style={{ display: 'inline-flex', gap: '6px', marginLeft: 'auto' }}>
                             <button
                               onClick={() => handleAction(item.id, 'approve')}
                               disabled={isProcessing}
                               className="btn btn-success btn-sm"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 12px', fontSize: '12px', borderRadius: '8px' }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '12px', borderRadius: '8px' }}
                             >
                               {isProcessing ? <Loader2 size={12} className="animate-spin" /> : <Check size={14} />}
                               <span>Approve</span>
@@ -373,23 +478,19 @@ export default function AdminAttendanceCorrectionsPage() {
                               onClick={() => handleAction(item.id, 'reject')}
                               disabled={isProcessing}
                               className="btn btn-danger btn-sm"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 12px', fontSize: '12px', borderRadius: '8px' }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '12px', borderRadius: '8px' }}
                             >
                               {isProcessing ? <Loader2 size={12} className="animate-spin" /> : <X size={14} />}
                               <span>Reject</span>
                             </button>
                           </div>
-                        ) : (
-                          <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-                            {item.status}
-                          </span>
                         )}
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
         </main>

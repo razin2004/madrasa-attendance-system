@@ -123,23 +123,14 @@ export function SuperAdminSidebar({
           flexShrink: 0,
         }}
       >
-        <div
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.35)',
-          }}
-        >
-          <Shield size={20} color="#ffffff" />
-        </div>
+        <img
+          src="/logo.svg"
+          alt="ShiftGuard Logo"
+          style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+        />
         <div>
           <div style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px' }}>
-            ShiftGuard
+            Shift<span style={{ color: '#38bdf8' }}>Guard</span>
           </div>
           <div
             style={{

@@ -836,14 +836,27 @@ export default function BranchDetailPage() {
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              {branch.latitude && branch.longitude && (
+                <div className={styles.mapPreviewContainer}>
+                  <iframe
+                    title="Branch Location Map Preview"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, borderRadius: '8px' }}
+                    loading="lazy"
+                    src={`https://maps.google.com/maps?q=${branch.latitude},${branch.longitude}&z=15&output=embed`}
+                  />
+                </div>
+              )}
+
+              <div className={styles.locationCoordinatesRow}>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Latitude</div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{branch.latitude?.toFixed(6) || 'N/A'}</div>
+                  <div className={styles.coordinateLabel}>Latitude</div>
+                  <div className={styles.coordinateValue}>{branch.latitude?.toFixed(6) || 'N/A'}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Longitude</div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{branch.longitude?.toFixed(6) || 'N/A'}</div>
+                  <div className={styles.coordinateLabel}>Longitude</div>
+                  <div className={styles.coordinateValue}>{branch.longitude?.toFixed(6) || 'N/A'}</div>
                 </div>
               </div>
 

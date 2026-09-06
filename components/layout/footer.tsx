@@ -27,22 +27,13 @@ export function Footer() {
           {/* Brand Info */}
           <div style={{ maxWidth: '380px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <div
-                style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 14px rgba(99, 102, 241, 0.3)',
-                }}
-              >
-                <Shield size={16} color="#ffffff" />
-              </div>
+              <img
+                src="/logo.svg"
+                alt="ShiftGuard Logo"
+                style={{ width: '28px', height: '28px', objectFit: 'contain' }}
+              />
               <span style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px' }}>
-                ShiftGuard
+                Shift<span style={{ color: '#38bdf8' }}>Guard</span>
               </span>
             </div>
             <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>

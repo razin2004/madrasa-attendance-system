@@ -136,6 +136,55 @@
   color: #38bdf8;
 }
 
+.stickyFilterTabBar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 10px 0;
+  -webkit-overflow-scrolling: touch;
+  position: sticky;
+  top: 60px;
+  z-index: 40;
+  background: rgba(3, 7, 18, 0.9);
+  backdrop-filter: blur(12px);
+  margin-bottom: 16px;
+}
+
+.tabPill {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tabPillActive {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #818cf8;
+}
+
+.feedCardsContainer {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedCard {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-card, rgba(17, 24, 39, 0.65));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 @media (max-width: 768px) {
   .headerBar,
   .header {
@@ -177,6 +226,11 @@
   .tableCard {
     margin-left: 16px;
     margin-right: 16px;
+    display: none;
+  }
+
+  .feedCardsContainer {
+    display: flex;
   }
 }
 
@@ -204,13 +258,7 @@
     margin-right: 10px;
   }
 
-  .tableCard {
-    margin-left: 10px;
-    margin-right: 10px;
-  }
-
-  .th, .td {
-    padding: 10px 12px;
-    font-size: 12px;
+  .feedCard {
+    padding: 12px;
   }
 }

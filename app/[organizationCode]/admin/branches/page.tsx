@@ -519,13 +519,30 @@ export default function BranchesListPage() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => router.push(`/${organizationCode}/admin/branches/${branch.id}`)}
+                          className="btn btn-secondary btn-sm"
+                          style={{ flex: 1, padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '32px' }}
+                          title="Edit Branch"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          onClick={() => router.push(`/${organizationCode}/admin/branches/${branch.id}`)}
+                          className="btn btn-secondary btn-sm"
+                          style={{ flex: 1, padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '32px' }}
+                          title="View Geofence & Location"
+                        >
+                          <MapPin size={13} color="#38bdf8" />
+                        </button>
                         <button
                           onClick={() => setToggleModalBranch(branch)}
                           className={`btn btn-sm ${isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-                          style={{ width: '100%' }}
+                          style={{ flex: 1, padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '32px' }}
+                          title={isActive ? 'Deactivate Branch' : 'Activate Branch'}
                         >
-                          {isActive ? 'Deactivate' : 'Activate'}
+                          <Power size={13} />
                         </button>
                       </div>
                     </div>

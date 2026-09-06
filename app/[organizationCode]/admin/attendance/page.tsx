@@ -369,75 +369,115 @@ export default function AdminAttendancePage() {
               </p>
             </div>
           ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.th}>Staff Member</th>
-                  <th className={styles.th}>Branch</th>
-                  <th className={styles.th}>Clock In</th>
-                  <th className={styles.th}>Clock Out</th>
-                  <th className={styles.th}>Source</th>
-                  <th className={styles.th}>Verification Details</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* MOBILE FEED CARDS */}
+              <div className={styles.feedCardsContainer} style={{ marginBottom: '16px' }}>
                 {dailyList.map((item, idx) => (
-                  <tr
+                  <div
                     key={idx}
+                    className={styles.feedCard}
                     onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
-                    style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'background 0.15s ease' }}
+                    style={{ cursor: 'pointer' }}
                   >
-                    <td className={styles.td}>
-                      <div style={{ fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8', marginTop: '1px' }}>
-                        ID: {item.staff.staffId}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontWeight: 800, fontSize: '13px' }}>
+                        {item.staff.name.slice(0, 2).toUpperCase()}
                       </div>
-                    </td>
-
-                    <td className={styles.td}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <MapPin size={13} color="#38bdf8" />
-                        <span style={{ color: '#f8fafc' }}>{item.branch?.name || 'Unassigned'}</span>
-                      </span>
-                    </td>
-
-                    <td className={styles.td}>
-                      <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{formatTime(item.clockIn)}</strong>
-                    </td>
-
-                    <td className={styles.td}>
-                      <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>{formatTime(item.clockOut)}</strong>
-                    </td>
-
-                    <td className={styles.td}>
-                      <span className={`${styles.sourceBadge} ${styles[`source${item.source}`]}`}>
-                        {item.source}
-                      </span>
-                    </td>
-
-                    <td className={styles.td} style={{ fontSize: '12px' }}>
-                      {item.isManualEntry ? (
-                        <div>
-                          <span style={{ color: '#fbbf24' }}>Manual Entry by Admin</span>
-                          {item.creator && <span> ({item.creator.name})</span>}
-                          {item.manualReason && (
-                            <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
-                              &ldquo;{item.manualReason}&rdquo;
-                            </div>
-                          )}
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+                          <MapPin size={11} color="#38bdf8" />
+                          <span>{item.branch?.name || 'Unassigned'}</span>
                         </div>
-                      ) : item.source === 'ADJUSTED' ? (
-                        <span style={{ color: '#38bdf8' }}>Approved Adjustment</span>
-                      ) : (
-                        <span style={{ color: '#34d399', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <CheckCircle2 size={13} /> 3-Layer Verified
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12.5px', fontWeight: 700, color: '#34d399' }}>
+                        {formatTime(item.clockIn)} {item.clockOut ? `– ${formatTime(item.clockOut)}` : ''}
+                      </div>
+                      <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                        <span className={`${styles.sourceBadge} ${styles[`source${item.source}`]}`}>
+                          {item.source}
                         </span>
-                      )}
-                    </td>
-                  </tr>
+                        <CheckCircle2 size={13} color="#34d399" />
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* DESKTOP ATTENDANCE TABLE */}
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th className={styles.th}>Staff Member</th>
+                    <th className={styles.th}>Branch</th>
+                    <th className={styles.th}>Clock In</th>
+                    <th className={styles.th}>Clock Out</th>
+                    <th className={styles.th}>Source</th>
+                    <th className={styles.th}>Verification Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dailyList.map((item, idx) => (
+                    <tr
+                      key={idx}
+                      onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
+                      style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'background 0.15s ease' }}
+                    >
+                      <td className={styles.td}>
+                        <div style={{ fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8', marginTop: '1px' }}>
+                          ID: {item.staff.staffId}
+                        </div>
+                      </td>
+
+                      <td className={styles.td}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <MapPin size={13} color="#38bdf8" />
+                          <span style={{ color: '#f8fafc' }}>{item.branch?.name || 'Unassigned'}</span>
+                        </span>
+                      </td>
+
+                      <td className={styles.td}>
+                        <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{formatTime(item.clockIn)}</strong>
+                      </td>
+
+                      <td className={styles.td}>
+                        <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>{formatTime(item.clockOut)}</strong>
+                      </td>
+
+                      <td className={styles.td}>
+                        <span className={`${styles.sourceBadge} ${styles[`source${item.source}`]}`}>
+                          {item.source}
+                        </span>
+                      </td>
+
+                      <td className={styles.td} style={{ fontSize: '12px' }}>
+                        {item.isManualEntry ? (
+                          <div>
+                            <span style={{ color: '#fbbf24' }}>Manual Entry by Admin</span>
+                            {item.creator && <span> ({item.creator.name})</span>}
+                            {item.manualReason && (
+                              <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
+                                &ldquo;{item.manualReason}&rdquo;
+                              </div>
+                            )}
+                          </div>
+                        ) : item.source === 'ADJUSTED' ? (
+                          <span style={{ color: '#38bdf8' }}>Approved Adjustment</span>
+                        ) : (
+                          <span style={{ color: '#34d399', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <CheckCircle2 size={13} /> 3-Layer Verified
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
         </main>

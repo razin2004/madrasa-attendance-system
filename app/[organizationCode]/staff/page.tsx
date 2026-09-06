@@ -26,6 +26,8 @@ import {
   Activity,
   Check,
   ArrowLeftRight,
+  Menu,
+  User,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
@@ -116,6 +118,7 @@ export default function StaffDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [clocking, setClocking] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [locationCoords, setLocationCoords] = useState<{ latitude: number; longitude: number; accuracy?: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -545,11 +548,12 @@ export default function StaffDashboardPage() {
           </div>
         </div>
 
-        <div className={styles.headerNavControls}>
+        <div className={styles.headerNavControls} style={{ position: 'relative' }}>
           <button
             onClick={handleManualRefresh}
             disabled={checking}
             className={styles.headerButton}
+            title="Re-verify checks"
           >
             <RefreshCw size={14} className={checking ? 'animate-spin' : ''} color="#a5b4fc" />
             <span>{checking ? 'Verifying...' : 'Re-verify'}</span>
@@ -568,6 +572,158 @@ export default function StaffDashboardPage() {
             <History size={14} color="#38bdf8" />
             <span>Punch Log</span>
           </Link>
+
+          {/* Mobile Hamburger Icon Menu Toggle */}
+          <button
+            type="button"
+            onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+            className="btn btn-secondary btn-sm"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '36px',
+              height: '36px',
+              padding: 0,
+              borderRadius: '10px',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--border-medium)',
+              color: '#ffffff',
+              cursor: 'pointer',
+            }}
+            title="Staff Options Menu"
+          >
+            <Menu size={18} />
+          </button>
+
+          {headerMenuOpen && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                onClick={() => setHeaderMenuOpen(false)}
+              />
+              <div
+                className="glass-card"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  zIndex: 1000,
+                  minWidth: '200px',
+                  padding: '6px',
+                  backgroundColor: '#0d121f',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                }}
+              >
+                <Link
+                  href={`/${orgCode}/staff/profile`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  <User size={15} color="#38bdf8" />
+                  <span>My Profile &amp; Device</span>
+                </Link>
+
+                <Link
+                  href={`/${orgCode}/staff/attendance`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <History size={15} color="#34d399" />
+                  <span>Punch History</span>
+                </Link>
+
+                <Link
+                  href={`/${orgCode}/staff/leave`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <Calendar size={15} color="#fbbf24" />
+                  <span>My Leave Balances</span>
+                </Link>
+
+                <Link
+                  href={`/${orgCode}/staff/shift`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <Clock size={15} color="#818cf8" />
+                  <span>Shift Schedule</span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    router.push(`/${orgCode}/login`);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#f87171',
+                    border: 'none',
+                    background: 'none',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <LogOut size={15} color="#f87171" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -647,10 +803,11 @@ export default function StaffDashboardPage() {
                     </div>
                   )}
 
+                  {/* Punch Button */}
                   <button
                     onClick={handleClockButtonClick}
                     disabled={(!isReadyToClock && !isClockedIn) || clocking || checking}
-                    className={`${styles.clockButton} ${
+                    className={`${styles.clockButton} ${styles.punchButtonCircle} ${
                       isClockedIn
                         ? styles.clockButtonOut
                         : isReadyToClock
@@ -660,21 +817,48 @@ export default function StaffDashboardPage() {
                   >
                     {clocking ? (
                       <>
-                        <Loader2 size={20} className="animate-spin" />
-                        <span>Verifying &amp; Recording...</span>
+                        <Loader2 size={24} className="animate-spin" />
+                        <span style={{ fontSize: '12px' }}>Verifying...</span>
                       </>
                     ) : isClockedIn ? (
                       <>
-                        <Clock size={20} />
-                        <span>Clock Out Now</span>
+                        <Clock size={24} />
+                        <span style={{ fontSize: '14px', fontWeight: 800 }}>Clock Out</span>
                       </>
                     ) : (
                       <>
-                        <Clock size={20} />
-                        <span>Clock In Now</span>
+                        <Clock size={24} />
+                        <span style={{ fontSize: '14px', fontWeight: 800 }}>Clock In</span>
                       </>
                     )}
                   </button>
+
+                  {/* 3-Box Horizontal Precheck Status Grid */}
+                  <div className={styles.precheckThreeGrid}>
+                    <div className={styles.precheckBox}>
+                      <Smartphone size={15} color={precheck?.layer1Device.isVerified ? '#34d399' : '#f43f5e'} />
+                      <span className={styles.precheckLabel}>Device</span>
+                      <span className={precheck?.layer1Device.isVerified ? styles.precheckBadgeVerified : styles.precheckBadgeFailed}>
+                        {precheck?.layer1Device.isVerified ? 'Verified' : 'Pending'}
+                      </span>
+                    </div>
+
+                    <div className={styles.precheckBox}>
+                      <Wifi size={15} color={precheck?.layer2Network.isVerified ? '#34d399' : '#f43f5e'} />
+                      <span className={styles.precheckLabel}>Wi-Fi IP</span>
+                      <span className={precheck?.layer2Network.isVerified ? styles.precheckBadgeVerified : styles.precheckBadgeFailed}>
+                        {precheck?.layer2Network.isVerified ? 'Verified' : 'Pending'}
+                      </span>
+                    </div>
+
+                    <div className={styles.precheckBox}>
+                      <MapPin size={15} color={precheck?.layer3Geofence.isVerified ? '#34d399' : '#fbbf24'} />
+                      <span className={styles.precheckLabel}>GPS Location</span>
+                      <span className={precheck?.layer3Geofence.isVerified ? styles.precheckBadgeVerified : styles.precheckBadgePending}>
+                        {precheck?.layer3Geofence.isVerified ? 'Verified' : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
 
                   {!isReadyToClock && !isClockedIn && (
                     <p className={styles.lockGuidanceText}>
