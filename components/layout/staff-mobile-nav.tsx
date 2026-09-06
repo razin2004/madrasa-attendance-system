@@ -11,7 +11,8 @@ interface StaffMobileNavProps {
 }
 
 export function StaffMobileNav({ organizationCode }: StaffMobileNavProps) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || '';
   const org = organizationCode.toUpperCase();
   const basePath = `/${org}/staff`;
 

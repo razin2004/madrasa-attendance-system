@@ -18,7 +18,8 @@ export function StaffHeader({
   isPrecheckReady,
   onSignOut,
 }: StaffHeaderProps) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || '';
   const org = organizationCode.toUpperCase();
 
   const getPageTitle = () => {

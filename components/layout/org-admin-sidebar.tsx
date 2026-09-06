@@ -46,7 +46,8 @@ export function OrgAdminSidebar({
   staffCount,
   shiftPatternCount,
 }: OrgAdminSidebarProps) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || '';
   const router = useRouter();
   const toast = useToast();
   const [showLogoutModal, setShowLogoutModal] = useState(false);

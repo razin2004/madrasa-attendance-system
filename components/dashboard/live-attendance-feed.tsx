@@ -46,7 +46,7 @@ export function LiveAttendanceFeed({ organizationCode }: LiveAttendanceFeedProps
       const res = await fetch(`/api/org/${organizationCode}/attendance/live-feed?limit=15`);
       const data = await res.json();
       if (res.ok && data.success) {
-        setRecords(data.records);
+        setRecords(Array.isArray(data.records) ? data.records : []);
         setLastRefreshed(new Date().toLocaleTimeString());
       }
     } catch (err) {

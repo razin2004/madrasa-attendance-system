@@ -109,9 +109,9 @@ export function BranchStaffingBanner({ organizationCode }: BranchStaffingBannerP
               }}
             >
               <Calendar size={12} />
-              <span>Today ({data.today.weekday.slice(0, 3)})</span>
+              <span>Today ({data.today?.weekday ? data.today.weekday.slice(0, 3) : 'Today'})</span>
               <span style={{ backgroundColor: '#ef4444', color: '#ffffff', fontSize: '9.5px', padding: '1px 5px', borderRadius: '10px', fontWeight: 800 }}>
-                {data.today.understaffedBranchesCount}
+                {data.today?.understaffedBranchesCount || 0}
               </span>
             </button>
           )}
@@ -135,9 +135,9 @@ export function BranchStaffingBanner({ organizationCode }: BranchStaffingBannerP
               }}
             >
               <Calendar size={12} />
-              <span>Tomorrow ({data.tomorrow.weekday.slice(0, 3)})</span>
+              <span>Tomorrow ({data.tomorrow?.weekday ? data.tomorrow.weekday.slice(0, 3) : 'Tomorrow'})</span>
               <span style={{ backgroundColor: '#ef4444', color: '#ffffff', fontSize: '9.5px', padding: '1px 5px', borderRadius: '10px', fontWeight: 800 }}>
-                {data.tomorrow.understaffedBranchesCount}
+                {data.tomorrow?.understaffedBranchesCount || 0}
               </span>
             </button>
           )}

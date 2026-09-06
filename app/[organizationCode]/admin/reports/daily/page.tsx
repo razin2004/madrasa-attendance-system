@@ -479,7 +479,7 @@ export default function DailyReportPage() {
                     </thead>
                     <tbody>
                       {report.rows.map((row: any, idx: number) => {
-                        const statusKey = row.status.replace(/ /g, '_');
+                        const statusKey = (row.status || '').replace(/ /g, '_');
                         return (
                           <tr
                             key={idx}

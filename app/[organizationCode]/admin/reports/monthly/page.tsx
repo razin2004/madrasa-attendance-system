@@ -517,7 +517,7 @@ export default function MonthlyReportPage() {
                     </thead>
                     <tbody>
                       {report.daysRows.map((row: any, idx: number) => {
-                        const statusKey = row.status.replace(/ /g, '_');
+                        const statusKey = (row.status || '').replace(/ /g, '_');
                         return (
                           <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                             <td className={styles.td}>

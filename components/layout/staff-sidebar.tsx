@@ -35,7 +35,8 @@ export function StaffSidebar({
   staffEmail = '',
   onSignOut,
 }: StaffSidebarProps) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || '';
   const org = organizationCode.toUpperCase();
   const basePath = `/${org}/staff`;
 

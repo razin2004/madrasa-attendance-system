@@ -19,6 +19,7 @@ import {
   Network,
   CheckCircle2,
   Navigation,
+  ShieldCheck,
 } from 'lucide-react';
 import styles from './Landing.module.css';
 
@@ -43,7 +44,7 @@ export default function HomePage() {
             </h1>
 
             <p className={styles.heroSubtitle}>
-              ShiftGuard enforces 3-Layer Zero-Trust Attendance: Registered Hardware Devices, Branch IPs, and Geofenced GPS Locations with seamless multi-tenant governance.
+              ShiftGuard enforces 4-Layer Zero-Trust Attendance: Registered Hardware Devices, Branch IPs, Geofenced GPS Locations, and Immutable Audit Trails.
             </p>
 
             <div className={styles.ctaGroup}>
@@ -61,15 +62,15 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 3-Layer Security Section (Section 5) */}
+        {/* 4-Layer Security Section */}
         <section style={{ padding: '24px 0 40px 0' }}>
           <div className="container">
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
-                3-Layer Zero-Trust Attendance Verification
+                4-Layer Zero-Trust Attendance Verification
               </h2>
               <p className={styles.sectionDescription}>
-                Normal attendance is allowed ONLY when all three verification layers pass simultaneously.
+                Normal attendance is allowed ONLY when all security verification layers pass simultaneously.
               </p>
             </div>
 
@@ -140,6 +141,29 @@ export default function HomePage() {
                 </h3>
                 <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                   Calculates GPS coordinates against configured branch center point and radius. Supports desktop fallback positioning.
+                </p>
+              </div>
+
+              {/* Layer 4 */}
+              <div className="glass-card glass-card-hover" style={{ padding: '20px 18px' }}>
+                <div
+                  className={styles.featureIconBox}
+                  style={{
+                    backgroundColor: 'rgba(192, 132, 252, 0.15)',
+                    border: '1px solid rgba(192, 132, 252, 0.3)',
+                    color: '#c084fc',
+                  }}
+                >
+                  <ShieldCheck size={20} />
+                </div>
+                <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>
+                  Layer 4
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '6px' }}>
+                  Zero-Trust Audit Trail
+                </h3>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  Generates immutable cryptographic punch hashes with anti-replay timestamps to detect and prevent location spoofing tools.
                 </p>
               </div>
             </div>

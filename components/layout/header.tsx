@@ -1,12 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { Shield, Building2, LogIn, Menu, X, ArrowRight, Sparkles, Lock } from 'lucide-react';
+import { Shield, Building2, LogIn } from 'lucide-react';
 
 export function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   return (
     <header
       style={{
@@ -97,8 +95,8 @@ export function Header() {
           </div>
         </Link>
 
-        {/* Desktop Action Buttons */}
-        <div className="desktop-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Action Buttons (Visible on both Desktop & Mobile) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link
             href="/login"
             className="btn btn-secondary btn-sm"
@@ -117,102 +115,7 @@ export function Header() {
             <span>Register</span>
           </Link>
         </div>
-
-        {/* Mobile Hamburger Menu Icon Button (<768px) */}
-        <button
-          type="button"
-          className="mobile-hamburger-btn"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
-          aria-expanded={mobileMenuOpen}
-          style={{
-            background: 'rgba(255, 255, 255, 0.06)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '8px',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#ffffff',
-            cursor: 'pointer',
-          }}
-        >
-          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
       </div>
-
-      {/* Full-Width Drop-Down Drawer on Mobile (<768px) */}
-      {mobileMenuOpen && (
-        <div
-          className="mobile-header-drawer"
-          style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            backgroundColor: 'rgba(3, 7, 18, 0.96)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            borderBottom: '1px solid var(--border-medium)',
-            padding: '16px 20px 24px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
-            zIndex: 99,
-          }}
-        >
-          <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#818cf8', marginBottom: '4px' }}>
-            Quick Links &amp; Actions
-          </div>
-
-          <Link
-            href="/register"
-            onClick={() => setMobileMenuOpen(false)}
-            className="btn btn-primary"
-            style={{ width: '100%', padding: '11px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px' }}
-          >
-            <Building2 size={16} />
-            <span>Register Organization</span>
-            <ArrowRight size={16} />
-          </Link>
-
-          <Link
-            href="/login"
-            onClick={() => setMobileMenuOpen(false)}
-            className="btn btn-secondary"
-            style={{ width: '100%', padding: '11px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px' }}
-          >
-            <LogIn size={16} color="#818cf8" />
-            <span>Sign In to Workspace</span>
-          </Link>
-
-          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <Link
-              href="/#features"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{ fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none', padding: '6px 0' }}
-            >
-              3-Layer Zero-Trust Security Features
-            </Link>
-            <Link
-              href="/#workflow"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{ fontSize: '13px', color: 'var(--text-secondary)', textDecoration: 'none', padding: '6px 0' }}
-            >
-              How ShiftGuard Works
-            </Link>
-            <Link
-              href="/super-admin/login"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{ fontSize: '12.5px', color: '#818cf8', textDecoration: 'none', padding: '6px 0', fontWeight: 600 }}
-            >
-              Super Admin Console Portal &rarr;
-            </Link>
-          </div>
-        </div>
-      )}
     </header>
   );
 }
