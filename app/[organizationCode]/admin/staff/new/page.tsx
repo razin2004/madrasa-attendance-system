@@ -199,16 +199,21 @@ export default function OnboardStaffPage() {
 
       {/* Main Container */}
       <div className={styles.mainContent}>
+        {/* Mobile Nav */}
+        <OrgAdminMobileNav organizationCode={organizationCode} />
+
         {/* Header */}
         <header className={styles.headerBar}>
-          <Link href={`/${organizationCode}/admin/staff`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-            <ArrowLeft size={16} />
-          </Link>
-          <div>
-            <h1 className={styles.title}>Add New Staff Member</h1>
-            <p className={styles.subtitle}>
-              Create staff account, assign workplace branches, collect ID document, and issue email setup link.
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Link href={`/${organizationCode}/admin/staff`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
+              <ArrowLeft size={16} />
+            </Link>
+            <div>
+              <h1 className={styles.title}>Add New Staff Member</h1>
+              <p className={styles.subtitle}>
+                Create staff account & assign workplace branches.
+              </p>
+            </div>
           </div>
         </header>
 

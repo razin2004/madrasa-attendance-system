@@ -132,7 +132,7 @@ export default function StaffApplyLeavePage() {
           </div>
 
           {/* Section 2: Date Range */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
             <div className="form-group">
               <label className="form-label">Start Date *</label>
               <input
@@ -172,11 +172,11 @@ export default function StaffApplyLeavePage() {
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <Link href={`/${orgCode}/staff/leave`} className="btn btn-secondary">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
+            <Link href={`/${orgCode}/staff/leave`} className="btn btn-secondary" style={{ flex: 1, textAlign: 'center' }}>
               Cancel
             </Link>
-            <button type="submit" disabled={submitting} className="btn btn-primary">
+            <button type="submit" disabled={submitting} className="btn btn-primary" style={{ flex: 1 }}>
               {submitting ? 'Submitting...' : 'Submit Leave Request'}
             </button>
           </div>
@@ -185,3 +185,4 @@ export default function StaffApplyLeavePage() {
     </div>
   );
 }
+

@@ -1341,11 +1341,18 @@ export default function SuperAdminDashboardPage() {
       {/* MODAL 3: DEACTIVATE MODAL */}
       {selectedOrg && actionType === 'DEACTIVATE' && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '480px' }}>
+          <div
+            className="modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="deactivate-org-title"
+            onClick={(e) => e.stopPropagation()}
+            style={{ padding: '28px', maxWidth: '480px' }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Power size={22} color="#f87171" />
-                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
+                <h3 id="deactivate-org-title" style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
                   Deactivate Organization
                 </h3>
               </div>

@@ -176,7 +176,7 @@ export default function NewShiftSwapPage() {
     filteredColleagues.every((c) => selectedPeerIds.includes(c.id));
 
   return (
-    <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ padding: '14px 12px 80px 12px', maxWidth: '900px', margin: '0 auto' }}>
       {/* Top Header Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
@@ -199,6 +199,7 @@ export default function NewShiftSwapPage() {
           Cancel
         </Link>
       </div>
+
 
       {loading ? (
         <div className="glass-card" style={{ padding: '60px', textAlign: 'center' }}>

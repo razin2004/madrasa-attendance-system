@@ -117,6 +117,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
               </div>
               <button
                 onClick={() => setDrawerOpen(false)}
+                aria-label="Close navigation menu"
                 style={{
                   background: 'rgba(255, 255, 255, 0.08)',
                   border: 'none',
@@ -144,6 +145,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
                     key={item.href}
                     href={item.href}
                     onClick={() => setDrawerOpen(false)}
+                    aria-current={isActive ? 'page' : undefined}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -215,6 +217,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
 
       {/* Primary Fixed Bottom Navigation Bar */}
       <nav
+        aria-label="Org Admin mobile navigation"
         style={{
           position: 'fixed',
           bottom: 0,
@@ -244,6 +247,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -281,6 +285,8 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
         {/* More Menu Trigger */}
         <button
           onClick={() => setDrawerOpen(true)}
+          aria-label="Open full admin menu"
+          aria-expanded={drawerOpen}
           style={{
             display: 'flex',
             flexDirection: 'column',

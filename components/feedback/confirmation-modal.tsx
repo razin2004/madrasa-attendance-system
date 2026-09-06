@@ -61,12 +61,19 @@ export function ConfirmationModal({
 
   const modalContent = (
     <div className={styles.overlay} onClick={() => !isLoading && onClose()}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmation-modal-title"
+        aria-describedby="confirmation-modal-desc"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.header}>
           <div className={`${styles.iconWrapper} ${styles[variant]}`}>{renderIcon()}</div>
           <div>
-            <h3 className={styles.title}>{title}</h3>
-            <p className={styles.message}>{message}</p>
+            <h3 id="confirmation-modal-title" className={styles.title}>{title}</h3>
+            <p id="confirmation-modal-desc" className={styles.message}>{message}</p>
           </div>
         </div>
 

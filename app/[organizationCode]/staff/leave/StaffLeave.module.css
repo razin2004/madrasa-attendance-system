@@ -114,11 +114,36 @@
 
 @media (max-width: 768px) {
   .container {
-    padding: 16px 14px 80px 14px;
+    padding: 14px 12px 90px 12px;
+  }
+
+  .headerBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerBar a.btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .balanceGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .balanceCard {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .balanceVal {
+    font-size: 24px;
+  }
+
+  .filterBar button {
+    flex: 1;
+    justify-content: center;
   }
 
   .tableCard {
@@ -129,3 +154,4 @@
     display: flex;
   }
 }
+

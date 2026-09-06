@@ -757,12 +757,12 @@ export default function RegisterOrganizationPage() {
                     {errors.contactEmail && <div className="form-error">{errors.contactEmail}</div>}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={handlePrevStep}
                       className="btn btn-secondary"
-                      style={{ flex: 1, padding: '14px' }}
+                      style={{ flex: 1, padding: '14px', textAlign: 'center' }}
                     >
                       <ArrowLeft size={16} />
                       <span>Back</span>
@@ -940,13 +940,13 @@ export default function RegisterOrganizationPage() {
                     {errors.agreedToTerms && <div className="form-error">{errors.agreedToTerms}</div>}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '28px' }}>
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '28px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={handlePrevStep}
                       disabled={isSubmitting}
                       className="btn btn-secondary"
-                      style={{ flex: 1, padding: '14px' }}
+                      style={{ flex: 1, padding: '14px', textAlign: 'center' }}
                     >
                       <ArrowLeft size={16} />
                       <span>Back</span>
@@ -965,7 +965,7 @@ export default function RegisterOrganizationPage() {
                         </>
                       ) : (
                         <>
-                          <span>Submit Registration Application</span>
+                          <span>Submit Application</span>
                           <ArrowRight size={16} />
                         </>
                       )}
@@ -973,6 +973,7 @@ export default function RegisterOrganizationPage() {
                   </div>
                 </div>
               )}
+
 
               <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '13px', color: 'var(--text-muted)' }}>
                 Already registered?{' '}

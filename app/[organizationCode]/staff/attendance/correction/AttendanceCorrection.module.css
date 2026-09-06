@@ -212,3 +212,14 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+@media (max-width: 480px) {
+  .timeRow {
+    grid-template-columns: 1fr;
+  }
+  .formCard {
+    padding: 16px;
+    border-radius: 14px;
+  }
+}
+

@@ -49,7 +49,7 @@ export function StaffMobileNav({ organizationCode }: StaffMobileNavProps) {
   ];
 
   return (
-    <nav className={styles.mobileNav}>
+    <nav className={styles.mobileNav} aria-label="Staff mobile navigation">
       {tabs.map((tab) => {
         const isActive = tab.exact
           ? pathname === tab.href
@@ -60,6 +60,7 @@ export function StaffMobileNav({ organizationCode }: StaffMobileNavProps) {
           <Link
             key={tab.label}
             href={tab.href}
+            aria-current={isActive ? 'page' : undefined}
             className={`${styles.mobileNavItem} ${isActive ? styles.active : ''}`}
           >
             <Icon size={20} className={styles.mobileNavIcon} />

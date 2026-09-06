@@ -200,7 +200,7 @@ export default function SuperAdminLoginPage() {
         </div>
 
         {/* Card */}
-        <div className="glass-card" style={{ padding: '32px 28px' }}>
+        <div className="glass-card" style={{ padding: 'clamp(20px, 5vw, 32px) clamp(16px, 5vw, 28px)' }}>
           {errorMessage && (
             <div
               style={{

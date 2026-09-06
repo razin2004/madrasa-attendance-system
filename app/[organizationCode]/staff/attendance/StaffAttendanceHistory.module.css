@@ -156,11 +156,26 @@
 
 @media (max-width: 768px) {
   .attendanceContainer {
-    padding: 16px;
+    padding: 14px 12px;
   }
   .headerBar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .monthPicker {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .monthPicker a {
+    margin-left: 0 !important;
+    flex: 1;
+    justify-content: center;
+  }
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
   .desktopTableContainer {
     display: none;
@@ -169,3 +184,10 @@
     display: flex;
   }
 }
+
+@media (max-width: 480px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+

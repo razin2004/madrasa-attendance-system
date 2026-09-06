@@ -106,11 +106,40 @@
 
 @media (max-width: 768px) {
   .container {
-    padding: 16px 14px 80px 14px;
+    padding: 14px 12px 90px 12px;
+  }
+
+  .headerBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerBar a.btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .metricsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .metricCard {
+    padding: 12px 10px;
+    border-radius: 10px;
+  }
+
+  .metricLabel {
+    font-size: 10px;
+  }
+
+  .metricValue {
+    font-size: 18px;
+  }
+
+  .filterBar button {
+    flex: 1;
+    justify-content: center;
   }
 
   .tableCard {
@@ -121,3 +150,10 @@
     display: flex;
   }
 }
+
+@media (max-width: 480px) {
+  .metricsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+

@@ -74,7 +74,10 @@
   font-size: 1rem;
   font-weight: 700;
   color: #ffffff;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
+
 
 .signOutSection {
   margin-top: 10px;
@@ -128,8 +131,15 @@
 }
 
 @media (max-width: 767px) {
+  .profileContainer {
+    padding: 14px 12px 90px 12px;
+  }
   .infoGrid {
     grid-template-columns: 1fr;
+  }
+  .card {
+    padding: 16px;
+    border-radius: 14px;
   }
   .signOutSection {
     flex-direction: column;
@@ -140,3 +150,4 @@
     justify-content: center;
   }
 }
+

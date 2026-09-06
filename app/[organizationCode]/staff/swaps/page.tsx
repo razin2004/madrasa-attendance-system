@@ -145,7 +145,7 @@ export default function StaffShiftSwapsPage() {
   ).length;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '920px', margin: '0 auto' }}>
+    <div className={styles.container} style={{ padding: '16px', maxWidth: '920px', margin: '0 auto' }}>
       {/* Top Header Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
@@ -164,11 +164,11 @@ export default function StaffShiftSwapsPage() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%', maxWidth: '400px' }}>
           <Link
             href={`/${organizationCode}/staff/swaps/new`}
             className="btn btn-primary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 800, padding: '10px 16px', borderRadius: '10px' }}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 800, padding: '10px 16px', borderRadius: '10px', flex: 1 }}
           >
             <Plus size={16} />
             <span>Apply for Shift Swap</span>
@@ -179,6 +179,7 @@ export default function StaffShiftSwapsPage() {
           </button>
         </div>
       </div>
+
 
       {/* Incoming Notification Banner */}
       {pendingIncomingCount > 0 && (

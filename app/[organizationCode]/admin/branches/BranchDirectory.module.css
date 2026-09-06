@@ -124,10 +124,32 @@
 
 @media (max-width: 768px) {
   .headerBar {
-    padding: 16px;
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 12px 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 12px;
+  }
+  .title {
+    font-size: 18px;
+  }
+  .subtitle {
+    display: none;
+  }
+  .filterSearchRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .tabsGroup {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    display: flex;
+  }
+  .tabButton {
+    flex-shrink: 0;
   }
   .tableDesktop {
     display: none;
@@ -139,3 +161,14 @@
     width: 100%;
   }
 }
+
+@media (max-width: 480px) {
+  .headerBar {
+    padding: 10px 12px;
+  }
+  .mobileCard {
+    padding: 14px;
+    border-radius: var(--radius-md, 12px);
+  }
+}
+

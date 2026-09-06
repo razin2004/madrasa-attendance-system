@@ -82,6 +82,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {/* Toast Render Queue Portal (Max 3 visible line by line) */}
       <div
         className="toast-container"
+        aria-live="polite"
+        aria-atomic="true"
         style={{
           position: 'fixed',
           bottom: '24px',

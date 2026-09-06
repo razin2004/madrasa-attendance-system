@@ -534,58 +534,109 @@ export default function OrgAdminLandingPage() {
                     <span>View All Leave ({pendingLeaveCount})</span>
                     <ArrowRight size={14} />
                   </Link>
-                </div>
-
-                {pendingLeaveRequests.length === 0 ? (
+                </div>                {pendingLeaveRequests.length === 0 ? (
                   <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
                     <CheckCircle2 size={32} color="#34d399" style={{ margin: '0 auto 10px auto' }} />
                     <div>All pending leave applications have been reviewed.</div>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Staff Member</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Leave Type</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Duration / Dates</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Reason</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'right', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pendingLeaveRequests.map((req, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                            <td style={{ padding: '14px 20px', fontWeight: 700, color: '#ffffff' }}>
-                              {req.staffProfile?.name || 'Staff Member'}
-                              <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 500 }}>ID: {req.staffProfile?.staffId || '—'}</div>
-                            </td>
-                            <td style={{ padding: '14px 20px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }}>
-                                {req.type}
-                              </span>
-                            </td>
-                            <td style={{ padding: '14px 20px', color: '#cbd5e1', fontSize: '12.5px' }}>
-                              {new Date(req.startDate).toLocaleDateString()} &ndash; {new Date(req.endDate).toLocaleDateString()}
-                              <div style={{ fontSize: '11px', color: '#818cf8', fontWeight: 700 }}>({req.daysCount} {req.daysCount === 1 ? 'day' : 'days'})</div>
-                            </td>
-                            <td style={{ padding: '14px 20px', color: '#94a3b8', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {req.reason || 'No reason provided'}
-                            </td>
-                            <td style={{ padding: '14px 20px', textAlign: 'right' }}>
-                              <Link
-                                href={`/${orgCode}/admin/leave`}
-                                className="btn btn-primary btn-sm"
-                                style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 12px' }}
-                              >
-                                Review &rarr;
-                              </Link>
-                            </td>
+                  <>
+                    {/* Desktop Table View */}
+                    <div className={styles.tableDesktop} style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
+                            <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Staff Member</th>
+                            <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Leave Type</th>
+                            <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Duration / Dates</th>
+                            <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Reason</th>
+                            <th style={{ padding: '12px 20px', textAlign: 'right', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {pendingLeaveRequests.map((req, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                              <td style={{ padding: '14px 20px', fontWeight: 700, color: '#ffffff' }}>
+                                {req.staffProfile?.name || 'Staff Member'}
+                                <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 500 }}>ID: {req.staffProfile?.staffId || '—'}</div>
+                              </td>
+                              <td style={{ padding: '14px 20px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }}>
+                                  {req.type}
+                                </span>
+                              </td>
+                              <td style={{ padding: '14px 20px', color: '#cbd5e1', fontSize: '12.5px' }}>
+                                {new Date(req.startDate).toLocaleDateString()} &ndash; {new Date(req.endDate).toLocaleDateString()}
+                                <div style={{ fontSize: '11px', color: '#818cf8', fontWeight: 700 }}>({req.daysCount} {req.daysCount === 1 ? 'day' : 'days'})</div>
+                              </td>
+                              <td style={{ padding: '14px 20px', color: '#94a3b8', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {req.reason || 'No reason provided'}
+                              </td>
+                              <td style={{ padding: '14px 20px', textAlign: 'right' }}>
+                                <Link
+                                  href={`/${orgCode}/admin/leave`}
+                                  className="btn btn-primary btn-sm"
+                                  style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 12px' }}
+                                >
+                                  Review &rarr;
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Responsive Cards */}
+                    <div className={styles.cardsMobile}>
+                      {pendingLeaveRequests.map((req, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            padding: '14px 16px',
+                            borderRadius: '12px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '14px' }}>
+                                {req.staffProfile?.name || 'Staff Member'}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>
+                                ID: {req.staffProfile?.staffId || '—'}
+                              </div>
+                            </div>
+                            <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                              {req.type}
+                            </span>
+                          </div>
+
+                          <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                            📅 {new Date(req.startDate).toLocaleDateString()} – {new Date(req.endDate).toLocaleDateString()} ({req.daysCount} days)
+                          </div>
+
+                          {req.reason && (
+                            <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                              &ldquo;{req.reason}&rdquo;
+                            </div>
+                          )}
+
+                          <Link
+                            href={`/${orgCode}/admin/leave`}
+                            className="btn btn-primary btn-sm"
+                            style={{ borderRadius: '8px', fontSize: '12px', marginTop: '4px', justifyContent: 'center' }}
+                          >
+                            Review Leave Application &rarr;
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -618,49 +669,102 @@ export default function OrgAdminLandingPage() {
                     <div>All pending attendance correction requests have been reviewed.</div>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Staff Member</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Date</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Correction Type</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Reason</th>
-                          <th style={{ padding: '12px 20px', textAlign: 'right', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pendingCorrections.map((req, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                            <td style={{ padding: '14px 20px', fontWeight: 700, color: '#ffffff' }}>
-                              {req.staff?.name || 'Staff Member'}
-                              <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 500 }}>ID: {req.staff?.staffId || '—'}</div>
-                            </td>
-                            <td style={{ padding: '14px 20px', color: '#ffffff', fontFamily: 'var(--font-mono)', fontSize: '12.5px' }}>
-                              {req.date}
-                            </td>
-                            <td style={{ padding: '14px 20px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24' }}>
-                                {req.type}
-                              </span>
-                            </td>
-                            <td style={{ padding: '14px 20px', color: '#94a3b8', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
-                              &ldquo;{req.reason || 'No reason provided'}&rdquo;
-                            </td>
-                            <td style={{ padding: '14px 20px', textAlign: 'right' }}>
-                              <Link
-                                href={`/${orgCode}/admin/attendance/corrections`}
-                                className="btn btn-primary btn-sm"
-                                style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 12px' }}
-                              >
-                                Review &rarr;
-                              </Link>
-                            </td>
+                  <>
+                    {/* Desktop Table View */}
+                    <div className={styles.tableDesktop} style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
+                            <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Staff Member</th>
+                            <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Date</th>
+                            <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Correction Type</th>
+                            <th style={{ padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Reason</th>
+                            <th style={{ padding: '12px 20px', textAlign: 'right', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700 }}>Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {pendingCorrections.map((req, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                              <td style={{ padding: '14px 20px', fontWeight: 700, color: '#ffffff' }}>
+                                {req.staff?.name || 'Staff Member'}
+                                <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 500 }}>ID: {req.staff?.staffId || '—'}</div>
+                              </td>
+                              <td style={{ padding: '14px 20px', color: '#ffffff', fontFamily: 'var(--font-mono)', fontSize: '12.5px' }}>
+                                {req.date}
+                              </td>
+                              <td style={{ padding: '14px 20px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24' }}>
+                                  {req.type}
+                                </span>
+                              </td>
+                              <td style={{ padding: '14px 20px', color: '#94a3b8', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
+                                &ldquo;{req.reason || 'No reason provided'}&rdquo;
+                              </td>
+                              <td style={{ padding: '14px 20px', textAlign: 'right' }}>
+                                <Link
+                                  href={`/${orgCode}/admin/attendance/corrections`}
+                                  className="btn btn-primary btn-sm"
+                                  style={{ borderRadius: '8px', fontSize: '12px', padding: '6px 12px' }}
+                                >
+                                  Review &rarr;
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Responsive Cards */}
+                    <div className={styles.cardsMobile}>
+                      {pendingCorrections.map((req, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            padding: '14px 16px',
+                            borderRadius: '12px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '14px' }}>
+                                {req.staff?.name || 'Staff Member'}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>
+                                ID: {req.staff?.staffId || '—'}
+                              </div>
+                            </div>
+                            <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+                              {req.type}
+                            </span>
+                          </div>
+
+                          <div style={{ fontSize: '12px', color: '#cbd5e1', fontFamily: 'var(--font-mono)' }}>
+                            📆 Date: {req.date}
+                          </div>
+
+                          {req.reason && (
+                            <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                              &ldquo;{req.reason}&rdquo;
+                            </div>
+                          )}
+
+                          <Link
+                            href={`/${orgCode}/admin/attendance/corrections`}
+                            className="btn btn-primary btn-sm"
+                            style={{ borderRadius: '8px', fontSize: '12px', marginTop: '4px', justifyContent: 'center' }}
+                          >
+                            Review Correction &rarr;
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
 

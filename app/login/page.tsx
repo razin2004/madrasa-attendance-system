@@ -211,16 +211,22 @@ export default function CommonLoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    tabIndex={0}
                     style={{
                       position: 'absolute',
-                      right: '12px',
-                      top: '12px',
+                      right: '10px',
+                      top: '8px',
                       background: 'none',
                       border: 'none',
                       color: 'var(--text-muted)',
                       cursor: 'pointer',
-                      padding: '2px',
+                      padding: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: '32px',
+                      minHeight: '32px',
                     }}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

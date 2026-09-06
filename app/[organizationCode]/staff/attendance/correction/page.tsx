@@ -94,24 +94,24 @@ export default function StaffAttendanceCorrectionPage() {
         </p>
       </div>
 
-      <div className="glass-card" style={{ maxWidth: '600px', padding: '28px' }}>
+      <div className={styles.formCard} style={{ maxWidth: '600px' }}>
         <form onSubmit={handleSubmit}>
           {/* Affected Date */}
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label className="form-label">Affected Attendance Date *</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Affected Attendance Date *</label>
             <input
               type="date"
-              className="form-input"
+              className={styles.input}
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
 
           {/* Problem Type */}
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label className="form-label">Problem Type *</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Problem Type *</label>
             <select
-              className="form-input"
+              className={styles.input}
               value={type}
               onChange={(e) => setType(e.target.value)}
             >
@@ -124,22 +124,22 @@ export default function StaffAttendanceCorrectionPage() {
           </div>
 
           {/* Times */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-            <div className="form-group">
-              <label className="form-label">Requested Clock In</label>
+          <div className={styles.timeRow} style={{ marginBottom: '20px' }}>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Requested Clock In</label>
               <input
                 type="time"
-                className="form-input"
+                className={styles.input}
                 value={requestedClockIn}
                 onChange={(e) => setRequestedClockIn(e.target.value)}
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Requested Clock Out</label>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Requested Clock Out</label>
               <input
                 type="time"
-                className="form-input"
+                className={styles.input}
                 value={requestedClockOut}
                 onChange={(e) => setRequestedClockOut(e.target.value)}
               />
@@ -147,22 +147,21 @@ export default function StaffAttendanceCorrectionPage() {
           </div>
 
           {/* Reason */}
-          <div className="form-group" style={{ marginBottom: '24px' }}>
-            <label className="form-label">Detailed Explanation *</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Detailed Explanation *</label>
             <textarea
-              className="form-input"
-              style={{ height: '90px' }}
+              className={styles.textarea}
               placeholder="Explain why the correction is needed..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <Link href={`/${orgCode}/staff/attendance`} className="btn btn-secondary">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
+            <Link href={`/${orgCode}/staff/attendance`} className="btn btn-secondary" style={{ flex: 1, textAlign: 'center' }}>
               Cancel
             </Link>
-            <button type="submit" disabled={submitting} className="btn btn-primary">
+            <button type="submit" disabled={submitting} className="btn btn-primary" style={{ flex: 1 }}>
               {submitting ? 'Submitting...' : 'Submit Request'}
             </button>
           </div>
@@ -171,3 +170,4 @@ export default function StaffAttendanceCorrectionPage() {
     </div>
   );
 }
+

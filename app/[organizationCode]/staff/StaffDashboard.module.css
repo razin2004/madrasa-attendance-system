@@ -876,6 +876,16 @@
 }
 
 @media (max-width: 380px) {
+  .headerNavControls {
+    flex-wrap: wrap;
+  }
+
+  .headerButton {
+    padding: 8px 6px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
   .liveClockDisplay {
     font-size: 28px;
   }
@@ -885,3 +895,4 @@
     font-size: 14.5px;
   }
 }
+

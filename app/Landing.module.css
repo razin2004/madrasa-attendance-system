@@ -160,6 +160,11 @@
     margin-bottom: 28px;
   }
 
+  .ctaGroup a {
+    width: 100%;
+    justify-content: center;
+  }
+
   .sectionHeader {
     margin-bottom: 20px;
   }
@@ -203,3 +208,13 @@
     margin-bottom: 6px;
   }
 }
+
+@media (max-width: 380px) {
+  .heroTitle {
+    font-size: 22px;
+  }
+  .heroBadge {
+    font-size: 10px;
+  }
+}
+

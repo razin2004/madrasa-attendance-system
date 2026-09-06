@@ -374,9 +374,11 @@ export default function StaffDirectoryPage() {
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
+              className="admin-header-menu-btn"
+              aria-label="Staff Directory Actions Menu"
+              aria-expanded={headerMenuOpen}
               style={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 width: '38px',

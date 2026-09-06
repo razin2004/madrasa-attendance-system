@@ -172,10 +172,25 @@
 }
 
 @media (max-width: 767px) {
+  .shiftContainer {
+    padding: 14px 12px 80px 12px;
+  }
   .weeklyScheduleGrid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
   .shiftInfoGrid {
     grid-template-columns: 1fr;
   }
+  .card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .historyTable {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
 }
+

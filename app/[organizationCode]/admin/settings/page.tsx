@@ -351,7 +351,7 @@ export default function AdminSettingsPage() {
           </div>
         </header>
 
-        <main className="pageMainContent" style={{ maxWidth: '1000px', padding: '0 32px' }}>
+        <main className="pageMainContent" style={{ maxWidth: '1000px', padding: '0 16px' }}>
 
         {loading ? (
           <div className="glass-card" style={{ padding: '60px 24px', textAlign: 'center' }}>

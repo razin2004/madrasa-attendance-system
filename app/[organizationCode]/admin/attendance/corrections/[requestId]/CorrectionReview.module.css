@@ -250,3 +250,24 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding: 16px 14px 80px 14px;
+  }
+  .title {
+    font-size: 20px;
+  }
+  .comparisonBox {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .buttonRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .approveBtn, .rejectBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
