@@ -590,12 +590,10 @@ export default function ShiftPatternDetailPage() {
             {/* Section 1: Weekly Schedule Grid */}
             <div className="glass-card" style={{ padding: '28px' }}>
               <div style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
-                      <Calendar size={18} />
-                    </div>
-                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'nowrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <Calendar size={16} color="#818cf8" style={{ flexShrink: 0 }} />
+                    <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       Weekly Working Schedule
                     </h2>
                   </div>
@@ -606,15 +604,15 @@ export default function ShiftPatternDetailPage() {
                       setScheduleModalOpen(true);
                     }}
                     className="btn btn-secondary btn-sm"
-                    style={{ padding: '6px 8px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '4px 8px', borderRadius: '6px', fontSize: '12px', flexShrink: 0 }}
                     title="Edit Weekly Schedule"
                   >
-                    <Edit2 size={14} />
+                    <Edit2 size={13} />
                   </button>
                 </div>
 
-                <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', paddingLeft: '42px' }}>
-                  Min Staff Required: <strong style={{ color: '#ffffff' }}>{pattern.minimumStaffingThreshold}</strong>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                  Minimum staff: <strong style={{ color: '#ffffff', fontWeight: 600 }}>{pattern.minimumStaffingThreshold}</strong>
                 </div>
               </div>
 

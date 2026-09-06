@@ -8,6 +8,7 @@ import {
   Calendar,
   Clock,
   Download,
+  Filter,
   Printer,
   RefreshCw,
   Search,
@@ -51,6 +52,7 @@ export default function DateRangeReportPage() {
   const [source, setSource] = useState('');
   const [search, setSearch] = useState('');
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -292,126 +294,373 @@ export default function DateRangeReportPage() {
 
         {/* Filter Bar */}
         <div className={styles.filterBar}>
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>From Date:</span>
-            <input
-              type="date"
-              className={styles.input}
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>To Date:</span>
-            <input
-              type="date"
-              className={styles.input}
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
-
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>Branch:</span>
-            <select
-              className={styles.select}
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-            >
-              <option value="">All Branches</option>
-              {branchList.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>Staff:</span>
-            <select
-              className={styles.select}
-              value={staffId}
-              onChange={(e) => setStaffId(e.target.value)}
-            >
-              <option value="">All Staff</option>
-              {staffList.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.staffId})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.filterItem}>
-            <span className={styles.filterLabel}>Status:</span>
-            <select
-              className={styles.select}
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="">All Statuses</option>
-              <option value="PRESENT">PRESENT</option>
-              <option value="PARTIAL">PARTIAL</option>
-              <option value="HOLIDAY">HOLIDAY</option>
-              <option value="LEAVE">APPROVED LEAVE</option>
-              <option value="ABSENT">ABSENT</option>
-            </select>
-          </div>
-
-          <form
-            onSubmit={handleSearchSubmit}
-            style={{ display: 'flex', gap: '6px', flex: 1, minWidth: '180px' }}
-          >
-            <div style={{ position: 'relative', flex: 1 }}>
+          {/* Desktop Filter Group */}
+          <div className={`${styles.filterGroup} ${styles.desktopFilterGroup}`}>
+            <div className={styles.filterItem}>
+              <span className={styles.filterLabel}>From Date:</span>
               <input
-                type="text"
+                type="date"
                 className={styles.input}
-                style={{ width: '100%', paddingRight: search ? '28px' : '10px' }}
-                placeholder="Search staff..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
               />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  style={{
-                    position: 'absolute',
-                    right: '6px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                  }}
-                  title="Clear search"
-                >
-                  <X size={13} />
-                </button>
-              )}
             </div>
-            <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '8px 12px' }}>
-              <Search size={14} />
-            </button>
-          </form>
 
-          <button
-            type="button"
-            onClick={fetchReport}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '8px 12px' }}
-            title="Refresh"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+            <div className={styles.filterItem}>
+              <span className={styles.filterLabel}>To Date:</span>
+              <input
+                type="date"
+                className={styles.input}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.filterItem}>
+              <span className={styles.filterLabel}>Branch:</span>
+              <select
+                className={styles.select}
+                value={branchId}
+                onChange={(e) => setBranchId(e.target.value)}
+              >
+                <option value="">All Branches</option>
+                {branchList.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.filterItem}>
+              <span className={styles.filterLabel}>Staff:</span>
+              <select
+                className={styles.select}
+                value={staffId}
+                onChange={(e) => setStaffId(e.target.value)}
+              >
+                <option value="">All Staff</option>
+                {staffList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.staffId})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.filterItem}>
+              <span className={styles.filterLabel}>Status:</span>
+              <select
+                className={styles.select}
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="PRESENT">PRESENT</option>
+                <option value="PARTIAL">PARTIAL</option>
+                <option value="HOLIDAY">HOLIDAY</option>
+                <option value="LEAVE">APPROVED LEAVE</option>
+                <option value="ABSENT">ABSENT</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Action Bar (Search, Filter Button, Refresh) */}
+          <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '180px', alignItems: 'center' }}>
+            <form
+              onSubmit={handleSearchSubmit}
+              style={{ display: 'flex', gap: '6px', flex: 1, position: 'relative' }}
+            >
+              <div style={{ position: 'relative', width: '100%' }}>
+                <Search
+                  size={14}
+                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+                />
+                <input
+                  type="text"
+                  className={styles.input}
+                  style={{
+                    width: '100%',
+                    height: '36px',
+                    fontSize: '12.5px',
+                    paddingLeft: '32px',
+                    paddingRight: search ? '28px' : '10px',
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                  }}
+                  placeholder="Search staff..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      fetchReport();
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '2px',
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Search"
+              >
+                <Search size={14} />
+              </button>
+            </form>
+
+            <button
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={`btn btn-secondary btn-sm ${styles.mobileFilterBtn}`}
+              style={{
+                height: '36px',
+                padding: '0 12px',
+                borderRadius: '8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                borderColor: (branchId || staffId || status || source) ? '#6366f1' : undefined,
+                color: (branchId || staffId || status || source) ? '#818cf8' : undefined,
+              }}
+            >
+              {showMobileFilters ? <X size={15} /> : <Filter size={15} />}
+              <span>{showMobileFilters ? 'Close' : (branchId || staffId || status || source) ? 'Filter (*)' : 'Filter'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={fetchReport}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Refresh"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Filter Sheet Modal */}
+        {showMobileFilters && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 999,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+            }}
+            onClick={() => setShowMobileFilters(false)}
+          >
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '500px',
+                backgroundColor: '#0f172a',
+                borderTopLeftRadius: '20px',
+                borderTopRightRadius: '20px',
+                border: '1px solid var(--border-medium)',
+                borderBottom: 'none',
+                padding: '20px',
+                boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Filter size={16} color="#818cf8" />
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Date Range Filters</h3>
+                </div>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      From Date
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 10px',
+                        fontSize: '12.5px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      To Date
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 10px',
+                        fontSize: '12.5px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                    Branch Location
+                  </label>
+                  <select
+                    value={branchId}
+                    onChange={(e) => setBranchId(e.target.value)}
+                    className="form-input"
+                    style={{
+                      width: '100%',
+                      height: '40px',
+                      padding: '0 12px',
+                      fontSize: '13px',
+                      color: '#ffffff',
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: '10px',
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
+                    {branchList.map((b) => (
+                      <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                    Staff Member
+                  </label>
+                  <select
+                    value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
+                    className="form-input"
+                    style={{
+                      width: '100%',
+                      height: '40px',
+                      padding: '0 12px',
+                      fontSize: '13px',
+                      color: '#ffffff',
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: '10px',
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Staff</option>
+                    {staffList.map((s) => (
+                      <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                        {s.name} ({s.staffId})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                    Attendance Status
+                  </label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="form-input"
+                    style={{
+                      width: '100%',
+                      height: '40px',
+                      padding: '0 10px',
+                      fontSize: '12.5px',
+                      color: '#ffffff',
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: '10px',
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Statuses</option>
+                    <option value="PRESENT" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>PRESENT</option>
+                    <option value="PARTIAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>PARTIAL</option>
+                    <option value="HOLIDAY" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>HOLIDAY</option>
+                    <option value="LEAVE" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>APPROVED LEAVE</option>
+                    <option value="ABSENT" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>ABSENT</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => {
+                    setBranchId('');
+                    setStaffId('');
+                    setStatus('');
+                    setShowMobileFilters(false);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+                >
+                  Reset Filters
+                </button>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="btn btn-primary"
+                  style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Report Data Container */}
         <div className={styles.tableCard}>

@@ -8,6 +8,7 @@ import {
   Calendar,
   Clock,
   Download,
+  Filter,
   Printer,
   RefreshCw,
   Search,
@@ -49,6 +50,7 @@ export default function DailyReportPage() {
   const [status, setStatus] = useState('');
   const [source, setSource] = useState('');
   const [search, setSearch] = useState('');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Header Menu Dropdown & Click Outside Ref
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
@@ -298,7 +300,8 @@ export default function DailyReportPage() {
 
           {/* Responsive Filter Bar */}
           <div className={styles.filterBar}>
-            <div className={styles.filterGroup}>
+            {/* Desktop Filter Group */}
+            <div className={`${styles.filterGroup} ${styles.desktopFilterGroup}`}>
               <div className={styles.filterItem}>
                 <span className={styles.filterLabel}>Date</span>
                 <input
@@ -365,82 +368,314 @@ export default function DailyReportPage() {
                   onChange={(e) => setSource(e.target.value)}
                 >
                   <option value="">All Sources</option>
-                  <option value="NORMAL">NORMAL (3-Layer)</option>
-                  <option value="MANUAL">MANUAL (Admin)</option>
-                  <option value="ADJUSTED">ADJUSTED (Corr.)</option>
+                  <option value="NORMAL">NORMAL</option>
+                  <option value="MANUAL">MANUAL</option>
+                  <option value="ADJUSTED">ADJUSTED</option>
                 </select>
               </div>
             </div>
 
-            <form
-              onSubmit={handleSearchSubmit}
-              style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: '200px', position: 'relative' }}
-            >
-              <div style={{ position: 'relative', width: '100%' }}>
-                <Search
-                  size={14}
-                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
-                />
-                <input
-                  type="text"
-                  className={styles.input}
-                  style={{
-                    width: '100%',
-                    height: '36px',
-                    fontSize: '12.5px',
-                    paddingLeft: '32px',
-                    paddingRight: search ? '28px' : '10px',
-                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                  }}
-                  placeholder="Search staff name or ID..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearch('');
-                      fetchReport();
-                    }}
-                    style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      padding: '2px',
-                    }}
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-              <button
-                type="submit"
-                className="btn btn-secondary btn-sm"
-                style={{ padding: '0 12px', height: '36px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}
-                title="Search"
+            {/* Action Bar (Search, Filter Button, Refresh) */}
+            <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '180px', alignItems: 'center' }}>
+              <form
+                onSubmit={handleSearchSubmit}
+                style={{ display: 'flex', gap: '6px', flex: 1, position: 'relative' }}
               >
-                <Search size={14} />
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <Search
+                    size={14}
+                    style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+                  />
+                  <input
+                    type="text"
+                    className={styles.input}
+                    style={{
+                      width: '100%',
+                      height: '36px',
+                      fontSize: '12.5px',
+                      paddingLeft: '32px',
+                      paddingRight: search ? '28px' : '10px',
+                      backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                    }}
+                    placeholder="Search staff..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch('');
+                        fetchReport();
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '2px',
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="Search"
+                >
+                  <Search size={14} />
+                </button>
+              </form>
+
+              <button
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className={`btn btn-secondary btn-sm ${styles.mobileFilterBtn}`}
+                style={{
+                  height: '36px',
+                  padding: '0 12px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  borderColor: (branchId || staffId || status || source) ? '#6366f1' : undefined,
+                  color: (branchId || staffId || status || source) ? '#818cf8' : undefined,
+                }}
+              >
+                {showMobileFilters ? <X size={15} /> : <Filter size={15} />}
+                <span>{showMobileFilters ? 'Close' : (branchId || staffId || status || source) ? 'Filter (*)' : 'Filter'}</span>
               </button>
+
               <button
                 type="button"
                 onClick={fetchReport}
                 className="btn btn-secondary btn-sm"
-                style={{ padding: '0 12px', height: '36px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}
+                style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                 title="Refresh"
               >
                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               </button>
-            </form>
+            </div>
           </div>
+
+          {/* Mobile Filter Sheet Modal */}
+          {showMobileFilters && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.65)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 999,
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+              }}
+              onClick={() => setShowMobileFilters(false)}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '500px',
+                  backgroundColor: '#0f172a',
+                  borderTopLeftRadius: '20px',
+                  borderTopRightRadius: '20px',
+                  border: '1px solid var(--border-medium)',
+                  borderBottom: 'none',
+                  padding: '20px',
+                  boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+                  maxHeight: '85vh',
+                  overflowY: 'auto',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Filter size={16} color="#818cf8" />
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Report Filters</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowMobileFilters(false)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      Report Date
+                    </label>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 12px',
+                        fontSize: '13px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      Branch Location
+                    </label>
+                    <select
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 12px',
+                        fontSize: '13px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
+                      {branchList.map((b) => (
+                        <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      Staff Member
+                    </label>
+                    <select
+                      value={staffId}
+                      onChange={(e) => setStaffId(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 12px',
+                        fontSize: '13px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Staff</option>
+                      {staffList.map((s) => (
+                        <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                          {s.name} ({s.staffId})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                        Attendance Status
+                      </label>
+                      <select
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                        className="form-input"
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          padding: '0 10px',
+                          fontSize: '12.5px',
+                          color: '#ffffff',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          border: '1px solid var(--border-medium)',
+                          borderRadius: '10px',
+                        }}
+                      >
+                        <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Statuses</option>
+                        <option value="PRESENT" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>PRESENT</option>
+                        <option value="PARTIAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>PARTIAL</option>
+                        <option value="HOLIDAY" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>HOLIDAY</option>
+                        <option value="LEAVE" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>LEAVE</option>
+                        <option value="ABSENT" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>ABSENT</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                        Source Type
+                      </label>
+                      <select
+                        value={source}
+                        onChange={(e) => setSource(e.target.value)}
+                        className="form-input"
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          padding: '0 10px',
+                          fontSize: '12.5px',
+                          color: '#ffffff',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          border: '1px solid var(--border-medium)',
+                          borderRadius: '10px',
+                        }}
+                      >
+                        <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Sources</option>
+                        <option value="NORMAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>NORMAL</option>
+                        <option value="MANUAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>MANUAL</option>
+                        <option value="ADJUSTED" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>ADJUSTED</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => {
+                      setBranchId('');
+                      setStaffId('');
+                      setStatus('');
+                      setSource('');
+                      setShowMobileFilters(false);
+                    }}
+                    className="btn btn-secondary"
+                    style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+                  >
+                    Reset Filters
+                  </button>
+                  <button
+                    onClick={() => setShowMobileFilters(false)}
+                    className="btn btn-primary"
+                    style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Report Data Container */}
           <div className={styles.tableCard}>

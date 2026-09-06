@@ -8,6 +8,7 @@ import {
   Calendar,
   Clock,
   Download,
+  Filter,
   Printer,
   RefreshCw,
   Search,
@@ -48,6 +49,7 @@ export default function MonthlyReportPage() {
   const [branchId, setBranchId] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [source, setSource] = useState<string>('');
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   // Header Menu Dropdown & Click Outside Ref
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
@@ -408,7 +410,8 @@ export default function MonthlyReportPage() {
 
           {/* Filter Bar */}
           <div className={styles.filterBar}>
-            <div className={styles.filterGroup}>
+            {/* Desktop Filter Group */}
+            <div className={`${styles.filterGroup} ${styles.desktopFilterGroup}`}>
               <div className={styles.filterItem} style={{ gridColumn: 'span 2' }}>
                 <span className={styles.filterLabel}>Select Employee</span>
                 <select
@@ -472,16 +475,247 @@ export default function MonthlyReportPage() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={fetchReport}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '0 12px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Refresh Report"
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </button>
+            {/* Action Bar (Employee Quick Dropdown, Filter Button, Refresh) */}
+            <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '180px', alignItems: 'center' }}>
+              <div className={styles.mobileStaffSelector} style={{ flex: 1, position: 'relative' }}>
+                <select
+                  className="form-input"
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '36px',
+                    fontSize: '12.5px',
+                    padding: '0 10px',
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                  }}
+                >
+                  {staffList.map((s) => (
+                    <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {s.name} ({s.staffId})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className={`btn btn-secondary btn-sm ${styles.mobileFilterBtn}`}
+                style={{
+                  height: '36px',
+                  padding: '0 12px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  borderColor: (branchId || status || source) ? '#6366f1' : undefined,
+                  color: (branchId || status || source) ? '#818cf8' : undefined,
+                }}
+              >
+                {showMobileFilters ? <X size={15} /> : <Filter size={15} />}
+                <span>{showMobileFilters ? 'Close' : (branchId || status || source) ? 'Filter (*)' : 'Filter'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={fetchReport}
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Refresh Report"
+              >
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              </button>
+            </div>
           </div>
+
+          {/* Mobile Filter Sheet Modal */}
+          {showMobileFilters && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.65)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 999,
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+              }}
+              onClick={() => setShowMobileFilters(false)}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '500px',
+                  backgroundColor: '#0f172a',
+                  borderTopLeftRadius: '20px',
+                  borderTopRightRadius: '20px',
+                  border: '1px solid var(--border-medium)',
+                  borderBottom: 'none',
+                  padding: '20px',
+                  boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+                  maxHeight: '85vh',
+                  overflowY: 'auto',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Filter size={16} color="#818cf8" />
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Monthly Report Filters</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowMobileFilters(false)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      Select Employee
+                    </label>
+                    <select
+                      value={selectedStaffId}
+                      onChange={(e) => setSelectedStaffId(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 12px',
+                        fontSize: '13px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      {staffList.map((s) => (
+                        <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                          {s.name} ({s.staffId})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                        Month
+                      </label>
+                      <select
+                        value={month}
+                        onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+                        className="form-input"
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          padding: '0 10px',
+                          fontSize: '12.5px',
+                          color: '#ffffff',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          border: '1px solid var(--border-medium)',
+                          borderRadius: '10px',
+                        }}
+                      >
+                        {months.map((m) => (
+                          <option key={m.num} value={m.num} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                        Year
+                      </label>
+                      <select
+                        value={year}
+                        onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                        className="form-input"
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          padding: '0 10px',
+                          fontSize: '12.5px',
+                          color: '#ffffff',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          border: '1px solid var(--border-medium)',
+                          borderRadius: '10px',
+                        }}
+                      >
+                        {[2025, 2026, 2027].map((y) => (
+                          <option key={y} value={y} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      Branch Location
+                    </label>
+                    <select
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 12px',
+                        fontSize: '13px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
+                      {branchList.map((b) => (
+                        <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => {
+                      setBranchId('');
+                      setStatus('');
+                      setSource('');
+                      setShowMobileFilters(false);
+                    }}
+                    className="btn btn-secondary"
+                    style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+                  >
+                    Reset Filters
+                  </button>
+                  <button
+                    onClick={() => setShowMobileFilters(false)}
+                    className="btn btn-primary"
+                    style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Monthly Log Container */}
           <div className={styles.tableCard}>

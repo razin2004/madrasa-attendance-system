@@ -211,11 +211,15 @@
   }
 
   .filterBar {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
     margin-left: 16px;
     margin-right: 16px;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .desktop-filters-row {
+    display: none !important;
   }
 
   .filterBar > div,

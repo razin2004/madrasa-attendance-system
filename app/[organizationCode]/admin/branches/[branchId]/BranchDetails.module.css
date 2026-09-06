@@ -186,14 +186,18 @@
     word-break: break-word;
   }
   .panelTitle {
-    font-size: 14.5px;
+    font-size: 14px !important;
   }
   .gridTwoCol {
     grid-template-columns: 1fr;
     gap: 16px;
+    width: 100%;
   }
   .panelCard {
     padding: 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     overflow-x: hidden;
   }
   .mapPreviewContainer {

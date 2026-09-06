@@ -829,10 +829,10 @@ export default function StaffProfilePage() {
               )}
 
               {/* Assign Shift Form */}
-              <form onSubmit={handleSaveShiftAssignment} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', alignItems: 'end' }}>
-                <div style={{ flex: 1, minWidth: '180px' }}>
+              <form onSubmit={handleSaveShiftAssignment} className={styles.shiftAssignForm}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Select Shift Pattern</label>
-                  <select value={selectedShiftPatternId} onChange={(e) => setSelectedShiftPatternId(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', height: '36px', fontSize: '13px' }}>
+                  <select value={selectedShiftPatternId} onChange={(e) => setSelectedShiftPatternId(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', height: '38px', fontSize: '13px', backgroundColor: '#0d121f', color: '#ffffff' }}>
                     <option value="">-- Choose Shift Pattern --</option>
                     {shiftPatterns.map((p) => {
                       const workDay = p.weeklyDays?.find((w: any) => !w.isHoliday);
@@ -843,12 +843,12 @@ export default function StaffProfilePage() {
                     })}
                   </select>
                 </div>
-                <div style={{ minWidth: '140px' }}>
+                <div style={{ flex: '0 0 auto', minWidth: '140px' }}>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Effective Date</label>
-                  <input type="date" value={shiftEffectiveFrom} onChange={(e) => setShiftEffectiveFrom(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', height: '36px', fontSize: '13px' }} />
+                  <input type="date" value={shiftEffectiveFrom} onChange={(e) => setShiftEffectiveFrom(e.target.value)} className="form-input" style={{ width: '100%', marginTop: '4px', height: '38px', fontSize: '13px' }} />
                 </div>
-                <div>
-                  <button type="submit" disabled={savingShift} className="btn btn-primary btn-sm" style={{ height: '36px', padding: '0 16px', width: '100%', justifyContent: 'center' }}>{savingShift ? 'Saving...' : 'Assign Shift'}</button>
+                <div style={{ flex: '0 0 auto' }}>
+                  <button type="submit" disabled={savingShift} className="btn btn-primary btn-sm" style={{ height: '38px', padding: '0 18px', width: '100%', justifyContent: 'center', fontWeight: 700 }}>{savingShift ? 'Saving...' : 'Assign Shift'}</button>
                 </div>
               </form>
             </div>

@@ -280,6 +280,18 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+.desktopFilterGroup {
+  display: flex;
+}
+
+.mobileFilterBtn {
+  display: none;
+}
+
+.mobileStaffSelector {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .headerBar,
   .header {
@@ -297,13 +309,13 @@
   }
   .metricsGrid {
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    gap: 8px;
     margin: 14px 16px 0 16px;
   }
   .metricCard {
-    padding: 8px 4px;
+    padding: 10px 6px;
     text-align: center;
-    border-radius: 8px;
+    border-radius: 10px;
   }
   .metricLabel {
     font-size: 9px;
@@ -327,6 +339,15 @@
     margin-left: 16px;
     margin-right: 16px;
     gap: 10px;
+  }
+  .desktopFilterGroup {
+    display: none !important;
+  }
+  .mobileFilterBtn {
+    display: inline-flex !important;
+  }
+  .mobileStaffSelector {
+    display: block !important;
   }
   .filterGroup {
     display: grid;

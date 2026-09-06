@@ -53,6 +53,7 @@ export default function AdminLeavePage() {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<LeaveRequestItem[]>([]);
   const [orgData, setOrgData] = useState<any>(null);
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   // Header Menu Dropdown & Backdrop Listener
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
@@ -228,6 +229,7 @@ export default function AdminLeavePage() {
 
         {/* Filter Bar */}
         <div className={styles.filterBar}>
+          {/* Desktop Status Chip Tabs */}
           <div className={styles.chipTabsContainer}>
             {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((st) => (
               <button
@@ -243,62 +245,185 @@ export default function AdminLeavePage() {
             ))}
           </div>
 
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '200px', position: 'relative' }}>
-            <div style={{ position: 'relative', width: '100%' }}>
-              <Search
-                size={14}
-                style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                style={{
-                  width: '100%',
-                  height: '36px',
-                  fontSize: '12.5px',
-                  paddingLeft: '32px',
-                  paddingRight: search ? '28px' : '10px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                  border: '1px solid var(--border-medium)',
-                  borderRadius: '8px',
-                  color: '#ffffff',
-                }}
-                placeholder="Search staff name or ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch('');
-                    fetchLeaveRequests();
-                  }}
+          <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '180px', alignItems: 'center' }}>
+            <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '6px', flex: 1, position: 'relative' }}>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <Search
+                  size={14}
+                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+                />
+                <input
+                  type="text"
+                  className="form-input"
                   style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    padding: '2px',
+                    width: '100%',
+                    height: '36px',
+                    fontSize: '12.5px',
+                    paddingLeft: '32px',
+                    paddingRight: search ? '28px' : '10px',
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
                   }}
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-            <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '8px 12px', borderRadius: '8px' }}>
-              <Search size={14} />
-            </button>
-          </form>
+                  placeholder="Search staff..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      fetchLeaveRequests();
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '2px',
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Search"
+              >
+                <Search size={14} />
+              </button>
+            </form>
 
-          <button onClick={fetchLeaveRequests} className="btn btn-secondary btn-sm" style={{ padding: '8px 12px', borderRadius: '8px' }}>
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+            <button
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={`btn btn-secondary btn-sm ${styles.mobileFilterBtn}`}
+              style={{
+                height: '36px',
+                padding: '0 12px',
+                borderRadius: '8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                borderColor: statusFilter ? '#6366f1' : undefined,
+                color: statusFilter ? '#818cf8' : undefined,
+              }}
+            >
+              {showMobileFilters ? <X size={15} /> : <Filter size={15} />}
+              <span>{showMobileFilters ? 'Close' : statusFilter ? `Filter (${statusFilter})` : 'Filter'}</span>
+            </button>
+
+            <button
+              onClick={fetchLeaveRequests}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Refresh"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Filter Sheet Modal */}
+        {showMobileFilters && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 999,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+            }}
+            onClick={() => setShowMobileFilters(false)}
+          >
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '500px',
+                backgroundColor: '#0f172a',
+                borderTopLeftRadius: '20px',
+                borderTopRightRadius: '20px',
+                border: '1px solid var(--border-medium)',
+                borderBottom: 'none',
+                padding: '20px',
+                boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Filter size={16} color="#818cf8" />
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Leave Filters</h3>
+                </div>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                    Request Status
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => {
+                          setStatusFilter(st === 'ALL' ? '' : st);
+                        }}
+                        className={`btn btn-sm ${
+                          (st === 'ALL' && !statusFilter) || statusFilter === st ? 'btn-primary' : 'btn-secondary'
+                        }`}
+                        style={{ height: '36px', borderRadius: '8px', fontSize: '12px', fontWeight: 700 }}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => {
+                    setStatusFilter('PENDING');
+                    setShowMobileFilters(false);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+                >
+                  Reset Filters
+                </button>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="btn btn-primary"
+                  style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Request Queue Container */}
         <div className={styles.tableCard}>

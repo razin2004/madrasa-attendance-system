@@ -312,6 +312,14 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+.desktopFilterGroup {
+  display: flex;
+}
+
+.mobileFilterBtn {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .headerBar,
   .header {
@@ -354,6 +362,12 @@
     margin-left: 16px;
     margin-right: 16px;
     gap: 10px;
+  }
+  .desktopFilterGroup {
+    display: none !important;
+  }
+  .mobileFilterBtn {
+    display: inline-flex !important;
   }
   .filterGroup {
     display: grid;
