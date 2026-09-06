@@ -47,6 +47,13 @@ export function BranchStaffingBanner({ organizationCode }: BranchStaffingBannerP
           today: resData.today,
           tomorrow: resData.tomorrow,
         });
+        const hasToday = (resData.today?.understaffedBranchesCount || 0) > 0;
+        const hasTom = (resData.tomorrow?.understaffedBranchesCount || 0) > 0;
+        if (!hasToday && hasTom) {
+          setActiveTab('TOMORROW');
+        } else {
+          setActiveTab('TODAY');
+        }
       }
     } catch (err) {
       console.error('Error fetching staffing coverage:', err);
@@ -63,15 +70,6 @@ export function BranchStaffingBanner({ organizationCode }: BranchStaffingBannerP
 
   const hasTodayShortage = (data.today?.understaffedBranchesCount || 0) > 0;
   const hasTomorrowShortage = (data.tomorrow?.understaffedBranchesCount || 0) > 0;
-
-  // Auto-select tab with active shortage if current selection has none
-  useEffect(() => {
-    if (activeTab === 'TODAY' && !hasTodayShortage && hasTomorrowShortage) {
-      setActiveTab('TOMORROW');
-    } else if (activeTab === 'TOMORROW' && !hasTomorrowShortage && hasTodayShortage) {
-      setActiveTab('TODAY');
-    }
-  }, [hasTodayShortage, hasTomorrowShortage, activeTab]);
 
   // If neither day has staffing shortages, hide the alert box completely
   if (!hasTodayShortage && !hasTomorrowShortage) {

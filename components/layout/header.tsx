@@ -2,9 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Building2, LogIn } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { LogIn } from 'lucide-react';
 
 export function Header() {
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
+
   return (
     <header
       style={{
@@ -95,26 +99,27 @@ export function Header() {
           </div>
         </Link>
 
-        {/* Action Buttons (Visible on Desktop, hidden on mobile via .desktop-header-actions) */}
-        <div className="desktop-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Link
-            href="/login"
-            className="btn btn-secondary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', fontSize: '12.5px' }}
-          >
-            <LogIn size={14} />
-            <span>Sign In</span>
-          </Link>
-
-          <Link
-            href="/register"
-            className="btn btn-primary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', fontSize: '12.5px' }}
-          >
-            <Building2 size={14} />
-            <span>Register</span>
-          </Link>
-        </div>
+        {/* Action Button (Sign In only on main page, none on register page) */}
+        {isHomePage && (
+          <div>
+            <Link
+              href="/login"
+              className="btn btn-primary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                borderRadius: '8px',
+              }}
+            >
+              <LogIn size={14} />
+              <span>Sign In</span>
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );

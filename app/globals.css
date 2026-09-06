@@ -643,8 +643,8 @@ input[type="button"]:active:not(:disabled) {
 
 @media (max-width: 768px) {
   .tenant-brand-logo-box {
-    width: 48px !important;
-    height: 48px !important;
+    width: 52px !important;
+    height: 52px !important;
   }
   :root {
     --header-height: 56px;
