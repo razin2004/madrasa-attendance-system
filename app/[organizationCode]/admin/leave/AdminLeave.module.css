@@ -258,6 +258,13 @@
   }
   .chipTabsContainer {
     display: none !important;
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+  .chipTabsContainerOpen {
+    display: flex !important;
   }
   .mobileFilterBtn {
     display: inline-flex !important;

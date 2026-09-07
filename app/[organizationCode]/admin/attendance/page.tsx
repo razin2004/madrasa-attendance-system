@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '../../../../components/feedback/toast-provider';
 import styles from './AdminAttendance.module.css';
 
@@ -122,47 +123,25 @@ export default function AdminAttendancePage() {
       />
 
       <div className={styles.mainContent}>
-        {/* Header Bar */}
-        <header className={styles.headerBar}>
-          <div>
-            <h1 className={styles.title}>Daily Attendance Overview</h1>
-            <p className={styles.subtitle}>
-              Monitor 3-layer verified punches, manual entries, and corrections for <strong>{date}</strong>.
-            </p>
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-              title="Attendance Actions Menu"
-            >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
-                  style={{
-                    position: 'absolute',
+        {/* Org Admin Header Component */}
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Daily Attendance"
+          panelSubtitle={`Monitor 3-layer verified punches, manual entries, and corrections for ${date}`}
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                onClick={() => setHeaderMenuOpen(false)}
+              />
+              <div
+                className="glass-card"
+                style={{
+                  position: 'absolute',
                     right: 0,
                     top: 'calc(100% + 8px)',
                     zIndex: 1000,
@@ -263,8 +242,7 @@ export default function AdminAttendancePage() {
                 </div>
               </>
             )}
-          </div>
-        </header>
+        </OrgAdminHeader>
 
         {/* Main Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
@@ -297,209 +275,123 @@ export default function AdminAttendancePage() {
             </div>
           </div>
 
-          {/* Compact Search, Filter & Action Bar */}
-          <div className={styles.filterBar} style={{ padding: 0, margin: '0 0 20px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-              {/* Search Field */}
-              <form
-                onSubmit={handleSearchSubmit}
-                style={{ flex: 1, display: 'flex', gap: '6px', minWidth: 0 }}
-              >
-                <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-                  <input
-                    type="text"
-                    className="form-input"
-                    style={{
-                      width: '100%',
-                      height: '36px',
-                      fontSize: '13px',
-                      paddingLeft: '32px',
-                      paddingRight: search ? '28px' : '10px',
-                    }}
-                    placeholder="Search staff name or ID..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <Search
-                    size={14}
-                    color="var(--text-muted)"
-                    style={{ position: 'absolute', left: '10px', top: '11px' }}
-                  />
-                  {search && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearch('');
-                        fetchData();
-                      }}
-                      style={{
-                        position: 'absolute',
-                        right: '8px',
-                        top: '9px',
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer',
-                        padding: '2px',
-                      }}
-                    >
-                      <X size={13} />
-                    </button>
-                  )}
-                </div>
-
-                <button type="submit" className="btn btn-secondary btn-sm" style={{ height: '36px', padding: '0 12px' }}>
-                  <Search size={14} />
+          {/* Search Field with Pinned Filter Icon (Staff Panel Style) */}
+          <div style={{ marginBottom: '16px', width: '100%' }}>
+            <div className={styles.searchInputWrapper}>
+              <Search size={15} className={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="Search staff name or ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchData();
+                  }
+                }}
+                className={styles.searchInput}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    fetchData();
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '40px',
+                    top: '10px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                  }}
+                >
+                  <X size={14} />
                 </button>
-              </form>
-
-              {/* Filter Sheet Trigger Button (Mobile + Desktop toggle) */}
+              )}
               <button
                 type="button"
                 onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className={`btn ${source || (date && date !== todayStr) ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-                style={{
-                  height: '36px',
-                  padding: '0 12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12.5px',
-                  flexShrink: 0,
-                }}
-                title="Filter Options"
+                className={`${styles.filterToggleBtn} ${(source || (date && date !== todayStr)) ? styles.filterToggleBtnActive : ''}`}
+                title="Toggle Filters"
               >
-                {showMobileFilters ? <X size={14} /> : <Filter size={14} />}
-                <span className="desktop-only-inline">Filters</span>
-                {(source || (date && date !== todayStr)) && (
-                  <span
-                    style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      backgroundColor: '#34d399',
-                    }}
-                  />
-                )}
+                <Filter size={15} color={(source || (date && date !== todayStr)) ? '#818cf8' : 'currentColor'} />
               </button>
-
-              {/* Compact Refresh Button beside Search/Filter */}
-              <button
-                type="button"
-                onClick={fetchData}
-                className="btn btn-secondary btn-sm"
-                style={{ height: '36px', padding: '0 12px', flexShrink: 0 }}
-                title="Refresh Logs"
-              >
-                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              </button>
-            </div>
-
-            {/* Desktop Inline Filters (>768px) */}
-            <div className="desktop-filters-row" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '10px', width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Date:</span>
-                <input
-                  type="date"
-                  className="form-input"
-                  style={{ height: '34px', fontSize: '12.5px', maxWidth: '140px' }}
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Source:</span>
-                <select
-                  className="form-input"
-                  style={{
-                    height: '34px',
-                    fontSize: '12.5px',
-                    backgroundColor: '#0d121f',
-                    color: '#ffffff',
-                    flex: 1,
-                    minWidth: 0,
-                    textOverflow: 'ellipsis',
-                  }}
-                  value={source}
-                  onChange={(e) => setSource(e.target.value)}
-                >
-                  <option value="">All Verification Sources</option>
-                  <option value="NORMAL">NORMAL (3-Layer Verified)</option>
-                  <option value="MANUAL">MANUAL (Admin Created)</option>
-                  <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
-                </select>
-              </div>
             </div>
           </div>
 
-          {/* Mobile Slide-Up Filter Popup Sheet (<768px) */}
+          {/* Filter Drawer Options (Appears when filter icon is clicked) */}
           {showMobileFilters && (
-            <>
-              <div
-                style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 999 }}
-                onClick={() => setShowMobileFilters(false)}
-              />
-              <div
-                className="glass-card"
-                style={{
-                  position: 'fixed',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  zIndex: 1000,
-                  padding: '20px 18px',
-                  backgroundColor: '#0d121f',
-                  borderTop: '1px solid var(--border-medium)',
-                  borderRadius: '20px 20px 0 0',
-                  boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.8)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontWeight: 800, fontSize: '15px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Filter size={16} color="#818cf8" />
-                    <span>Filter Attendance Logs</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowMobileFilters(false)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '28px',
-                      height: '28px',
-                      color: 'var(--text-muted)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <X size={15} />
-                  </button>
+            <div
+              className="glass-card"
+              style={{
+                padding: '16px 18px',
+                marginBottom: '20px',
+                backgroundColor: '#0d121f',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 800, fontSize: '13.5px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Filter size={15} color="#818cf8" />
+                  <span>Filter Attendance Logs</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(false)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
 
-                {/* Compact Date Picker */}
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', width: '100%' }}>
+                {/* Target Date Input - Exact same size as Source select */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
                     Target Log Date
                   </label>
                   <input
                     type="date"
                     className="form-input"
-                    style={{ height: '40px', fontSize: '13px', width: '100%' }}
+                    style={{
+                      height: '40px',
+                      fontSize: '13px',
+                      backgroundColor: '#131b2e',
+                      color: '#ffffff',
+                      width: '100%',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      padding: '0 12px',
+                      boxSizing: 'border-box',
+                    }}
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                   />
                 </div>
 
-                {/* Compact Full-Text Source Select */}
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>
+                {/* Verification Source Select - Exact same size as Date input, full text visible */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
                     Verification Source
                   </label>
                   <select
@@ -510,6 +402,10 @@ export default function AdminAttendancePage() {
                       backgroundColor: '#131b2e',
                       color: '#ffffff',
                       width: '100%',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      padding: '0 12px',
+                      boxSizing: 'border-box',
                     }}
                     value={source}
                     onChange={(e) => setSource(e.target.value)}
@@ -520,31 +416,24 @@ export default function AdminAttendancePage() {
                     <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
                   </select>
                 </div>
+              </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+              {(source || (date && date !== todayStr)) && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                   <button
                     type="button"
                     onClick={() => {
                       setDate(todayStr);
                       setSource('');
-                      setShowMobileFilters(false);
                     }}
-                    className="btn btn-secondary"
-                    style={{ flex: 1, padding: '10px', fontSize: '13px' }}
+                    className="btn btn-secondary btn-xs"
+                    style={{ borderRadius: '6px', fontSize: '11px', padding: '4px 10px' }}
                   >
                     Reset Filters
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowMobileFilters(false)}
-                    className="btn btn-primary"
-                    style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: 700 }}
-                  >
-                    Apply Filters
-                  </button>
                 </div>
-              </div>
-            </>
+              )}
+            </div>
           )}
 
           {/* Attendance Table */}

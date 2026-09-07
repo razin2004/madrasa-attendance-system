@@ -54,6 +54,8 @@ interface OrgBranding {
   status: string;
 }
 
+import { OrgAdminHeader } from '../../../../components/layout/org-admin-header';
+
 export default function BranchesListPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -70,6 +72,7 @@ export default function BranchesListPage() {
   const [toggleModalBranch, setToggleModalBranch] = useState<BranchItem | null>(null);
   const [toggleLoading, setToggleLoading] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (organizationCode) {
@@ -161,144 +164,109 @@ export default function BranchesListPage() {
       {/* Main Content Area */}
       <div className={styles.mainContent}>
         {/* Top Header */}
-        <header className={styles.headerBar}>
-          <div>
-            <h1 className={styles.title}>Branches</h1>
-            <p className={styles.subtitle}>
-              Manage your organization&apos;s branch locations, network configuration, and attendance verification settings.
-            </p>
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-              title="Branch Directory Actions Menu"
-            >
-              <Menu size={18} />
-            </button>
-
-            {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle="Branches"
+          panelSubtitle="Manage your organization's branch locations, network configuration, and attendance verification settings."
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                onClick={() => setHeaderMenuOpen(false)}
+              />
+              <div
+                className="glass-card"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  zIndex: 1000,
+                  minWidth: '200px',
+                  padding: '6px',
+                  backgroundColor: '#0d121f',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                }}
+              >
+                <Link
+                  href={`/${organizationCode}/admin/branches/new`}
                   onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
                   style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    zIndex: 1000,
-                    minWidth: '200px',
-                    padding: '6px',
-                    backgroundColor: '#0d121f',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
                   }}
                 >
-                  <Link
-                    href={`/${organizationCode}/admin/branches/new`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                    }}
-                  >
-                    <Plus size={15} color="#818cf8" />
-                    <span>Register Branch</span>
-                  </Link>
+                  <Plus size={15} color="#818cf8" />
+                  <span>Register Branch</span>
+                </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      fetchInitialData();
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
-                    <span>Refresh Branches</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </header>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    fetchInitialData();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    border: 'none',
+                    background: 'none',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
+                  <span>Refresh Branches</span>
+                </button>
+              </div>
+            </>
+          )}
+        </OrgAdminHeader>
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Filter & Search Bar */}
           <div className={styles.filterSearchRow}>
-            {/* Filter Tabs */}
-            <div className={styles.tabsGroup}>
-              {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setFilter(tab)}
-                  className={`${styles.tabButton} ${filter === tab ? styles.tabButtonActive : ''}`}
-                >
-                  {tab === 'ALL' ? `All Branches (${counts.total})` : tab === 'ACTIVE' ? `Active (${counts.active})` : `Inactive (${counts.inactive})`}
-                </button>
-              ))}
-            </div>
-
-            {/* Search Input */}
+            {/* Search Input with Pinned Filter Icon (Staff Panel Style) */}
             <div className={styles.searchInputWrapper}>
               <Search size={15} className={styles.searchIcon} />
               <input
                 type="text"
-                placeholder="Search branches..."
+                placeholder="Search branches by name, address, or IP..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className={styles.searchInput}
               />
               {search && (
                 <button
+                  type="button"
                   onClick={() => setSearch('')}
                   style={{
                     position: 'absolute',
-                    right: '10px',
+                    right: '40px',
                     top: '9px',
                     background: 'none',
                     border: 'none',
@@ -309,6 +277,30 @@ export default function BranchesListPage() {
                   <X size={14} />
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setFilterDrawerOpen(!filterDrawerOpen)}
+                className={styles.filterToggleBtn}
+                title="Toggle Filters"
+              >
+                <Filter size={15} color={filter !== 'ALL' ? '#818cf8' : 'currentColor'} />
+              </button>
+            </div>
+
+            {/* Filter Tabs (Collapsible on Mobile) */}
+            <div className={`${styles.tabsGroup} ${filterDrawerOpen ? styles.tabsGroupOpen : ''}`}>
+              {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    setFilter(tab);
+                    setFilterDrawerOpen(false);
+                  }}
+                  className={`${styles.tabButton} ${filter === tab ? styles.tabButtonActive : ''}`}
+                >
+                  {tab === 'ALL' ? `All Branches (${counts.total})` : tab === 'ACTIVE' ? `Active (${counts.active})` : `Inactive (${counts.inactive})`}
+                </button>
+              ))}
             </div>
           </div>
 

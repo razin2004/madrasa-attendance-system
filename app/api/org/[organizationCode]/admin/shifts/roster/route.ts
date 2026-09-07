@@ -186,8 +186,12 @@ export async function GET(
         }
       });
 
-      // Check Under-Staffing Thresholds per Shift Pattern
+      // Check Under-Staffing Thresholds per Shift Pattern (Skip holiday/off days)
       shiftPatterns.forEach((sp) => {
+        const weeklyDay = sp.weeklyDays?.find((w) => w.weekday === weekdayStr);
+        // If the shift pattern does not operate on this day of the week or is marked as a holiday, do not evaluate understaffed threshold
+        if (!weeklyDay || weeklyDay.isHoliday) return;
+
         const key = `${dateIso}_${sp.id}`;
         const activeCount = dailyCoverageCount[key] || 0;
         const threshold = sp.minimumStaffingThreshold || 1;

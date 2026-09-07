@@ -34,6 +34,8 @@ interface BranchOption {
   name: string;
 }
 
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+
 export default function DateRangeReportPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -160,135 +162,108 @@ export default function DateRangeReportPage() {
       />
 
       <div className={styles.mainContent}>
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ color: '#38bdf8', fontSize: '14px', lineHeight: 1 }}>●</span>
-            <div>
-              <h1 className={styles.title}>Custom Date Range Attendance Report</h1>
-              <p className={styles.subtitle}>
-                Export &amp; review attendance from <strong>{startDate}</strong> to <strong>{endDate}</strong>
-              </p>
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }} ref={headerMenuRef}>
-            <button
-              type="button"
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Custom Date Range Attendance Report"
+          panelSubtitle={`Export & review attendance from ${startDate} to ${endDate}`}
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <div
+              className="glass-card"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 8px)',
+                zIndex: 1000,
+                minWidth: '220px',
+                padding: '6px',
+                backgroundColor: '#0d121f',
                 border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
+                borderRadius: '12px',
+                boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
               }}
-              title="Custom Range Actions"
             >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <div
-                className="glass-card"
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  handleCsvExport();
+                }}
+                disabled={exportingCsv}
                 style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 8px)',
-                  zIndex: 1000,
-                  minWidth: '220px',
-                  padding: '6px',
-                  backgroundColor: '#0d121f',
-                  border: '1px solid var(--border-medium)',
-                  borderRadius: '12px',
-                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                  border: 'none',
+                  background: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    handleCsvExport();
-                  }}
-                  disabled={exportingCsv}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                    border: 'none',
-                    background: 'none',
-                    width: '100%',
-                    textAlign: 'left',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Download size={15} color="#34d399" />
-                  <span>{exportingCsv ? 'Preparing CSV...' : 'Export Range CSV'}</span>
-                </button>
+                <Download size={15} color="#34d399" />
+                <span>{exportingCsv ? 'Preparing CSV...' : 'Export Range CSV'}</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    handlePdfExport();
-                  }}
-                  disabled={exportingPdf}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                    border: 'none',
-                    background: 'none',
-                    width: '100%',
-                    textAlign: 'left',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Printer size={15} color="#38bdf8" />
-                  <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save Range PDF'}</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  handlePdfExport();
+                }}
+                disabled={exportingPdf}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                  border: 'none',
+                  background: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <Printer size={15} color="#38bdf8" />
+                <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save Range PDF'}</span>
+              </button>
 
-                <Link
-                  href={`/${organizationCode}/admin/reports`}
-                  onClick={() => setHeaderMenuOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#cbd5e1',
-                    textDecoration: 'none',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                  }}
-                >
-                  <ArrowLeft size={15} color="#818cf8" />
-                  <span>Reports Dashboard</span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </header>
+              <Link
+                href={`/${organizationCode}/admin/reports`}
+                onClick={() => setHeaderMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  color: '#cbd5e1',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                }}
+              >
+                <ArrowLeft size={15} color="#818cf8" />
+                <span>Reports Dashboard</span>
+              </Link>
+            </div>
+          )}
+        </OrgAdminHeader>
 
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
 

@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/feedback/toast-provider';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { BranchStaffingBanner } from '@/components/dashboard/branch-staffing-banner';
 import { LiveAttendanceFeed } from '@/components/dashboard/live-attendance-feed';
 import { Footer } from '@/components/layout/footer';
@@ -206,56 +207,15 @@ export default function OrgAdminLandingPage() {
 
       {/* Main Content Area */}
       <div className={styles.mainContent}>
-        {/* Sticky Top Main Header Bar (Exact match to ShiftGuard Main Header) */}
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)',
-                flexShrink: 0,
-              }}
-            >
-              <img
-                src="/logo.svg"
-                alt="ShiftGuard Logo"
-                style={{ width: '26px', height: '26px', objectFit: 'contain' }}
-              />
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.3px', color: '#ffffff' }}>
-                  {orgData?.name || orgCode}
-                </span>
-                <span
-                  style={{
-                    fontSize: '9.5px',
-                    fontWeight: 800,
-                    color: '#818cf8',
-                    background: 'rgba(99, 102, 241, 0.15)',
-                    padding: '2px 6px',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(99, 102, 241, 0.3)',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  <Shield size={10} style={{ display: 'inline', marginRight: '3px' }} />
-                  Org Admin
-                </span>
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                Operations Dashboard
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* Org Admin Header Component */}
+        <OrgAdminHeader
+          organizationCode={orgCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Overview"
+          panelSubtitle="Live workforce operations summary and 3-layer security overview"
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        />
 
         {/* Content Body */}
         <main className={styles.contentBody}>
@@ -421,15 +381,15 @@ export default function OrgAdminLandingPage() {
               {/* PENDING APPROVALS & LEAVE REQUESTS PANEL */}
               <div className={styles.panelCard}>
                 <div className={styles.panelHeader}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.12)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.12)', flexShrink: 0 }}>
                       <FileText size={18} color="#fbbf24" />
                     </div>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
                         Pending Leave &amp; Time-Off Applications
                       </h3>
-                      <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                      <p style={{ fontSize: '11.5px', color: '#94a3b8', margin: '2px 0 0 0' }}>
                         Staff time-off requests requiring administrator authorization
                       </p>
                     </div>
@@ -438,10 +398,20 @@ export default function OrgAdminLandingPage() {
                   <Link
                     href={`/${orgCode}/admin/leave`}
                     className="btn btn-secondary btn-xs"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px', fontSize: '11px', padding: '3px 8px' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                      borderRadius: '6px',
+                      fontSize: '10.5px',
+                      padding: '3px 8px',
+                      flexShrink: 0,
+                      height: 'fit-content',
+                      whiteSpace: 'nowrap',
+                    }}
                   >
                     <span>View All ({pendingLeaveCount})</span>
-                    <ArrowRight size={12} />
+                    <ArrowRight size={11} />
                   </Link>
                 </div>
                 {pendingLeaveRequests.length === 0 ? (
@@ -553,15 +523,15 @@ export default function OrgAdminLandingPage() {
               {/* PENDING ATTENDANCE CORRECTIONS PANEL */}
               <div className={styles.panelCard} style={{ marginTop: '20px' }}>
                 <div className={styles.panelHeader}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.12)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                    <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.12)', flexShrink: 0 }}>
                       <Clock size={18} color="#818cf8" />
                     </div>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
                         Pending Attendance Correction Requests
                       </h3>
-                      <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                      <p style={{ fontSize: '11.5px', color: '#94a3b8', margin: '2px 0 0 0' }}>
                         Staff-submitted punch adjustments requiring administrator approval
                       </p>
                     </div>
@@ -570,10 +540,20 @@ export default function OrgAdminLandingPage() {
                   <Link
                     href={`/${orgCode}/admin/attendance/corrections`}
                     className="btn btn-secondary btn-xs"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px', fontSize: '11px', padding: '3px 8px' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                      borderRadius: '6px',
+                      fontSize: '10.5px',
+                      padding: '3px 8px',
+                      flexShrink: 0,
+                      height: 'fit-content',
+                      whiteSpace: 'nowrap',
+                    }}
                   >
                     <span>View All ({pendingCorrectionsCount})</span>
-                    <ArrowRight size={12} />
+                    <ArrowRight size={11} />
                   </Link>
                 </div>
 
@@ -818,10 +798,12 @@ export default function OrgAdminLandingPage() {
               </div>
             </>
           )}
-
-          {/* Overview Dashboard Exclusive Footer */}
-          <Footer />
         </main>
+
+        {/* Mobile-Only Edge-to-Edge Overview Footer */}
+        <div className={styles.mobileOnlyFooterWrapper}>
+          <Footer />
+        </div>
       </div>
 
       {/* Mobile Navigation */}

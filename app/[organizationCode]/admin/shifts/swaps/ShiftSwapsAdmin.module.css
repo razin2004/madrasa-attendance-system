@@ -64,3 +64,15 @@
   display: none;
 }
 
+@media (max-width: 768px) {
+  .filterScroll {
+    display: none;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+  .filterScrollOpen {
+    display: flex !important;
+  }
+}
+

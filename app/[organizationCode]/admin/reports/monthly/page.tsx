@@ -36,6 +36,8 @@ interface BranchOption {
   name: string;
 }
 
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+
 export default function MonthlyReportPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -210,118 +212,87 @@ export default function MonthlyReportPage() {
 
       <div className={styles.mainContent}>
         {/* Sticky Mobile Header */}
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Employee Monthly Report"
+          panelSubtitle={`Monthly breakdown for ${report?.staff?.name || 'Selected Employee'}`}
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <div
+              className={styles.headerMenuDropdown}
               style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#10b981',
-                boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
-                flexShrink: 0,
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 8px)',
+                width: '220px',
+                backgroundColor: '#0f172a',
+                border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
+                borderRadius: '12px',
+                padding: '8px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                zIndex: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
               }}
-            />
-            <div>
-              <h1 className={styles.title}>Employee Monthly Report</h1>
-              <p className={styles.subtitle}>
-                Monthly breakdown for{' '}
-                <strong
-                  onClick={() => selectedStaffId && router.push(`/${organizationCode}/admin/staff/${selectedStaffId}`)}
-                  style={{ cursor: 'pointer', color: '#818cf8', textDecoration: 'underline' }}
-                  title="View Staff Profile"
-                >
-                  {report?.staff?.name || 'Selected Employee'}
-                </strong>{' '}
-                ({report?.staff?.staffId || '—'})
-              </p>
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }} ref={headerMenuRef}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
-              aria-label="Toggle Monthly Report Menu"
             >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <div
-                className={styles.headerMenuDropdown}
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 8px)',
-                  width: '220px',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
-                  borderRadius: '12px',
-                  padding: '8px',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                  zIndex: 100,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  handlePayrollCsvExport();
                 }}
+                disabled={exportingPayroll}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#34d399', fontSize: '12.5px' }}
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    handlePayrollCsvExport();
-                  }}
-                  disabled={exportingPayroll}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#34d399', fontSize: '12.5px' }}
-                >
-                  <FileText size={15} color="#34d399" />
-                  <span>{exportingPayroll ? 'Preparing Payroll...' : 'Export Payroll CSV'}</span>
-                </button>
+                <FileText size={15} color="#34d399" />
+                <span>{exportingPayroll ? 'Preparing Payroll...' : 'Export Payroll CSV'}</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    handleCsvExport();
-                  }}
-                  disabled={exportingCsv}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
-                >
-                  <Download size={15} color="#34d399" />
-                  <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  handleCsvExport();
+                }}
+                disabled={exportingCsv}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+              >
+                <Download size={15} color="#34d399" />
+                <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    handlePdfExport();
-                  }}
-                  disabled={exportingPdf}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
-                >
-                  <Printer size={15} color="#38bdf8" />
-                  <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save PDF'}</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  handlePdfExport();
+                }}
+                disabled={exportingPdf}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+              >
+                <Printer size={15} color="#38bdf8" />
+                <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save PDF'}</span>
+              </button>
 
-                <Link
-                  href={`/${organizationCode}/admin/reports`}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                >
-                  <ArrowLeft size={15} color="#818cf8" />
-                  <span>Reports Dashboard</span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </header>
+              <Link
+                href={`/${organizationCode}/admin/reports`}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                onClick={() => setHeaderMenuOpen(false)}
+              >
+                <ArrowLeft size={15} color="#818cf8" />
+                <span>Reports Dashboard</span>
+              </Link>
+            </div>
+          )}
+        </OrgAdminHeader>
 
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Monthly Summary Metrics Bar */}

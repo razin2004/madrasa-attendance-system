@@ -303,9 +303,11 @@
   }
 
   .panelHeader {
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px;
   }
 
   .headerActions {
@@ -400,6 +402,29 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+}
+
+.mobileOnlyFooterWrapper {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobileOnlyFooterWrapper {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 24px;
+    padding-bottom: 70px;
+    box-sizing: border-box;
+  }
+
+  .mobileOnlyFooterWrapper footer {
+    width: 100% !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
   }
 }
 

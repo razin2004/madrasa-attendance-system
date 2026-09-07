@@ -77,6 +77,8 @@ const WEEKDAY_NAMES: Record<Weekday, string> = {
   SUNDAY: 'Sun',
 };
 
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+
 export default function RosterCalendarPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase();
@@ -215,90 +217,65 @@ export default function RosterCalendarPage() {
       {/* Main Content */}
       <div className={styles.mainContent}>
         {/* Mobile-Optimized Header */}
-        <header className={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle="Roster Calendar"
+          panelSubtitle="Weekly shift allocations & day overrides"
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <div
+              className={styles.headerMenuDropdown}
               style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#10b981',
-                boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
-                flexShrink: 0,
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 8px)',
+                width: '220px',
+                backgroundColor: '#0f172a',
+                border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
+                borderRadius: '12px',
+                padding: '8px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                zIndex: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
               }}
-            />
-            <div>
-              <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Roster Calendar
-              </h1>
-              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px', margin: 0 }}>
-                Weekly shift allocations &amp; day overrides
-              </p>
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }} ref={headerMenuRef}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
-              aria-label="Toggle Roster Menu"
             >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <div
-                className={styles.headerMenuDropdown}
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 8px)',
-                  width: '220px',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
-                  borderRadius: '12px',
-                  padding: '8px',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                  zIndex: 100,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                }}
+              <Link
+                href={`/${organizationCode}/admin/shifts`}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                onClick={() => setHeaderMenuOpen(false)}
               >
-                <Link
-                  href={`/${organizationCode}/admin/shifts`}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                >
-                  <Clock size={15} color="#818cf8" />
-                  <span>Manage Shift Patterns</span>
-                </Link>
-                <button
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    fetchRoster();
-                  }}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
-                >
-                  <RefreshCw size={15} color="#10b981" />
-                  <span>Refresh Roster Data</span>
-                </button>
-                <Link
-                  href={`/${organizationCode}/admin/attendance/daily`}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                >
-                  <CalendarDays size={15} color="#38bdf8" />
-                  <span>Daily Attendance</span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </header>
+                <Clock size={15} color="#818cf8" />
+                <span>Manage Shift Patterns</span>
+              </Link>
+              <button
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  fetchRoster();
+                }}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+              >
+                <RefreshCw size={15} color="#10b981" />
+                <span>Refresh Roster Data</span>
+              </button>
+              <Link
+                href={`/${organizationCode}/admin/attendance/daily`}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                onClick={() => setHeaderMenuOpen(false)}
+              >
+                <CalendarDays size={15} color="#38bdf8" />
+                <span>Daily Attendance</span>
+              </Link>
+            </div>
+          )}
+        </OrgAdminHeader>
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
@@ -343,36 +320,38 @@ export default function RosterCalendarPage() {
 
             {/* Filters Bar: Search & Branch */}
             <div className={styles.filterSection}>
-              {/* Search Bar */}
-              <div style={{ position: 'relative', flex: 1, minWidth: '160px' }}>
+              {/* Search Bar with Pinned Filter Icon (Staff Panel Style) */}
+              <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
                 <Search
-                  size={14}
-                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+                  size={15}
+                  style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}
                 />
                 <input
                   type="text"
-                  placeholder="Search staff..."
+                  placeholder="Search staff name or ID..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="form-input"
                   style={{
-                    height: '36px',
-                    paddingLeft: '32px',
-                    paddingRight: search ? '28px' : '10px',
-                    fontSize: '12.5px',
+                    height: '38px',
+                    paddingLeft: '36px',
+                    paddingRight: '42px',
+                    fontSize: '13px',
                     width: '100%',
                     backgroundColor: 'rgba(15, 23, 42, 0.85)',
                     border: '1px solid var(--border-medium)',
                     borderRadius: '8px',
                     color: '#ffffff',
+                    boxSizing: 'border-box',
                   }}
                 />
                 {search && (
                   <button
+                    type="button"
                     onClick={() => setSearch('')}
                     style={{
                       position: 'absolute',
-                      right: '8px',
+                      right: '40px',
                       top: '50%',
                       transform: 'translateY(-50%)',
                       background: 'none',
@@ -382,9 +361,32 @@ export default function RosterCalendarPage() {
                       padding: '2px',
                     }}
                   >
-                    <X size={13} />
+                    <X size={14} />
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  style={{
+                    position: 'absolute',
+                    right: '5px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: '30px',
+                    height: '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '6px',
+                    background: selectedBranchId ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                    border: selectedBranchId ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--border-medium, rgba(255, 255, 255, 0.12))',
+                    color: selectedBranchId ? '#818cf8' : '#ffffff',
+                    cursor: 'pointer',
+                  }}
+                  title="Toggle Filters"
+                >
+                  <Filter size={15} color={selectedBranchId ? '#818cf8' : 'currentColor'} />
+                </button>
               </div>
 
               {/* Desktop Branch Filter Dropdown */}
@@ -399,7 +401,7 @@ export default function RosterCalendarPage() {
                     onChange={(e) => setSelectedBranchId(e.target.value)}
                     className="form-input"
                     style={{
-                      height: '36px',
+                      height: '38px',
                       padding: '4px 28px 4px 30px',
                       fontSize: '12.5px',
                       minWidth: '160px',
@@ -419,26 +421,6 @@ export default function RosterCalendarPage() {
                   </select>
                 </div>
               </div>
-
-              {/* Mobile Filter Button */}
-              <button
-                onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className={`btn btn-secondary btn-sm ${styles.mobileFilterBtn}`}
-                style={{
-                  height: '36px',
-                  padding: '0 12px',
-                  borderRadius: '8px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                  borderColor: selectedBranchId ? '#6366f1' : undefined,
-                  color: selectedBranchId ? '#818cf8' : undefined,
-                }}
-              >
-                {showMobileFilters ? <X size={15} /> : <Filter size={15} />}
-                <span>{showMobileFilters ? 'Close' : selectedBranchId ? 'Filter (1)' : 'Filter'}</span>
-              </button>
             </div>
 
             {/* Mobile Filter Sheet Modal */}

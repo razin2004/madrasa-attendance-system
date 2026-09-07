@@ -49,14 +49,15 @@
 
 .rosterTable {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
   text-align: left;
 }
 
 .rosterTable th {
   padding: 14px 16px;
-  background: rgba(30, 41, 59, 0.8);
+  background: #0f172a;
   color: #ffffff;
   font-weight: 700;
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
@@ -67,6 +68,7 @@
   padding: 14px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   vertical-align: middle;
+  background: #0f172a;
 }
 
 .rosterTable tr:hover {
@@ -78,8 +80,8 @@
   position: sticky;
   left: 0;
   z-index: 10;
-  background: rgba(15, 23, 42, 0.95);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+  background: #0f172a !important;
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.6);
 }
 
 .dateCol {

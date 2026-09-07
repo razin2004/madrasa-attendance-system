@@ -71,9 +71,9 @@ export function LiveAttendanceFeed({ organizationCode }: LiveAttendanceFeedProps
   return (
     <div className="glass-card" style={{ padding: '24px', margin: '24px 0' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(16, 185, 129, 0.12)', padding: '3px 8px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', gap: '10px', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(16, 185, 129, 0.12)', padding: '3px 8px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.25)', flexShrink: 0 }}>
             <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
             <span style={{ fontSize: '10px', fontWeight: 800, color: '#34d399', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
               LIVE FEED
@@ -84,25 +84,17 @@ export function LiveAttendanceFeed({ organizationCode }: LiveAttendanceFeedProps
           </h3>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {lastRefreshed && (
-            <span className="desktop-only" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Updated {lastRefreshed}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => fetchLiveFeed(true)}
-            disabled={isRefreshing}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '6px 10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Refresh Live Feed"
-            aria-label="Refresh Live Feed"
-          >
-            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
-            <span className="desktop-only" style={{ fontSize: '12px', marginLeft: '6px' }}>Refresh</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => fetchLiveFeed(true)}
+          disabled={isRefreshing}
+          className="btn btn-secondary btn-xs"
+          style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, height: 'fit-content', borderRadius: '6px' }}
+          title="Refresh Live Feed"
+          aria-label="Refresh Live Feed"
+        >
+          <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       {/* Feed List */}

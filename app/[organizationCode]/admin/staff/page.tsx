@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import { UpdatePasswordModal } from '@/components/staff/update-password-modal';
@@ -364,49 +365,25 @@ export default function StaffDirectoryPage() {
 
       {/* Main Content Area */}
       <div className={styles.mainContent}>
-        {/* Top Header */}
-        <header className={styles.headerBar}>
-          <div>
-            <h1 className={styles.title}>Staff</h1>
-            <p className={styles.subtitle}>
-              Manage staff accounts, branch assignments, schedules, and registered devices.
-            </p>
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="admin-header-menu-btn"
-              aria-label="Staff Directory Actions Menu"
-              aria-expanded={headerMenuOpen}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-              title="Staff Directory Actions Menu"
-            >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
-                  style={{
-                    position: 'absolute',
+        {/* Org Admin Header Component */}
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle="Staff Directory"
+          panelSubtitle="Manage staff accounts, branch assignments, schedules, and registered devices"
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                onClick={() => setHeaderMenuOpen(false)}
+              />
+              <div
+                className="glass-card"
+                style={{
+                  position: 'absolute',
                     right: 0,
                     top: 'calc(100% + 8px)',
                     zIndex: 1000,
@@ -499,8 +476,7 @@ export default function StaffDirectoryPage() {
                 </div>
               </>
             )}
-          </div>
-        </header>
+        </OrgAdminHeader>
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>

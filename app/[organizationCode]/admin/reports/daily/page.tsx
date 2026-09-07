@@ -37,6 +37,8 @@ interface BranchOption {
   name: string;
 }
 
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+
 export default function DailyReportPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -163,96 +165,73 @@ export default function DailyReportPage() {
 
       <div className={styles.mainContent}>
         {/* Sticky Mobile Header */}
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Daily Attendance Report"
+          panelSubtitle={`Breakdown for ${date} (${report?.dayOfWeek || ''})`}
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <div
+              className={styles.headerMenuDropdown}
               style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#10b981',
-                boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
-                flexShrink: 0,
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 8px)',
+                width: '220px',
+                backgroundColor: '#0f172a',
+                border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
+                borderRadius: '12px',
+                padding: '8px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                zIndex: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
               }}
-            />
-            <div>
-              <h1 className={styles.title}>Daily Attendance Report</h1>
-              <p className={styles.subtitle}>
-                Breakdown for <strong>{date}</strong> ({report?.dayOfWeek || ''})
-              </p>
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }} ref={headerMenuRef}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
-              aria-label="Toggle Daily Report Menu"
             >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <div
-                className={styles.headerMenuDropdown}
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 8px)',
-                  width: '220px',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
-                  borderRadius: '12px',
-                  padding: '8px',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                  zIndex: 100,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  handleCsvExport();
                 }}
+                disabled={exportingCsv}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    handleCsvExport();
-                  }}
-                  disabled={exportingCsv}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
-                >
-                  <Download size={15} color="#34d399" />
-                  <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
-                </button>
+                <Download size={15} color="#34d399" />
+                <span>{exportingCsv ? 'Preparing CSV...' : 'Export CSV'}</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    handlePdfExport();
-                  }}
-                  disabled={exportingPdf}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
-                >
-                  <Printer size={15} color="#38bdf8" />
-                  <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save PDF'}</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  handlePdfExport();
+                }}
+                disabled={exportingPdf}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+              >
+                <Printer size={15} color="#38bdf8" />
+                <span>{exportingPdf ? 'Preparing PDF...' : 'Print / Save PDF'}</span>
+              </button>
 
-                <Link
-                  href={`/${organizationCode}/admin/reports`}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                >
-                  <ArrowLeft size={15} color="#818cf8" />
-                  <span>Reports Dashboard</span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </header>
+              <Link
+                href={`/${organizationCode}/admin/reports`}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                onClick={() => setHeaderMenuOpen(false)}
+              >
+                <ArrowLeft size={15} color="#818cf8" />
+                <span>Reports Dashboard</span>
+              </Link>
+            </div>
+          )}
+        </OrgAdminHeader>
 
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
           {/* Metrics Grid */}

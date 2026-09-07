@@ -21,6 +21,8 @@ import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import styles from './ReportsHome.module.css';
 
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+
 export default function ReportsDashboardPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -67,138 +69,111 @@ export default function ReportsDashboardPage() {
 
       <div className={styles.mainContent}>
         {/* Header */}
-        <header className={styles.headerBar} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ color: '#38bdf8', fontSize: '14px', lineHeight: 1 }}>●</span>
-            <div>
-              <h1 className={styles.title}>Reports &amp; Analytics</h1>
-              <p className={styles.subtitle}>
-                Review attendance, workforce coverage, leave, and operational activity across your organization.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }} ref={headerMenuRef}>
-            <button
-              type="button"
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Reports & Analytics"
+          panelSubtitle="Review attendance, workforce coverage, leave, and operational activity across your organization."
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <div
+              className="glass-card"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 8px)',
+                zIndex: 1000,
+                minWidth: '220px',
+                padding: '6px',
+                backgroundColor: '#0d121f',
                 border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
+                borderRadius: '12px',
+                boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
               }}
-              title="Reports & Analytics Menu"
             >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <div
-                className="glass-card"
+              <Link
+                href={`/${organizationCode}/admin/attendance`}
+                onClick={() => setHeaderMenuOpen(false)}
                 style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 8px)',
-                  zIndex: 1000,
-                  minWidth: '220px',
-                  padding: '6px',
-                  backgroundColor: '#0d121f',
-                  border: '1px solid var(--border-medium)',
-                  borderRadius: '12px',
-                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: 600,
                 }}
               >
-                  <Link
-                    href={`/${organizationCode}/admin/attendance`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <Clock size={15} color="#38bdf8" />
-                    <span>Attendance Overview</span>
-                  </Link>
+                <Clock size={15} color="#38bdf8" />
+                <span>Attendance Overview</span>
+              </Link>
 
-                  <Link
-                    href={`/${organizationCode}/admin/reports/daily`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <Clock size={15} color="#34d399" />
-                    <span>Daily Report</span>
-                  </Link>
+              <Link
+                href={`/${organizationCode}/admin/reports/daily`}
+                onClick={() => setHeaderMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  color: '#cbd5e1',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                }}
+              >
+                <Clock size={15} color="#34d399" />
+                <span>Daily Report</span>
+              </Link>
 
-                  <Link
-                    href={`/${organizationCode}/admin/reports/monthly`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <Calendar size={15} color="#818cf8" />
-                    <span>Monthly Report</span>
-                  </Link>
+              <Link
+                href={`/${organizationCode}/admin/reports/monthly`}
+                onClick={() => setHeaderMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  color: '#cbd5e1',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                }}
+              >
+                <Calendar size={15} color="#818cf8" />
+                <span>Monthly Report</span>
+              </Link>
 
-                  <Link
-                    href={`/${organizationCode}/admin/reports/range`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <FileText size={15} color="#fbbf24" />
-                    <span>Custom Range Report</span>
-                  </Link>
-                </div>
-            )}
-          </div>
-        </header>
+              <Link
+                href={`/${organizationCode}/admin/reports/range`}
+                onClick={() => setHeaderMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  color: '#cbd5e1',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                }}
+              >
+                <FileText size={15} color="#fbbf24" />
+                <span>Custom Range Report</span>
+              </Link>
+            </div>
+          )}
+        </OrgAdminHeader>
 
         {/* Main Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>

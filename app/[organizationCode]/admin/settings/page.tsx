@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Settings,
   Building2,
@@ -35,8 +35,11 @@ import { useToast } from '@/components/feedback/toast-provider';
 import { OrgLogo } from '@/components/branding/org-logo';
 import styles from './AdminSettings.module.css';
 
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+
 export default function AdminSettingsPage() {
   const params = useParams();
+  const router = useRouter();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -125,7 +128,41 @@ export default function AdminSettingsPage() {
     };
   }, [headerMenuOpen]);
 
-  // Window BeforeUnload Listener for Unsaved Changes
+  // Intercept anchor link navigation when form is dirty
+  useEffect(() => {
+    const handleAnchorClick = (e: MouseEvent) => {
+      if (!isDirty) return;
+
+      const target = e.target as HTMLElement;
+      const anchor = target.closest('a');
+
+      if (anchor && anchor.href) {
+        const targetUrl = anchor.href;
+        const currentUrl = window.location.href;
+
+        if (targetUrl !== currentUrl && anchor.target !== '_blank') {
+          e.preventDefault();
+          e.stopPropagation();
+          const hrefAttr = anchor.getAttribute('href');
+          setPendingAction(() => () => {
+            if (hrefAttr) {
+              router.push(hrefAttr);
+            } else {
+              window.location.href = targetUrl;
+            }
+          });
+          setShowUnsavedModal(true);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleAnchorClick, true);
+    return () => {
+      document.removeEventListener('click', handleAnchorClick, true);
+    };
+  }, [isDirty, router]);
+
+  // Window BeforeUnload Listener for Unsaved Changes (browser reload/close)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
@@ -195,6 +232,11 @@ export default function AdminSettingsPage() {
     setEditingSections({ identity: false, rules: false, contact: false });
     setShowUnsavedModal(false);
     toast.info('Form changes discarded and restored to last saved state.');
+    if (pendingAction) {
+      const action = pendingAction;
+      setPendingAction(null);
+      action();
+    }
   };
 
   // Handle Logo Upload
@@ -377,110 +419,66 @@ export default function AdminSettingsPage() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingBottom: '80px' }}>
         {/* Sticky Mobile Header */}
-        <header
-          style={{
-            padding: '16px 24px',
-            borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: 'rgba(13, 18, 31, 0.85)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 50,
-            marginBottom: '24px',
-          }}
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={logoUrl || orgData?.logoUrl}
+          panelTitle="Workspace Settings"
+          panelSubtitle="Manage default workspace rules, update organization logo, and administrative profiles."
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ color: '#38bdf8', fontSize: '14px', lineHeight: 1 }}>●</span>
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.4px', margin: 0 }}>
-                Workspace Settings
-              </h1>
-              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary, #9ca3af)', marginTop: '2px', margin: 0 }}>
-                Manage default workspace rules, update organization logo, and administrative profiles.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }} ref={headerMenuRef}>
-            <button
-              type="button"
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
+          {headerMenuOpen && (
+            <div
+              className="glass-card"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 8px)',
+                zIndex: 1000,
+                minWidth: '200px',
+                padding: '6px',
+                backgroundColor: '#0d121f',
                 border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
+                borderRadius: '12px',
+                boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
               }}
-              title="Settings Actions Menu"
             >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <div
-                className="glass-card"
+              <button
+                type="button"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  if (isDirty) {
+                    setPendingAction(() => () => fetchSettings());
+                    setShowUnsavedModal(true);
+                  } else {
+                    fetchSettings();
+                  }
+                }}
                 style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 8px)',
-                  zIndex: 1000,
-                  minWidth: '200px',
-                  padding: '6px',
-                  backgroundColor: '#0d121f',
-                  border: '1px solid var(--border-medium)',
-                  borderRadius: '12px',
-                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  color: '#cbd5e1',
+                  border: 'none',
+                  background: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    if (isDirty) {
-                      setPendingAction(() => () => fetchSettings());
-                      setShowUnsavedModal(true);
-                    } else {
-                      fetchSettings();
-                    }
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#cbd5e1',
-                    border: 'none',
-                    background: 'none',
-                    width: '100%',
-                    textAlign: 'left',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
-                  <span>Refresh Settings</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </header>
+                <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
+                <span>Refresh Settings</span>
+              </button>
+            </div>
+          )}
+        </OrgAdminHeader>
 
         <main className="pageMainContent" style={{ maxWidth: '1000px', padding: '0 16px' }}>
           {loading ? (
@@ -493,25 +491,29 @@ export default function AdminSettingsPage() {
               {/* BRANDING LOGO & IDENTITY CARD */}
               <div className={styles.sectionCard}>
                 <div className={styles.sectionHeader} onClick={() => toggleSection('identity')}>
-                  <div className={styles.sectionHeaderTitle}>
-                    <Building2 size={18} color="#38bdf8" />
-                    <span>Organization Identity &amp; Logo</span>
-                    {editingSections.identity ? (
-                      <span className="badge badge-primary" style={{ marginLeft: '6px', fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Unlock size={11} /> Editing Mode
-                      </span>
-                    ) : (
-                      <span className="badge badge-secondary" style={{ marginLeft: '6px', fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Lock size={11} /> Read-Only
-                      </span>
-                    )}
+                  <div className={styles.sectionHeaderTitleWrapper}>
+                    <div className={styles.sectionHeaderTitleRow}>
+                      <Building2 size={18} color="#38bdf8" style={{ flexShrink: 0 }} />
+                      <span className={styles.sectionHeaderTitleText}>Organization Identity &amp; Logo</span>
+                    </div>
+                    <div className={styles.sectionHeaderBadgeRow}>
+                      {editingSections.identity ? (
+                        <span className="badge badge-primary" style={{ fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Unlock size={11} /> Editing Mode
+                        </span>
+                      ) : (
+                        <span className="badge badge-secondary" style={{ fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Lock size={11} /> Read-Only
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                     <button
                       type="button"
                       onClick={(e) => toggleEditSection('identity', e)}
-                      className={`btn btn-sm ${editingSections.identity ? 'btn-secondary' : 'btn-primary'}`}
-                      style={{ padding: '4px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                      className={`btn btn-sm ${editingSections.identity ? 'btn-secondary' : 'btn-primary'} ${styles.sectionEditBtn}`}
+                      title={editingSections.identity ? 'Lock Section' : 'Edit Section'}
                     >
                       {editingSections.identity ? (
                         <>
@@ -617,25 +619,29 @@ export default function AdminSettingsPage() {
               {/* DEFAULT WORKSPACE SETTINGS */}
               <div className={styles.sectionCard}>
                 <div className={styles.sectionHeader} onClick={() => toggleSection('rules')}>
-                  <div className={styles.sectionHeaderTitle}>
-                    <Compass size={18} color="#c084fc" />
-                    <span>Default Workspace Rules &amp; Limits</span>
-                    {editingSections.rules ? (
-                      <span className="badge badge-primary" style={{ marginLeft: '6px', fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Unlock size={11} /> Editing Mode
-                      </span>
-                    ) : (
-                      <span className="badge badge-secondary" style={{ marginLeft: '6px', fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Lock size={11} /> Read-Only
-                      </span>
-                    )}
+                  <div className={styles.sectionHeaderTitleWrapper}>
+                    <div className={styles.sectionHeaderTitleRow}>
+                      <Compass size={18} color="#c084fc" style={{ flexShrink: 0 }} />
+                      <span className={styles.sectionHeaderTitleText}>Default Workspace Rules &amp; Limits</span>
+                    </div>
+                    <div className={styles.sectionHeaderBadgeRow}>
+                      {editingSections.rules ? (
+                        <span className="badge badge-primary" style={{ fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Unlock size={11} /> Editing Mode
+                        </span>
+                      ) : (
+                        <span className="badge badge-secondary" style={{ fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Lock size={11} /> Read-Only
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                     <button
                       type="button"
                       onClick={(e) => toggleEditSection('rules', e)}
-                      className={`btn btn-sm ${editingSections.rules ? 'btn-secondary' : 'btn-primary'}`}
-                      style={{ padding: '4px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                      className={`btn btn-sm ${editingSections.rules ? 'btn-secondary' : 'btn-primary'} ${styles.sectionEditBtn}`}
+                      title={editingSections.rules ? 'Lock Section' : 'Edit Section'}
                     >
                       {editingSections.rules ? (
                         <>
@@ -714,25 +720,29 @@ export default function AdminSettingsPage() {
               {/* CONTACT & ADMINISTRATIVE PROFILE */}
               <div className={styles.sectionCard}>
                 <div className={styles.sectionHeader} onClick={() => toggleSection('contact')}>
-                  <div className={styles.sectionHeaderTitle}>
-                    <User size={18} color="#34d399" />
-                    <span>Contact Profiles &amp; Administrative Email</span>
-                    {editingSections.contact ? (
-                      <span className="badge badge-primary" style={{ marginLeft: '6px', fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Unlock size={11} /> Editing Mode
-                      </span>
-                    ) : (
-                      <span className="badge badge-secondary" style={{ marginLeft: '6px', fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Lock size={11} /> Read-Only
-                      </span>
-                    )}
+                  <div className={styles.sectionHeaderTitleWrapper}>
+                    <div className={styles.sectionHeaderTitleRow}>
+                      <User size={18} color="#34d399" style={{ flexShrink: 0 }} />
+                      <span className={styles.sectionHeaderTitleText}>Contact Profiles &amp; Administrative Email</span>
+                    </div>
+                    <div className={styles.sectionHeaderBadgeRow}>
+                      {editingSections.contact ? (
+                        <span className="badge badge-primary" style={{ fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Unlock size={11} /> Editing Mode
+                        </span>
+                      ) : (
+                        <span className="badge badge-secondary" style={{ fontSize: '10.5px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Lock size={11} /> Read-Only
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                     <button
                       type="button"
                       onClick={(e) => toggleEditSection('contact', e)}
-                      className={`btn btn-sm ${editingSections.contact ? 'btn-secondary' : 'btn-primary'}`}
-                      style={{ padding: '4px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                      className={`btn btn-sm ${editingSections.contact ? 'btn-secondary' : 'btn-primary'} ${styles.sectionEditBtn}`}
+                      title={editingSections.contact ? 'Lock Section' : 'Edit Section'}
                     >
                       {editingSections.contact ? (
                         <>

@@ -63,10 +63,44 @@
   cursor: pointer;
 }
 
-.sectionHeaderTitle {
+.sectionHeaderTitleWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+  margin-right: 12px;
+}
+
+.sectionHeaderTitleRow {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.sectionHeaderTitleText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 700;
+  font-size: 15px;
+  color: #ffffff;
+}
+
+.sectionHeaderBadgeRow {
+  display: flex;
+  align-items: center;
+  margin-left: 26px;
+}
+
+.sectionEditBtn {
+  padding: 4px 10px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
 }
 
 .accordionChevron {
@@ -153,6 +187,16 @@
     width: 100%;
     justify-content: center;
     padding: 12px;
+  }
+  .sectionEditBtn span {
+    display: none !important;
+  }
+  .sectionEditBtn {
+    padding: 6px 8px !important;
+    min-width: unset !important;
+  }
+  .sectionHeaderBadgeRow {
+    margin-left: 0;
   }
 }
 

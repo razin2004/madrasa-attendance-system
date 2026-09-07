@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Moon,
   Calendar,
+  Filter,
   X,
   Loader2,
   Menu,
@@ -62,6 +63,8 @@ const WEEKDAY_MAP: Record<string, string> = {
   SUNDAY: 'Sun',
 };
 
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+
 export default function ShiftPatternsPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase();
@@ -78,6 +81,7 @@ export default function ShiftPatternsPage() {
   const [togglePattern, setTogglePattern] = useState<ShiftPatternItem | null>(null);
   const [toggleLoading, setToggleLoading] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -163,155 +167,161 @@ export default function ShiftPatternsPage() {
       {/* Main Content */}
       <div className={styles.mainContent}>
         {/* Header */}
-        <header className={styles.header}>
-          <div>
-            <h1 className={styles.headerTitle}>Shifts &amp; Roster</h1>
-            <p className={styles.headerSubtitle}>
-              Create recurring schedules, assign staff, and manage workforce coverage.
-            </p>
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-medium)',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-              title="Shifts & Roster Actions Menu"
-            >
-              <Menu size={18} />
-            </button>
-
-            {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle="Shifts & Roster"
+          panelSubtitle="Create recurring schedules, assign staff, and manage workforce coverage."
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                onClick={() => setHeaderMenuOpen(false)}
+              />
+              <div
+                className="glass-card"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  zIndex: 1000,
+                  minWidth: '210px',
+                  padding: '6px',
+                  backgroundColor: '#0d121f',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                }}
+              >
+                <Link
+                  href={`/${organizationCode}/admin/shifts/new`}
                   onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
                   style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    zIndex: 1000,
-                    minWidth: '210px',
-                    padding: '6px',
-                    backgroundColor: '#0d121f',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
                   }}
                 >
-                  <Link
-                    href={`/${organizationCode}/admin/shifts/new`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                    }}
-                  >
-                    <Plus size={15} color="#818cf8" />
-                    <span>Create Shift Pattern</span>
-                  </Link>
+                  <Plus size={15} color="#818cf8" />
+                  <span>Create Shift Pattern</span>
+                </Link>
 
-                  <Link
-                    href={`/${organizationCode}/admin/shifts/swaps`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <RefreshCw size={15} color="#38bdf8" />
-                    <span>Shift Swaps &amp; Substitutions</span>
-                  </Link>
+                <Link
+                  href={`/${organizationCode}/admin/shifts/swaps`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  <RefreshCw size={15} color="#38bdf8" />
+                  <span>Shift Swaps &amp; Substitutions</span>
+                </Link>
 
-                  <Link
-                    href={`/${organizationCode}/admin/shifts/roster`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <Calendar size={15} color="#38bdf8" />
-                    <span>View Roster Calendar</span>
-                  </Link>
+                <Link
+                  href={`/${organizationCode}/admin/shifts/roster`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <Calendar size={15} color="#38bdf8" />
+                  <span>View Roster Calendar</span>
+                </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      fetchInitialData();
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
-                    <span>Refresh Shifts</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </header>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    fetchInitialData();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    border: 'none',
+                    background: 'none',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
+                  <span>Refresh Shifts</span>
+                </button>
+              </div>
+            </>
+          )}
+        </OrgAdminHeader>
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1240px' }}>
-          {/* Filter Bar */}
+          {/* Filter & Search Bar */}
           <div className={styles.filterBar}>
-            {/* Tabs */}
-            <div className={styles.tabGroup}>
+            {/* Search Input with Pinned Filter Icon (Staff Panel Style) */}
+            <div className={styles.searchInputWrapper}>
+              <Search size={15} className={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="Search shift pattern name or rules..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={styles.searchInput}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  style={{ position: 'absolute', right: '40px', top: '9px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setFilterDrawerOpen(!filterDrawerOpen)}
+                className={styles.filterToggleBtn}
+                title="Toggle Filters"
+              >
+                <Filter size={15} color={filter !== 'ALL' ? '#818cf8' : 'currentColor'} />
+              </button>
+            </div>
+
+            {/* Filter Tabs (Collapsible on Mobile) */}
+            <div className={`${styles.tabGroup} ${filterDrawerOpen ? styles.tabGroupOpen : ''}`}>
               {[
                 { id: 'ALL', label: `All Patterns (${counts.total})` },
                 { id: 'ACTIVE', label: `Active (${counts.active})` },
@@ -319,37 +329,15 @@ export default function ShiftPatternsPage() {
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setFilter(tab.id as any)}
+                  onClick={() => {
+                    setFilter(tab.id as any);
+                    setFilterDrawerOpen(false);
+                  }}
                   className={`${styles.tabButton} ${filter === tab.id ? styles.tabButtonActive : ''}`}
                 >
                   {tab.label}
                 </button>
               ))}
-            </div>
-
-            {/* Search Input */}
-            <div style={{ position: 'relative', width: '280px' }}>
-              <Search
-                size={15}
-                color="var(--text-muted)"
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
-              />
-              <input
-                type="text"
-                placeholder="Search shift pattern name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="form-input"
-                style={{ paddingLeft: '36px', height: '36px', fontSize: '13px' }}
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch('')}
-                  style={{ position: 'absolute', right: '10px', top: '9px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                >
-                  <X size={14} />
-                </button>
-              )}
             </div>
           </div>
 

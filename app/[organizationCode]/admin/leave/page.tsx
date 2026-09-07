@@ -42,6 +42,8 @@ interface LeaveRequestItem {
   };
 }
 
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+
 export default function AdminLeavePage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -124,92 +126,67 @@ export default function AdminLeavePage() {
 
       <div className={styles.mainContent}>
         {/* Mobile Header */}
-        <header className={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Leave Management"
+          panelSubtitle="Review requests, staffing coverage & employee leave"
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          {headerMenuOpen && (
+            <div
+              className={styles.headerMenuDropdown}
               style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#10b981',
-                boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
-                flexShrink: 0,
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 8px)',
+                width: '220px',
+                backgroundColor: '#0f172a',
+                border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
+                borderRadius: '12px',
+                padding: '8px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                zIndex: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
               }}
-            />
-            <div>
-              <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px', margin: 0 }}>
-                Leave Management
-              </h1>
-              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px', margin: 0 }}>
-                Review requests, staffing coverage &amp; employee leave
-              </p>
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }} ref={headerMenuRef}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
-              aria-label="Toggle Leave Action Menu"
             >
-              {headerMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-
-            {headerMenuOpen && (
-              <div
-                className={styles.headerMenuDropdown}
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 8px)',
-                  width: '220px',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid var(--border-medium, rgba(255,255,255,0.15))',
-                  borderRadius: '12px',
-                  padding: '8px',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                  zIndex: 100,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                }}
+              <Link
+                href={`/${organizationCode}/admin/leave/manual`}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                onClick={() => setHeaderMenuOpen(false)}
               >
-                <Link
-                  href={`/${organizationCode}/admin/leave/manual`}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                >
-                  <Plus size={15} color="#818cf8" />
-                  <span>Record Manual Leave</span>
-                </Link>
+                <Plus size={15} color="#818cf8" />
+                <span>Record Manual Leave</span>
+              </Link>
 
-                <button
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    fetchLeaveRequests();
-                  }}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
-                >
-                  <RefreshCw size={15} color="#10b981" className={loading ? 'animate-spin' : ''} />
-                  <span>Refresh Requests</span>
-                </button>
+              <button
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  fetchLeaveRequests();
+                }}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', color: '#f8fafc', fontSize: '12.5px' }}
+              >
+                <RefreshCw size={15} color="#10b981" className={loading ? 'animate-spin' : ''} />
+                <span>Refresh Requests</span>
+              </button>
 
-                <Link
-                  href={`/${organizationCode}/admin/roster`}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                >
-                  <CalendarDays size={15} color="#38bdf8" />
-                  <span>Roster Calendar</span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </header>
+              <Link
+                href={`/${organizationCode}/admin/roster`}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                onClick={() => setHeaderMenuOpen(false)}
+              >
+                <CalendarDays size={15} color="#38bdf8" />
+                <span>Roster Calendar</span>
+              </Link>
+            </div>
+          )}
+        </OrgAdminHeader>
 
         {/* Metrics Overview */}
         <div className={styles.metricsGrid}>
@@ -227,14 +204,96 @@ export default function AdminLeavePage() {
           </div>
         </div>
 
-        {/* Filter Bar */}
+        {/* Filter Bar (Staff Panel Style) */}
         <div className={styles.filterBar}>
-          {/* Desktop Status Chip Tabs */}
-          <div className={styles.chipTabsContainer}>
+          {/* Search Input with Pinned Filter Icon */}
+          <div style={{ position: 'relative', width: '100%' }}>
+            <input
+              type="text"
+              className="form-input"
+              style={{
+                width: '100%',
+                height: '38px',
+                fontSize: '13px',
+                paddingLeft: '36px',
+                paddingRight: search ? '70px' : '42px',
+                backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '8px',
+                color: '#ffffff',
+                boxSizing: 'border-box',
+              }}
+              placeholder="Search staff name or ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  fetchLeaveRequests();
+                }
+              }}
+            />
+            <Search
+              size={15}
+              style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  fetchLeaveRequests();
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '40px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: '2px',
+                }}
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              style={{
+                position: 'absolute',
+                right: '5px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '30px',
+                height: '30px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '6px',
+                background: statusFilter !== 'PENDING' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                border: statusFilter !== 'PENDING' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--border-medium, rgba(255, 255, 255, 0.12))',
+                color: statusFilter !== 'PENDING' ? '#818cf8' : '#ffffff',
+                cursor: 'pointer',
+              }}
+              title="Toggle Filters"
+            >
+              <Filter size={15} color={statusFilter !== 'PENDING' ? '#818cf8' : 'currentColor'} />
+            </button>
+          </div>
+
+          {/* Status Chip Tabs (Collapsible on Mobile or toggled via Filter button) */}
+          <div className={`${styles.chipTabsContainer} ${showMobileFilters ? styles.chipTabsContainerOpen : ''}`}>
             {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((st) => (
               <button
                 key={st}
-                onClick={() => setStatusFilter(st === 'ALL' ? '' : st)}
+                onClick={() => {
+                  setStatusFilter(st === 'ALL' ? '' : st);
+                  setShowMobileFilters(false);
+                }}
                 className={`btn btn-sm ${
                   (st === 'ALL' && !statusFilter) || statusFilter === st ? 'btn-primary' : 'btn-secondary'
                 }`}
@@ -244,186 +303,7 @@ export default function AdminLeavePage() {
               </button>
             ))}
           </div>
-
-          <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '180px', alignItems: 'center' }}>
-            <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '6px', flex: 1, position: 'relative' }}>
-              <div style={{ position: 'relative', width: '100%' }}>
-                <Search
-                  size={14}
-                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
-                />
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{
-                    width: '100%',
-                    height: '36px',
-                    fontSize: '12.5px',
-                    paddingLeft: '32px',
-                    paddingRight: search ? '28px' : '10px',
-                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                  }}
-                  placeholder="Search staff..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearch('');
-                      fetchLeaveRequests();
-                    }}
-                    style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      padding: '2px',
-                    }}
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-              <button
-                type="submit"
-                className="btn btn-secondary btn-sm"
-                style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                title="Search"
-              >
-                <Search size={14} />
-              </button>
-            </form>
-
-            <button
-              onClick={() => setShowMobileFilters(!showMobileFilters)}
-              className={`btn btn-secondary btn-sm ${styles.mobileFilterBtn}`}
-              style={{
-                height: '36px',
-                padding: '0 12px',
-                borderRadius: '8px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '12px',
-                borderColor: statusFilter ? '#6366f1' : undefined,
-                color: statusFilter ? '#818cf8' : undefined,
-              }}
-            >
-              {showMobileFilters ? <X size={15} /> : <Filter size={15} />}
-              <span>{showMobileFilters ? 'Close' : statusFilter ? `Filter (${statusFilter})` : 'Filter'}</span>
-            </button>
-
-            <button
-              onClick={fetchLeaveRequests}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '0 10px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Refresh"
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </button>
-          </div>
         </div>
-
-        {/* Mobile Filter Sheet Modal */}
-        {showMobileFilters && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.65)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 999,
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-            }}
-            onClick={() => setShowMobileFilters(false)}
-          >
-            <div
-              style={{
-                width: '100%',
-                maxWidth: '500px',
-                backgroundColor: '#0f172a',
-                borderTopLeftRadius: '20px',
-                borderTopRightRadius: '20px',
-                border: '1px solid var(--border-medium)',
-                borderBottom: 'none',
-                padding: '20px',
-                boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Filter size={16} color="#818cf8" />
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Leave Filters</h3>
-                </div>
-                <button
-                  onClick={() => setShowMobileFilters(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-                    Request Status
-                  </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((st) => (
-                      <button
-                        key={st}
-                        onClick={() => {
-                          setStatusFilter(st === 'ALL' ? '' : st);
-                        }}
-                        className={`btn btn-sm ${
-                          (st === 'ALL' && !statusFilter) || statusFilter === st ? 'btn-primary' : 'btn-secondary'
-                        }`}
-                        style={{ height: '36px', borderRadius: '8px', fontSize: '12px', fontWeight: 700 }}
-                      >
-                        {st}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={() => {
-                    setStatusFilter('PENDING');
-                    setShowMobileFilters(false);
-                  }}
-                  className="btn btn-secondary"
-                  style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
-                >
-                  Reset Filters
-                </button>
-                <button
-                  onClick={() => setShowMobileFilters(false)}
-                  className="btn btn-primary"
-                  style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Request Queue Container */}
         <div className={styles.tableCard}>

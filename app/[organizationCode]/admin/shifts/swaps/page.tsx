@@ -80,6 +80,7 @@ export default function ShiftSwapsAdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>('PEER_ACCEPTED');
   const [searchQuery, setSearchQuery] = useState('');
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Modal Review State
   const [selectedSwap, setSelectedSwap] = useState<SwapRequest | null>(null);
@@ -358,44 +359,26 @@ export default function ShiftSwapsAdminPage() {
             </div>
           )}
 
-          {/* Filter Bar & Search */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-            <div className={styles.filterScroll}>
-              {[
-                { id: 'PEER_ACCEPTED', label: `Action Needed (${pendingAdminCount})` },
-                { id: 'PENDING_PEER', label: 'Pending Peer' },
-                { id: 'APPROVED', label: 'Approved' },
-                { id: 'REJECTED', label: 'Rejected' },
-                { id: 'ALL', label: 'All History' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setStatusFilter(t.id)}
-                  className={`btn btn-sm ${statusFilter === t.id ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ borderRadius: '8px', fontSize: '12px', whiteSpace: 'nowrap', padding: '6px 12px' }}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '300px' }}>
+          {/* Filter Bar & Search (Staff Panel Style) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', width: '100%' }}>
+            {/* Search Input with Pinned Filter Icon */}
+            <div style={{ position: 'relative', width: '100%' }}>
               <input
                 type="text"
-                placeholder="Search staff..."
+                placeholder="Search staff name or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="form-input"
-                style={{ width: '100%', paddingLeft: '34px', paddingRight: searchQuery ? '28px' : '10px', fontSize: '13px', height: '36px' }}
+                style={{ width: '100%', paddingLeft: '36px', paddingRight: searchQuery ? '70px' : '42px', fontSize: '13px', height: '38px', boxSizing: 'border-box' }}
               />
-              <Search size={14} color="var(--text-muted)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
                   style={{
                     position: 'absolute',
-                    right: '6px',
+                    right: '40px',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none',
@@ -405,13 +388,59 @@ export default function ShiftSwapsAdminPage() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: 0,
+                    padding: '2px',
                   }}
                   title="Clear search"
                 >
-                  <X size={13} />
+                  <X size={14} />
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setFilterDrawerOpen(!filterDrawerOpen)}
+                style={{
+                  position: 'absolute',
+                  right: '5px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '6px',
+                  background: statusFilter !== 'PEER_ACCEPTED' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                  border: statusFilter !== 'PEER_ACCEPTED' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--border-medium, rgba(255, 255, 255, 0.12))',
+                  color: statusFilter !== 'PEER_ACCEPTED' ? '#818cf8' : '#ffffff',
+                  cursor: 'pointer',
+                }}
+                title="Toggle Filters"
+              >
+                <Filter size={15} color={statusFilter !== 'PEER_ACCEPTED' ? '#818cf8' : 'currentColor'} />
+              </button>
+            </div>
+
+            {/* Filter Status Pills (Collapsible on Mobile or toggled via Filter button) */}
+            <div className={`${styles.filterScroll} ${filterDrawerOpen ? styles.filterScrollOpen : ''}`}>
+              {[
+                { id: 'PEER_ACCEPTED', label: `Action Needed (${pendingAdminCount})` },
+                { id: 'PENDING_PEER', label: 'Pending Peer' },
+                { id: 'APPROVED', label: 'Approved' },
+                { id: 'REJECTED', label: 'Rejected' },
+                { id: 'ALL', label: 'All History' },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setStatusFilter(t.id);
+                    setFilterDrawerOpen(false);
+                  }}
+                  className={`btn btn-sm ${statusFilter === t.id ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ borderRadius: '8px', fontSize: '12px', whiteSpace: 'nowrap', padding: '6px 12px' }}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
           </div>
 
