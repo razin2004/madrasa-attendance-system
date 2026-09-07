@@ -548,183 +548,16 @@ export default function StaffDashboardPage() {
           </div>
         </div>
 
-        <div className={styles.headerNavControls} style={{ position: 'relative' }}>
-          <button
-            onClick={handleManualRefresh}
-            disabled={checking}
-            className={styles.headerButton}
-            title="Re-verify checks"
-          >
-            <RefreshCw size={14} className={checking ? 'animate-spin' : ''} color="#a5b4fc" />
-            <span>{checking ? 'Verifying...' : 'Re-verify'}</span>
-          </button>
-          <Link
-            href={`/${orgCode}/staff/swaps`}
-            className={styles.headerButton}
-          >
-            <ArrowLeftRight size={14} color="#818cf8" />
-            <span>Shift Swaps</span>
-          </Link>
-          <Link
-            href={`/${orgCode}/staff/attendance`}
-            className={styles.headerButton}
-          >
-            <History size={14} color="#38bdf8" />
-            <span>Punch Log</span>
-          </Link>
-
-          {/* Mobile Hamburger Icon Menu Toggle */}
-          <button
-            type="button"
-            onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-            className="btn btn-secondary btn-sm"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '36px',
-              height: '36px',
-              padding: 0,
-              borderRadius: '10px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--border-medium)',
-              color: '#ffffff',
-              cursor: 'pointer',
-            }}
-            title="Staff Options Menu"
-          >
-            <Menu size={18} />
-          </button>
-
-          {headerMenuOpen && (
-            <>
-              <div
-                style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-                onClick={() => setHeaderMenuOpen(false)}
-              />
-              <div
-                className="glass-card"
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 8px)',
-                  zIndex: 1000,
-                  minWidth: '200px',
-                  padding: '6px',
-                  backgroundColor: '#0d121f',
-                  border: '1px solid var(--border-medium)',
-                  borderRadius: '12px',
-                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
-                }}
-              >
-                <Link
-                  href={`/${orgCode}/staff/profile`}
-                  onClick={() => setHeaderMenuOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                    textDecoration: 'none',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                  }}
-                >
-                  <User size={15} color="#38bdf8" />
-                  <span>My Profile &amp; Device</span>
-                </Link>
-
-                <Link
-                  href={`/${orgCode}/staff/attendance`}
-                  onClick={() => setHeaderMenuOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#cbd5e1',
-                    textDecoration: 'none',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                  }}
-                >
-                  <History size={15} color="#34d399" />
-                  <span>Punch History</span>
-                </Link>
-
-                <Link
-                  href={`/${orgCode}/staff/leave`}
-                  onClick={() => setHeaderMenuOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#cbd5e1',
-                    textDecoration: 'none',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                  }}
-                >
-                  <Calendar size={15} color="#fbbf24" />
-                  <span>My Leave Balances</span>
-                </Link>
-
-                <Link
-                  href={`/${orgCode}/staff/shift`}
-                  onClick={() => setHeaderMenuOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#cbd5e1',
-                    textDecoration: 'none',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                  }}
-                >
-                  <Clock size={15} color="#818cf8" />
-                  <span>Shift Schedule</span>
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeaderMenuOpen(false);
-                    router.push(`/${orgCode}/login`);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    color: '#f87171',
-                    border: 'none',
-                    background: 'none',
-                    width: '100%',
-                    textAlign: 'left',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <LogOut size={15} color="#f87171" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        {/* Icon-Only Re-verify Button on Far Right Edge */}
+        <button
+          onClick={handleManualRefresh}
+          disabled={checking}
+          className={styles.iconOnlyRefreshBtn}
+          title="Re-verify Security"
+          aria-label="Re-verify Security"
+        >
+          <RefreshCw size={18} className={checking ? 'animate-spin' : ''} color="#a5b4fc" />
+        </button>
       </header>
 
       {/* Main Container Body */}
@@ -1083,61 +916,65 @@ export default function StaffDashboardPage() {
                 No recent attendance punch records found.
               </div>
             ) : (
-              <table className={styles.historyTable}>
-                <thead>
-                  <tr className={styles.tableHeaderRow}>
-                    <th className={styles.tableHeaderTh}>Punch Type</th>
-                    <th className={styles.tableHeaderTh}>Branch</th>
-                    <th className={styles.tableHeaderTh}>Timestamp</th>
-                    <th className={styles.tableHeaderTh}>Verification Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentRecords.map((r, i) => (
-                    <tr key={i} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <span
-                          style={{
-                            fontSize: '11.5px',
-                            fontWeight: 800,
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            backgroundColor: r.type === 'CLOCK_IN' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                            color: r.type === 'CLOCK_IN' ? '#34d399' : '#fbbf24',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                          }}
-                        >
-                          <Clock size={12} />
-                          {r.type === 'CLOCK_IN' ? 'CLOCK IN' : 'CLOCK OUT'}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd} style={{ color: '#ffffff', fontWeight: 600 }}>
-                        {r.branch?.name || 'Main Branch'}
-                      </td>
-                      <td className={styles.tableTd} style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1' }}>
-                        {new Date(r.timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 800,
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                            color: '#34d399',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                          }}
-                        >
-                          VERIFIED
-                        </span>
-                      </td>
+              <div className={styles.tableScrollWrapper}>
+                <table className={styles.historyTable}>
+                  <thead>
+                    <tr className={styles.tableHeaderRow}>
+                      <th className={styles.tableHeaderTh}>Punch Type</th>
+                      <th className={styles.tableHeaderTh}>Branch</th>
+                      <th className={styles.tableHeaderTh}>Timestamp</th>
+                      <th className={styles.tableHeaderTh}>Verification Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {recentRecords.map((r, i) => (
+                      <tr key={i} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <span
+                            style={{
+                              fontSize: '11.5px',
+                              fontWeight: 800,
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              backgroundColor: r.type === 'CLOCK_IN' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                              color: r.type === 'CLOCK_IN' ? '#34d399' : '#fbbf24',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            <Clock size={12} />
+                            {r.type === 'CLOCK_IN' ? 'CLOCK IN' : 'CLOCK OUT'}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd} style={{ color: '#ffffff', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {r.branch?.name || 'Main Branch'}
+                        </td>
+                        <td className={styles.tableTd} style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
+                          {new Date(r.timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                              color: '#34d399',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            VERIFIED
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

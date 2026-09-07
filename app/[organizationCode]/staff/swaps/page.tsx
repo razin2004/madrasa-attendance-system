@@ -19,6 +19,8 @@ import {
   Users,
   Send,
   ShieldCheck,
+  Search,
+  Filter,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from './ShiftSwapsStaff.module.css';
@@ -85,6 +87,9 @@ export default function StaffShiftSwapsPage() {
   const [outgoingRequests, setOutgoingRequests] = useState<OutgoingRequest[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<IncomingRequest[]>([]);
   const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING'>('INCOMING');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   // Peer Respond Loading State
   const [respondingId, setRespondingId] = useState<string | null>(null);
@@ -143,6 +148,22 @@ export default function StaffShiftSwapsPage() {
       r.status === 'PENDING_PEER' &&
       (!r.peer || r.peer.id === currentStaff?.id)
   ).length;
+
+  const filterRequest = (r: any) => {
+    const matchesStatus = statusFilter === 'ALL' ? true : r.status === statusFilter;
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return matchesStatus;
+    const matchesQuery =
+      (r.reason && r.reason.toLowerCase().includes(q)) ||
+      (r.shiftPatternName && r.shiftPatternName.toLowerCase().includes(q)) ||
+      (r.targetDate && r.targetDate.toLowerCase().includes(q)) ||
+      (r.requester?.name && r.requester.name.toLowerCase().includes(q)) ||
+      (r.peer?.name && r.peer.name.toLowerCase().includes(q));
+    return matchesStatus && matchesQuery;
+  };
+
+  const filteredIncoming = incomingRequests.filter(filterRequest);
+  const filteredOutgoing = outgoingRequests.filter(filterRequest);
 
   return (
     <div className={styles.container} style={{ padding: '16px', maxWidth: '920px', margin: '0 auto' }}>
@@ -217,25 +238,101 @@ export default function StaffShiftSwapsPage() {
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
-        <button
-          onClick={() => setActiveTab('INCOMING')}
-          className={`btn btn-sm ${activeTab === 'INCOMING' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '13px' }}
-        >
-          <Users size={14} />
-          <span>Incoming Invites ({incomingRequests.length})</span>
-        </button>
+      {/* Search & Filter Header Bar */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            <input
+              type="text"
+              placeholder="Search by colleague name, shift, or reason..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '9px 36px 9px 36px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ffffff',
+                fontSize: '13px',
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
 
-        <button
-          onClick={() => setActiveTab('OUTGOING')}
-          className={`btn btn-sm ${activeTab === 'OUTGOING' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '13px' }}
-        >
-          <Send size={14} />
-          <span>My Sent Requests ({outgoingRequests.length})</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 14px', borderRadius: '10px' }}
+          >
+            <Filter size={15} />
+            <span>Filter</span>
+            {statusFilter !== 'ALL' && (
+              <span style={{ backgroundColor: '#818cf8', color: '#ffffff', fontSize: '10px', fontWeight: 800, padding: '1px 6px', borderRadius: '10px' }}>
+                1
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Navigation Tabs (Incoming vs Outgoing) */}
+        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+          <button
+            onClick={() => setActiveTab('INCOMING')}
+            className={`btn btn-sm ${activeTab === 'INCOMING' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '13px' }}
+          >
+            <Users size={14} />
+            <span>Incoming Invites ({incomingRequests.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('OUTGOING')}
+            className={`btn btn-sm ${activeTab === 'OUTGOING' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '13px' }}
+          >
+            <Send size={14} />
+            <span>My Sent Requests ({outgoingRequests.length})</span>
+          </button>
+        </div>
+
+        {/* Status Filter Tabs Drawer */}
+        {(showMobileFilters || statusFilter !== 'ALL') && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {['ALL', 'PENDING_PEER', 'PEER_ACCEPTED', 'APPROVED', 'REJECTED'].map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`btn btn-xs ${statusFilter === st ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '5px 12px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 600 }}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -248,17 +345,17 @@ export default function StaffShiftSwapsPage() {
           {/* TAB 1: INCOMING REQUESTS */}
           {activeTab === 'INCOMING' && (
             <div>
-              {incomingRequests.length === 0 ? (
+              {filteredIncoming.length === 0 ? (
                 <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
                   <CheckCircle2 size={32} color="#34d399" style={{ margin: '0 auto 12px auto' }} />
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No Incoming Swap Invites</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No Incoming Swap Invites Found</h3>
                   <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    You currently have no pending shift swap requests from colleagues.
+                    No incoming shift swap requests match your search filter.
                   </p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {incomingRequests.map((req) => {
+                  {filteredIncoming.map((req) => {
                     const targetDateFormatted = new Date(req.targetDate).toLocaleDateString(undefined, {
                       weekday: 'short',
                       year: 'numeric',
@@ -396,12 +493,12 @@ export default function StaffShiftSwapsPage() {
           {/* TAB 2: OUTGOING REQUESTS */}
           {activeTab === 'OUTGOING' && (
             <div>
-              {outgoingRequests.length === 0 ? (
+              {filteredOutgoing.length === 0 ? (
                 <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
                   <Calendar size={32} color="var(--text-muted)" style={{ margin: '0 auto 12px auto' }} />
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No Outgoing Swap Requests</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No Outgoing Swap Requests Found</h3>
                   <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
-                    You haven&apos;t initiated any shift swap requests yet.
+                    No outgoing shift swap requests match your search filter.
                   </p>
                   <Link href={`/${organizationCode}/staff/swaps/new`} className="btn btn-primary btn-sm">
                     + Apply for Shift Swap
@@ -409,7 +506,7 @@ export default function StaffShiftSwapsPage() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {outgoingRequests.map((req) => {
+                  {filteredOutgoing.map((req) => {
                     const targetDateFormatted = new Date(req.targetDate).toLocaleDateString(undefined, {
                       weekday: 'short',
                       year: 'numeric',

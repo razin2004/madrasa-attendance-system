@@ -15,6 +15,9 @@ import {
   Trash2,
   ArrowLeft,
   Plus,
+  Search,
+  X,
+  Filter,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
@@ -30,6 +33,8 @@ export default function StaffLeaveDashboardPage() {
   const [balances, setBalances] = useState<any>(null);
   const [cancelRequestId, setCancelRequestId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   const fetchLeaveData = async () => {
     setLoading(true);
@@ -101,9 +106,18 @@ export default function StaffLeaveDashboardPage() {
     }
   };
 
-  const filteredRequests = leaveRequests.filter((r) =>
-    statusFilter === 'ALL' ? true : r.status === statusFilter
-  );
+  const filteredRequests = leaveRequests.filter((r) => {
+    const matchesStatus = statusFilter === 'ALL' ? true : r.status === statusFilter;
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return matchesStatus;
+    const matchesQuery =
+      (r.reason && r.reason.toLowerCase().includes(q)) ||
+      (r.type && r.type.toLowerCase().includes(q)) ||
+      (formatLeaveType(r.type || r.leaveType).toLowerCase().includes(q)) ||
+      (r.startDate && r.startDate.toLowerCase().includes(q)) ||
+      (r.endDate && r.endDate.toLowerCase().includes(q));
+    return matchesStatus && matchesQuery;
+  });
 
   return (
     <div className={styles.container}>
@@ -171,18 +185,81 @@ export default function StaffLeaveDashboardPage() {
         </div>
       </div>
 
-      {/* Status Filter Bar */}
-      <div className={styles.filterBar}>
-        {['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'].map((st) => (
+      {/* Search & Filter Header Bar (Org Admin Pattern) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            <input
+              type="text"
+              placeholder="Search by leave type, reason, or date..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '9px 36px 9px 36px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ffffff',
+                fontSize: '13px',
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
           <button
-            key={st}
-            onClick={() => setStatusFilter(st)}
-            className={`btn btn-sm ${statusFilter === st ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 600 }}
+            type="button"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 14px', borderRadius: '10px' }}
           >
-            {st}
+            <Filter size={15} />
+            <span>Filter</span>
+            {statusFilter !== 'ALL' && (
+              <span style={{ backgroundColor: '#818cf8', color: '#ffffff', fontSize: '10px', fontWeight: 800, padding: '1px 6px', borderRadius: '10px' }}>
+                1
+              </span>
+            )}
           </button>
-        ))}
+        </div>
+
+        {/* Filter Tabs Row */}
+        <div style={{ display: showMobileFilters ? 'flex' : undefined, flexWrap: 'wrap', gap: '6px' }} className={showMobileFilters ? '' : styles.filterBar}>
+          {['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'].map((st) => (
+            <button
+              key={st}
+              onClick={() => {
+                setStatusFilter(st);
+                setShowMobileFilters(false);
+              }}
+              className={`btn btn-sm ${statusFilter === st ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 600 }}
+            >
+              {st}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}

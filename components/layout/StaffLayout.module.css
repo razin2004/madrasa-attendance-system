@@ -247,35 +247,130 @@
   z-index: 90;
 }
 
-.headerTitleArea {
+.headerLeftArea {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  min-width: 0;
 }
 
-.pageTitle {
-  font-size: 1.125rem;
-  font-weight: 700;
+.logoBox {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.headerTextCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.headerOrgCode {
+  font-size: 0.875rem;
+  font-weight: 800;
   color: #ffffff;
-  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.orgBadge {
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  color: #a5b4fc;
-  padding: 4px 10px;
-  border-radius: 20px;
+.headerPanelSubtitle {
   font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: #94a3b8;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.lineButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lineButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.headerDropdownMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 1000;
+  min-width: 220px;
+  background: #0d121f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.dropdownActive {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #818cf8 !important;
+  font-weight: 700;
+}
+
+.dropdownSignOut {
+  color: #f87171 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+.dropdownSignOut:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
 }
 
 .statusPill {
@@ -285,7 +380,7 @@
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .statusPill.ready {

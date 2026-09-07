@@ -84,7 +84,9 @@ export function OrgAdminHeader({
       {/* Right Action / Line Button Area */}
       <div className={styles.headerRight}>
         {actions && <div className={styles.desktopActions}>{actions}</div>}
-        <span className={styles.mobileRoleTag}>Org Admin</span>
+        {(panelTitle === 'Organization Overview' || panelTitle === 'Overview') && (
+          <span className={styles.mobileRoleTag}>Org Admin</span>
+        )}
 
         {onToggleHeaderMenu && (
           <div style={{ position: 'relative' }}>

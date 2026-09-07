@@ -18,8 +18,9 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const [signingOut, setSigningOut] = useState(false);
   const [staffInfo, setStaffInfo] = useState<{ name: string; email: string } | null>(null);
   const [isPrecheckReady, setIsPrecheckReady] = useState<boolean | undefined>(undefined);
+  const [orgBranding, setOrgBranding] = useState<{ name?: string; logoUrl?: string | null } | null>(null);
 
-  // Restore sidebar state from localStorage & fetch precheck status
+  // Restore sidebar state from localStorage & fetch precheck status & org branding
   useEffect(() => {
     const saved = localStorage.getItem('shiftguard_staff_sidebar_collapsed');
     if (saved === 'true') {
@@ -33,6 +34,18 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       .then((data) => {
         if (data.user) {
           setStaffInfo({ name: data.user.name || 'Staff Member', email: data.user.email || '' });
+        }
+      })
+      .catch(() => {});
+
+    fetch(`/api/org/${orgCode}/branding`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.organization) {
+          setOrgBranding({
+            name: data.organization.name,
+            logoUrl: data.organization.logoUrl,
+          });
         }
       })
       .catch(() => {});
@@ -107,6 +120,8 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       >
         <StaffHeader
           organizationCode={orgCode}
+          organizationName={orgBranding?.name}
+          logoUrl={orgBranding?.logoUrl}
           staffName={staffInfo?.name}
           isPrecheckReady={isPrecheckReady}
           onSignOut={() => setShowSignOutModal(true)}

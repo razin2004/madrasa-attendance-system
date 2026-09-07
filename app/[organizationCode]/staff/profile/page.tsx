@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { User, Smartphone, Building2, ShieldCheck, LogOut, RefreshCw } from 'lucide-react';
+import { User, Smartphone, Building2, ShieldCheck, LogOut, RefreshCw, CreditCard, Upload, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import styles from './StaffProfile.module.css';
@@ -21,6 +21,12 @@ export default function StaffProfilePage() {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
+  // Staff ID Document Form State
+  const [idDocType, setIdDocType] = useState<string>('AADHAAR');
+  const [idDocLast4, setIdDocLast4] = useState<string>('');
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [submittingId, setSubmittingId] = useState(false);
+
   const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
@@ -32,7 +38,11 @@ export default function StaffProfilePage() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.staffProfile) setStaffProfile(data.staffProfile);
+        if (data.staffProfile) {
+          setStaffProfile(data.staffProfile);
+          if (data.staffProfile.idDocType) setIdDocType(data.staffProfile.idDocType);
+          if (data.staffProfile.idDocLast4) setIdDocLast4(data.staffProfile.idDocLast4);
+        }
         if (data.organization) setOrgData(data.organization);
         if (data.evaluation) setPrecheck(data.evaluation);
       }
@@ -46,6 +56,45 @@ export default function StaffProfilePage() {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  const handleIdDocSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (idDocType !== 'OTHER') {
+      if (!idDocLast4 || idDocLast4.trim().length < 4) {
+        toast.error('Please enter the last 4 digits of your ID card.');
+        return;
+      }
+      if (!idFile) {
+        toast.error('Please select and attach your ID card document file.');
+        return;
+      }
+    }
+
+    setSubmittingId(true);
+    try {
+      const res = await fetch(`/api/org/${orgCode}/staff/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idDocType,
+          idDocLast4: idDocLast4.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Identity Card details updated successfully!');
+        if (data.staffProfile) setStaffProfile(data.staffProfile);
+      } else {
+        toast.error(data.error || 'Failed to update Identity Card details.');
+      }
+    } catch {
+      toast.error('Network error saving Identity Card details.');
+    } finally {
+      setSubmittingId(false);
+    }
+  };
 
   const handleSignOutConfirm = async () => {
     setSigningOut(true);
@@ -65,6 +114,23 @@ export default function StaffProfilePage() {
   const isDeviceRegistered =
     Boolean(precheck?.layer1Device?.isVerified) ||
     Boolean(staffProfile?.devices?.some((d: any) => d.status === 'REGISTERED'));
+
+  const formatDocTypeLabel = (type: string) => {
+    switch (type) {
+      case 'AADHAAR':
+        return 'Aadhaar Card';
+      case 'VOTER_ID':
+        return 'Voter ID';
+      case 'PASSPORT':
+        return 'Passport';
+      case 'DRIVING_LICENSE':
+        return 'Driving License';
+      case 'OTHER':
+        return 'Other ID Card';
+      default:
+        return type || 'Identity Document';
+    }
+  };
 
   if (loading) {
     return (
@@ -153,7 +219,161 @@ export default function StaffProfilePage() {
         </div>
       </div>
 
-      {/* Card 2: Registered Device & Security */}
+      {/* Card 2: Identity Card & Document (Add ID if missing) */}
+      <div className={styles.card}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
+          <h3 className={styles.cardTitle} style={{ margin: 0 }}>
+            <CreditCard size={20} color="#818cf8" />
+            Identity Document &amp; Verification
+          </h3>
+
+          <span
+            className={`badge ${staffProfile?.idDocLast4 ? 'badge-success' : 'badge-warning'}`}
+            style={{ fontSize: '11px', fontWeight: 800, padding: '4px 10px' }}
+          >
+            {staffProfile?.idDocLast4 ? '✓ Identity Verified' : 'ID Not Added'}
+          </span>
+        </div>
+
+        {staffProfile?.idDocLast4 ? (
+          <div className={styles.infoGrid}>
+            <div className={styles.infoItem}>
+              <span className={styles.label}>Document Type</span>
+              <span className={styles.value}>{formatDocTypeLabel(staffProfile.idDocType)}</span>
+            </div>
+
+            <div className={styles.infoItem}>
+              <span className={styles.label}>ID Reference / Last 4 Digits</span>
+              <span className={styles.hardwareString}>•••• {staffProfile.idDocLast4}</span>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleIdDocSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <p style={{ fontSize: '13px', color: '#cbd5e1', margin: 0 }}>
+              Your identity card details have not been registered by administrator yet. Please submit your identity card details below:
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                  Identity Document Type
+                </label>
+                <select
+                  value={idDocType}
+                  onChange={(e) => setIdDocType(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                  }}
+                >
+                  <option value="AADHAAR" style={{ backgroundColor: '#0d121f' }}>Aadhaar Card</option>
+                  <option value="VOTER_ID" style={{ backgroundColor: '#0d121f' }}>Voter ID</option>
+                  <option value="PASSPORT" style={{ backgroundColor: '#0d121f' }}>Passport</option>
+                  <option value="DRIVING_LICENSE" style={{ backgroundColor: '#0d121f' }}>Driving License</option>
+                  <option value="OTHER" style={{ backgroundColor: '#0d121f' }}>Other ID Card</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                  ID Last 4 Digits / Reference
+                </label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  placeholder="e.g. 5482"
+                  value={idDocLast4}
+                  onChange={(e) => setIdDocLast4(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Document File Upload Dropzone */}
+            <div>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                Attach Document File {idDocType !== 'OTHER' ? '(Required)' : '(Optional)'}
+              </label>
+              <div
+                style={{
+                  border: '2px dashed rgba(255, 255, 255, 0.15)',
+                  borderRadius: '10px',
+                  padding: '16px',
+                  textAlign: 'center',
+                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                  cursor: 'pointer',
+                  position: 'relative',
+                }}
+              >
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => setIdFile(e.target.files?.[0] || null)}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: 0,
+                    cursor: 'pointer',
+                    width: '100%',
+                    height: '100%',
+                  }}
+                />
+                <Upload size={22} color="#818cf8" style={{ margin: '0 auto 6px auto' }} />
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>
+                  {idFile ? idFile.name : 'Click or drag identity card photo / PDF file here'}
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                  Supported formats: JPG, PNG, PDF (Max 5MB)
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submittingId}
+              className="btn btn-primary"
+              style={{
+                width: '100%',
+                fontWeight: 700,
+                padding: '12px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginTop: '4px',
+              }}
+            >
+              {submittingId ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Saving Identity Document...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} />
+                  <span>Submit Identity Card</span>
+                </>
+              )}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {/* Card 3: Registered Device & Security */}
       <div className={styles.card}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
           <h3 className={styles.cardTitle} style={{ margin: 0 }}>
@@ -236,3 +456,4 @@ export default function StaffProfilePage() {
     </div>
   );
 }
+
