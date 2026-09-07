@@ -170,13 +170,6 @@ export default function StaffShiftSwapsPage() {
       {/* Top Header Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <Link
-            href={`/${organizationCode}/staff`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '13px', textDecoration: 'none', marginBottom: '8px' }}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Dashboard</span>
-          </Link>
           <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
             Shift Swapping &amp; Substitute Requests
           </h1>

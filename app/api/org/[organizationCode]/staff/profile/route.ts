@@ -77,7 +77,7 @@ export async function PATCH(
       );
     }
 
-    const validTypes = ['AADHAAR', 'VOTER_ID', 'PASSPORT', 'DRIVING_LICENSE', 'OTHER'];
+    const validTypes = ['AADHAAR', 'VOTER_ID', 'PASSPORT', 'DRIVING_LICENSE', 'COLLEGE_ID', 'GOVERNMENT_ID', 'OTHER'];
     if (!validTypes.includes(idDocType)) {
       return NextResponse.json(
         { success: false, error: 'Invalid identity card document type.' },

@@ -120,13 +120,17 @@ export default function StaffProfilePage() {
       case 'AADHAAR':
         return 'Aadhaar Card';
       case 'VOTER_ID':
-        return 'Voter ID';
+        return 'Voter ID Card';
       case 'PASSPORT':
         return 'Passport';
       case 'DRIVING_LICENSE':
-        return 'Driving License';
+        return 'Driving Licence';
+      case 'COLLEGE_ID':
+        return 'College / Institutional ID Card';
+      case 'GOVERNMENT_ID':
+        return 'Government ID Card';
       case 'OTHER':
-        return 'Other ID Card';
+        return 'Other Identification Card';
       default:
         return type || 'Identity Document';
     }
@@ -272,10 +276,12 @@ export default function StaffProfilePage() {
                   }}
                 >
                   <option value="AADHAAR" style={{ backgroundColor: '#0d121f' }}>Aadhaar Card</option>
-                  <option value="VOTER_ID" style={{ backgroundColor: '#0d121f' }}>Voter ID</option>
+                  <option value="VOTER_ID" style={{ backgroundColor: '#0d121f' }}>Voter ID Card</option>
                   <option value="PASSPORT" style={{ backgroundColor: '#0d121f' }}>Passport</option>
-                  <option value="DRIVING_LICENSE" style={{ backgroundColor: '#0d121f' }}>Driving License</option>
-                  <option value="OTHER" style={{ backgroundColor: '#0d121f' }}>Other ID Card</option>
+                  <option value="DRIVING_LICENSE" style={{ backgroundColor: '#0d121f' }}>Driving Licence</option>
+                  <option value="COLLEGE_ID" style={{ backgroundColor: '#0d121f' }}>College / Institutional ID Card</option>
+                  <option value="GOVERNMENT_ID" style={{ backgroundColor: '#0d121f' }}>Government ID Card</option>
+                  <option value="OTHER" style={{ backgroundColor: '#0d121f' }}>Other Identification Card</option>
                 </select>
               </div>
 
@@ -391,23 +397,23 @@ export default function StaffProfilePage() {
 
         <div className={styles.infoGrid} style={{ marginBottom: '20px' }}>
           <div className={styles.infoItem}>
-            <span className={styles.label}>Bound Device Serial Number</span>
-            <span className={styles.hardwareString}>
-              {staffProfile?.devices?.[0]?.serialNumber || precheck?.layer1Device?.serialNumber || 'SN-SG-884920481'}
+            <span className={styles.label}>Device Authorization</span>
+            <span className={styles.value} style={{ color: isDeviceRegistered ? '#34d399' : '#fbbf24', fontWeight: 700 }}>
+              {isDeviceRegistered ? 'Primary Security Device Bound' : 'Device Pending Registration'}
             </span>
           </div>
 
           <div className={styles.infoItem}>
-            <span className={styles.label}>Device Fingerprint</span>
-            <span className={styles.hardwareString}>
-              {staffProfile?.devices?.[0]?.deviceFingerprint || precheck?.layer1Device?.fingerprint || 'fp_99a8b7c6d5e4f3a21098'}
+            <span className={styles.label}>Device Label / Type</span>
+            <span className={styles.value}>
+              {staffProfile?.devices?.[0]?.label || 'Staff Primary Device'}
             </span>
           </div>
 
           <div className={styles.infoItem}>
-            <span className={styles.label}>Registered MAC / IP Address</span>
-            <span className={styles.hardwareString}>
-              {staffProfile?.devices?.[0]?.macAddress || 'MAC: 4A:89:C2:11:F9:0B (192.168.1.45)'}
+            <span className={styles.label}>Security Verification Status</span>
+            <span className={styles.value} style={{ color: '#38bdf8', fontWeight: 700 }}>
+              {isDeviceRegistered ? '✓ 3-Layer Zero-Trust Protected' : 'Verification Required'}
             </span>
           </div>
         </div>

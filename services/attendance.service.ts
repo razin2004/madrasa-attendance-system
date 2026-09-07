@@ -507,7 +507,16 @@ export async function recordAttendance(params: {
   const completedCyclesCount = verifiedTodayRecords.filter((r) => r.type === 'CLOCK_OUT').length;
   const lastVerifiedRecord =
     verifiedTodayRecords.length > 0 ? verifiedTodayRecords[verifiedTodayRecords.length - 1] : null;
-  const isCurrentlyClockedIn = lastVerifiedRecord?.type === 'CLOCK_IN';
+  let isCurrentlyClockedIn = lastVerifiedRecord?.type === 'CLOCK_IN';
+
+  // If clocked in, but shift ended without clocking out and shift is NOT overnight -> shift expired without clocking out
+  if (isCurrentlyClockedIn && !daySchedule.isOvernight && daySchedule.endTime) {
+    const [endH, endM] = daySchedule.endTime.split(':').map((s) => parseInt(s, 10));
+    const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+    if (now > shiftEnd) {
+      isCurrentlyClockedIn = false;
+    }
+  }
 
   if (params.type === 'CLOCK_IN') {
     if (isCurrentlyClockedIn) {
@@ -642,7 +651,16 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
   const completedCyclesCount = verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').length;
   const lastVerified = verifiedRecords.length > 0 ? verifiedRecords[verifiedRecords.length - 1] : null;
 
-  const isClockedIn = lastVerified?.type === 'CLOCK_IN';
+  let isClockedIn = lastVerified?.type === 'CLOCK_IN';
+
+  // If clocked in, but non-overnight shift end time has passed -> shift expired without clocking out
+  if (isClockedIn && !daySchedule.isOvernight && daySchedule.endTime) {
+    const [endH, endM] = daySchedule.endTime.split(':').map((s) => parseInt(s, 10));
+    const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+    if (now > shiftEnd) {
+      isClockedIn = false;
+    }
+  }
   const lastClockIn = verifiedRecords.filter((r) => r.type === 'CLOCK_IN').pop();
   const lastClockOut = verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').pop();
   const isDailyLimitReached = completedCyclesCount >= MAX_DAILY_ATTENDANCE_CYCLES;

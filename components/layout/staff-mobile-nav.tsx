@@ -23,31 +23,31 @@ export function StaffMobileNav({ organizationCode }: StaffMobileNavProps) {
       label: 'Dashboard',
       href: basePath,
       icon: LayoutDashboard,
-      exact: true,
+      isActive: pathname === basePath || pathname === `${basePath}/`,
     },
     {
       label: 'Attendance',
       href: `${basePath}/attendance`,
       icon: Clock,
-      exact: true,
+      isActive: pathname.startsWith(`${basePath}/attendance`),
     },
     {
       label: 'Swaps',
       href: `${basePath}/swaps`,
       icon: ArrowLeftRight,
-      exact: false,
+      isActive: pathname.startsWith(`${basePath}/swaps`),
     },
     {
       label: 'Leave',
       href: `${basePath}/leave`,
       icon: FileText,
-      exact: false,
+      isActive: pathname.startsWith(`${basePath}/leave`),
     },
     {
       label: 'Profile',
       href: `${basePath}/profile`,
       icon: User,
-      exact: false,
+      isActive: pathname.startsWith(`${basePath}/profile`),
     },
   ];
 
@@ -62,17 +62,14 @@ export function StaffMobileNav({ organizationCode }: StaffMobileNavProps) {
       }}
     >
       {tabs.map((tab) => {
-        const isActive = tab.exact
-          ? pathname === tab.href
-          : pathname.startsWith(tab.href);
         const Icon = tab.icon;
 
         return (
           <Link
             key={tab.label}
             href={tab.href}
-            aria-current={isActive ? 'page' : undefined}
-            className={`${styles.mobileNavItem} ${isActive ? styles.active : ''}`}
+            aria-current={tab.isActive ? 'page' : undefined}
+            className={`${styles.mobileNavItem} ${tab.isActive ? styles.active : ''}`}
           >
             <Icon size={20} className={styles.mobileNavIcon} />
             <span>{tab.label}</span>

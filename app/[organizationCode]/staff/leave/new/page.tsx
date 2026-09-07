@@ -132,24 +132,46 @@ export default function StaffApplyLeavePage() {
           </div>
 
           {/* Section 2: Date Range Side-by-Side 2-Col Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '20px' }}>
-            <div className="form-group">
-              <label className="form-label" style={{ fontSize: '12.5px', marginBottom: '4px' }}>Start Date *</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', minWidth: 0 }}>
+              <label className="form-label" style={{ fontSize: '12.5px', marginBottom: 0 }}>Start Date *</label>
               <input
                 type="date"
                 className="form-input"
-                style={{ fontSize: '13px', padding: '8px 10px', width: '100%' }}
+                style={{
+                  fontSize: '13px',
+                  padding: '10px 12px',
+                  width: '100%',
+                  minHeight: '42px',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '10px',
+                  color: '#ffffff',
+                  colorScheme: 'dark',
+                  boxSizing: 'border-box',
+                }}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label" style={{ fontSize: '12.5px', marginBottom: '4px' }}>End Date *</label>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', minWidth: 0 }}>
+              <label className="form-label" style={{ fontSize: '12.5px', marginBottom: 0 }}>End Date *</label>
               <input
                 type="date"
                 className="form-input"
-                style={{ fontSize: '13px', padding: '8px 10px', width: '100%' }}
+                style={{
+                  fontSize: '13px',
+                  padding: '10px 12px',
+                  width: '100%',
+                  minHeight: '42px',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '10px',
+                  color: '#ffffff',
+                  colorScheme: 'dark',
+                  boxSizing: 'border-box',
+                }}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />

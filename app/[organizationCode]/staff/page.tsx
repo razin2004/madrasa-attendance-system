@@ -84,6 +84,7 @@ interface TodayAttendanceStatus {
     isHoliday: boolean;
     startTime: string | null;
     endTime: string | null;
+    isOvernight?: boolean;
     shiftPatternName?: string;
   } | null;
   lastClockInTime: string | null;
@@ -121,6 +122,7 @@ export default function StaffDashboardPage() {
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [locationCoords, setLocationCoords] = useState<{ latitude: number; longitude: number; accuracy?: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationPermissionStatus, setLocationPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'unknown'>('unknown');
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Early Clock-Out Warning Modal State
@@ -147,6 +149,21 @@ export default function StaffDashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Monitor Browser Geolocation Permissions
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.permissions && navigator.permissions.query) {
+      navigator.permissions
+        .query({ name: 'geolocation' })
+        .then((status) => {
+          setLocationPermissionStatus(status.state as 'prompt' | 'granted' | 'denied');
+          status.onchange = () => {
+            setLocationPermissionStatus(status.state as 'prompt' | 'granted' | 'denied');
+          };
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   const getOrCreateDeviceSecret = useCallback((): string => {
     let secret = localStorage.getItem('shiftguard_device_secret');
     if (!secret) {
@@ -161,6 +178,7 @@ export default function StaffDashboardPage() {
   const requestGeolocation = useCallback(async (): Promise<{ latitude: number; longitude: number; accuracy?: number } | null> => {
     if (!navigator.geolocation) {
       setLocationError('Geolocation is not supported by this browser.');
+      setLocationPermissionStatus('denied');
       return null;
     }
 
@@ -174,11 +192,13 @@ export default function StaffDashboardPage() {
           };
           setLocationCoords(coords);
           setLocationError(null);
+          setLocationPermissionStatus('granted');
           resolve(coords);
         },
         (highAccErr) => {
           if (highAccErr.code === highAccErr.PERMISSION_DENIED) {
             setLocationError('Location access was denied. Please enable location permissions in browser settings.');
+            setLocationPermissionStatus('denied');
             resolve(null);
             return;
           }
@@ -191,16 +211,18 @@ export default function StaffDashboardPage() {
               };
               setLocationCoords(coords);
               setLocationError(null);
+              setLocationPermissionStatus('granted');
               resolve(coords);
             },
             (lowAccErr) => {
               let msg = 'Unable to fetch your location coordinates.';
               if (lowAccErr.code === lowAccErr.PERMISSION_DENIED) {
                 msg = 'Location access was denied. Please allow location permissions in browser settings.';
+                setLocationPermissionStatus('denied');
               } else if (lowAccErr.code === lowAccErr.POSITION_UNAVAILABLE) {
-                msg = 'Location signal unavailable. Ensure GPS / Location services are enabled.';
+                msg = 'Location signal unavailable. Ensure GPS / Location services are enabled on your device.';
               } else if (lowAccErr.code === lowAccErr.TIMEOUT) {
-                msg = 'Location request timed out. Click Re-verify to try again.';
+                msg = 'Location request timed out. Click Allow GPS Location to try again.';
               }
               setLocationError(msg);
               resolve(null);
@@ -508,7 +530,18 @@ export default function StaffDashboardPage() {
   };
 
   const hasSchedule = Boolean(todayStatus?.hasSchedule);
-  const isClockedIn = Boolean(todayStatus?.isClockedIn);
+  let isClockedIn = Boolean(todayStatus?.isClockedIn);
+
+  if (isClockedIn && todayStatus?.schedule?.endTime && !todayStatus?.schedule?.isOvernight) {
+    const now = new Date();
+    const [hStr, mStr] = todayStatus.schedule.endTime.split(':');
+    const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+
+    if (now > shiftEnd) {
+      isClockedIn = false;
+    }
+  }
+
   const isCompleted = Boolean(todayStatus?.isDailyLimitReached && !isClockedIn);
   const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isCompleted);
 
@@ -562,8 +595,43 @@ export default function StaffDashboardPage() {
 
       {/* Main Container Body */}
       <main className={styles.pageContent}>
-        
-
+        {/* GPS LOCATION PERMISSION PROMPT BANNER */}
+        {!loading && (!locationCoords || locationError || locationPermissionStatus !== 'granted') && (
+          <div className={styles.gpsPermissionBanner}>
+            <div className={styles.gpsBannerLeft}>
+              <div className={styles.gpsIconCircle}>
+                <Navigation size={22} color="#38bdf8" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>Allow GPS Location Access</span>
+                  {locationPermissionStatus === 'denied' && (
+                    <span className={styles.gpsDeniedBadge}>Blocked in Browser</span>
+                  )}
+                </div>
+                <div style={{ fontSize: '12.5px', marginTop: '3px', color: '#cbd5e1', lineHeight: '1.4' }}>
+                  {locationError
+                    ? locationError
+                    : 'ShiftGuard requires your live mobile/device GPS location coordinates to verify your branch geofence boundary before Clock In or Clock Out.'}
+                </div>
+                {locationPermissionStatus === 'denied' && (
+                  <div style={{ fontSize: '11.5px', marginTop: '6px', color: '#fbbf24', fontStyle: 'italic' }}>
+                    💡 Location is blocked in browser settings. Tap the site settings/lock icon in your address bar to allow Location access, then click &quot;Allow GPS Location&quot;.
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={checking}
+              className={styles.gpsAllowBtn}
+            >
+              <Navigation size={16} className={checking ? 'animate-spin' : ''} />
+              <span>{checking ? 'Requesting GPS...' : 'Allow GPS Location'}</span>
+            </button>
+          </div>
+        )}
 
         {/* NO SCHEDULE WARNING BANNER */}
         {!loading && !hasSchedule && (
@@ -619,8 +687,14 @@ export default function StaffDashboardPage() {
                 </div>
               ) : (
                 <div style={{ width: '100%' }}>
-                  <div className={`${styles.statusPill} ${isClockedIn ? styles.statusPillIn : isReadyToClock ? styles.statusPillReady : styles.statusPillLock}`}>
-                    {isClockedIn ? '● Currently Clocked In' : isReadyToClock ? '● Security Verified — Ready to Clock In' : '● Verification Checks Required'}
+                  <div className={`${styles.statusPill} ${isClockedIn && isReadyToClock ? styles.statusPillIn : isReadyToClock ? styles.statusPillReady : styles.statusPillLock}`}>
+                    {isClockedIn && isReadyToClock
+                      ? '● Currently Clocked In'
+                      : isClockedIn && !isReadyToClock
+                      ? '● Clock Out Locked — Verification Required'
+                      : isReadyToClock
+                      ? '● Security Verified — Ready to Clock In'
+                      : '● Verification Checks Required'}
                   </div>
 
                   {isClockedIn && (
@@ -639,13 +713,13 @@ export default function StaffDashboardPage() {
                   {/* Punch Button */}
                   <button
                     onClick={handleClockButtonClick}
-                    disabled={(!isReadyToClock && !isClockedIn) || clocking || checking}
+                    disabled={!isReadyToClock || clocking || checking}
                     className={`${styles.clockButton} ${styles.punchButtonCircle} ${
-                      isClockedIn
+                      !isReadyToClock
+                        ? styles.clockButtonDisabled
+                        : isClockedIn
                         ? styles.clockButtonOut
-                        : isReadyToClock
-                        ? styles.clockButtonIn
-                        : styles.clockButtonDisabled
+                        : styles.clockButtonIn
                     }`}
                   >
                     {clocking ? (
@@ -693,11 +767,11 @@ export default function StaffDashboardPage() {
                     </div>
                   </div>
 
-                  {!isReadyToClock && !isClockedIn && (
+                  {!isReadyToClock && (
                     <p className={styles.lockGuidanceText}>
                       {!hasSchedule
-                        ? 'Clock-in is locked because no shift schedule is assigned for today.'
-                        : 'All 3 security verification layers (Device, Network IP, Geofence GPS) must pass to unlock Clock In.'}
+                        ? 'Attendance action is locked because no shift schedule is assigned for today.'
+                        : 'All 3 security verification layers (Device, Network IP, Geofence GPS) must pass to unlock Clock In / Clock Out.'}
                     </p>
                   )}
                 </div>

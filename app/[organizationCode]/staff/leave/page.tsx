@@ -106,32 +106,29 @@ export default function StaffLeaveDashboardPage() {
     }
   };
 
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+
   const filteredRequests = leaveRequests.filter((r) => {
     const matchesStatus = statusFilter === 'ALL' ? true : r.status === statusFilter;
+    const matchesCategory = categoryFilter === 'ALL' ? true : (r.type || r.leaveType) === categoryFilter;
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return matchesStatus;
+    if (!q) return matchesStatus && matchesCategory;
     const matchesQuery =
       (r.reason && r.reason.toLowerCase().includes(q)) ||
       (r.type && r.type.toLowerCase().includes(q)) ||
       (formatLeaveType(r.type || r.leaveType).toLowerCase().includes(q)) ||
       (r.startDate && r.startDate.toLowerCase().includes(q)) ||
       (r.endDate && r.endDate.toLowerCase().includes(q));
-    return matchesStatus && matchesQuery;
+    return matchesStatus && matchesCategory && matchesQuery;
   });
+
+  const isFilterActive = statusFilter !== 'ALL' || categoryFilter !== 'ALL';
 
   return (
     <div className={styles.container}>
       {/* Top Header */}
       <div className={styles.headerBar}>
         <div>
-          <Link
-            href={`/${orgCode}/staff`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '13px', textDecoration: 'none', marginBottom: '8px' }}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Dashboard</span>
-          </Link>
-
           <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
             My Leave &amp; Absences
           </h1>
@@ -185,82 +182,211 @@ export default function StaffLeaveDashboardPage() {
         </div>
       </div>
 
-      {/* Search & Filter Header Bar (Org Admin Pattern) */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-            <input
-              type="text"
-              placeholder="Search by leave type, reason, or date..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+      {/* Search Field with Pinned Filter Icon (Org Admin Style) */}
+      <div style={{ marginBottom: '16px', width: '100%' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
+          <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
+          <input
+            type="text"
+            placeholder="Search by leave type, reason, or date..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '9px 40px 9px 36px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#ffffff',
+              fontSize: '13px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
               style={{
-                width: '100%',
-                padding: '9px 36px 9px 36px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#ffffff',
-                fontSize: '13px',
-                outline: 'none',
+                position: 'absolute',
+                right: '42px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'flex',
+                alignItems: 'center',
               }}
-            />
-            {searchQuery && (
+            >
+              <X size={14} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            style={{
+              position: 'absolute',
+              right: '6px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: '30px',
+              height: '30px',
+              borderRadius: '8px',
+              backgroundColor: isFilterActive ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+              border: isFilterActive ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(255, 255, 255, 0.12)',
+              color: isFilterActive ? '#818cf8' : '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+            title="Toggle Filters"
+          >
+            <Filter size={15} color={isFilterActive ? '#818cf8' : 'currentColor'} />
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Bottom Sheet Modal Overlay (Org Admin Style) */}
+      {showMobileFilters && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowMobileFilters(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              backgroundColor: '#0f172a',
+              borderTopLeftRadius: '20px',
+              borderTopRightRadius: '20px',
+              border: '1px solid var(--border-medium, rgba(255, 255, 255, 0.15))',
+              borderBottom: 'none',
+              padding: '20px',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              boxSizing: 'border-box',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontWeight: 800, fontSize: '14px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Filter size={16} color="#818cf8" />
+                <span>Filter Leave Requests</span>
+              </div>
               <button
-                onClick={() => setSearchQuery('')}
+                type="button"
+                onClick={() => setShowMobileFilters(false)}
                 style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
+                  background: 'rgba(255, 255, 255, 0.08)',
                   border: 'none',
+                  borderRadius: '50%',
+                  width: '26px',
+                  height: '26px',
                   color: '#94a3b8',
-                  cursor: 'pointer',
-                  padding: '2px',
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
                 }}
               >
                 <X size={14} />
               </button>
-            )}
+            </div>
+
+            {/* Approval Status Filter */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
+                Approval Status
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'].map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => setStatusFilter(st)}
+                    className={`btn btn-sm ${statusFilter === st ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Leave Type Category Filter */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
+                Leave Category
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {[
+                  { id: 'ALL', label: 'All Categories' },
+                  { id: 'ANNUAL', label: 'Annual' },
+                  { id: 'SICK', label: 'Sick' },
+                  { id: 'DUTY', label: 'Duty' },
+                  { id: 'OTHER', label: 'Casual / Other' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategoryFilter(cat.id)}
+                    className={`btn btn-sm ${categoryFilter === cat.id ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Footer */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              {isFilterActive ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('ALL');
+                    setCategoryFilter('ALL');
+                  }}
+                  className="btn btn-secondary btn-xs"
+                  style={{ borderRadius: '6px', fontSize: '11px', padding: '6px 12px' }}
+                >
+                  Reset Filters
+                </button>
+              ) : <div />}
+
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters(false)}
+                className="btn btn-primary btn-sm"
+                style={{ borderRadius: '8px', padding: '8px 18px', fontSize: '12.5px', fontWeight: 700 }}
+              >
+                Apply Filters
+              </button>
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="btn btn-secondary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 14px', borderRadius: '10px' }}
-          >
-            <Filter size={15} />
-            <span>Filter</span>
-            {statusFilter !== 'ALL' && (
-              <span style={{ backgroundColor: '#818cf8', color: '#ffffff', fontSize: '10px', fontWeight: 800, padding: '1px 6px', borderRadius: '10px' }}>
-                1
-              </span>
-            )}
-          </button>
         </div>
-
-        {/* Filter Tabs Row */}
-        <div style={{ display: showMobileFilters ? 'flex' : undefined, flexWrap: 'wrap', gap: '6px' }} className={showMobileFilters ? '' : styles.filterBar}>
-          {['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'].map((st) => (
-            <button
-              key={st}
-              onClick={() => {
-                setStatusFilter(st);
-                setShowMobileFilters(false);
-              }}
-              className={`btn btn-sm ${statusFilter === st ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 600 }}
-            >
-              {st}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Content */}
       {loading ? (

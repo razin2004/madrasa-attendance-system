@@ -62,52 +62,54 @@ export function StaffHeader({
     let items: Array<{ label: string; href: string; icon: any; exact?: boolean }> = [];
 
     if (pathname.includes('/staff/leave')) {
-      primaryAction = { label: 'Apply for Leave', href: `${basePath}/leave/new`, icon: Plus };
+      if (!pathname.endsWith('/leave/new')) {
+        primaryAction = { label: 'Apply for Leave', href: `${basePath}/leave/new`, icon: Plus };
+      }
       items = [
         { label: 'Leave Management', href: `${basePath}/leave`, icon: FileText, exact: true },
+        { label: 'Apply for Leave', href: `${basePath}/leave/new`, icon: Plus, exact: true },
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
-        { label: 'Attendance History', href: `${basePath}/attendance`, icon: Clock, exact: false },
-        { label: 'Staff Profile', href: `${basePath}/profile`, icon: User, exact: false },
       ];
     } else if (pathname.includes('/staff/swaps')) {
-      primaryAction = { label: 'Apply for Shift Swap', href: `${basePath}/swaps/new`, icon: Plus };
+      if (!pathname.endsWith('/swaps/new')) {
+        primaryAction = { label: 'Apply for Shift Swap', href: `${basePath}/swaps/new`, icon: Plus };
+      }
       items = [
         { label: 'Shift Swapping', href: `${basePath}/swaps`, icon: ArrowLeftRight, exact: true },
-        { label: 'Shift Schedule', href: `${basePath}/shift`, icon: CalendarDays, exact: false },
+        { label: 'Apply for Shift Swap', href: `${basePath}/swaps/new`, icon: Plus, exact: true },
+        { label: 'Shift Schedule', href: `${basePath}/shift`, icon: CalendarDays, exact: true },
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
-        { label: 'Staff Profile', href: `${basePath}/profile`, icon: User, exact: false },
       ];
     } else if (pathname.includes('/staff/attendance')) {
-      primaryAction = { label: 'Request Correction', href: `${basePath}/attendance/correction`, icon: FilePlus };
+      if (!pathname.endsWith('/attendance/correction')) {
+        primaryAction = { label: 'Request Correction', href: `${basePath}/attendance/correction`, icon: FilePlus };
+      }
       items = [
         { label: 'Attendance History', href: `${basePath}/attendance`, icon: Clock, exact: true },
-        { label: 'My Corrections', href: `${basePath}/attendance/corrections`, icon: FileText, exact: false },
-        { label: 'Shift Schedule', href: `${basePath}/shift`, icon: CalendarDays, exact: false },
+        { label: 'My Corrections', href: `${basePath}/attendance/corrections`, icon: FileText, exact: true },
+        { label: 'Submit New Correction', href: `${basePath}/attendance/correction`, icon: FilePlus, exact: true },
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
-        { label: 'Staff Profile', href: `${basePath}/profile`, icon: User, exact: false },
       ];
     } else if (pathname.includes('/staff/shift')) {
+      primaryAction = { label: 'Apply for Shift Swap', href: `${basePath}/swaps/new`, icon: Plus };
       items = [
         { label: 'Shift Schedule', href: `${basePath}/shift`, icon: CalendarDays, exact: true },
-        { label: 'Shift Swapping', href: `${basePath}/swaps`, icon: ArrowLeftRight, exact: false },
+        { label: 'Shift Swapping', href: `${basePath}/swaps`, icon: ArrowLeftRight, exact: true },
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
-        { label: 'Staff Profile', href: `${basePath}/profile`, icon: User, exact: false },
       ];
     } else if (pathname.includes('/staff/profile')) {
       items = [
         { label: 'Staff Profile', href: `${basePath}/profile`, icon: User, exact: true },
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
-        { label: 'Leave Management', href: `${basePath}/leave`, icon: FileText, exact: false },
-        { label: 'Attendance History', href: `${basePath}/attendance`, icon: Clock, exact: false },
       ];
     } else {
       items = [
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
-        { label: 'Attendance History', href: `${basePath}/attendance`, icon: Clock, exact: false },
-        { label: 'Shift Schedule', href: `${basePath}/shift`, icon: CalendarDays, exact: false },
-        { label: 'Leave Management', href: `${basePath}/leave`, icon: FileText, exact: false },
-        { label: 'Shift Swaps', href: `${basePath}/swaps`, icon: ArrowLeftRight, exact: false },
-        { label: 'Staff Profile', href: `${basePath}/profile`, icon: User, exact: false },
+        { label: 'Attendance History', href: `${basePath}/attendance`, icon: Clock, exact: true },
+        { label: 'Shift Schedule', href: `${basePath}/shift`, icon: CalendarDays, exact: true },
+        { label: 'Leave Management', href: `${basePath}/leave`, icon: FileText, exact: true },
+        { label: 'Shift Swaps', href: `${basePath}/swaps`, icon: ArrowLeftRight, exact: true },
+        { label: 'Staff Profile', href: `${basePath}/profile`, icon: User, exact: true },
       ];
     }
 

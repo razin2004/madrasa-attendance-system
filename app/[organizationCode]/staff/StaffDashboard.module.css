@@ -49,8 +49,8 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   position: sticky;
-  top: 0;
-  z-index: 100;
+  top: 64px;
+  z-index: 80;
   gap: 16px;
   box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
   transition: all 0.3s ease;
@@ -781,8 +781,9 @@
 
 @media (max-width: 768px) {
   .header {
-    position: relative;
-    top: auto;
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
     padding: 12px 16px;
     flex-wrap: nowrap;
     gap: 10px;
@@ -952,6 +953,90 @@
 
 .tableScrollWrapper table {
   min-width: 550px;
+}
+
+/* GPS Location Permission Banner */
+.gpsPermissionBanner {
+  background: rgba(14, 116, 144, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+@media (max-width: 640px) {
+  .gpsPermissionBanner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+    gap: 12px;
+  }
+}
+
+.gpsBannerLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+}
+
+.gpsIconCircle {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gpsDeniedBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(244, 63, 94, 0.2);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.gpsAllowBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gpsAllowBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+}
+
+.gpsAllowBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 

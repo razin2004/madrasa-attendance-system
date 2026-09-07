@@ -78,14 +78,6 @@ export default function StaffCorrectionHistoryPage() {
       {/* Top Bar */}
       <div className={styles.headerBar}>
         <div>
-          <Link
-            href={`/${orgCode}/staff`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '13px', textDecoration: 'none', marginBottom: '8px' }}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Dashboard</span>
-          </Link>
-
           <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
             My Attendance Correction Requests
           </h1>
