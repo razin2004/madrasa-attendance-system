@@ -18,7 +18,11 @@ export default function StaffShiftPage() {
     setLoading(true);
     try {
       // First get staff profile ID via precheck
-      const preRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, { method: 'POST' });
+      const preRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
       if (!preRes.ok) {
         toast.error('Failed to authenticate staff workspace.');
         return;
@@ -187,7 +191,7 @@ export default function StaffShiftPage() {
             bottom: 0,
             backgroundColor: 'rgba(0,0,0,0.65)',
             backdropFilter: 'blur(4px)',
-            zIndex: 999,
+            zIndex: 1100,
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',

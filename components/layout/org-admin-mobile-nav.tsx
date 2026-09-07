@@ -300,7 +300,9 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
 
         {/* More Menu Trigger */}
         {(() => {
-          const isSecondaryActive = secondaryItems.some((item) => pathname.startsWith(item.href));
+          const isSecondaryActive = secondaryItems.some((item) =>
+            item.exact ? pathname === item.href : pathname.startsWith(item.href)
+          );
           const isMoreActive = drawerOpen || isSecondaryActive;
           return (
             <button

@@ -58,22 +58,15 @@ export function StaffHeader({
   };
 
   const getPanelNavItems = () => {
-    let primaryAction: { label: string; href: string; icon: any } | null = null;
     let items: Array<{ label: string; href: string; icon: any; exact?: boolean }> = [];
 
     if (pathname.includes('/staff/leave')) {
-      if (!pathname.endsWith('/leave/new')) {
-        primaryAction = { label: 'Apply for Leave', href: `${basePath}/leave/new`, icon: Plus };
-      }
       items = [
         { label: 'Leave Management', href: `${basePath}/leave`, icon: FileText, exact: true },
         { label: 'Apply for Leave', href: `${basePath}/leave/new`, icon: Plus, exact: true },
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
       ];
     } else if (pathname.includes('/staff/swaps')) {
-      if (!pathname.endsWith('/swaps/new')) {
-        primaryAction = { label: 'Apply for Shift Swap', href: `${basePath}/swaps/new`, icon: Plus };
-      }
       items = [
         { label: 'Shift Swapping', href: `${basePath}/swaps`, icon: ArrowLeftRight, exact: true },
         { label: 'Apply for Shift Swap', href: `${basePath}/swaps/new`, icon: Plus, exact: true },
@@ -81,9 +74,6 @@ export function StaffHeader({
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
       ];
     } else if (pathname.includes('/staff/attendance')) {
-      if (!pathname.endsWith('/attendance/correction')) {
-        primaryAction = { label: 'Request Correction', href: `${basePath}/attendance/correction`, icon: FilePlus };
-      }
       items = [
         { label: 'Attendance History', href: `${basePath}/attendance`, icon: Clock, exact: true },
         { label: 'My Corrections', href: `${basePath}/attendance/corrections`, icon: FileText, exact: true },
@@ -91,9 +81,9 @@ export function StaffHeader({
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
       ];
     } else if (pathname.includes('/staff/shift')) {
-      primaryAction = { label: 'Apply for Shift Swap', href: `${basePath}/swaps/new`, icon: Plus };
       items = [
         { label: 'Shift Schedule', href: `${basePath}/shift`, icon: CalendarDays, exact: true },
+        { label: 'Apply for Shift Swap', href: `${basePath}/swaps/new`, icon: Plus, exact: true },
         { label: 'Shift Swapping', href: `${basePath}/swaps`, icon: ArrowLeftRight, exact: true },
         { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
       ];
@@ -113,10 +103,10 @@ export function StaffHeader({
       ];
     }
 
-    return { primaryAction, items };
+    return items;
   };
 
-  const { primaryAction, items: navItems } = getPanelNavItems();
+  const navItems = getPanelNavItems();
 
   return (
     <header className={styles.topHeader}>
@@ -193,30 +183,6 @@ export function StaffHeader({
                 </div>
 
                 <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  {primaryAction && (
-                    <Link
-                      href={primaryAction.href}
-                      onClick={() => setHeaderMenuOpen(false)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '10px 14px',
-                        marginBottom: '4px',
-                        borderRadius: '8px',
-                        background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-                        color: '#ffffff',
-                        textDecoration: 'none',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
-                      }}
-                    >
-                      <primaryAction.icon size={16} />
-                      <span>{primaryAction.label}</span>
-                    </Link>
-                  )}
-
                   {navItems.map((item) => {
                     const isActive = item.exact
                       ? pathname === item.href

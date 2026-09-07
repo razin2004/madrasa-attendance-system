@@ -182,6 +182,7 @@ export default function NewShiftSwapPage() {
         <div>
           <Link
             href={`/${organizationCode}/staff/swaps`}
+            className={styles.desktopOnlyAction}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '13px', textDecoration: 'none', marginBottom: '8px' }}
           >
             <ArrowLeft size={16} />
@@ -195,7 +196,7 @@ export default function NewShiftSwapPage() {
           </p>
         </div>
 
-        <Link href={`/${organizationCode}/staff/swaps`} className="btn btn-secondary btn-sm" style={{ padding: '8px 14px', borderRadius: '8px' }}>
+        <Link href={`/${organizationCode}/staff/swaps`} className={`btn btn-secondary btn-sm ${styles.desktopOnlyAction}`} style={{ padding: '8px 14px', borderRadius: '8px' }}>
           Cancel
         </Link>
       </div>
@@ -208,11 +209,11 @@ export default function NewShiftSwapPage() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="glass-card" style={{ padding: '28px', borderRadius: '16px' }}>
+          <div className="glass-card" style={{ padding: '24px 20px', borderRadius: '16px', boxSizing: 'border-box', width: '100%', maxWidth: '100%' }}>
             {/* SECTION 1: TARGET DATE & SHIFT PATTERN SELECTION */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
               {/* Target Shift Date */}
-              <div>
+              <div style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                 <label className="form-label" style={{ fontSize: '13px', color: '#ffffff', fontWeight: 700, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Calendar size={15} color="#38bdf8" />
                   <span>Target Shift Date <span style={{ color: 'var(--danger-text)' }}>*</span></span>
@@ -224,7 +225,7 @@ export default function NewShiftSwapPage() {
                   onChange={(e) => setTargetDate(e.target.value)}
                   required
                   className="form-input"
-                  style={{ width: '100%', padding: '10px 14px', fontSize: '14px' }}
+                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', padding: '9px 12px', fontSize: '13.5px', height: '42px', colorScheme: 'dark' }}
                 />
               </div>
 
@@ -350,12 +351,21 @@ export default function NewShiftSwapPage() {
                   Reason for Shift Swap Request (Optional)
                 </label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   placeholder="e.g. Personal commitment / Exam schedule. Can anyone cover my Thursday Kozhikode branch shift?"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   className="form-input"
-                  style={{ width: '100%', resize: 'vertical' }}
+                  style={{
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    minHeight: '90px',
+                    padding: '12px 14px',
+                    fontSize: '13.5px',
+                    lineHeight: '1.5',
+                    resize: 'vertical',
+                  }}
                 />
               </div>
 
@@ -384,14 +394,14 @@ export default function NewShiftSwapPage() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <Link href={`/${organizationCode}/staff/swaps`} className="btn btn-secondary btn-md">
+                <Link href={`/${organizationCode}/staff/swaps`} className={`btn btn-secondary btn-md ${styles.desktopOnlyAction}`}>
                   Cancel
                 </Link>
                 <button
                   type="submit"
                   disabled={isSubmitting || selectedPeerIds.length === 0}
                   className="btn btn-primary btn-md"
-                  style={{ fontWeight: 800, padding: '10px 24px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  style={{ fontWeight: 800, padding: '10px 24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flex: 1 }}
                 >
                   {isSubmitting ? (
                     <>

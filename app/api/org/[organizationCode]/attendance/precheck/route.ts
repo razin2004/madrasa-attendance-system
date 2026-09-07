@@ -28,13 +28,20 @@ async function handlePrecheck(
     let deviceSecret: string | null = null;
 
     if (request.method === 'POST') {
-      const body = await request.json().catch(() => ({}));
-      if (body.latitude !== undefined && body.longitude !== undefined) {
-        lat = parseFloat(body.latitude);
-        lng = parseFloat(body.longitude);
-        if (body.accuracy !== undefined) accuracy = parseFloat(body.accuracy);
+      try {
+        const rawText = await request.text();
+        if (rawText && rawText.trim()) {
+          const body = JSON.parse(rawText);
+          if (body.latitude !== undefined && body.longitude !== undefined) {
+            lat = parseFloat(body.latitude);
+            lng = parseFloat(body.longitude);
+            if (body.accuracy !== undefined) accuracy = parseFloat(body.accuracy);
+          }
+          if (body.deviceSecret) deviceSecret = body.deviceSecret;
+        }
+      } catch {
+        // Ignore unparseable or empty POST body gracefully
       }
-      if (body.deviceSecret) deviceSecret = body.deviceSecret;
     }
 
     const { searchParams } = new URL(request.url);

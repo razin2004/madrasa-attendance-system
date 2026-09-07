@@ -458,7 +458,7 @@ export default function DailyReportPage() {
                 bottom: 0,
                 backgroundColor: 'rgba(0,0,0,0.65)',
                 backdropFilter: 'blur(4px)',
-                zIndex: 999,
+                zIndex: 1100,
                 display: 'flex',
                 alignItems: 'flex-end',
                 justifyContent: 'center',

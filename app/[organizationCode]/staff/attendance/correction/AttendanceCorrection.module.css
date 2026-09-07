@@ -223,16 +223,44 @@
 }
 
 @media (max-width: 600px) {
+  .backLink {
+    display: none !important;
+  }
   .container {
-    padding: 16px 12px 80px 12px;
+    padding: 14px 10px 80px 10px;
+  }
+  .contentWrapper {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
   }
   .formCard {
-    padding: 16px;
+    padding: 14px 12px;
     border-radius: 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+  .formGroup {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
   }
   .timeRow {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+  .input, .textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   .actionRow {
     flex-direction: column;

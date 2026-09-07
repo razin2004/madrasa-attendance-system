@@ -187,10 +187,6 @@ export default function StaffShiftSwapsPage() {
             <Plus size={16} />
             <span>Apply for Shift Swap</span>
           </Link>
-
-          <button onClick={fetchData} disabled={loading} className="btn btn-secondary btn-sm" style={{ padding: '10px' }}>
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
         </div>
       </div>
 
@@ -311,19 +307,116 @@ export default function StaffShiftSwapsPage() {
           </button>
         </div>
 
-        {/* Status Filter Tabs Drawer */}
-        {(showMobileFilters || statusFilter !== 'ALL') && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {['ALL', 'PENDING_PEER', 'PEER_ACCEPTED', 'APPROVED', 'REJECTED'].map((st) => (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`btn btn-xs ${statusFilter === st ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '5px 12px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 600 }}
-              >
-                {st}
-              </button>
-            ))}
+        {/* Bottom Sheet Filter Modal Overlay */}
+        {showMobileFilters && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 1100,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+            }}
+            onClick={() => setShowMobileFilters(false)}
+          >
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '500px',
+                backgroundColor: '#0f172a',
+                borderTopLeftRadius: '20px',
+                borderTopRightRadius: '20px',
+                border: '1px solid var(--border-medium)',
+                borderBottom: 'none',
+                padding: '20px',
+                boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                boxSizing: 'border-box',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 800, fontSize: '15px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Filter size={16} color="#818cf8" />
+                  <span>Filter Shift Swap Requests</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(false)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '28px',
+                    height: '28px',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Status Options */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '8px' }}>
+                  Request Status
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {[
+                    { id: 'ALL', label: 'All Statuses' },
+                    { id: 'PENDING_PEER', label: 'Pending Peer' },
+                    { id: 'PEER_ACCEPTED', label: 'Peer Accepted' },
+                    { id: 'APPROVED', label: 'Approved' },
+                    { id: 'REJECTED', label: 'Rejected' },
+                  ].map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setStatusFilter(st.id)}
+                      className={`btn btn-sm ${statusFilter === st.id ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ borderRadius: '8px', padding: '8px 14px', fontSize: '12.5px', fontWeight: 600 }}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Footer */}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '8px', paddingTop: '14px', borderTop: '1px solid var(--border-subtle)' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('ALL');
+                    setSearchQuery('');
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  style={{ flex: 1, padding: '10px' }}
+                >
+                  Reset Filters
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(false)}
+                  className="btn btn-primary btn-sm"
+                  style={{ flex: 1, padding: '10px', fontWeight: 700 }}
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
