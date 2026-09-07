@@ -32,9 +32,10 @@ export function OrgLogo({ logoUrl, name, size = 20, className, style }: OrgLogoP
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          transform: 'scale(1.05)',
+          transform: 'scale(1.22)',
           display: 'block',
           boxSizing: 'border-box',
+          borderRadius: 'inherit',
           ...style,
         }}
         onError={() => setHasError(true)}

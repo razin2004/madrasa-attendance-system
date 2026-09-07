@@ -112,90 +112,119 @@ export default function AdminManualLeavePage() {
           backHref={`/${organizationCode}/admin/leave`}
         />
 
-        <div className="glass-card" style={{ maxWidth: '640px', padding: '28px' }}>
-          <form onSubmit={handleSubmit}>
-            {/* Staff Selection */}
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label className="form-label">Staff Member *</label>
-              {loadingStaff ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading staff list...</div>
-              ) : (
+        <main className="pageMainContent" style={{ maxWidth: '800px' }}>
+          <div className={styles.sectionCard}>
+            <div className={styles.sectionHeader}>
+              <FilePlus size={18} color="#818cf8" />
+              <h3 className={styles.sectionTitle}>Manual Leave Entry Details</h3>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              {/* Staff Selection */}
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                  Staff Member <span style={{ color: 'var(--danger-text)' }}>*</span>
+                </label>
+                {loadingStaff ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading staff list...</div>
+                ) : (
+                  <select
+                    className="form-input"
+                    style={{ width: '100%' }}
+                    value={selectedStaffId}
+                    onChange={(e) => setSelectedStaffId(e.target.value)}
+                  >
+                    {staffList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.staffId})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Leave Type */}
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                  Leave Type <span style={{ color: 'var(--danger-text)' }}>*</span>
+                </label>
                 <select
                   className="form-input"
-                  value={selectedStaffId}
-                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  style={{ width: '100%' }}
+                  value={leaveType}
+                  onChange={(e) => setLeaveType(e.target.value)}
                 >
-                  {staffList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.staffId})
-                    </option>
-                  ))}
+                  <option value="ANNUAL">Annual Leave</option>
+                  <option value="SICK">Sick Leave</option>
+                  <option value="OTHER">Casual / Other Leave</option>
+                  <option value="DUTY">Duty Leave</option>
                 </select>
-              )}
-            </div>
+              </div>
 
-            {/* Leave Type */}
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label className="form-label">Leave Type *</label>
-              <select
-                className="form-input"
-                value={leaveType}
-                onChange={(e) => setLeaveType(e.target.value)}
-              >
-                <option value="ANNUAL">Annual Leave</option>
-                <option value="SICK">Sick Leave</option>
-                <option value="OTHER">Casual / Other Leave</option>
-                <option value="DUTY">Duty Leave</option>
-              </select>
-            </div>
+              {/* Date Range */}
+              <div className={styles.dateGrid}>
+                <div className="form-group" style={{ minWidth: 0, width: '100%' }}>
+                  <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                    Start Date <span style={{ color: 'var(--danger-text)' }}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px' }}
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
 
-            {/* Date Range */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
-              <div className="form-group" style={{ minWidth: 0, width: '100%' }}>
-                <label className="form-label">Start Date *</label>
-                <input
-                  type="date"
+                <div className="form-group" style={{ minWidth: 0, width: '100%' }}>
+                  <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                    End Date <span style={{ color: 'var(--danger-text)' }}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px' }}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                  Reason / Justification <span style={{ color: 'var(--danger-text)' }}>*</span>
+                </label>
+                <textarea
                   className="form-input"
-                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '8px 10px' }}
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  style={{ width: '100%', height: '90px', resize: 'vertical' }}
+                  placeholder="Explain the reason for this manual leave record..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
                 />
               </div>
 
-              <div className="form-group" style={{ minWidth: 0, width: '100%' }}>
-                <label className="form-label">End Date *</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '8px 10px' }}
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+              <div className={styles.actionRow}>
+                <Link href={`/${organizationCode}/admin/leave`} className="btn btn-secondary">
+                  Cancel
+                </Link>
+                <button type="submit" disabled={submitting} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  {submitting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Creating Entry...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck size={16} />
+                      <span>Create Manual Entry</span>
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
-
-            {/* Reason */}
-            <div className="form-group" style={{ marginBottom: '24px' }}>
-              <label className="form-label">Reason / Justification *</label>
-              <textarea
-                className="form-input"
-                style={{ height: '90px' }}
-                placeholder="Explain the reason for this manual leave record..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <Link href={`/${organizationCode}/admin/leave`} className="btn btn-secondary">
-                Cancel
-              </Link>
-              <button type="submit" disabled={submitting} className="btn btn-primary">
-                {submitting ? 'Creating Entry...' : 'Create Manual Entry'}
-              </button>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        </main>
       </div>
 
       <OrgAdminMobileNav organizationCode={organizationCode} />

@@ -945,14 +945,37 @@ export default function StaffDirectoryPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {parsedRows.slice(0, 10).map((r, idx) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                              <td style={{ padding: '6px 8px', color: 'var(--text-muted)' }}>{idx + 1}</td>
-                              <td style={{ padding: '6px 8px', fontWeight: 700, color: '#ffffff' }}>{r.name || '—'}</td>
-                              <td style={{ padding: '6px 8px', color: 'var(--text-secondary)' }}>{r.email || '—'}</td>
-                              <td style={{ padding: '6px 8px', color: '#818cf8' }}>{r.branchName || 'Default'}</td>
-                            </tr>
-                          ))}
+                          {parsedRows.slice(0, 10).map((r, idx) => {
+                            const cleanEmail = (r.email || '').trim().toLowerCase();
+                            const isRegistered = cleanEmail && staffList.some((s) => s.user?.email?.toLowerCase() === cleanEmail);
+                            const isDuplicateInBatch = cleanEmail && parsedRows.findIndex((row) => (row.email || '').trim().toLowerCase() === cleanEmail) !== idx;
+
+                            return (
+                              <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                <td style={{ padding: '6px 8px', color: 'var(--text-muted)' }}>{idx + 1}</td>
+                                <td style={{ padding: '6px 8px', fontWeight: 700, color: '#ffffff' }}>{r.name || '—'}</td>
+                                <td style={{ padding: '6px 8px', color: 'var(--text-secondary)' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                    <span>{r.email || '—'}</span>
+                                    {isRegistered ? (
+                                      <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 6px', borderRadius: '4px' }}>
+                                        ⚠️ Already Registered
+                                      </span>
+                                    ) : isDuplicateInBatch ? (
+                                      <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#fbbf24', backgroundColor: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '1px 6px', borderRadius: '4px' }}>
+                                        ⚠️ Duplicate in File
+                                      </span>
+                                    ) : cleanEmail ? (
+                                      <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#34d399', backgroundColor: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '1px 6px', borderRadius: '4px' }}>
+                                        ✓ Valid
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '6px 8px', color: '#818cf8' }}>{r.branchName || 'Default'}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

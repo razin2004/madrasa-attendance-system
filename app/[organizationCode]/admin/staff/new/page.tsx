@@ -78,6 +78,60 @@ export default function OnboardStaffPage() {
     activationUrl?: string;
   } | null>(null);
 
+  // Email Availability State
+  const [emailStatus, setEmailStatus] = useState<{
+    state: 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
+    message: string;
+  }>({ state: 'idle', message: '' });
+
+  useEffect(() => {
+    let isCancelled = false;
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail) {
+      setEmailStatus({ state: 'idle', message: '' });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setEmailStatus({ state: 'invalid', message: 'Please enter a valid email address.' });
+      return;
+    }
+
+    setEmailStatus({ state: 'checking', message: 'Checking email availability...' });
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/organizations/check-availability?email=${encodeURIComponent(cleanEmail)}`);
+        const data = await res.json();
+        if (!isCancelled) {
+          if (data.success && data.email) {
+            if (data.email.available) {
+              setEmailStatus({ state: 'available', message: 'Email address is available!' });
+            } else {
+              setEmailStatus({
+                state: 'taken',
+                message: 'This email is already registered in the system.',
+              });
+            }
+          } else {
+            setEmailStatus({ state: 'idle', message: '' });
+          }
+        }
+      } catch {
+        if (!isCancelled) {
+          setEmailStatus({ state: 'idle', message: '' });
+        }
+      }
+    }, 300);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [email]);
+
   useEffect(() => {
     if (organizationCode) {
       fetchInitialData();
@@ -305,10 +359,59 @@ export default function OnboardStaffPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="form-input"
-                        style={{ width: '100%', paddingLeft: '40px' }}
+                        style={{
+                          width: '100%',
+                          paddingLeft: '40px',
+                          paddingRight: '40px',
+                          borderColor:
+                            emailStatus.state === 'available'
+                              ? '#34d399'
+                              : emailStatus.state === 'taken' || emailStatus.state === 'invalid'
+                              ? '#f87171'
+                              : undefined,
+                        }}
                       />
                       <Mail size={17} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '12px' }} />
+                      {emailStatus.state === 'checking' && (
+                        <Loader2
+                          size={18}
+                          className="animate-spin"
+                          style={{ position: 'absolute', right: '14px', top: '12px', color: '#818cf8' }}
+                        />
+                      )}
+                      {emailStatus.state === 'available' && (
+                        <CheckCircle2
+                          size={18}
+                          style={{ position: 'absolute', right: '14px', top: '12px', color: '#34d399' }}
+                        />
+                      )}
+                      {(emailStatus.state === 'taken' || emailStatus.state === 'invalid') && (
+                        <X
+                          size={18}
+                          style={{ position: 'absolute', right: '14px', top: '12px', color: '#f87171' }}
+                        />
+                      )}
                     </div>
+                    {emailStatus.state !== 'idle' && (
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          marginTop: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color:
+                            emailStatus.state === 'available'
+                              ? '#34d399'
+                              : emailStatus.state === 'taken' || emailStatus.state === 'invalid'
+                              ? '#f87171'
+                              : '#818cf8',
+                        }}
+                      >
+                        {emailStatus.message}
+                      </div>
+                    )}
                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                       This email will be used for account setup, login-related communication, and important notifications.
                     </p>
@@ -364,6 +467,10 @@ export default function OnboardStaffPage() {
                       onClick={() => {
                         if (!firstName.trim()) return toast.error('First name is required.');
                         if (!email.trim() || !email.includes('@')) return toast.error('A valid email address is required.');
+                        if (emailStatus.state === 'checking') return toast.error('Checking email availability, please wait...');
+                        if (emailStatus.state === 'taken') return toast.error('This email address is already registered.');
+                        if (emailStatus.state === 'invalid') return toast.error('Please enter a valid email address.');
+                        if (emailStatus.state !== 'available') return toast.error('Please enter a valid, unregistered email address.');
                         setStep(2);
                       }}
                       className="btn btn-primary btn-sm"

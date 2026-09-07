@@ -211,6 +211,7 @@ export function OrgAdminSidebar({
             justifyContent: 'center',
             overflow: 'hidden',
             flexShrink: 0,
+            padding: 0,
           }}
         >
           <OrgLogo logoUrl={logoUrl} name={organizationName} size={24} />

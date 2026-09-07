@@ -75,6 +75,7 @@ export function MobileTopHeader({
               boxShadow: 'var(--shadow-glow-indigo)',
               flexShrink: 0,
               overflow: 'hidden',
+              padding: 0,
             }}
           >
             <OrgLogo logoUrl={logoUrl} name={organizationName} size={20} />
