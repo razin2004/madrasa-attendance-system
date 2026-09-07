@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { isOvernightShift, Weekday } from '@/lib/shift-validation';
 import styles from './ShiftCreate.module.css';
@@ -156,23 +157,13 @@ export default function CreateShiftPatternPage() {
       {/* Main Content */}
       <div className={styles.mainContent}>
         {/* Header */}
-        <header className={styles.header}>
-          <Link
-            href={`/${organizationCode}/admin/shifts`}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '8px' }}
-          >
-            <ArrowLeft size={16} />
-          </Link>
-          <div>
-            <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px' }}>
-              Create Shift Pattern
-            </h1>
-            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              Define weekly working schedule, hours, overnight shifts, and minimum staffing thresholds.
-            </p>
-          </div>
-        </header>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle="Create Shift Pattern"
+          panelSubtitle="Define weekly working schedule, hours, overnight shifts, and minimum staffing thresholds."
+          backHref={`/${organizationCode}/admin/shifts`}
+        />
 
         {/* Form Container */}
         <main className="pageMainContent" style={{ maxWidth: '860px' }}>

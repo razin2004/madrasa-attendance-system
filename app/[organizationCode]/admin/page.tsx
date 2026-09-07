@@ -213,8 +213,6 @@ export default function OrgAdminLandingPage() {
           logoUrl={orgData?.logoUrl}
           panelTitle="Overview"
           panelSubtitle="Live workforce operations summary and 3-layer security overview"
-          headerMenuOpen={headerMenuOpen}
-          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
         />
 
         {/* Content Body */}
@@ -799,11 +797,6 @@ export default function OrgAdminLandingPage() {
             </>
           )}
         </main>
-
-        {/* Mobile-Only Edge-to-Edge Overview Footer */}
-        <div className={styles.mobileOnlyFooterWrapper}>
-          <Footer />
-        </div>
       </div>
 
       {/* Mobile Navigation */}

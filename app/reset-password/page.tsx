@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from '../login/Login.module.css';
 import {
@@ -287,36 +288,39 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className={styles.container}>
-      <div className={styles.wrapper}>
-        <div className={styles.header}>
-          <div className={styles.logoContainer} style={{ background: 'transparent', border: 'none' }}>
-            <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+    <>
+      <Header />
+      <div className={styles.container}>
+        <div className={styles.wrapper}>
+          <div className={styles.header}>
+            <div className={styles.logoContainer} style={{ background: 'transparent', border: 'none' }}>
+              <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+            </div>
+            <h1 className={styles.title}>Shift<span style={{ color: '#38bdf8' }}>Guard</span></h1>
+            <p className={styles.subtitle}>Reset Password</p>
           </div>
-          <h1 className={styles.title}>Shift<span style={{ color: '#38bdf8' }}>Guard</span></h1>
-          <p className={styles.subtitle}>Reset Password</p>
-        </div>
 
-        <div className={styles.card}>
-          <Suspense
-            fallback={
-              <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px 0' }}>
-                <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto 16px auto', color: '#818cf8' }} />
-                <p>Loading password reset...</p>
-              </div>
-            }
-          >
-            <ResetPasswordForm />
-          </Suspense>
+          <div className={styles.card}>
+            <Suspense
+              fallback={
+                <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px 0' }}>
+                  <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto 16px auto', color: '#818cf8' }} />
+                  <p>Loading password reset...</p>
+                </div>
+              }
+            >
+              <ResetPasswordForm />
+            </Suspense>
 
-          <div className={styles.footerText}>
-            Return to{' '}
-            <Link href="/login" className={styles.footerLink}>
-              Sign In Portal &rarr;
-            </Link>
+            <div className={styles.footerText}>
+              Return to{' '}
+              <Link href="/login" className={styles.footerLink}>
+                Sign In Portal &rarr;
+              </Link>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

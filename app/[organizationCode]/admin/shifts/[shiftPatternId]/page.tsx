@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import { formatDateToIsoDay, Weekday } from '@/lib/shift-validation';
@@ -451,113 +452,71 @@ export default function ShiftPatternDetailPage() {
       {/* Main Content */}
       <div className={styles.mainContent}>
         {/* Header */}
-        <header className={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Link
-              href={`/${organizationCode}/admin/shifts`}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '8px' }}
-            >
-              <ArrowLeft size={16} />
-            </Link>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px' }}>
-                  {pattern.name}
-                </h1>
-                <span
-                  title={isActive ? 'Active' : 'Inactive'}
-                  style={{
-                    width: '9px',
-                    height: '9px',
-                    borderRadius: '50%',
-                    backgroundColor: isActive ? '#34d399' : '#f87171',
-                    boxShadow: isActive ? '0 0 8px #34d399' : 'none',
-                    display: 'inline-block',
-                    marginLeft: '2px',
-                  }}
-                />
-              </div>
-              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {pattern.description || 'Recurring weekly schedule configuration'}
-              </p>
-            </div>
-          </div>
-
-          {/* Top Right Three Horizontal Lines Action Menu */}
-          <div style={{ position: 'relative' }}>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle={pattern.name}
+          panelSubtitle={pattern.description || 'Recurring weekly schedule configuration'}
+          backHref={`/${organizationCode}/admin/shifts`}
+          headerMenuOpen={menuOpen}
+          onToggleHeaderMenu={() => setMenuOpen(!menuOpen)}
+        >
+          <div className={styles.actionDropdownMenu} style={{ position: 'static' }}>
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className={styles.menuTriggerBtn}
-              title="Shift Pattern Actions & Options"
+              onClick={() => {
+                setMenuOpen(false);
+                setConflictError(null);
+                setAssignModalOpen(true);
+              }}
+              disabled={!isActive}
+              className={styles.dropdownItem}
+              style={{ color: '#818cf8' }}
             >
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              <Plus size={15} />
+              <span>Assign Staff</span>
             </button>
 
-            {menuOpen && (
-              <>
-                {/* Backdrop to close menu when clicking outside */}
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(false)} />
-                
-                <div className={styles.actionDropdownMenu}>
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setConflictError(null);
-                      setAssignModalOpen(true);
-                    }}
-                    disabled={!isActive}
-                    className={styles.dropdownItem}
-                    style={{ color: '#818cf8' }}
-                  >
-                    <Plus size={15} />
-                    <span>Assign Staff</span>
-                  </button>
+            <button
+              onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
+              className={styles.dropdownItem}
+            >
+              <Edit2 size={15} />
+              <span>{isEditing ? 'Cancel Edit' : 'Edit Pattern Info'}</span>
+            </button>
 
-                  <button
-                    onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
-                    className={styles.dropdownItem}
-                  >
-                    <Edit2 size={15} />
-                    <span>{isEditing ? 'Cancel Edit' : 'Edit Pattern Info'}</span>
-                  </button>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                initEditingDays(pattern.weeklyDays);
+                setScheduleModalOpen(true);
+              }}
+              className={styles.dropdownItem}
+            >
+              <Clock size={15} />
+              <span>Edit Weekly Schedule</span>
+            </button>
 
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      initEditingDays(pattern.weeklyDays);
-                      setScheduleModalOpen(true);
-                    }}
-                    className={styles.dropdownItem}
-                  >
-                    <Clock size={15} />
-                    <span>Edit Weekly Schedule</span>
-                  </button>
+            <div className={styles.dropdownDivider} />
 
-                  <div className={styles.dropdownDivider} />
+            <button
+              onClick={() => { setMenuOpen(false); setToggleActiveModalOpen(true); }}
+              className={styles.dropdownItem}
+              style={{ color: isActive ? '#f87171' : '#34d399' }}
+            >
+              <Power size={15} />
+              <span>{isActive ? 'Deactivate Pattern' : 'Activate Pattern'}</span>
+            </button>
 
-                  <button
-                    onClick={() => { setMenuOpen(false); setToggleActiveModalOpen(true); }}
-                    className={styles.dropdownItem}
-                    style={{ color: isActive ? '#f87171' : '#34d399' }}
-                  >
-                    <Power size={15} />
-                    <span>{isActive ? 'Deactivate Pattern' : 'Activate Pattern'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
-                    className={styles.dropdownItem}
-                    style={{ color: 'var(--danger-text)' }}
-                  >
-                    <Trash2 size={15} />
-                    <span>Delete Shift Pattern</span>
-                  </button>
-                </div>
-              </>
-            )}
+            <button
+              onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
+              className={styles.dropdownItem}
+              style={{ color: 'var(--danger-text)' }}
+            >
+              <Trash2 size={15} />
+              <span>Delete Shift Pattern</span>
+            </button>
           </div>
-        </header>
+        </OrgAdminHeader>
 
         {/* Content Container */}
         <main className="pageMainContent" style={{ maxWidth: '1100px' }}>

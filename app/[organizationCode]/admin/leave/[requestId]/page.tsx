@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import styles from './LeaveReview.module.css';
@@ -137,19 +138,13 @@ export default function AdminLeaveReviewPage() {
 
       <div className={styles.mainContent}>
         {/* Navigation & Header */}
-        <div style={{ marginBottom: '24px' }}>
-          <Link
-            href={`/${organizationCode}/admin/leave`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '13px', textDecoration: 'none', marginBottom: '12px' }}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Leave Requests</span>
-          </Link>
-
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-            Leave Decision Support & Review
-          </h1>
-        </div>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Leave Decision Support & Review"
+          panelSubtitle={requestDetails ? `${requestDetails.staff?.name || 'Staff'} • ${requestDetails.daysCount} Days ${requestDetails.leaveType}` : 'Review employee leave application'}
+          backHref={`/${organizationCode}/admin/leave`}
+        />
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>

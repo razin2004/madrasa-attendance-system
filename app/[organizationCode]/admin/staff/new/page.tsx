@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { openWhatsAppInvite } from '@/lib/whatsapp';
 import styles from './StaffCreate.module.css';
@@ -203,19 +204,13 @@ export default function OnboardStaffPage() {
         <OrgAdminMobileNav organizationCode={organizationCode} />
 
         {/* Header */}
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Link href={`/${organizationCode}/admin/staff`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <ArrowLeft size={16} />
-            </Link>
-            <div>
-              <h1 className={styles.title}>Add New Staff Member</h1>
-              <p className={styles.subtitle}>
-                Create staff account & assign workplace branches.
-              </p>
-            </div>
-          </div>
-        </header>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle="Add New Staff Member"
+          panelSubtitle="Create staff account & assign workplace branches."
+          backHref={`/${organizationCode}/admin/staff`}
+        />
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '880px' }}>

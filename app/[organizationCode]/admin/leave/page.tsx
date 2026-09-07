@@ -207,7 +207,7 @@ export default function AdminLeavePage() {
         {/* Filter Bar (Staff Panel Style) */}
         <div className={styles.filterBar}>
           {/* Search Input with Pinned Filter Icon */}
-          <div style={{ position: 'relative', width: '100%' }}>
+          <div style={{ position: 'relative', width: '300px', maxWidth: '100%' }}>
             <input
               type="text"
               className="form-input"

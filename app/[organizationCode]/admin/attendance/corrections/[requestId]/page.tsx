@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '../../../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../../../components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '../../../../../../components/layout/org-admin-header';
 import { useToast } from '../../../../../../components/feedback/toast-provider';
 import styles from './CorrectionReview.module.css';
 
@@ -142,9 +143,13 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
       />
 
       <div className={styles.mainContent}>
-        <Link href={`/${organizationCode}/admin/attendance/corrections`} className={styles.backLink}>
-          <ArrowLeft size={16} /> Back to Requests
-        </Link>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Review Attendance Correction"
+          panelSubtitle={request ? `Target Date: ${new Date(request.date).toISOString().slice(0, 10)}` : 'Review employee correction request'}
+          backHref={`/${organizationCode}/admin/attendance/corrections`}
+        />
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
@@ -158,18 +163,12 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
           </div>
         ) : (
           <>
-            <div className={styles.header}>
+            <div className={styles.header} style={{ marginTop: '16px' }}>
               <div>
-                <h1 className={styles.title}>Review Attendance Correction</h1>
-                <p className={styles.subtitle}>
-                  Target Date: <strong>{new Date(request.date).toISOString().slice(0, 10)}</strong> | Submitted{' '}
-                  {new Date(request.createdAt).toLocaleDateString()}
-                </p>
+                <span className={`${styles.badge} ${styles[`badge${request.status}`]}`}>
+                  Status: {request.status}
+                </span>
               </div>
-
-              <span className={`${styles.badge} ${styles[`badge${request.status}`]}`}>
-                {request.status}
-              </span>
             </div>
 
             <div className={styles.cardsContainer}>

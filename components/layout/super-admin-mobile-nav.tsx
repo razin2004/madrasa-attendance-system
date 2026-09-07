@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { SuperAdminTab } from './super-admin-sidebar';
 import { useRouter } from 'next/navigation';
+import { useMobileNavScroll } from '@/hooks/use-mobile-nav-scroll';
 
 interface SuperAdminMobileNavProps {
   activeTab: SuperAdminTab;
@@ -37,40 +38,7 @@ export function SuperAdminMobileNav({
 }: SuperAdminMobileNavProps) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-
-  // Auto-hide bottom bar on scroll down, reappear on scroll up, handling iOS rubber-banding top bounce
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      // Always show if near top of page (or iOS top bounce negative scroll)
-      if (currentScrollY <= 20) {
-        setIsVisible(true);
-        lastScrollY = currentScrollY;
-        return;
-      }
-
-      const delta = currentScrollY - lastScrollY;
-
-      // Threshold buffer to avoid micro-scroll jitters
-      if (Math.abs(delta) > 8) {
-        if (delta > 0) {
-          // Scrolling down -> hide bar
-          setIsVisible(false);
-        } else {
-          // Scrolling up -> show bar
-          setIsVisible(true);
-        }
-        lastScrollY = currentScrollY;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const isVisible = useMobileNavScroll();
 
   const primaryTabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },

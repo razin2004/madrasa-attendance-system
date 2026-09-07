@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import { getClientPublicIp } from '@/lib/ip-detection';
@@ -548,97 +549,61 @@ export default function BranchDetailPage() {
 
       <div className={styles.mainContent}>
         {/* Header Bar */}
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Link href={`/${organizationCode}/admin/branches`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <ArrowLeft size={16} />
-            </Link>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h1 className={styles.title}>{branch.name}</h1>
-                <span
-                  title={isActive ? 'Active' : 'Inactive'}
-                  style={{
-                    width: '9px',
-                    height: '9px',
-                    borderRadius: '50%',
-                    backgroundColor: isActive ? '#34d399' : '#f87171',
-                    boxShadow: isActive ? '0 0 8px #34d399' : 'none',
-                    display: 'inline-block',
-                    marginLeft: '2px',
-                  }}
-                />
-              </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {branch.address}
-              </p>
-            </div>
-          </div>
-
-          {/* Top Right Three Horizontal Lines Action Menu */}
-          <div style={{ position: 'relative' }}>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle={branch.name}
+          panelSubtitle={branch.address || undefined}
+          backHref={`/${organizationCode}/admin/branches`}
+          headerMenuOpen={menuOpen}
+          onToggleHeaderMenu={() => setMenuOpen(!menuOpen)}
+        >
+          <div className={styles.actionDropdownMenu} style={{ position: 'static' }}>
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className={styles.menuTriggerBtn}
-              title="Branch Options & Actions"
+              onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
+              className={styles.dropdownItem}
             >
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              <Edit2 size={15} />
+              <span>{isEditing ? 'Cancel Edit' : 'Edit Branch'}</span>
             </button>
 
-            {menuOpen && (
-              <>
-                {/* Backdrop to close menu when clicking outside */}
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(false)} />
-                
-                <div className={styles.actionDropdownMenu}>
-                  <button
-                    onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
-                    className={styles.dropdownItem}
-                  >
-                    <Edit2 size={15} />
-                    <span>{isEditing ? 'Cancel Edit' : 'Edit Branch'}</span>
-                  </button>
+            <button
+              onClick={() => { setMenuOpen(false); setRecaptureConfirmOpen(true); }}
+              className={styles.dropdownItem}
+            >
+              <RefreshCw size={15} />
+              <span>Recapture Network IP</span>
+            </button>
 
-                  <button
-                    onClick={() => { setMenuOpen(false); setRecaptureConfirmOpen(true); }}
-                    className={styles.dropdownItem}
-                  >
-                    <RefreshCw size={15} />
-                    <span>Recapture Network IP</span>
-                  </button>
+            <button
+              onClick={() => { setMenuOpen(false); openLocationModal(); }}
+              className={styles.dropdownItem}
+            >
+              <Navigation size={15} />
+              <span>Update GPS Location</span>
+            </button>
 
-                  <button
-                    onClick={() => { setMenuOpen(false); openLocationModal(); }}
-                    className={styles.dropdownItem}
-                  >
-                    <Navigation size={15} />
-                    <span>Update GPS Location</span>
-                  </button>
+            <div className={styles.dropdownDivider} />
 
-                  <div className={styles.dropdownDivider} />
+            <button
+              onClick={() => { setMenuOpen(false); setStatusModalOpen(true); }}
+              className={styles.dropdownItem}
+              style={{ color: isActive ? '#f87171' : '#34d399' }}
+            >
+              <Power size={15} />
+              <span>{isActive ? 'Deactivate Branch' : 'Activate Branch'}</span>
+            </button>
 
-                  <button
-                    onClick={() => { setMenuOpen(false); setStatusModalOpen(true); }}
-                    className={styles.dropdownItem}
-                    style={{ color: isActive ? '#f87171' : '#34d399' }}
-                  >
-                    <Power size={15} />
-                    <span>{isActive ? 'Deactivate Branch' : 'Activate Branch'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
-                    className={styles.dropdownItem}
-                    style={{ color: 'var(--danger-text)' }}
-                  >
-                    <Trash2 size={15} />
-                    <span>Delete Branch</span>
-                  </button>
-                </div>
-              </>
-            )}
+            <button
+              onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
+              className={styles.dropdownItem}
+              style={{ color: 'var(--danger-text)' }}
+            >
+              <Trash2 size={15} />
+              <span>Delete Branch</span>
+            </button>
           </div>
-        </header>
+        </OrgAdminHeader>
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
@@ -766,7 +731,7 @@ export default function BranchDetailPage() {
                       <div key={n.id} style={{ padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                         <div>
                           <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{n.publicIp}</span>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{n.overrideReason || 'Secondary IP'}</div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', opacity: 0.8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.overrideReason || 'Manual Override IP'}</div>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button
@@ -799,24 +764,24 @@ export default function BranchDetailPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', width: '100%', alignItems: 'center' }}>
                 <button
                   onClick={() => setRecaptureConfirmOpen(true)}
                   disabled={recapturingIp}
                   className="btn btn-secondary btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '6px 10px', fontSize: '12px', whiteSpace: 'nowrap' }}
                 >
-                  <RefreshCw size={14} className={recapturingIp ? 'animate-spin' : ''} />
-                  <span>{recapturingIp ? 'Recapturing...' : 'Recapture Current IP'}</span>
+                  <RefreshCw size={13} className={recapturingIp ? 'animate-spin' : ''} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{recapturingIp ? 'Recapturing...' : 'Recapture Current IP'}</span>
                 </button>
                 {totalAuthorizedCount < 5 && (
                   <button
                     onClick={() => setOverrideModalOpen(true)}
                     className="btn btn-primary btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '6px 10px', fontSize: '12px', whiteSpace: 'nowrap' }}
                   >
-                    <Key size={14} />
-                    <span>Add Additional IP</span>
+                    <Key size={13} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Add Additional IP</span>
                   </button>
                 )}
               </div>

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '../../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../../components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '../../../../../components/layout/org-admin-header';
 import { useToast } from '../../../../../components/feedback/toast-provider';
 import styles from './ManualAttendance.module.css';
 
@@ -106,126 +107,91 @@ export default function AdminManualAttendancePage() {
 
       <div className={styles.mainContent}>
         {/* Header Bar */}
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Link href={`/${organizationCode}/admin/attendance`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <ArrowLeft size={16} />
-            </Link>
-            <div>
-              <h1 className={styles.title}>Record Manual Attendance</h1>
-              <p className={styles.subtitle}>
-                Manually log attendance punches on behalf of employees with explicit justification.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
-              className="btn btn-secondary btn-sm"
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Record Manual Attendance"
+          panelSubtitle="Manually log attendance punches on behalf of employees with explicit justification."
+          backHref={`/${organizationCode}/admin/attendance`}
+          headerMenuOpen={headerMenuOpen}
+          onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
+        >
+          <div
+            className="glass-card"
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 'calc(100% + 8px)',
+              zIndex: 1000,
+              minWidth: '200px',
+              padding: '6px',
+              backgroundColor: '#0d121f',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '12px',
+              boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+            }}
+          >
+            <Link
+              href={`/${organizationCode}/admin/attendance`}
+              onClick={() => setHeaderMenuOpen(false)}
               style={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                padding: 0,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-medium)',
+                gap: '10px',
+                padding: '10px 14px',
+                borderRadius: '8px',
                 color: '#ffffff',
-                cursor: 'pointer',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
               }}
-              title="Manual Attendance Menu"
             >
-              <Menu size={18} />
-            </button>
+              <Clock size={15} color="#38bdf8" />
+              <span>Daily Attendance</span>
+            </Link>
 
-            {headerMenuOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-                  onClick={() => setHeaderMenuOpen(false)}
-                />
-                <div
-                  className="glass-card"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    zIndex: 1000,
-                    minWidth: '200px',
-                    padding: '6px',
-                    backgroundColor: '#0d121f',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
-                  }}
-                >
-                  <Link
-                    href={`/${organizationCode}/admin/attendance`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <Clock size={15} color="#38bdf8" />
-                    <span>Daily Attendance</span>
-                  </Link>
+            <Link
+              href={`/${organizationCode}/admin/attendance/corrections`}
+              onClick={() => setHeaderMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
+            >
+              <UserCheck size={15} color="#818cf8" />
+              <span>Attendance Corrections</span>
+            </Link>
 
-                  <Link
-                    href={`/${organizationCode}/admin/attendance/corrections`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <UserCheck size={15} color="#818cf8" />
-                    <span>Attendance Corrections</span>
-                  </Link>
-
-                  <Link
-                    href={`/${organizationCode}/admin/reports`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <FileText size={15} color="#34d399" />
-                    <span>Reports &amp; Analytics</span>
-                  </Link>
-                </div>
-              </>
-            )}
+            <Link
+              href={`/${organizationCode}/admin/reports`}
+              onClick={() => setHeaderMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                color: '#cbd5e1',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 500,
+              }}
+            >
+              <FileText size={15} color="#34d399" />
+              <span>Reports &amp; Analytics</span>
+            </Link>
           </div>
-        </header>
+        </OrgAdminHeader>
 
         {/* Main Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '800px' }}>

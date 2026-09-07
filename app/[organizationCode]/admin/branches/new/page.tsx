@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '../../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../../components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '../../../../../components/layout/org-admin-header';
 import { useToast } from '../../../../../components/feedback/toast-provider';
 import { getClientPublicIp } from '../../../../../lib/client-location-ip';
 import styles from './BranchCreate.module.css';
@@ -252,17 +253,13 @@ export default function RegisterBranchPage() {
       {/* Main Content Area */}
       <div className={styles.mainContent}>
         {/* Top Header */}
-        <header className={styles.headerBar}>
-          <Link href={`/${organizationCode}/admin/branches`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-            <ArrowLeft size={16} />
-          </Link>
-          <div>
-            <h1 className={styles.title}>Register Branch</h1>
-            <p className={styles.subtitle}>
-              Register this branch&apos;s network and location so ShiftGuard can verify attendance at this location.
-            </p>
-          </div>
-        </header>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle="Register Branch"
+          panelSubtitle="Register this branch's network and location so ShiftGuard can verify attendance at this location."
+          backHref={`/${organizationCode}/admin/branches`}
+        />
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>

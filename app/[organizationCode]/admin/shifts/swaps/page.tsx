@@ -360,9 +360,9 @@ export default function ShiftSwapsAdminPage() {
           )}
 
           {/* Filter Bar & Search (Staff Panel Style) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', width: '100%' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', width: '100%' }}>
             {/* Search Input with Pinned Filter Icon */}
-            <div style={{ position: 'relative', width: '100%' }}>
+            <div style={{ position: 'relative', width: '300px', maxWidth: '100%' }}>
               <input
                 type="text"
                 placeholder="Search staff name or ID..."

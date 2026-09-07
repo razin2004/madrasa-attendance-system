@@ -366,7 +366,10 @@ export default function RosterCalendarPage() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMobileFilters((prev) => !prev);
+                  }}
                   style={{
                     position: 'absolute',
                     right: '5px',
@@ -382,10 +385,12 @@ export default function RosterCalendarPage() {
                     border: selectedBranchId ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--border-medium, rgba(255, 255, 255, 0.12))',
                     color: selectedBranchId ? '#818cf8' : '#ffffff',
                     cursor: 'pointer',
+                    zIndex: 10,
+                    touchAction: 'manipulation',
                   }}
                   title="Toggle Filters"
                 >
-                  <Filter size={15} color={selectedBranchId ? '#818cf8' : 'currentColor'} />
+                  <Filter size={15} color={selectedBranchId ? '#818cf8' : 'currentColor'} style={{ pointerEvents: 'none' }} />
                 </button>
               </div>
 

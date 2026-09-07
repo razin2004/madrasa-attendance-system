@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from './ManualLeave.module.css';
 
@@ -103,22 +104,13 @@ export default function AdminManualLeavePage() {
       />
 
       <div className={styles.mainContent}>
-        <div style={{ marginBottom: '24px' }}>
-          <Link
-            href={`/${organizationCode}/admin/leave`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '13px', textDecoration: 'none', marginBottom: '12px' }}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Leave Directory</span>
-          </Link>
-
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-            Record Manual Leave Entry
-          </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-            Record employee leave manually on behalf of staff members when normal application is not possible.
-          </p>
-        </div>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={orgData?.logoUrl}
+          panelTitle="Record Manual Leave Entry"
+          panelSubtitle="Record employee leave manually on behalf of staff members when normal application is not possible."
+          backHref={`/${organizationCode}/admin/leave`}
+        />
 
         <div className="glass-card" style={{ maxWidth: '640px', padding: '28px' }}>
           <form onSubmit={handleSubmit}>
@@ -158,22 +150,24 @@ export default function AdminManualLeavePage() {
             </div>
 
             {/* Date Range */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-              <div className="form-group">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
+              <div className="form-group" style={{ minWidth: 0, width: '100%' }}>
                 <label className="form-label">Start Date *</label>
                 <input
                   type="date"
                   className="form-input"
+                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '8px 10px' }}
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ minWidth: 0, width: '100%' }}>
                 <label className="form-label">End Date *</label>
                 <input
                   type="date"
                   className="form-input"
+                  style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '8px 10px' }}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                 />

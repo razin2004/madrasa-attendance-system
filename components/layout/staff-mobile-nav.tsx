@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Clock, CalendarDays, FileText, User, ArrowLeftRight } from 'lucide-react';
 import styles from './StaffLayout.module.css';
+import { useMobileNavScroll } from '@/hooks/use-mobile-nav-scroll';
 
 interface StaffMobileNavProps {
   organizationCode: string;
@@ -15,6 +16,7 @@ export function StaffMobileNav({ organizationCode }: StaffMobileNavProps) {
   const pathname = rawPathname || '';
   const org = organizationCode.toUpperCase();
   const basePath = `/${org}/staff`;
+  const isNavVisible = useMobileNavScroll();
 
   const tabs = [
     {
@@ -50,7 +52,15 @@ export function StaffMobileNav({ organizationCode }: StaffMobileNavProps) {
   ];
 
   return (
-    <nav className={styles.mobileNav} aria-label="Staff mobile navigation">
+    <nav
+      className={styles.mobileNav}
+      aria-label="Staff mobile navigation"
+      style={{
+        transform: isNavVisible ? 'translateY(0)' : 'translateY(120%)',
+        transition: 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+        willChange: 'transform',
+      }}
+    >
       {tabs.map((tab) => {
         const isActive = tab.exact
           ? pathname === tab.href

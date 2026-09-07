@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from './Login.module.css';
 import {
@@ -58,16 +59,16 @@ export default function CommonLoginPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        toast.success('Signed in successfully!');
         if (data.mustChangePassword) {
           setMustChangePassword(true);
           setPendingUser(data.user);
-          toast.info('Please create a new permanent password to continue.');
-        } else {
-          toast.success(`Welcome, ${data.user?.name || 'User'}!`);
-          router.push(data.redirectUrl || '/');
+          setIsSubmitting(false);
+          return;
         }
+        router.push(data.redirectUrl || '/');
       } else {
-        setErrorMessage(data.error || 'Invalid credentials.');
+        setErrorMessage(data.error || 'Invalid credentials or access denied.');
         toast.error(data.error || 'Sign in failed.');
       }
     } catch (err) {
@@ -78,7 +79,7 @@ export default function CommonLoginPage() {
     }
   };
 
-  // Submit Forced Password Change
+  // Submit Mandatory Password Change
   const handlePasswordChangeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -96,7 +97,7 @@ export default function CommonLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/org/common/change-password', {
+      const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -123,16 +124,18 @@ export default function CommonLoginPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.wrapper}>
-        {/* ShiftGuard Branding Header */}
-        <div className={styles.header}>
-          <div className={styles.logoContainer} style={{ background: 'transparent', border: 'none' }}>
-            <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+    <>
+      <Header />
+      <div className={styles.container}>
+        <div className={styles.wrapper}>
+          {/* ShiftGuard Branding Header */}
+          <div className={styles.header}>
+            <div className={styles.logoContainer} style={{ background: 'transparent', border: 'none' }}>
+              <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+            </div>
+            <h1 className={styles.title}>Shift<span style={{ color: '#38bdf8' }}>Guard</span></h1>
+            <p className={styles.subtitle}>Sign in to access your account workspace</p>
           </div>
-          <h1 className={styles.title}>Shift<span style={{ color: '#38bdf8' }}>Guard</span></h1>
-          <p className={styles.subtitle}>Sign in to access your account workspace</p>
-        </div>
 
         {/* Login Form Card */}
         <div className={styles.card}>
@@ -383,5 +386,6 @@ export default function CommonLoginPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

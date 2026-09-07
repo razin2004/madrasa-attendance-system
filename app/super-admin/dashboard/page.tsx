@@ -419,15 +419,7 @@ export default function SuperAdminDashboardPage() {
               />
             </div>
 
-            <button
-              onClick={fetchData}
-              disabled={isLoading}
-              className="btn btn-secondary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-              <span className="desktop-only">Refresh</span>
-            </button>
+
 
             {/* Mobile Line Button (Hamburger Menu) */}
             <button
@@ -809,7 +801,7 @@ export default function SuperAdminDashboardPage() {
                                   </div>
                                 </div>
                               </div>
-                              <span className="badge badge-pending">PENDING</span>
+                              <span title="Pending Approval" style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#fbbf24', display: 'inline-block', flexShrink: 0 }} />
                             </div>
 
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -1030,7 +1022,7 @@ export default function SuperAdminDashboardPage() {
                                   )}
                                 </div>
                               </div>
-                              <span className="badge badge-active">ACTIVE</span>
+                              <span title="Active Workspace" style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#34d399', boxShadow: '0 0 8px #34d399', display: 'inline-block', flexShrink: 0 }} />
                             </div>
 
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -1213,7 +1205,7 @@ export default function SuperAdminDashboardPage() {
                                   <span style={{ fontSize: '11px', color: '#f87171', fontWeight: 700 }}>CODE: {org.organizationCode}</span>
                                 </div>
                               </div>
-                              <span className="badge badge-danger">SUSPENDED</span>
+                              <span title="Suspended Account" style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#f87171', display: 'inline-block', flexShrink: 0 }} />
                             </div>
 
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -1354,7 +1346,7 @@ export default function SuperAdminDashboardPage() {
                                 </div>
                                 <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{org.name}</span>
                               </div>
-                              <span className="badge badge-rejected">REJECTED</span>
+                              <span title="Application Rejected" style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#f87171', display: 'inline-block', flexShrink: 0 }} />
                             </div>
 
                             <div style={{ fontSize: '12.5px', color: '#f87171', marginBottom: '12px', padding: '8px 12px', backgroundColor: 'rgba(239, 68, 68, 0.08)', borderRadius: '6px' }}>

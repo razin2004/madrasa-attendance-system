@@ -20,6 +20,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
+import { useMobileNavScroll } from '@/hooks/use-mobile-nav-scroll';
 
 interface OrgAdminMobileNavProps {
   organizationCode: string;
@@ -31,6 +32,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
   const router = useRouter();
   const toast = useToast();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const isNavVisible = useMobileNavScroll();
 
   const handleLogout = async () => {
     try {
@@ -74,6 +76,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
       label: 'Shifts & Roster',
       href: `/${organizationCode}/admin/shifts`,
       icon: Clock,
+      exact: true,
       subtext: 'Create recurring schedules & staff assignments',
     },
     {
@@ -146,7 +149,9 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {secondaryItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname.startsWith(item.href);
+                const isActive = item.exact
+                  ? pathname === item.href
+                  : pathname.startsWith(item.href);
 
                 return (
                   <Link
@@ -242,6 +247,9 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
           zIndex: 90,
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5)',
+          transform: isNavVisible ? 'translateY(0)' : 'translateY(120%)',
+          transition: 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+          willChange: 'transform',
         }}
         className="org-admin-mobile-nav"
       >

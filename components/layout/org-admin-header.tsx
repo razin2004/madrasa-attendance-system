@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Menu, X } from 'lucide-react';
+import Link from 'next/link';
+import { Menu, X, ArrowLeft } from 'lucide-react';
 import styles from './org-admin-header.module.css';
 
 interface OrgAdminHeaderProps {
@@ -9,6 +10,7 @@ interface OrgAdminHeaderProps {
   logoUrl?: string | null;
   panelTitle: string;
   panelSubtitle?: string;
+  backHref?: string;
   headerMenuOpen?: boolean;
   onToggleHeaderMenu?: () => void;
   actions?: React.ReactNode;
@@ -20,6 +22,7 @@ export function OrgAdminHeader({
   logoUrl,
   panelTitle,
   panelSubtitle,
+  backHref,
   headerMenuOpen = false,
   onToggleHeaderMenu,
   actions,
@@ -29,12 +32,26 @@ export function OrgAdminHeader({
     <header className={styles.headerBar}>
       {/* Desktop Header Left (Hidden on mobile) */}
       <div className={styles.desktopHeaderLeft}>
-        <h1 className={styles.desktopTitle}>{panelTitle}</h1>
-        {panelSubtitle && <p className={styles.desktopSubtitle}>{panelSubtitle}</p>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {backHref && (
+            <Link href={backHref} className={styles.backBtn} aria-label="Go Back">
+              <ArrowLeft size={16} />
+            </Link>
+          )}
+          <div>
+            <h1 className={styles.desktopTitle}>{panelTitle}</h1>
+            {panelSubtitle && <p className={styles.desktopSubtitle}>{panelSubtitle}</p>}
+          </div>
+        </div>
       </div>
 
       {/* Mobile Header Left (Hidden on desktop) */}
       <div className={styles.mobileHeaderLeft}>
+        {backHref && (
+          <Link href={backHref} className={styles.backBtn} aria-label="Go Back">
+            <ArrowLeft size={16} />
+          </Link>
+        )}
         <div className={styles.logoBox}>
           <img
             src={logoUrl || '/logo.svg'}

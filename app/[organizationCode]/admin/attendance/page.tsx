@@ -324,115 +324,145 @@ export default function AdminAttendancePage() {
             </div>
           </div>
 
-          {/* Filter Drawer Options (Appears when filter icon is clicked) */}
+          {/* Filter Bottom Sheet Modal Overlay (Appears when filter icon is clicked) */}
           {showMobileFilters && (
             <div
-              className="glass-card"
               style={{
-                padding: '16px 18px',
-                marginBottom: '20px',
-                backgroundColor: '#0d121f',
-                border: '1px solid var(--border-medium)',
-                borderRadius: '14px',
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.65)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 999,
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '14px',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
               }}
+              onClick={() => setShowMobileFilters(false)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: 800, fontSize: '13.5px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Filter size={15} color="#818cf8" />
-                  <span>Filter Attendance Logs</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowMobileFilters(false)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    color: 'var(--text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', width: '100%' }}>
-                {/* Target Date Input - Exact same size as Source select */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
-                    Target Log Date
-                  </label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    style={{
-                      height: '40px',
-                      fontSize: '13px',
-                      backgroundColor: '#131b2e',
-                      color: '#ffffff',
-                      width: '100%',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      padding: '0 12px',
-                      boxSizing: 'border-box',
-                    }}
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
-                </div>
-
-                {/* Verification Source Select - Exact same size as Date input, full text visible */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
-                    Verification Source
-                  </label>
-                  <select
-                    className="form-input"
-                    style={{
-                      height: '40px',
-                      fontSize: '13px',
-                      backgroundColor: '#131b2e',
-                      color: '#ffffff',
-                      width: '100%',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      padding: '0 12px',
-                      boxSizing: 'border-box',
-                    }}
-                    value={source}
-                    onChange={(e) => setSource(e.target.value)}
-                  >
-                    <option value="">All Verification Sources</option>
-                    <option value="NORMAL">NORMAL (3-Layer Verified)</option>
-                    <option value="MANUAL">MANUAL (Admin Created)</option>
-                    <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
-                  </select>
-                </div>
-              </div>
-
-              {(source || (date && date !== todayStr)) && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '500px',
+                  backgroundColor: '#0f172a',
+                  borderTopLeftRadius: '20px',
+                  borderTopRightRadius: '20px',
+                  border: '1px solid var(--border-medium)',
+                  borderBottom: 'none',
+                  padding: '20px',
+                  boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Filter size={16} color="#818cf8" />
+                    <span>Filter Attendance Logs</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setDate(todayStr);
-                      setSource('');
+                    onClick={() => setShowMobileFilters(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '26px',
+                      height: '26px',
+                      color: 'var(--text-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
                     }}
-                    className="btn btn-secondary btn-xs"
-                    style={{ borderRadius: '6px', fontSize: '11px', padding: '4px 10px' }}
                   >
-                    Reset Filters
+                    <X size={14} />
                   </button>
                 </div>
-              )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+                  {/* Target Date Input */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
+                      Target Log Date
+                    </label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      style={{
+                        height: '40px',
+                        fontSize: '13px',
+                        backgroundColor: '#131b2e',
+                        color: '#ffffff',
+                        width: '100%',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        padding: '0 12px',
+                        boxSizing: 'border-box',
+                      }}
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Verification Source Select */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
+                      Verification Source
+                    </label>
+                    <select
+                      className="form-input"
+                      style={{
+                        height: '40px',
+                        fontSize: '13px',
+                        backgroundColor: '#131b2e',
+                        color: '#ffffff',
+                        width: '100%',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        padding: '0 12px',
+                        boxSizing: 'border-box',
+                      }}
+                      value={source}
+                      onChange={(e) => setSource(e.target.value)}
+                    >
+                      <option value="">All Verification Sources</option>
+                      <option value="NORMAL">NORMAL (3-Layer Verified)</option>
+                      <option value="MANUAL">MANUAL (Admin Created)</option>
+                      <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                  {(source || (date && date !== todayStr)) ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDate(todayStr);
+                        setSource('');
+                      }}
+                      className="btn btn-secondary btn-xs"
+                      style={{ borderRadius: '6px', fontSize: '11px', padding: '6px 12px' }}
+                    >
+                      Reset Filters
+                    </button>
+                  ) : <div />}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileFilters(false)}
+                    className="btn btn-primary btn-sm"
+                    style={{ borderRadius: '8px', padding: '6px 16px', fontSize: '12.5px', fontWeight: 700 }}
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

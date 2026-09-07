@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import { isOvernightShift } from '@/lib/shift-validation';
@@ -183,23 +184,13 @@ export default function RosterDayDetailPage() {
       {/* Main Content */}
       <div className={styles.mainContent}>
         {/* Header */}
-        <header className={styles.header}>
-          <Link
-            href={`/${organizationCode}/admin/roster`}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '8px' }}
-          >
-            <ArrowLeft size={16} />
-          </Link>
-          <div>
-            <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.3px' }}>
-              Roster Detail: {data?.weekday}, {dateStr}
-            </h1>
-            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              Inspect planned shifts, duty hours, and apply day-specific overrides for individual staff members.
-            </p>
-          </div>
-        </header>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle={`Roster Detail: ${data?.weekday || ''} ${dateStr}`}
+          panelSubtitle="Inspect planned shifts, duty hours, and apply day-specific overrides for individual staff members."
+          backHref={`/${organizationCode}/admin/roster`}
+        />
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1100px' }}>

@@ -267,11 +267,14 @@ export default function BranchesListPage() {
                   style={{
                     position: 'absolute',
                     right: '40px',
-                    top: '9px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
                     background: 'none',
                     border: 'none',
                     color: 'var(--text-muted)',
                     cursor: 'pointer',
+                    padding: '2px',
+                    zIndex: 10,
                   }}
                 >
                   <X size={14} />
@@ -333,7 +336,7 @@ export default function BranchesListPage() {
           {/* EMPTY STATE - NO BRANCHES REGISTERED */}
           {!loading && !hasError && branches.length === 0 && (
             <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <MapPin size={40} color="#818cf8" style={{ margin: '0 auto 16px auto', opacity: 0.8 }} />
+              <Building size={40} color="#818cf8" style={{ margin: '0 auto 16px auto', opacity: 0.8 }} />
               <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
                 No branches registered
               </h3>
@@ -519,14 +522,7 @@ export default function BranchesListPage() {
                           title="Edit Branch"
                         >
                           <Edit2 size={13} />
-                        </button>
-                        <button
-                          onClick={() => router.push(`/${organizationCode}/admin/branches/${branch.id}`)}
-                          className="btn btn-secondary btn-sm"
-                          style={{ flex: 1, padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '32px' }}
-                          title="View Geofence & Location"
-                        >
-                          <MapPin size={13} color="#38bdf8" />
+                          <span style={{ fontSize: '12px', marginLeft: '4px' }}>Edit</span>
                         </button>
                         <button
                           onClick={() => setToggleModalBranch(branch)}

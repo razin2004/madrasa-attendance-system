@@ -110,6 +110,26 @@
   border-color: rgba(99, 102, 241, 0.4);
 }
 
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.backBtn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
 @media (max-width: 768px) {
   .headerBar {
     padding: 10px 14px;
