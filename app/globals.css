@@ -781,16 +781,23 @@ input[type="button"]:active:not(:disabled) {
   }
 }
 
-/* Sticky Header for All Admin Panels */
+/* Sticky Header for Admin Panels (excluding Staff Dashboard header) */
 div[class*="mainContent"] > header,
-header[class*="headerBar"],
-header[class*="header"] {
+header[class*="headerBar"]:not([class*="StaffDashboard"]),
+header[class*="adminHeader"] {
   position: sticky !important;
   top: 0 !important;
   z-index: 100 !important;
   background-color: rgba(13, 19, 33, 0.95) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
+}
+
+/* Ensure Staff Dashboard Profile Header is strictly NON-STICKY */
+header[class*="StaffDashboard_header"] {
+  position: relative !important;
+  top: auto !important;
+  z-index: 1 !important;
 }
 
 /* Mobile Word Wrapping & Universal Overflow Protection */
