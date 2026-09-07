@@ -279,7 +279,7 @@ export default function OnboardStaffPage() {
 
                     <div>
                       <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
-                        Last Name / Second Name
+                        Last Name
                       </label>
                       <input
                         type="text"
@@ -507,9 +507,14 @@ export default function OnboardStaffPage() {
 
                   {/* Dropzone */}
                   <div style={{ marginBottom: '24px' }}>
-                    <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
-                      Upload ID Document
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label className="form-label" style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', margin: 0 }}>
+                        Upload ID Document {idDocType !== 'OTHER' && <span style={{ color: 'var(--danger-text)' }}>*</span>}
+                      </label>
+                      <span style={{ fontSize: '11.5px', color: idDocType === 'OTHER' ? '#34d399' : '#fbbf24', fontWeight: 600 }}>
+                        {idDocType === 'OTHER' ? '(Optional for Other ID Card)' : '(Required for selected ID)'}
+                      </span>
+                    </div>
                     <div className={styles.dropzone}>
                       <input
                         type="file"
@@ -528,7 +533,9 @@ export default function OnboardStaffPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                           <FileText size={32} color="var(--text-muted)" />
                           <p style={{ fontSize: '14px', fontWeight: 600, color: '#f8fafc' }}>
-                            Select the ID type and upload a clear image or PDF
+                            {idDocType === 'OTHER'
+                              ? 'Upload an optional ID image or PDF'
+                              : `Upload file for ${idDocTypeLabels[idDocType] || 'selected ID'}`}
                           </p>
                           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                             Supports JPEG, PNG, WEBP, or PDF (Up to 5MB)
@@ -544,7 +551,13 @@ export default function OnboardStaffPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setStep(4)}
+                      onClick={() => {
+                        if (idDocType !== 'OTHER' && !idFile) {
+                          toast.error(`Please attach the document file for ${idDocTypeLabels[idDocType] || 'selected ID type'}.`);
+                          return;
+                        }
+                        setStep(4);
+                      }}
                       className="btn btn-primary btn-sm"
                       style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                     >

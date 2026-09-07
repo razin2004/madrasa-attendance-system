@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { Building2 } from 'lucide-react';
+import { OrgLogo } from '@/components/branding/org-logo';
 
 interface TenantBrandHeaderProps {
   orgName: string;
@@ -16,8 +15,6 @@ export function TenantBrandHeader({
   organizationCode,
   subtitle,
 }: TenantBrandHeaderProps) {
-  const [imgFailed, setImgFailed] = React.useState(false);
-
   return (
     <div style={{ textAlign: 'center', marginBottom: '20px', width: '100%' }}>
       {/* Auto-scaling Logo (52px on mobile via class, 64px default) */}
@@ -36,24 +33,9 @@ export function TenantBrandHeader({
           overflow: 'hidden',
           boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(99, 102, 241, 0.25)',
           position: 'relative',
-          padding: '4px',
         }}
       >
-        {logoUrl && !imgFailed ? (
-          <img
-            src={logoUrl}
-            alt={`${orgName} Logo`}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              display: 'block',
-            }}
-            onError={() => setImgFailed(true)}
-          />
-        ) : (
-          <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '38px', height: '38px', objectFit: 'contain' }} />
-        )}
+        <OrgLogo logoUrl={logoUrl} name={orgName} size={32} />
       </div>
 
       <h1

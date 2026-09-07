@@ -68,7 +68,7 @@ export async function POST(
     let importedCount = 0;
     let skippedCount = 0;
 
-    const validIdDocTypes = ['AADHAAR', 'VOTER_ID', 'PASSPORT', 'DRIVING_LICENSE', 'OTHER'];
+    const validIdDocTypes = ['AADHAAR', 'VOTER_ID', 'PASSPORT', 'DRIVING_LICENSE', 'COLLEGE_ID', 'GOVERNMENT_ID', 'OTHER'];
 
     for (let i = 0; i < rows.length; i++) {
       const rowNum = i + 1;
@@ -80,8 +80,20 @@ export async function POST(
       const cleanStaffId = r.staffId?.trim() || '';
       const cleanPhone = r.phone?.trim() || null;
       const cleanAddress = r.address?.trim() || '';
-      const rawDocType = r.idDocType?.trim().toUpperCase() || 'OTHER';
-      const cleanDocType = validIdDocTypes.includes(rawDocType) ? rawDocType : 'OTHER';
+      
+      // If ID type is not mentioned, blank, or unrecognized, automatically set as OTHER (Other ID Card)
+      const rawDocType = r.idDocType?.trim().toUpperCase() || '';
+      let cleanDocType = 'OTHER';
+      if (rawDocType) {
+        if (rawDocType.includes('AADHAAR') || rawDocType.includes('ADHAR')) cleanDocType = 'AADHAAR';
+        else if (rawDocType.includes('VOTER')) cleanDocType = 'VOTER_ID';
+        else if (rawDocType.includes('PASSPORT')) cleanDocType = 'PASSPORT';
+        else if (rawDocType.includes('DRIV') || rawDocType.includes('LICEN')) cleanDocType = 'DRIVING_LICENSE';
+        else if (rawDocType.includes('COLLEGE')) cleanDocType = 'COLLEGE_ID';
+        else if (rawDocType.includes('GOVT') || rawDocType.includes('GOVERN')) cleanDocType = 'GOVERNMENT_ID';
+        else if (validIdDocTypes.includes(rawDocType)) cleanDocType = rawDocType;
+        else cleanDocType = 'OTHER';
+      }
       const cleanDocLast4 = r.idDocLast4 ? r.idDocLast4.trim().replace(/\D/g, '').slice(0, 4) : null;
       const cleanBranchName = r.branchName?.trim() || '';
       const rawRole = r.role?.trim().toUpperCase() || 'STAFF';

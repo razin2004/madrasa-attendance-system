@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import { UpdatePasswordModal } from '@/components/staff/update-password-modal';
@@ -493,134 +494,84 @@ export default function StaffProfilePage() {
 
       <div className={styles.mainContent}>
         {/* Header Bar */}
-        <header className={styles.headerBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Link href={`/${organizationCode}/admin/staff`} className="btn btn-secondary btn-sm" style={{ padding: '8px' }}>
-              <ArrowLeft size={16} />
-            </Link>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h1 className={styles.title}>{staff.name}</h1>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                    color: '#818cf8',
-                    border: '1px solid rgba(99, 102, 241, 0.3)',
-                  }}
-                >
-                  {staff.staffId}
-                </span>
-                <span
-                  title={isPending ? 'Setup Pending' : isActive ? 'Active' : 'Inactive'}
-                  style={{
-                    width: '9px',
-                    height: '9px',
-                    borderRadius: '50%',
-                    backgroundColor: isPending ? '#fbbf24' : isActive ? '#34d399' : '#f87171',
-                    boxShadow: isActive ? '0 0 8px #34d399' : 'none',
-                    display: 'inline-block',
-                    marginLeft: '2px',
-                  }}
-                />
-              </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {staff.user.email}
-              </p>
-            </div>
-          </div>
-
-          {/* Top Right Three Horizontal Lines Action Menu */}
-          <div style={{ position: 'relative' }}>
+        <OrgAdminHeader
+          organizationCode={organizationCode}
+          logoUrl={branding?.logoUrl}
+          panelTitle={staff.name}
+          panelSubtitle={`Staff ID: ${staff.staffId} • ${staff.user.email}`}
+          backHref={`/${organizationCode}/admin/staff`}
+          headerMenuOpen={menuOpen}
+          onToggleHeaderMenu={() => setMenuOpen(!menuOpen)}
+        >
+          <div className={styles.actionDropdownMenu}>
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className={styles.menuTriggerBtn}
-              title="Staff Options & Actions"
+              onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
+              className={styles.dropdownItem}
             >
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              <Edit2 size={15} />
+              <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
             </button>
 
-            {menuOpen && (
+            {isPending ? (
               <>
-                {/* Invisible backdrop to dismiss menu when clicking outside */}
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(false)} />
-                
-                <div className={styles.actionDropdownMenu}>
-                  <button
-                    onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
-                    className={styles.dropdownItem}
-                  >
-                    <Edit2 size={15} />
-                    <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
-                  </button>
-
-                  {isPending ? (
-                    <>
-                      <button
-                        onClick={() => { setMenuOpen(false); handleResendInvite(); }}
-                        disabled={resendingInvite}
-                        className={styles.dropdownItem}
-                        style={{ color: '#38bdf8' }}
-                      >
-                        {resendingInvite ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
-                        <span>Resend Email</span>
-                      </button>
-                      <button
-                        onClick={() => { setMenuOpen(false); handleWhatsAppInvite(); }}
-                        disabled={whatsappLoading}
-                        className={styles.dropdownItem}
-                        style={{ color: '#25D366' }}
-                      >
-                        {whatsappLoading ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />}
-                        <span>WhatsApp Invite</span>
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => { setMenuOpen(false); setPasswordModalOpen(true); }}
-                      className={styles.dropdownItem}
-                      style={{ color: '#c084fc' }}
-                    >
-                      <Key size={15} />
-                      <span>Update Password</span>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => { setMenuOpen(false); setDeviceResetModalOpen(true); }}
-                    className={styles.dropdownItem}
-                  >
-                    <RefreshCw size={15} />
-                    <span>Reset Devices</span>
-                  </button>
-
-                  <button
-                    onClick={() => { setMenuOpen(false); setStatusModalOpen(true); }}
-                    className={styles.dropdownItem}
-                    style={{ color: isActive ? '#f87171' : '#34d399' }}
-                  >
-                    <Power size={15} />
-                    <span>{isActive ? 'Deactivate Account' : 'Activate Account'}</span>
-                  </button>
-
-                  <div className={styles.dropdownDivider} />
-
-                  <button
-                    onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
-                    className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
-                  >
-                    <Trash2 size={15} />
-                    <span>Delete Staff</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => { setMenuOpen(false); handleResendInvite(); }}
+                  disabled={resendingInvite}
+                  className={styles.dropdownItem}
+                  style={{ color: '#38bdf8' }}
+                >
+                  {resendingInvite ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+                  <span>Resend Email</span>
+                </button>
+                <button
+                  onClick={() => { setMenuOpen(false); handleWhatsAppInvite(); }}
+                  disabled={whatsappLoading}
+                  className={styles.dropdownItem}
+                  style={{ color: '#25D366' }}
+                >
+                  {whatsappLoading ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />}
+                  <span>WhatsApp Invite</span>
+                </button>
               </>
+            ) : (
+              <button
+                onClick={() => { setMenuOpen(false); setPasswordModalOpen(true); }}
+                className={styles.dropdownItem}
+                style={{ color: '#c084fc' }}
+              >
+                <Key size={15} />
+                <span>Update Password</span>
+              </button>
             )}
+
+            <button
+              onClick={() => { setMenuOpen(false); setDeviceResetModalOpen(true); }}
+              className={styles.dropdownItem}
+            >
+              <RefreshCw size={15} />
+              <span>Reset Devices</span>
+            </button>
+
+            <button
+              onClick={() => { setMenuOpen(false); setStatusModalOpen(true); }}
+              className={styles.dropdownItem}
+              style={{ color: isActive ? '#f87171' : '#34d399' }}
+            >
+              <Power size={15} />
+              <span>{isActive ? 'Deactivate Account' : 'Activate Account'}</span>
+            </button>
+
+            <div className={styles.dropdownDivider} />
+
+            <button
+              onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
+              className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+            >
+              <Trash2 size={15} />
+              <span>Delete Staff</span>
+            </button>
           </div>
-        </header>
+        </OrgAdminHeader>
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>

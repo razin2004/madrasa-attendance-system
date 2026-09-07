@@ -198,13 +198,14 @@ export default function AdminManualAttendancePage() {
           <div className="glass-card" style={{ padding: '28px' }}>
           <form onSubmit={handleSubmit}>
             {/* Staff Selection */}
-            <div className="form-group" style={{ marginBottom: '20px' }}>
+            <div className="form-group" style={{ marginBottom: '20px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
               <label className="form-label">Staff Member *</label>
               {loadingStaff ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading staff list...</div>
               ) : (
                 <select
                   className="form-input"
+                  style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
                   value={selectedStaffId}
                   onChange={(e) => setSelectedStaffId(e.target.value)}
                 >
@@ -218,33 +219,57 @@ export default function AdminManualAttendancePage() {
             </div>
 
             {/* Date */}
-            <div className="form-group" style={{ marginBottom: '20px' }}>
+            <div className="form-group" style={{ marginBottom: '20px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
               <label className="form-label">Attendance Date *</label>
               <input
                 type="date"
                 className="form-input"
+                style={{
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
+                  boxSizing: 'border-box',
+                  colorScheme: 'dark',
+                  height: '42px',
+                }}
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
 
             {/* Times */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-              <div className="form-group">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px', width: '100%', minWidth: 0 }}>
+              <div className="form-group" style={{ marginBottom: 0, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                 <label className="form-label">Clock In Time *</label>
                 <input
                   type="time"
                   className="form-input"
+                  style={{
+                    width: '100%',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
+                    colorScheme: 'dark',
+                    height: '42px',
+                  }}
                   value={clockInTime}
                   onChange={(e) => setClockInTime(e.target.value)}
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: 0, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                 <label className="form-label">Clock Out Time (Optional)</label>
                 <input
                   type="time"
                   className="form-input"
+                  style={{
+                    width: '100%',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
+                    colorScheme: 'dark',
+                    height: '42px',
+                  }}
                   value={clockOutTime}
                   onChange={(e) => setClockOutTime(e.target.value)}
                 />
@@ -252,11 +277,11 @@ export default function AdminManualAttendancePage() {
             </div>
 
             {/* Reason */}
-            <div className="form-group" style={{ marginBottom: '24px' }}>
+            <div className="form-group" style={{ marginBottom: '24px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
               <label className="form-label">Reason / Justification *</label>
               <textarea
                 className="form-input"
-                style={{ height: '90px' }}
+                style={{ height: '90px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
                 placeholder="Mandatory explanation for creating this manual attendance entry..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}

@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Menu, X, ArrowLeft } from 'lucide-react';
+import { OrgLogo } from '@/components/branding/org-logo';
 import styles from './org-admin-header.module.css';
 
 interface OrgAdminHeaderProps {
@@ -62,14 +63,7 @@ export function OrgAdminHeader({
         )}
         {!shouldHideBranding && (
           <div className={styles.logoBox}>
-            <img
-              src={logoUrl || '/logo.svg'}
-              alt="Org Logo"
-              className={styles.logoImg}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/logo.svg';
-              }}
-            />
+            <OrgLogo logoUrl={logoUrl} name={organizationName || organizationCode} size={20} />
           </div>
         )}
         <div className={styles.mobileTextCol}>
@@ -90,6 +84,7 @@ export function OrgAdminHeader({
       {/* Right Action / Line Button Area */}
       <div className={styles.headerRight}>
         {actions && <div className={styles.desktopActions}>{actions}</div>}
+        <span className={styles.mobileRoleTag}>Org Admin</span>
 
         {onToggleHeaderMenu && (
           <div style={{ position: 'relative' }}>

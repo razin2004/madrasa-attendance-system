@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from '../login/Login.module.css';
 import {
@@ -58,9 +57,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <>
-      <Header />
-      <div className={styles.container}>
+    <div className={styles.container}>
       <div className={styles.wrapper}>
         <div className={styles.header}>
           <div className={styles.logoContainer} style={{ background: 'transparent', border: 'none' }}>
@@ -187,6 +184,5 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
     </div>
-    </>
   );
 }

@@ -284,6 +284,12 @@
   .tableCard {
     margin-left: 16px;
     margin-right: 16px;
+    background: transparent;
+    border: none;
+    overflow: visible;
+  }
+
+  .table {
     display: none;
   }
 

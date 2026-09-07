@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from './Login.module.css';
 import {
@@ -124,10 +123,8 @@ export default function CommonLoginPage() {
   };
 
   return (
-    <>
-      <Header />
-      <div className={styles.container}>
-        <div className={styles.wrapper}>
+    <div className={styles.container}>
+      <div className={styles.wrapper}>
           {/* ShiftGuard Branding Header */}
           <div className={styles.header}>
             <div className={styles.logoContainer} style={{ background: 'transparent', border: 'none' }}>
@@ -386,6 +383,5 @@ export default function CommonLoginPage() {
         </div>
       </div>
     </div>
-    </>
   );
 }

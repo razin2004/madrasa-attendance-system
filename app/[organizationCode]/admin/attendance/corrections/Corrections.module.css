@@ -71,63 +71,98 @@
   color: #ffffff;
 }
 
-.filterBar {
-  background: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 24px;
+.filterSearchRow {
   display: flex;
-  gap: 16px;
-  align-items: center;
   flex-wrap: wrap;
-}
-
-.filterItem {
-  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
-.filterLabel {
-  font-size: 13px;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.input, .select {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  color: #ffffff;
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-.input:focus, .select:focus {
-  outline: none;
-  border-color: #38bdf8;
-}
-
-.secondaryBtn {
-  background: #111827;
-  border: 1px solid #334155;
-  color: #cbd5e1;
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 14px;
-  border-radius: 8px;
+.tabsGroup {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  padding: 4px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.tabButton {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  white-space: nowrap;
   transition: all 0.15s ease;
+}
+
+.tabButtonActive {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+}
+
+.searchInputWrapper {
+  position: relative;
+  width: 300px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 42px 8px 36px;
+  border-radius: var(--radius-md, 8px);
+  background-color: rgba(3, 7, 18, 0.6);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
+  font-size: 13px;
+  height: 38px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 11px;
+  top: 10px;
+  color: var(--text-muted, #6b7280);
+  pointer-events: none;
+}
+
+.filterToggleBtn {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
   cursor: pointer;
 }
 
-.secondaryBtn:hover {
-  border-color: #38bdf8;
-  color: #ffffff;
+.filterBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .tableCard {
@@ -329,12 +364,39 @@
   .metricsGrid {
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
+    margin-bottom: 16px;
   }
   .metricCard {
     padding: 12px;
   }
   .metricValue {
     font-size: 20px;
+  }
+  .filterSearchRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .filterToggleBtn {
+    display: flex;
+  }
+  .searchInputWrapper {
+    width: 100%;
+  }
+  .tabsGroup {
+    display: none;
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    gap: 4px;
+  }
+  .tabsGroupOpen {
+    display: flex !important;
+  }
+  .tabButton {
+    flex-shrink: 0;
   }
   .desktopTableView {
     display: none;

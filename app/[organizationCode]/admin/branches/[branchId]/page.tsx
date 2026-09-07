@@ -731,7 +731,6 @@ export default function BranchDetailPage() {
                       <div key={n.id} style={{ padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                         <div>
                           <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{n.publicIp}</span>
-                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', opacity: 0.8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.overrideReason || 'Manual Override IP'}</div>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button

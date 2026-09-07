@@ -211,7 +211,7 @@ export default function OrgAdminLandingPage() {
         <OrgAdminHeader
           organizationCode={orgCode}
           organizationName={orgData?.name}
-          showOrgNameOnMobile={true}
+          showOrgNameOnMobile={false}
           logoUrl={orgData?.logoUrl}
           panelTitle="Overview"
           panelSubtitle="Live workforce operations summary and 3-layer security overview"

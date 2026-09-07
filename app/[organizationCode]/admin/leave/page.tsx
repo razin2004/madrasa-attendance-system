@@ -188,63 +188,64 @@ export default function AdminLeavePage() {
           )}
         </OrgAdminHeader>
 
-        {/* Metrics Overview */}
-        <div className={styles.metricsGrid}>
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #fbbf24' }}>
-            <div className={styles.metricLabel}>Pending Approval</div>
-            <div className={styles.metricValue} style={{ color: '#fbbf24' }}>{pendingCount}</div>
+        {/* Content Body */}
+        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
+          {/* Metrics Overview */}
+          <div className={styles.metricsGrid}>
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #fbbf24' }}>
+              <div className={styles.metricLabel}>Pending Approval</div>
+              <div className={styles.metricValue} style={{ color: '#fbbf24' }}>{pendingCount}</div>
+            </div>
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #34d399' }}>
+              <div className={styles.metricLabel}>Approved Leave</div>
+              <div className={styles.metricValue} style={{ color: '#34d399' }}>{approvedCount}</div>
+            </div>
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #f87171' }}>
+              <div className={styles.metricLabel}>Rejected Requests</div>
+              <div className={styles.metricValue} style={{ color: '#f87171' }}>{rejectedCount}</div>
+            </div>
           </div>
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #34d399' }}>
-            <div className={styles.metricLabel}>Approved Leave</div>
-            <div className={styles.metricValue} style={{ color: '#34d399' }}>{approvedCount}</div>
-          </div>
-          <div className={styles.metricCard} style={{ borderLeft: '3px solid #f87171' }}>
-            <div className={styles.metricLabel}>Rejected Requests</div>
-            <div className={styles.metricValue} style={{ color: '#f87171' }}>{rejectedCount}</div>
-          </div>
-        </div>
 
-        {/* Filter Bar (Staff Panel Style) */}
-        <div className={styles.filterBar}>
-          {/* Search Input with Filter Button */}
-          <div className={styles.searchInputWrapper}>
-            <Search size={15} className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="Search staff name or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  fetchLeaveRequests();
-                }
-              }}
-              className={styles.searchInput}
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch('');
-                  fetchLeaveRequests();
+          {/* Filter Bar (Staff Panel Style) */}
+          <div className={styles.filterBar}>
+            {/* Search Input with Filter Button */}
+            <div className={styles.searchInputWrapper}>
+              <Search size={15} className={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="Search staff name or ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchLeaveRequests();
+                  }
                 }}
-                style={{
-                  position: 'absolute',
-                  right: '40px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: '2px',
-                }}
-                title="Clear search"
-              >
-                <X size={14} />
-              </button>
-            )}
+                className={styles.searchInput}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    fetchLeaveRequests();
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '40px',
+                    top: '9px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                  }}
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             <button
               type="button"
               onClick={() => setShowMobileFilters(!showMobileFilters)}
@@ -405,6 +406,7 @@ export default function AdminLeavePage() {
             </>
           )}
         </div>
+        </main>
       </div>
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>

@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Shield, ArrowLeft, User, LogOut } from 'lucide-react';
+import { OrgLogo } from '@/components/branding/org-logo';
 
 interface MobileTopHeaderProps {
   title: string;
@@ -73,20 +74,10 @@ export function MobileTopHeader({
               justifyContent: 'center',
               boxShadow: 'var(--shadow-glow-indigo)',
               flexShrink: 0,
-              padding: '2px',
-              boxSizing: 'border-box',
+              overflow: 'hidden',
             }}
           >
-            {logoUrl && !logoFailed ? (
-              <img
-                src={logoUrl}
-                alt={organizationName}
-                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                onError={() => setLogoFailed(true)}
-              />
-            ) : (
-              <img src="/logo.svg" alt="ShiftGuard Attendance Logo" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
-            )}
+            <OrgLogo logoUrl={logoUrl} name={organizationName} size={20} />
           </div>
         )}
 

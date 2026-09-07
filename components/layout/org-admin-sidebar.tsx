@@ -21,6 +21,7 @@ import {
   Settings,
   RefreshCw,
 } from 'lucide-react';
+import { OrgLogo } from '@/components/branding/org-logo';
 import { useToast } from '../feedback/toast-provider';
 
 import { ConfirmationModal } from '../feedback/confirmation-modal';
@@ -210,20 +211,9 @@ export function OrgAdminSidebar({
             justifyContent: 'center',
             overflow: 'hidden',
             flexShrink: 0,
-            padding: '2px',
-            boxSizing: 'border-box',
           }}
         >
-          {logoUrl && !logoFailed ? (
-            <img 
-              src={logoUrl} 
-              alt={organizationName} 
-              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} 
-              onError={() => setLogoFailed(true)}
-            />
-          ) : (
-            <Building2 size={22} color="#818cf8" />
-          )}
+          <OrgLogo logoUrl={logoUrl} name={organizationName} size={24} />
         </div>
         <div style={{ minWidth: 0 }}>
           <div

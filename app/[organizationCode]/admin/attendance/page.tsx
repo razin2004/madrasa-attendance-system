@@ -356,6 +356,9 @@ export default function AdminAttendancePage() {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '14px',
+                  boxSizing: 'border-box',
+                  maxHeight: '85vh',
+                  overflowY: 'auto',
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -384,9 +387,9 @@ export default function AdminAttendancePage() {
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', minWidth: 0 }}>
                   {/* Target Date Input */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
                     <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
                       Target Log Date
                     </label>
@@ -395,14 +398,19 @@ export default function AdminAttendancePage() {
                       className="form-input"
                       style={{
                         height: '40px',
+                        minHeight: '40px',
                         fontSize: '13px',
                         backgroundColor: '#131b2e',
                         color: '#ffffff',
+                        colorScheme: 'dark',
                         width: '100%',
+                        maxWidth: '100%',
+                        minWidth: 0,
                         borderRadius: '8px',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         padding: '0 12px',
                         boxSizing: 'border-box',
+                        WebkitAppearance: 'none',
                       }}
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
@@ -410,7 +418,7 @@ export default function AdminAttendancePage() {
                   </div>
 
                   {/* Verification Source Select */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
                     <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
                       Verification Source
                     </label>
@@ -418,10 +426,13 @@ export default function AdminAttendancePage() {
                       className="form-input"
                       style={{
                         height: '40px',
+                        minHeight: '40px',
                         fontSize: '13px',
                         backgroundColor: '#131b2e',
                         color: '#ffffff',
                         width: '100%',
+                        maxWidth: '100%',
+                        minWidth: 0,
                         borderRadius: '8px',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         padding: '0 12px',
@@ -474,14 +485,53 @@ export default function AdminAttendancePage() {
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading attendance data...</p>
             </div>
           ) : dailyList.length === 0 ? (
-            <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <Clock size={36} color="var(--text-muted)" style={{ margin: '0 auto 12px auto' }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', margin: '0 0 4px 0' }}>
-                No attendance logs found
+            <div
+              style={{
+                padding: '48px 24px',
+                textAlign: 'center',
+                borderRadius: '16px',
+                margin: '12px 0',
+                border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
+                backgroundColor: 'rgba(17, 24, 39, 0.6)',
+              }}
+            >
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  border: '1px solid rgba(99, 102, 241, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px auto',
+                }}
+              >
+                <Clock size={28} color="#818cf8" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: '0 0 6px 0' }}>
+                No Attendance Logs Found
               </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-                No staff attendance recorded for the selected date and filters.
+              <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 auto 18px auto', maxWidth: '380px', lineHeight: '1.5' }}>
+                {search || source || (date && date !== todayStr)
+                  ? 'No attendance records match your current date selection, search query, or verification filters.'
+                  : 'No staff members have recorded attendance logs for today yet.'}
               </p>
+              {(search || source || (date && date !== todayStr)) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setDate(todayStr);
+                    setSource('');
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  style={{ borderRadius: '8px', fontSize: '12px' }}
+                >
+                  Clear All Filters
+                </button>
+              )}
             </div>
           ) : (
             <>
