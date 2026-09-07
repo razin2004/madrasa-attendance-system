@@ -461,7 +461,7 @@ export default function ShiftPatternDetailPage() {
           headerMenuOpen={menuOpen}
           onToggleHeaderMenu={() => setMenuOpen(!menuOpen)}
         >
-          <div className={styles.actionDropdownMenu} style={{ position: 'static' }}>
+          <div className={styles.actionDropdownMenu}>
             <button
               onClick={() => {
                 setMenuOpen(false);

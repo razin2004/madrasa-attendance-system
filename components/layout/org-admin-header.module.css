@@ -51,14 +51,15 @@
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  padding: 2px;
+  box-sizing: border-box;
 }
 
 .logoImg {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transform: scale(1.12);
-  transform-origin: center;
+  object-fit: contain;
+  display: block;
 }
 
 .mobileTextCol {
@@ -73,6 +74,9 @@
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mobilePanelText {

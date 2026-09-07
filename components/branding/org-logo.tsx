@@ -31,10 +31,9 @@ export function OrgLogo({ logoUrl, name, size = 20, className, style }: OrgLogoP
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover',
-          transform: 'scale(1.12)',
-          transformOrigin: 'center',
+          objectFit: 'contain',
           display: 'block',
+          boxSizing: 'border-box',
           ...style,
         }}
         onError={() => setHasError(true)}

@@ -558,7 +558,7 @@ export default function BranchDetailPage() {
           headerMenuOpen={menuOpen}
           onToggleHeaderMenu={() => setMenuOpen(!menuOpen)}
         >
-          <div className={styles.actionDropdownMenu} style={{ position: 'static' }}>
+          <div className={styles.actionDropdownMenu}>
             <button
               onClick={() => { setMenuOpen(false); setIsEditing(!isEditing); }}
               className={styles.dropdownItem}

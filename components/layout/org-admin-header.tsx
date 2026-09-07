@@ -7,6 +7,8 @@ import styles from './org-admin-header.module.css';
 
 interface OrgAdminHeaderProps {
   organizationCode: string;
+  organizationName?: string;
+  showOrgNameOnMobile?: boolean;
   logoUrl?: string | null;
   panelTitle: string;
   panelSubtitle?: string;
@@ -20,6 +22,8 @@ interface OrgAdminHeaderProps {
 
 export function OrgAdminHeader({
   organizationCode,
+  organizationName,
+  showOrgNameOnMobile = false,
   logoUrl,
   panelTitle,
   panelSubtitle,
@@ -69,7 +73,11 @@ export function OrgAdminHeader({
           </div>
         )}
         <div className={styles.mobileTextCol}>
-          {!shouldHideBranding && <span className={styles.mobileOrgCode}>{organizationCode}</span>}
+          {!shouldHideBranding && (
+            <span className={styles.mobileOrgCode}>
+              {showOrgNameOnMobile && organizationName ? organizationName : organizationCode}
+            </span>
+          )}
           <span className={shouldHideBranding ? styles.mobileDetailTitle : styles.mobilePanelText}>
             {panelTitle}
           </span>

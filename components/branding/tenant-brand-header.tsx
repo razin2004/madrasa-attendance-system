@@ -46,11 +46,8 @@ export function TenantBrandHeader({
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
-              transform: 'scale(1.12)',
-              transformOrigin: 'center',
+              objectFit: 'contain',
               display: 'block',
-              borderRadius: '12px',
             }}
             onError={() => setImgFailed(true)}
           />

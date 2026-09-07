@@ -206,23 +206,11 @@ export default function AdminLeavePage() {
 
         {/* Filter Bar (Staff Panel Style) */}
         <div className={styles.filterBar}>
-          {/* Search Input with Pinned Filter Icon */}
-          <div style={{ position: 'relative', width: '300px', maxWidth: '100%' }}>
+          {/* Search Input with Filter Button */}
+          <div className={styles.searchInputWrapper}>
+            <Search size={15} className={styles.searchIcon} />
             <input
               type="text"
-              className="form-input"
-              style={{
-                width: '100%',
-                height: '38px',
-                fontSize: '13px',
-                paddingLeft: '36px',
-                paddingRight: search ? '70px' : '42px',
-                backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                border: '1px solid var(--border-medium)',
-                borderRadius: '8px',
-                color: '#ffffff',
-                boxSizing: 'border-box',
-              }}
               placeholder="Search staff name or ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -232,10 +220,7 @@ export default function AdminLeavePage() {
                   fetchLeaveRequests();
                 }
               }}
-            />
-            <Search
-              size={15}
-              style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}
+              className={styles.searchInput}
             />
             {search && (
               <button
@@ -263,45 +248,30 @@ export default function AdminLeavePage() {
             <button
               type="button"
               onClick={() => setShowMobileFilters(!showMobileFilters)}
-              style={{
-                position: 'absolute',
-                right: '5px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '30px',
-                height: '30px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '6px',
-                background: statusFilter !== 'PENDING' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.06)',
-                border: statusFilter !== 'PENDING' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--border-medium, rgba(255, 255, 255, 0.12))',
-                color: statusFilter !== 'PENDING' ? '#818cf8' : '#ffffff',
-                cursor: 'pointer',
-              }}
+              className={styles.filterToggleBtn}
               title="Toggle Filters"
             >
               <Filter size={15} color={statusFilter !== 'PENDING' ? '#818cf8' : 'currentColor'} />
             </button>
           </div>
 
-          {/* Status Chip Tabs (Collapsible on Mobile or toggled via Filter button) */}
-          <div className={`${styles.chipTabsContainer} ${showMobileFilters ? styles.chipTabsContainerOpen : ''}`}>
-            {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((st) => (
-              <button
-                key={st}
-                onClick={() => {
-                  setStatusFilter(st === 'ALL' ? '' : st);
-                  setShowMobileFilters(false);
-                }}
-                className={`btn btn-sm ${
-                  (st === 'ALL' && !statusFilter) || statusFilter === st ? 'btn-primary' : 'btn-secondary'
-                }`}
-                style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}
-              >
-                {st}
-              </button>
-            ))}
+          {/* Status Tabs (Collapsible on Mobile) */}
+          <div className={`${styles.tabsGroup} ${showMobileFilters ? styles.tabsGroupOpen : ''}`}>
+            {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((st) => {
+              const isActive = (st === 'ALL' && !statusFilter) || statusFilter === st;
+              return (
+                <button
+                  key={st}
+                  onClick={() => {
+                    setStatusFilter(st === 'ALL' ? '' : st);
+                    setShowMobileFilters(false);
+                  }}
+                  className={`${styles.tabButton} ${isActive ? styles.tabButtonActive : ''}`}
+                >
+                  {st}
+                </button>
+              );
+            })}
           </div>
         </div>
 

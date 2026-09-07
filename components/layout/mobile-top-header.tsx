@@ -73,13 +73,15 @@ export function MobileTopHeader({
               justifyContent: 'center',
               boxShadow: 'var(--shadow-glow-indigo)',
               flexShrink: 0,
+              padding: '2px',
+              boxSizing: 'border-box',
             }}
           >
             {logoUrl && !logoFailed ? (
               <img
                 src={logoUrl}
                 alt={organizationName}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.12)', transformOrigin: 'center', padding: '0', display: 'block' }}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                 onError={() => setLogoFailed(true)}
               />
             ) : (
