@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Clock,
   FileText,
+  FilePlus,
   User,
   ArrowLeftRight,
   LogOut,
@@ -57,7 +58,9 @@ export function StaffHeader({
 
   const navItems = [
     { label: 'Staff Dashboard', href: basePath, icon: LayoutDashboard, exact: true },
-    { label: 'Attendance History', href: `${basePath}/attendance`, icon: Clock, exact: false },
+    { label: 'Attendance History', href: `${basePath}/attendance`, icon: Clock, exact: true },
+    { label: 'Request Correction', href: `${basePath}/attendance/correction`, icon: FilePlus, exact: false },
+    { label: 'My Corrections', href: `${basePath}/attendance/corrections`, icon: FileText, exact: false },
     { label: 'Shift Schedule', href: `${basePath}/shift`, icon: CalendarDays, exact: false },
     { label: 'Leave Management', href: `${basePath}/leave`, icon: FileText, exact: false },
     { label: 'Shift Swaps', href: `${basePath}/swaps`, icon: ArrowLeftRight, exact: false },

@@ -213,13 +213,33 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 480px) {
-  .timeRow {
-    grid-template-columns: 1fr;
+.actionRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 16px 12px 80px 12px;
   }
   .formCard {
     padding: 16px;
     border-radius: 14px;
   }
+  .timeRow {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .actionRow {
+    flex-direction: column;
+    width: 100%;
+  }
+  .actionRow a, .actionRow button {
+    width: 100%;
+    justify-content: center;
+  }
 }
+
 

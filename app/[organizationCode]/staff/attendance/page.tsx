@@ -104,7 +104,7 @@ export default function StaffAttendancePage() {
 
           <Link
             href={`/${orgCode}/staff/attendance/corrections`}
-            className="btn btn-secondary btn-sm"
+            className={`btn btn-secondary btn-sm ${styles.desktopOnlyAction}`}
             style={{ marginLeft: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <FileText size={15} />
@@ -113,7 +113,7 @@ export default function StaffAttendancePage() {
 
           <Link
             href={`/${orgCode}/staff/attendance/correction`}
-            className="btn btn-primary btn-sm"
+            className={`btn btn-primary btn-sm ${styles.desktopOnlyAction}`}
             style={{ marginLeft: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <FilePlus size={15} />
@@ -244,14 +244,27 @@ export default function StaffAttendancePage() {
               const isLeave = row.status === 'APPROVED LEAVE';
               const isHoliday = row.status === 'HOLIDAY';
 
+              const formattedDate = (() => {
+                try {
+                  const d = new Date(row.date);
+                  if (!isNaN(d.getTime())) {
+                    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                  }
+                } catch {}
+                return row.date;
+              })();
+
               return (
-                <div key={row.date} className="glass-card" style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '14px' }}>
-                      {row.date}{' '}
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 400 }}>
-                        ({row.dayOfWeek})
-                      </span>
+                <div key={row.date} className={styles.historyCardMobile}>
+                  <div className={styles.cardHeaderMobile}>
+                    <div className={styles.cardDateGroup}>
+                      <div className={styles.calendarIconBox}>
+                        <Calendar size={15} color="#818cf8" />
+                      </div>
+                      <div>
+                        <div className={styles.cardDateText}>{formattedDate}</div>
+                        <div className={styles.cardDayText}>{row.dayOfWeek}</div>
+                      </div>
                     </div>
                     <span
                       className={`${styles.statusPill} ${
@@ -268,15 +281,43 @@ export default function StaffAttendancePage() {
                           : styles.offDuty
                       }`}
                     >
+                      {isPresent && <CheckCircle2 size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+                      {isPartial && <Clock size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+                      {isAbsent && <XCircle size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
                       {row.status}
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                    <div>Shift: <strong style={{ color: '#ffffff' }}>{row.shiftPatternName}</strong></div>
-                    <div>Schedule: <strong style={{ color: '#ffffff' }}>{row.scheduledStart && row.scheduledEnd ? `${row.scheduledStart} – ${row.scheduledEnd}` : 'Off Duty'}</strong></div>
-                    <div>Clock In: <strong style={{ color: '#34d399' }}>{formatDisplayTime(row.clockInTime, row.clockInIso)}</strong></div>
-                    <div>Clock Out: <strong style={{ color: '#fbbf24' }}>{formatDisplayTime(row.clockOutTime, row.clockOutIso)}</strong></div>
+                  <div className={styles.cardBodyMobile}>
+                    <div className={styles.shiftInfoRow}>
+                      <span className={styles.shiftLabel}>Shift:</span>
+                      <span className={styles.shiftValue}>{row.shiftPatternName || 'Default Shift'}</span>
+                      {row.scheduledStart && row.scheduledEnd && (
+                        <span className={styles.shiftScheduleText}>({row.scheduledStart} – {row.scheduledEnd})</span>
+                      )}
+                    </div>
+
+                    <div className={styles.punchGridMobile}>
+                      <div className={styles.punchBoxIn}>
+                        <span className={styles.punchBoxLabel}>Clock In</span>
+                        <span className={styles.punchBoxTime}>
+                          {formatDisplayTime(row.clockInTime, row.clockInIso)}
+                        </span>
+                      </div>
+
+                      <div className={styles.punchBoxOut}>
+                        <span className={styles.punchBoxLabel}>Clock Out</span>
+                        <span className={styles.punchBoxTime}>
+                          {formatDisplayTime(row.clockOutTime, row.clockOutIso)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {row.source && (
+                      <div className={styles.cardFooterMobile}>
+                        <span className={styles.sourceTag}>Source: {row.source}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

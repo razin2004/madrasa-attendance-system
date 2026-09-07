@@ -154,6 +154,141 @@
   gap: 12px;
 }
 
+.historyCardMobile {
+  background: var(--bg-card, rgba(17, 24, 39, 0.75));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardHeaderMobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cardDateGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.calendarIconBox {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(129, 140, 248, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cardDateText {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.cardDayText {
+  font-size: 11.5px;
+  color: var(--text-muted, #9ca3af);
+  font-weight: 500;
+}
+
+.cardBodyMobile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shiftInfoRow {
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.shiftLabel {
+  color: var(--text-muted, #9ca3af);
+}
+
+.shiftValue {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.shiftScheduleText {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 11.5px;
+}
+
+.punchGridMobile {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.punchBoxIn, .punchBoxOut {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.punchBoxIn {
+  border-left: 3px solid #34d399;
+}
+
+.punchBoxOut {
+  border-left: 3px solid #fbbf24;
+}
+
+.punchBoxLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted, #9ca3af);
+  letter-spacing: 0.5px;
+}
+
+.punchBoxTime {
+  font-size: 14px;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  color: #ffffff;
+}
+
+.cardFooterMobile {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.sourceTag {
+  font-size: 10.5px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted, #9ca3af);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 @media (max-width: 768px) {
   .attendanceContainer {
     padding: 14px 12px;
@@ -164,14 +299,12 @@
     gap: 12px;
   }
   .monthPicker {
-    flex-wrap: wrap;
     width: 100%;
     justify-content: space-between;
+    box-sizing: border-box;
   }
-  .monthPicker a {
-    margin-left: 0 !important;
-    flex: 1;
-    justify-content: center;
+  .desktopOnlyAction {
+    display: none !important;
   }
   .summaryGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -190,4 +323,5 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 

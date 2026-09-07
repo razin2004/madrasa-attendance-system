@@ -197,26 +197,41 @@ export default function StaffCorrectionHistoryPage() {
           <div className={styles.mobileCards}>
             {filteredCorrections.map((item) => (
               <div key={item.id} className={styles.cardItem}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                    {formatDateStr(item.date)}
-                  </span>
+                <div className={styles.cardHeaderRow}>
+                  <div className={styles.dateBadgeGroup}>
+                    <Calendar size={14} color="#818cf8" />
+                    <span className={styles.cardDateVal}>
+                      {formatDateStr(item.date)}
+                    </span>
+                  </div>
                   <span className={`badge ${item.status === 'APPROVED' ? 'badge-success' : item.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}>
+                    {item.status === 'APPROVED' && <CheckCircle2 size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />}
+                    {item.status === 'REJECTED' && <XCircle size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />}
+                    {item.status === 'PENDING' && <Clock size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />}
                     {item.status}
                   </span>
                 </div>
 
-                <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginBottom: '8px' }}>
-                  <strong>Type:</strong> <span className="badge badge-warning" style={{ fontSize: '10.5px' }}>{formatCorrectionType(item.type)}</span>
+                <div className={styles.cardCategoryRow}>
+                  <span className={styles.typeBadge}>{formatCorrectionType(item.type)}</span>
+                  <span className={styles.submittedDate}>
+                    Submitted: {new Date(item.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
 
-                <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
-                  In: <strong style={{ color: '#34d399' }}>{formatTimeStr(item.requestedClockIn)}</strong> &bull; Out:{' '}
-                  <strong style={{ color: '#fbbf24' }}>{formatTimeStr(item.requestedClockOut)}</strong>
+                <div className={styles.punchBoxesGrid}>
+                  <div className={styles.punchCellIn}>
+                    <span className={styles.punchCellLabel}>Req. Clock In</span>
+                    <span className={styles.punchCellTime}>{formatTimeStr(item.requestedClockIn)}</span>
+                  </div>
+                  <div className={styles.punchCellOut}>
+                    <span className={styles.punchCellLabel}>Req. Clock Out</span>
+                    <span className={styles.punchCellTime}>{formatTimeStr(item.requestedClockOut)}</span>
+                  </div>
                 </div>
 
-                <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', backgroundColor: 'rgba(0,0,0,0.2)', padding: '8px 10px', borderRadius: '6px' }}>
-                  &ldquo;{item.reason}&rdquo;
+                <div className={styles.reasonQuoteBox}>
+                  <span className={styles.reasonQuoteText}>&ldquo;{item.reason}&rdquo;</span>
                 </div>
               </div>
             ))}
