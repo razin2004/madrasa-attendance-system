@@ -124,33 +124,38 @@ export default function StaffAttendancePage() {
 
       {/* Monthly Metrics Summary Grid */}
       <div className={styles.summaryGrid}>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryVal}>{metrics?.workingDaysCount || 0}</span>
-          <span className={styles.summaryLabel}>Working Days</span>
+        <div className={styles.summaryCard} style={{ borderLeft: '3px solid #818cf8' }}>
+          <div>
+            <div className={styles.summaryVal}>{metrics?.workingDaysCount || 0}</div>
+            <div className={styles.summaryLabel}>Working Days</div>
+          </div>
         </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryVal} style={{ color: '#34d399' }}>
-            {metrics?.presentDaysCount || 0}
-          </span>
-          <span className={styles.summaryLabel}>Present Days</span>
+
+        <div className={styles.summaryCard} style={{ borderLeft: '3px solid #34d399' }}>
+          <div>
+            <div className={styles.summaryVal} style={{ color: '#34d399' }}>
+              {metrics?.presentDaysCount || 0}
+            </div>
+            <div className={styles.summaryLabel}>Present Days</div>
+          </div>
         </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryVal} style={{ color: '#fbbf24' }}>
-            {metrics?.partialDaysCount || 0}
-          </span>
-          <span className={styles.summaryLabel}>Partial / Ongoing</span>
+
+        <div className={styles.summaryCard} style={{ borderLeft: '3px solid #c084fc' }}>
+          <div>
+            <div className={styles.summaryVal} style={{ color: '#c084fc' }}>
+              {metrics?.leaveDaysCount || 0}
+            </div>
+            <div className={styles.summaryLabel}>Approved Leave</div>
+          </div>
         </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryVal} style={{ color: '#c084fc' }}>
-            {metrics?.leaveDaysCount || 0}
-          </span>
-          <span className={styles.summaryLabel}>Approved Leave</span>
-        </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryVal} style={{ color: '#f87171' }}>
-            {metrics?.absentDaysCount || 0}
-          </span>
-          <span className={styles.summaryLabel}>Absent Days</span>
+
+        <div className={styles.summaryCard} style={{ borderLeft: '3px solid #f87171' }}>
+          <div>
+            <div className={styles.summaryVal} style={{ color: '#f87171' }}>
+              {metrics?.absentDaysCount || 0}
+            </div>
+            <div className={styles.summaryLabel}>Absent Days</div>
+          </div>
         </div>
       </div>
 

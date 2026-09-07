@@ -65,9 +65,13 @@
   color: #ffffff;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .headerBar {
     padding: 16px;
   }
+  .desktopOnlyAction {
+    display: none !important;
+  }
 }
+
 

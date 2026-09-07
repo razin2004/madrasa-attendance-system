@@ -218,27 +218,33 @@
     align-items: stretch;
   }
 
-  .headerBar a.btn {
-    width: 100%;
-    justify-content: center;
+  .desktopOnlyAction {
+    display: none !important;
   }
 
   .metricsGrid {
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .metricCard {
     padding: 12px 10px;
-    border-radius: 10px;
+    border-radius: 12px;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .metricLabel {
     font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .metricValue {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   .filterBar button {
@@ -257,7 +263,8 @@
 
 @media (max-width: 480px) {
   .metricsGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 }
 

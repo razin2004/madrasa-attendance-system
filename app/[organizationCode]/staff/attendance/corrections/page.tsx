@@ -96,7 +96,7 @@ export default function StaffCorrectionHistoryPage() {
 
         <Link
           href={`/${orgCode}/staff/attendance/correction`}
-          className="btn btn-primary btn-sm"
+          className={`btn btn-primary btn-sm ${styles.desktopOnlyAction}`}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px' }}
         >
           <Plus size={16} />

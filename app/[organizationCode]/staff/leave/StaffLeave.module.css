@@ -122,32 +122,35 @@
     align-items: stretch;
   }
 
-  .headerBar a.btn {
-    width: 100%;
-    justify-content: center;
+  .desktopOnlyAction {
+    display: none !important;
   }
 
   .balanceGrid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .balanceCard {
-    padding: 10px 8px;
-    border-radius: 10px;
-    text-align: center;
+    padding: 14px 12px;
+    border-radius: 12px;
+    text-align: left;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .balanceVal {
-    font-size: 18px;
+    font-size: 22px;
   }
 
   .balanceLabel {
-    font-size: 10px;
+    font-size: 11px;
     margin-top: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    word-break: break-word;
   }
 
   .filterBar button {

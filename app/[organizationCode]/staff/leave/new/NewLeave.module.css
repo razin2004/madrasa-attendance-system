@@ -68,3 +68,19 @@
   align-items: center;
   justify-content: space-between;
 }
+
+@media (max-width: 600px) {
+  .header {
+    padding: 12px 14px;
+  }
+  .content {
+    padding: 16px 12px 90px 12px;
+  }
+  .formCard {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .typeGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -188,7 +188,7 @@ export default function StaffShiftSwapsPage() {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%', maxWidth: '400px' }}>
           <Link
             href={`/${organizationCode}/staff/swaps/new`}
-            className="btn btn-primary btn-sm"
+            className={`btn btn-primary btn-sm ${styles.desktopOnlyAction}`}
             style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 800, padding: '10px 16px', borderRadius: '10px', flex: 1 }}
           >
             <Plus size={16} />
