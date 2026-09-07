@@ -7,9 +7,7 @@ import {
   Calendar,
   Clock,
   CheckCircle2,
-  XCircle,
   ArrowLeft,
-  RefreshCw,
   User,
   Plus,
   ArrowRight,
@@ -227,11 +225,11 @@ export default function StaffShiftSwapsPage() {
         </div>
       )}
 
-      {/* Search & Filter Header Bar */}
+      {/* Search & Filter Header Bar (Org Admin Style) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+        <div style={{ width: '100%' }}>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
             <input
               type="text"
               placeholder="Search by colleague name, shift, or reason..."
@@ -239,21 +237,23 @@ export default function StaffShiftSwapsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 width: '100%',
-                padding: '9px 36px 9px 36px',
+                padding: '9px 40px 9px 36px',
                 borderRadius: '10px',
                 backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: '#ffffff',
                 fontSize: '13px',
                 outline: 'none',
+                boxSizing: 'border-box',
               }}
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
                 style={{
                   position: 'absolute',
-                  right: '10px',
+                  right: '42px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
@@ -268,22 +268,30 @@ export default function StaffShiftSwapsPage() {
                 <X size={14} />
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              style={{
+                position: 'absolute',
+                right: '6px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '30px',
+                height: '30px',
+                borderRadius: '8px',
+                backgroundColor: statusFilter !== 'ALL' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+                border: statusFilter !== 'ALL' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(255, 255, 255, 0.12)',
+                color: statusFilter !== 'ALL' ? '#818cf8' : '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+              title="Toggle Filters"
+            >
+              <Filter size={15} color={statusFilter !== 'ALL' ? '#818cf8' : 'currentColor'} />
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="btn btn-secondary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 14px', borderRadius: '10px' }}
-          >
-            <Filter size={15} />
-            <span>Filter</span>
-            {statusFilter !== 'ALL' && (
-              <span style={{ backgroundColor: '#818cf8', color: '#ffffff', fontSize: '10px', fontWeight: 800, padding: '1px 6px', borderRadius: '10px' }}>
-                1
-              </span>
-            )}
-          </button>
         </div>
 
         {/* Navigation Tabs (Incoming vs Outgoing) */}

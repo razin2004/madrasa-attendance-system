@@ -45,16 +45,36 @@ export async function GET(
       );
     }
 
-    const staffProfile = await prisma.staffProfile.findFirst({
-      where: {
-        organizationId: organization.id,
-        OR: [{ id: params.staffId }, { staffId: params.staffId }],
-      },
-    });
+    let staffProfile = null;
+
+    if (params.staffId === 'me' || params.staffId === 'undefined' || !params.staffId) {
+      staffProfile = await prisma.staffProfile.findFirst({
+        where: {
+          organizationId: organization.id,
+          userId: session.user.id,
+        },
+      });
+    } else {
+      staffProfile = await prisma.staffProfile.findFirst({
+        where: {
+          organizationId: organization.id,
+          OR: [{ id: params.staffId }, { staffId: params.staffId }],
+        },
+      });
+
+      if (!staffProfile) {
+        staffProfile = await prisma.staffProfile.findFirst({
+          where: {
+            organizationId: organization.id,
+            userId: session.user.id,
+          },
+        });
+      }
+    }
 
     if (!staffProfile) {
       return NextResponse.json(
-        { success: false, error: 'Staff member not found.' },
+        { success: false, error: 'Staff member profile not found for this account.' },
         { status: 404 }
       );
     }

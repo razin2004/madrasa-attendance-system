@@ -13,29 +13,42 @@ export default function StaffShiftPage() {
 
   const [shiftData, setShiftData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dayFilter, setDayFilter] = useState<string>('ALL');
+  const [dutyFilter, setDutyFilter] = useState<string>('ALL');
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   const fetchShiftDetails = useCallback(async () => {
+    if (!orgCode) return;
     setLoading(true);
     try {
-      // First get staff profile ID via precheck
+      // Direct fetch using 'me' endpoint
+      const meRes = await fetch(`/api/org/${orgCode}/staff/me/shift`);
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        if (meData.success) {
+          setShiftData(meData);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fallback via precheck
       const preRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
-      if (!preRes.ok) {
-        toast.error('Failed to authenticate staff workspace.');
-        return;
-      }
-      const preData = await preRes.json();
-      const staffId = preData.staffProfile?.id;
-
-      if (staffId) {
+      if (preRes.ok) {
+        const preData = await preRes.json();
+        const staffId = preData.staffProfile?.id || preData.staff?.staffId || 'me';
         const sRes = await fetch(`/api/org/${orgCode}/staff/${staffId}/shift`);
         if (sRes.ok) {
           const sData = await sRes.json();
           setShiftData(sData);
         }
+      } else {
+        toast.error('Failed to authenticate staff workspace.');
       }
     } catch {
       toast.error('Network error fetching shift assignment.');
@@ -52,15 +65,10 @@ export default function StaffShiftPage() {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
         <RefreshCw size={24} className="animate-spin text-indigo-400" />
-        <p style={{ marginTop: '8px' }}>Loading shift schedule & rules...</p>
+        <p style={{ marginTop: '8px' }}>Loading shift schedule &amp; rules...</p>
       </div>
     );
   }
-
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [dayFilter, setDayFilter] = useState<string>('ALL');
-  const [dutyFilter, setDutyFilter] = useState<string>('ALL');
-  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   const currentAssignment = shiftData?.currentAssignment || shiftData?.activeAssignment;
   const history = shiftData?.history || [];

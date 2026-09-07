@@ -184,9 +184,9 @@ export function StaffHeader({
 
                 <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   {navItems.map((item) => {
-                    const isActive = item.exact
-                      ? pathname === item.href
-                      : pathname.startsWith(item.href);
+                    const currentPath = (pathname || '').toLowerCase().replace(/\/+$/, '');
+                    const itemPath = (item.href || '').toLowerCase().replace(/\/+$/, '');
+                    const isActive = currentPath === itemPath;
                     const Icon = item.icon;
                     return (
                       <Link
