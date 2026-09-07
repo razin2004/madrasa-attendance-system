@@ -781,46 +781,81 @@ export default function StaffProfilePage() {
 
               {/* Assign Shift Form */}
               <form onSubmit={handleSaveShiftAssignment} className={styles.shiftAssignForm}>
-                <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Select Shift Pattern</label>
+                <div style={{ flex: '2 1 280px', minWidth: '280px', width: '100%' }}>
+                  <label className="form-label" style={{ fontSize: '13px', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                    Select Shift Pattern <span style={{ color: 'var(--danger-text, #f87171)' }}>*</span>
+                  </label>
                   <select
                     value={selectedShiftPatternId}
                     onChange={(e) => setSelectedShiftPatternId(e.target.value)}
                     className="form-input"
                     style={{
                       width: '100%',
-                      marginTop: '4px',
-                      height: '38px',
-                      fontSize: '12.5px',
+                      minHeight: '42px',
+                      fontSize: '13px',
                       backgroundColor: '#0d121f',
                       color: '#ffffff',
-                      textOverflow: 'ellipsis',
-                      paddingRight: '28px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       boxSizing: 'border-box',
                     }}
                   >
-                    <option value="">-- Choose Shift Pattern --</option>
+                    <option value="" style={{ backgroundColor: '#0d121f', color: '#94a3b8' }}>-- Choose Shift Pattern --</option>
                     {shiftPatterns.map((p) => {
                       const workDay = p.weeklyDays?.find((w: any) => !w.isHoliday);
-                      const hoursLabel = workDay && workDay.startTime && workDay.endTime ? ` (${workDay.startTime} – ${workDay.endTime})` : '';
+                      const startTime = p.startTime || workDay?.startTime;
+                      const endTime = p.endTime || workDay?.endTime;
+                      const hoursLabel = startTime && endTime ? ` (${startTime} – ${endTime})` : '';
+                      const overnightLabel = p.isOvernight || workDay?.isOvernight ? ' [Overnight]' : '';
                       return (
-                        <option key={p.id} value={p.id}>{p.name}{hoursLabel}</option>
+                        <option key={p.id} value={p.id} style={{ backgroundColor: '#0d121f', color: '#ffffff', padding: '8px' }}>
+                          {p.name}{hoursLabel}{overnightLabel}
+                        </option>
                       );
                     })}
                   </select>
                 </div>
-                <div style={{ flex: '1 1 140px', maxWidth: '100%', minWidth: 0, width: '100%' }}>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Effective Date</label>
+                <div style={{ flex: '1 1 180px', minWidth: '180px', width: '100%' }}>
+                  <label className="form-label" style={{ fontSize: '13px', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                    Effective Date <span style={{ color: 'var(--danger-text, #f87171)' }}>*</span>
+                  </label>
                   <input
                     type="date"
                     value={shiftEffectiveFrom}
                     onChange={(e) => setShiftEffectiveFrom(e.target.value)}
                     className="form-input"
-                    style={{ width: '100%', maxWidth: '100%', marginTop: '4px', height: '38px', fontSize: '12.5px', boxSizing: 'border-box', padding: '6px 10px' }}
+                    style={{
+                      width: '100%',
+                      minHeight: '42px',
+                      fontSize: '13px',
+                      boxSizing: 'border-box',
+                      padding: '8px 12px',
+                      backgroundColor: '#0d121f',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '8px',
+                      colorScheme: 'dark',
+                    }}
                   />
                 </div>
-                <div style={{ flex: '0 0 auto', width: '100%' }}>
-                  <button type="submit" disabled={savingShift} className="btn btn-primary btn-sm" style={{ height: '38px', padding: '0 18px', width: '100%', justifyContent: 'center', fontWeight: 700 }}>{savingShift ? 'Saving...' : 'Assign Shift'}</button>
+                <div style={{ flex: '0 0 auto', minWidth: '140px', width: '100%' }}>
+                  <button
+                    type="submit"
+                    disabled={savingShift}
+                    className="btn btn-primary"
+                    style={{
+                      minHeight: '42px',
+                      padding: '0 20px',
+                      width: '100%',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '13.5px',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    {savingShift ? 'Saving Assignment...' : 'Assign Shift'}
+                  </button>
                 </div>
               </form>
             </div>
