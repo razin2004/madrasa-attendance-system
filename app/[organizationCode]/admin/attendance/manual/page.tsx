@@ -195,54 +195,43 @@ export default function AdminManualAttendancePage() {
 
         {/* Main Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '800px' }}>
-          <div className="glass-card" style={{ padding: '28px' }}>
-          <form onSubmit={handleSubmit}>
-            {/* Staff Selection */}
-            <div className="form-group" style={{ marginBottom: '20px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-              <label className="form-label">Staff Member *</label>
-              {loadingStaff ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading staff list...</div>
-              ) : (
-                <select
-                  className="form-input"
-                  style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
-                  value={selectedStaffId}
-                  onChange={(e) => setSelectedStaffId(e.target.value)}
-                >
-                  {staffList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.staffId})
-                    </option>
-                  ))}
-                </select>
-              )}
+          <div className={styles.sectionCard}>
+            <div className={styles.sectionHeader}>
+              <UserCheck size={18} color="#38bdf8" />
+              <h3 className={styles.sectionTitle}>Manual Attendance Entry Details</h3>
             </div>
 
-            {/* Date */}
-            <div className="form-group" style={{ marginBottom: '20px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-              <label className="form-label">Attendance Date *</label>
-              <input
-                type="date"
-                className="form-input"
-                style={{
-                  width: '100%',
-                  maxWidth: '100%',
-                  minWidth: 0,
-                  boxSizing: 'border-box',
-                  colorScheme: 'dark',
-                  height: '42px',
-                }}
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
+            <form onSubmit={handleSubmit}>
+              {/* Staff Selection */}
+              <div className="form-group" style={{ marginBottom: '20px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                  Staff Member <span style={{ color: 'var(--danger-text)' }}>*</span>
+                </label>
+                {loadingStaff ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading staff list...</div>
+                ) : (
+                  <select
+                    className="form-input"
+                    style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                    value={selectedStaffId}
+                    onChange={(e) => setSelectedStaffId(e.target.value)}
+                  >
+                    {staffList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.staffId})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
-            {/* Times */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px', width: '100%', minWidth: 0 }}>
-              <div className="form-group" style={{ marginBottom: 0, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                <label className="form-label">Clock In Time *</label>
+              {/* Date */}
+              <div className="form-group" style={{ marginBottom: '20px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                  Attendance Date <span style={{ color: 'var(--danger-text)' }}>*</span>
+                </label>
                 <input
-                  type="time"
+                  type="date"
                   className="form-input"
                   style={{
                     width: '100%',
@@ -251,53 +240,95 @@ export default function AdminManualAttendancePage() {
                     boxSizing: 'border-box',
                     colorScheme: 'dark',
                     height: '42px',
+                    fontSize: '13.5px',
+                    padding: '8px 12px',
                   }}
-                  value={clockInTime}
-                  onChange={(e) => setClockInTime(e.target.value)}
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: 0, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                <label className="form-label">Clock Out Time (Optional)</label>
-                <input
-                  type="time"
+              {/* Times Grid */}
+              <div className={styles.timeGrid}>
+                <div className="form-group" style={{ marginBottom: 0, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                  <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                    Clock In Time <span style={{ color: 'var(--danger-text)' }}>*</span>
+                  </label>
+                  <input
+                    type="time"
+                    className="form-input"
+                    style={{
+                      width: '100%',
+                      maxWidth: '100%',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      colorScheme: 'dark',
+                      height: '42px',
+                      fontSize: '13.5px',
+                      padding: '8px 12px',
+                    }}
+                    value={clockInTime}
+                    onChange={(e) => setClockInTime(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                  <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                    Clock Out Time <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>(Optional)</span>
+                  </label>
+                  <input
+                    type="time"
+                    className="form-input"
+                    style={{
+                      width: '100%',
+                      maxWidth: '100%',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      colorScheme: 'dark',
+                      height: '42px',
+                      fontSize: '13.5px',
+                      padding: '8px 12px',
+                    }}
+                    value={clockOutTime}
+                    onChange={(e) => setClockOutTime(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div className="form-group" style={{ marginBottom: '24px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                  Reason / Justification <span style={{ color: 'var(--danger-text)' }}>*</span>
+                </label>
+                <textarea
                   className="form-input"
-                  style={{
-                    width: '100%',
-                    maxWidth: '100%',
-                    minWidth: 0,
-                    boxSizing: 'border-box',
-                    colorScheme: 'dark',
-                    height: '42px',
-                  }}
-                  value={clockOutTime}
-                  onChange={(e) => setClockOutTime(e.target.value)}
+                  style={{ height: '90px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box', resize: 'vertical' }}
+                  placeholder="Mandatory explanation for creating this manual attendance entry..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
                 />
               </div>
-            </div>
 
-            {/* Reason */}
-            <div className="form-group" style={{ marginBottom: '24px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-              <label className="form-label">Reason / Justification *</label>
-              <textarea
-                className="form-input"
-                style={{ height: '90px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
-                placeholder="Mandatory explanation for creating this manual attendance entry..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <Link href={`/${organizationCode}/admin/attendance`} className="btn btn-secondary">
-                Cancel
-              </Link>
-              <button type="submit" disabled={submitting} className="btn btn-primary">
-                {submitting ? 'Creating Entry...' : 'Create Manual Attendance'}
-              </button>
-            </div>
-          </form>
-        </div>
+              <div className={styles.actionRow}>
+                <Link href={`/${organizationCode}/admin/attendance`} className="btn btn-secondary">
+                  Cancel
+                </Link>
+                <button type="submit" disabled={submitting} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  {submitting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Creating Entry...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck size={16} />
+                      <span>Create Manual Attendance</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </main>
       </div>
 
