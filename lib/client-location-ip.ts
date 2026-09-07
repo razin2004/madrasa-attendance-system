@@ -18,6 +18,7 @@ export async function getClientPublicIp(): Promise<string | null> {
 
     const res = await fetch('https://api.ipify.org?format=json', {
       signal: controller.signal,
+      cache: 'no-store',
     });
     clearTimeout(timeoutId);
 

@@ -386,19 +386,10 @@ export async function evaluateThreeLayerAttendance(
     }
   }
 
-  if (layer3.isVerified) {
-    layer2.isVerified = true;
-    if (layer2.status === 'FAILED') {
-      layer2.status = 'SUCCESS';
-      layer2.message = 'Network Connected (Geofence Verified)';
-    }
-  }
+  const finalFailureReasons = failureReasons;
 
-  const finalFailureReasons = layer3.isVerified
-    ? failureReasons.filter((r) => !r.includes('approved branch network'))
-    : failureReasons;
-
-  const isReady = layer1.isVerified && layer3.isVerified;
+  // Strict 3-Layer Zero-Trust Evaluation: Layer 1 (Device), Layer 2 (Network IP), and Layer 3 (Geofence GPS) MUST ALL be verified!
+  const isReady = Boolean(layer1.isVerified && layer2.isVerified && layer3.isVerified);
 
   return {
     isReady,

@@ -48,9 +48,9 @@
   background: rgba(10, 15, 26, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  position: sticky;
-  top: 64px;
-  z-index: 80;
+  position: static;
+  top: auto;
+  z-index: auto;
   gap: 16px;
   box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
   transition: all 0.3s ease;
