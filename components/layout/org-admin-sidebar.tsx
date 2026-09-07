@@ -216,7 +216,7 @@ export function OrgAdminSidebar({
             <img 
               src={logoUrl} 
               alt={organizationName} 
-              style={{ width: '100%', height: '100%', objectFit: 'cover', padding: '0', display: 'block' }} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.12)', transformOrigin: 'center', padding: '0', display: 'block' }} 
               onError={() => setLogoFailed(true)}
             />
           ) : (

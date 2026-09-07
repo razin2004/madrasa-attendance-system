@@ -11,6 +11,7 @@ interface OrgAdminHeaderProps {
   panelTitle: string;
   panelSubtitle?: string;
   backHref?: string;
+  hideMobileOrgBranding?: boolean;
   headerMenuOpen?: boolean;
   onToggleHeaderMenu?: () => void;
   actions?: React.ReactNode;
@@ -23,11 +24,14 @@ export function OrgAdminHeader({
   panelTitle,
   panelSubtitle,
   backHref,
+  hideMobileOrgBranding,
   headerMenuOpen = false,
   onToggleHeaderMenu,
   actions,
   children,
 }: OrgAdminHeaderProps) {
+  const shouldHideBranding = hideMobileOrgBranding ?? !!backHref;
+
   return (
     <header className={styles.headerBar}>
       {/* Desktop Header Left (Hidden on mobile) */}
@@ -52,19 +56,26 @@ export function OrgAdminHeader({
             <ArrowLeft size={16} />
           </Link>
         )}
-        <div className={styles.logoBox}>
-          <img
-            src={logoUrl || '/logo.svg'}
-            alt="Org Logo"
-            className={styles.logoImg}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/logo.svg';
-            }}
-          />
-        </div>
+        {!shouldHideBranding && (
+          <div className={styles.logoBox}>
+            <img
+              src={logoUrl || '/logo.svg'}
+              alt="Org Logo"
+              className={styles.logoImg}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/logo.svg';
+              }}
+            />
+          </div>
+        )}
         <div className={styles.mobileTextCol}>
-          <span className={styles.mobileOrgCode}>{organizationCode}</span>
-          <span className={styles.mobilePanelText}>{panelTitle}</span>
+          {!shouldHideBranding && <span className={styles.mobileOrgCode}>{organizationCode}</span>}
+          <span className={shouldHideBranding ? styles.mobileDetailTitle : styles.mobilePanelText}>
+            {panelTitle}
+          </span>
+          {shouldHideBranding && panelSubtitle && (
+            <span className={styles.mobileDetailSubtitle}>{panelSubtitle}</span>
+          )}
         </div>
       </div>
 
