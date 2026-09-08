@@ -44,19 +44,49 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Query User Record from Database
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
+    // 3. Query User Record from Database (case-insensitive email lookup + Staff ID fallback)
+    let user = await prisma.user.findFirst({
+      where: {
+        email: { equals: normalizedEmail, mode: 'insensitive' },
+      },
       include: {
         organization: true,
         staffProfile: true,
       },
     });
 
+    // Fallback: If not found by email, check if input matches Staff ID (e.g. STF001)
+    if (!user && (email.trim() || requestedOrgCode)) {
+      const staffProfileMatch = await prisma.staffProfile.findFirst({
+        where: {
+          staffId: { equals: email.trim(), mode: 'insensitive' },
+          ...(requestedOrgCode
+            ? {
+                organization: {
+                  organizationCode: { equals: requestedOrgCode.trim(), mode: 'insensitive' },
+                },
+              }
+            : {}),
+        },
+        include: {
+          user: {
+            include: {
+              organization: true,
+              staffProfile: true,
+            },
+          },
+        },
+      });
+
+      if (staffProfileMatch?.user) {
+        user = staffProfileMatch.user as any;
+      }
+    }
+
     if (!user) {
       recordRateLimitAttempt(rateLimitKey, false);
       return NextResponse.json(
-        { success: false, error: 'Invalid email address or password.' },
+        { success: false, error: 'Invalid email address, Staff ID, or password.' },
         { status: 401 }
       );
     }
@@ -66,7 +96,7 @@ export async function POST(request: Request) {
     if (!isPasswordValid) {
       recordRateLimitAttempt(rateLimitKey, false);
       return NextResponse.json(
-        { success: false, error: 'Invalid email address or password.' },
+        { success: false, error: 'Invalid email address, Staff ID, or password.' },
         { status: 401 }
       );
     }
@@ -74,15 +104,15 @@ export async function POST(request: Request) {
     const organization = user.organization;
     const staffProfile = user.staffProfile;
 
-    // 5. Organization Scoping & Mismatch Protection
-    if (requestedOrgCode && typeof requestedOrgCode === 'string' && requestedOrgCode.trim()) {
+    // 5. Organization Scoping & Mismatch Protection (Bypass for SUPER_ADMIN)
+    if (user.role !== 'SUPER_ADMIN' && requestedOrgCode && typeof requestedOrgCode === 'string' && requestedOrgCode.trim()) {
       const targetCode = requestedOrgCode.trim().toUpperCase();
       if (!organization || !organization.organizationCode || organization.organizationCode.toUpperCase() !== targetCode) {
         recordRateLimitAttempt(rateLimitKey, false);
         return NextResponse.json(
           {
             success: false,
-            error: 'These credentials cannot be used for this organization.',
+            error: `These credentials belong to another organization workspace (${organization?.organizationCode || 'General'}). Please sign in at your assigned workspace URL.`,
           },
           { status: 401 }
         );

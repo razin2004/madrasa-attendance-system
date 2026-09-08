@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     // Find Super Admin user
     const user = await prisma.user.findFirst({
       where: {
-        email: normalizedEmail,
+        email: { equals: normalizedEmail, mode: 'insensitive' },
         role: 'SUPER_ADMIN',
       },
     });

@@ -141,7 +141,7 @@ export default function TenantLoginPage() {
           toast.info('Please create a new permanent password to continue.');
         } else {
           toast.success(`Welcome, ${data.user?.name || 'User'}!`);
-          router.push(data.redirectUrl || `/login`);
+          router.push(data.redirectUrl || `/${orgCode}/staff`);
         }
       } else {
         setErrorMessage(data.error || 'These credentials cannot be used for this organization.');
