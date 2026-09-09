@@ -18,6 +18,8 @@ import { SuperAdminTab } from './super-admin-sidebar';
 import { useRouter } from 'next/navigation';
 import { useMobileNavScroll } from '@/hooks/use-mobile-nav-scroll';
 
+import { ConfirmationModal } from '../feedback/confirmation-modal';
+
 interface SuperAdminMobileNavProps {
   activeTab: SuperAdminTab;
   onTabChange: (tab: SuperAdminTab) => void;
@@ -38,6 +40,7 @@ export function SuperAdminMobileNav({
 }: SuperAdminMobileNavProps) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const isVisible = useMobileNavScroll();
 
   const primaryTabs = [
@@ -87,49 +90,70 @@ export function SuperAdminMobileNav({
               borderTopLeftRadius: '20px',
               borderTopRightRadius: '20px',
               borderTop: '1px solid var(--border-medium)',
-              padding: '20px 20px calc(24px + env(safe-area-inset-bottom, 0px)) 20px',
               zIndex: 9999,
               boxShadow: '0 -10px 40px rgba(0,0,0,0.9)',
               maxHeight: '85vh',
-              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
           >
-            {/* Drawer Handle */}
+            {/* Sticky Header */}
             <div
               style={{
-                width: '36px',
-                height: '4px',
-                borderRadius: '2px',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                margin: '0 auto 16px auto',
+                padding: '16px 20px 12px 20px',
+                borderBottom: '1px solid var(--border-subtle)',
+                backgroundColor: '#0b0f19',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                flexShrink: 0,
               }}
-            />
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div style={{ fontWeight: 800, fontSize: '16px', color: '#ffffff' }}>
-                Platform Control &amp; Navigation
-              </div>
-              <button
-                onClick={() => setDrawerOpen(false)}
+            >
+              <div
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '30px',
-                  height: '30px',
-                  color: 'var(--text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
+                  width: '36px',
+                  height: '4px',
+                  borderRadius: '2px',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  margin: '0 auto 12px auto',
                 }}
-              >
-                <X size={16} />
-              </button>
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 800, fontSize: '16px', color: '#ffffff' }}>
+                  Platform Control &amp; Navigation
+                </div>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '30px',
+                    height: '30px',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
-            {/* Secondary Navigation Items */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+            {/* Secondary Navigation Items (Scrollable Body) */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '16px 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
               {secondaryTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -185,31 +209,40 @@ export function SuperAdminMobileNav({
               })}
             </div>
 
-            {/* Logout Button */}
-            <button
-              onClick={() => {
-                setDrawerOpen(false);
-                handleSignOut();
-              }}
+            {/* Sticky Logout Button */}
+            <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                width: '100%',
-                padding: '12px',
-                borderRadius: '12px',
-                backgroundColor: 'rgba(244, 63, 94, 0.12)',
-                border: '1px solid rgba(244, 63, 94, 0.3)',
-                color: '#fb7185',
-                fontWeight: 700,
-                fontSize: '13.5px',
-                cursor: 'pointer',
+                padding: '12px 20px calc(16px + env(safe-area-inset-bottom, 0px)) 20px',
+                borderTop: '1px solid var(--border-subtle)',
+                backgroundColor: '#0b0f19',
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 10,
+                flexShrink: 0,
               }}
             >
-              <LogOut size={16} />
-              <span>Sign Out of Platform</span>
-            </button>
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(244, 63, 94, 0.12)',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  color: '#fb7185',
+                  fontWeight: 700,
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                }}
+              >
+                <LogOut size={16} />
+                <span>Sign Out of Platform</span>
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -344,6 +377,20 @@ export function SuperAdminMobileNav({
           <span>Others</span>
         </button>
       </nav>
+
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          setDrawerOpen(false);
+          handleSignOut();
+        }}
+        title="Sign Out of Platform?"
+        message="Are you sure you want to end your super administrator session? You will need to sign in again to access platform controls."
+        confirmText="Sign Out"
+        variant="danger"
+      />
     </>
   );
 }

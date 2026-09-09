@@ -121,31 +121,15 @@ export function StaffHeader({
         </div>
       </div>
 
-      {/* Header Right: Green/Red Security Status Badge & 3-Line Menu */}
+      {/* Header Right: Staff Name Badge & 3-Line Navigation Menu */}
       <div className={styles.headerActions}>
-        <div
-          className={`${styles.statusPill} ${
-            isPrecheckReady === true
-              ? styles.ready
-              : styles.failed
-          }`}
-          title={
-            isPrecheckReady === true
-              ? '3-Layer Security (Device, IP, Geofence) Verified'
-              : 'Security Verification Attention Required'
-          }
-        >
-          {isPrecheckReady === true ? (
-            <>
-              <Radio size={14} />
-              <span>Security Verified</span>
-            </>
-          ) : (
-            <>
-              <AlertTriangle size={14} />
-              <span>Security Alert</span>
-            </>
-          )}
+        <div className={styles.staffNamePill} title={`Logged in as ${staffName || 'Staff Member'}`}>
+          <div className={styles.staffAvatarCircle}>
+            {staffName
+              ? staffName.trim().split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+              : 'ST'}
+          </div>
+          <span className={styles.staffNameText}>{staffName || 'Staff Member'}</span>
         </div>
 
         {/* 3-Line Navigation Menu Toggle Button */}

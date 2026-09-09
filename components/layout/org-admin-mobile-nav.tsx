@@ -18,9 +18,12 @@ import {
   Building,
   Settings,
   RefreshCw,
+  ClipboardCheck,
+  UserCheck,
 } from 'lucide-react';
 import { useToast } from '../feedback/toast-provider';
 import { useMobileNavScroll } from '@/hooks/use-mobile-nav-scroll';
+import { ConfirmationModal } from '../feedback/confirmation-modal';
 
 interface OrgAdminMobileNavProps {
   organizationCode: string;
@@ -32,6 +35,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
   const router = useRouter();
   const toast = useToast();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const isNavVisible = useMobileNavScroll();
 
   const handleLogout = async () => {
@@ -66,6 +70,25 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
   ];
 
   const secondaryItems = [
+    {
+      label: 'Daily Attendance',
+      href: `/${organizationCode}/admin/attendance`,
+      icon: ClipboardCheck,
+      exact: true,
+      subtext: 'View live attendance log & clock status',
+    },
+    {
+      label: 'Attendance Corrections',
+      href: `/${organizationCode}/admin/attendance/corrections`,
+      icon: ShieldCheck,
+      subtext: 'Review & approve correction requests',
+    },
+    {
+      label: 'Manual Attendance',
+      href: `/${organizationCode}/admin/attendance/manual`,
+      icon: UserCheck,
+      subtext: 'Manually record or edit attendance logs',
+    },
     {
       label: 'Branches',
       href: `/${organizationCode}/admin/branches`,
@@ -120,33 +143,65 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
             className="mobile-drawer-backdrop"
             onClick={() => setDrawerOpen(false)}
           />
-          <div className="mobile-drawer-sheet">
-            <div className="mobile-drawer-handle" />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div style={{ fontWeight: 800, fontSize: '16px', color: '#ffffff' }}>
-                Admin Operations Navigation
+          <div
+            className="mobile-drawer-sheet"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: '85vh',
+              overflow: 'hidden',
+              padding: 0,
+            }}
+          >
+            {/* Sticky Top Header */}
+            <div
+              style={{
+                padding: '16px 20px 12px 20px',
+                borderBottom: '1px solid var(--border-subtle)',
+                backgroundColor: '#0b0f19',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                flexShrink: 0,
+              }}
+            >
+              <div className="mobile-drawer-handle" style={{ marginBottom: '12px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 800, fontSize: '16px', color: '#ffffff' }}>
+                  Admin Operations Navigation
+                </div>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  aria-label="Close navigation menu"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '30px',
+                    height: '30px',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={16} />
+                </button>
               </div>
-              <button
-                onClick={() => setDrawerOpen(false)}
-                aria-label="Close navigation menu"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '30px',
-                  height: '30px',
-                  color: 'var(--text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <X size={16} />
-              </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Scrollable Secondary Items List */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '16px 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
               {secondaryItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = item.exact
@@ -197,12 +252,22 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
                   </Link>
                 );
               })}
+            </div>
 
+            {/* Sticky Bottom Sign Out Section */}
+            <div
+              style={{
+                padding: '12px 20px calc(16px + env(safe-area-inset-bottom, 0px)) 20px',
+                borderTop: '1px solid var(--border-subtle)',
+                backgroundColor: '#0b0f19',
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 10,
+                flexShrink: 0,
+              }}
+            >
               <button
-                onClick={() => {
-                  setDrawerOpen(false);
-                  handleLogout();
-                }}
+                onClick={() => setShowLogoutModal(true)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -210,7 +275,6 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
                   gap: '8px',
                   width: '100%',
                   padding: '12px',
-                  marginTop: '12px',
                   borderRadius: 'var(--radius-md)',
                   backgroundColor: 'rgba(244, 63, 94, 0.12)',
                   border: '1px solid rgba(244, 63, 94, 0.3)',
@@ -345,6 +409,20 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
           );
         })()}
       </nav>
+
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          setDrawerOpen(false);
+          handleLogout();
+        }}
+        title="Sign Out of Workspace?"
+        message="Are you sure you want to end your session for this workspace? You will need to sign in again to access the admin panel."
+        confirmText="Sign Out"
+        variant="danger"
+      />
     </>
   );
 }

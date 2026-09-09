@@ -546,32 +546,6 @@ export default function StaffDashboardPage() {
 
   return (
     <div className={styles.container}>
-      {/* Glassmorphic Top Navigation Header */}
-      <header className={styles.header}>
-        <div className={styles.headerTitleGroup}>
-          <div className={styles.avatarRing}>
-            {initials}
-            <div className={styles.onlineBadge} title="Active Staff Session" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.2px' }}>
-              {staffInfo?.name || 'Staff Attendance Portal'}
-            </h1>
-          </div>
-        </div>
-
-        {/* Icon-Only Re-verify Button on Far Right Edge */}
-        <button
-          onClick={handleManualRefresh}
-          disabled={checking}
-          className={styles.iconOnlyRefreshBtn}
-          title="Re-verify Security"
-          aria-label="Re-verify Security"
-        >
-          <RefreshCw size={18} className={checking ? 'animate-spin' : ''} color="#a5b4fc" />
-        </button>
-      </header>
-
       {/* Main Container Body */}
       <main className={styles.pageContent}>
         {/* GPS LOCATION PERMISSION PROMPT BANNER */}
@@ -633,8 +607,34 @@ export default function StaffDashboardPage() {
           {/* PANEL 1: LIVE DIGITAL CLOCK & HERO ACTION HUB */}
           <div className={styles.heroClockCard}>
             <div style={{ width: '100%' }}>
-              <div className={styles.clockHeaderLabel}>
-                Live Workspace System Time
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div className={styles.clockHeaderLabel}>
+                  Live Workspace System Time
+                </div>
+                <button
+                  type="button"
+                  onClick={handleManualRefresh}
+                  disabled={checking}
+                  title="Re-verify Security & GPS Location"
+                  aria-label="Re-verify Security & GPS Location"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '8px',
+                    padding: '4px 10px',
+                    color: '#818cf8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    cursor: checking ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <RefreshCw size={13} className={checking ? 'animate-spin' : ''} />
+                  <span>{checking ? 'Refreshing...' : 'Re-verify'}</span>
+                </button>
               </div>
               <div className={styles.liveClockDisplay}>{currentTime || '12:00:00 PM'}</div>
               <div className={styles.currentDateText}>
