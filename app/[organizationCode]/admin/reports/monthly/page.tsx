@@ -481,7 +481,6 @@ export default function MonthlyReportPage() {
                   height: '36px',
                   padding: '0 12px',
                   borderRadius: '8px',
-                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
                   fontSize: '12px',

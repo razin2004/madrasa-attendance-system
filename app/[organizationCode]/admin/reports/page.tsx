@@ -248,7 +248,7 @@ export default function ReportsDashboardPage() {
                 </div>
                 <h2 className={styles.cardTitle}>Daily Attendance Report</h2>
                 <p className={styles.cardDesc}>
-                  View daily attendance across all staff members. Identifies Present, Partial, Holiday, Approved Leave, and Absent status with distinct Normal, Manual, and Adjusted sources.
+                  View daily attendance across all staff members. Identifies Present, Partial, Holiday, Approved Leave, and Absent status with distinct Normal, Manual, and Adjusted types.
                 </p>
               </div>
               <Link href={`/${organizationCode}/admin/reports/daily`} className={styles.cardLink}>
@@ -268,7 +268,7 @@ export default function ReportsDashboardPage() {
                 </div>
                 <h2 className={styles.cardTitle}>Employee Monthly Attendance Report</h2>
                 <p className={styles.cardDesc}>
-                  Detailed monthly attendance log for individual staff members. Includes monthly metrics breakdown (Working days, Present, Leave types, Absences, Source metrics) and exports.
+                  Detailed monthly attendance log for individual staff members. Includes monthly metrics breakdown (Working days, Present, Leave types, Absences, Type metrics) and exports.
                 </p>
               </div>
               <Link href={`/${organizationCode}/admin/reports/monthly`} className={styles.cardLink}>

@@ -409,7 +409,6 @@ export default function DateRangeReportPage() {
                 height: '36px',
                 padding: '0 12px',
                 borderRadius: '8px',
-                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
                 fontSize: '12px',
@@ -668,7 +667,7 @@ export default function DateRangeReportPage() {
                       <th className={styles.th}>Clock In</th>
                       <th className={styles.th}>Clock Out</th>
                       <th className={styles.th}>Status</th>
-                      <th className={styles.th}>Source</th>
+                      <th className={styles.th}>Type</th>
                       <th className={styles.th}>Details</th>
                     </tr>
                   </thead>

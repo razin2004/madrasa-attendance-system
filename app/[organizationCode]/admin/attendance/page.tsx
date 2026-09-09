@@ -346,7 +346,7 @@ export default function AdminAttendancePage() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Source:</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Type:</span>
                 <select
                   className="form-input"
                   style={{
@@ -361,7 +361,7 @@ export default function AdminAttendancePage() {
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                 >
-                  <option value="">All Verification Sources</option>
+                  <option value="">All Attendance Types</option>
                   <option value="NORMAL">NORMAL (3-Layer Verified)</option>
                   <option value="MANUAL">MANUAL (Admin Created)</option>
                   <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
@@ -463,10 +463,10 @@ export default function AdminAttendancePage() {
                     />
                   </div>
 
-                  {/* Verification Source Select */}
+                  {/* Attendance Type Select */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
                     <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
-                      Verification Source
+                      Attendance Type
                     </label>
                     <select
                       className="form-input"
@@ -487,7 +487,7 @@ export default function AdminAttendancePage() {
                       value={source}
                       onChange={(e) => setSource(e.target.value)}
                     >
-                      <option value="">All Verification Sources</option>
+                      <option value="">All Attendance Types</option>
                       <option value="NORMAL">NORMAL (3-Layer Verified)</option>
                       <option value="MANUAL">MANUAL (Admin Created)</option>
                       <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
@@ -626,7 +626,7 @@ export default function AdminAttendancePage() {
                     <th className={styles.th}>Branch</th>
                     <th className={styles.th}>Clock In</th>
                     <th className={styles.th}>Clock Out</th>
-                    <th className={styles.th}>Source</th>
+                    <th className={styles.th}>Type</th>
                     <th className={styles.th}>Verification Details</th>
                   </tr>
                 </thead>

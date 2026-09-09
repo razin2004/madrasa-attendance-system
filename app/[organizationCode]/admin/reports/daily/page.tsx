@@ -342,13 +342,13 @@ export default function DailyReportPage() {
               </div>
 
               <div className={styles.filterItem}>
-                <span className={styles.filterLabel}>Source</span>
+                <span className={styles.filterLabel}>Type</span>
                 <select
                   className={styles.sourceSelect}
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                 >
-                  <option value="">All Sources</option>
+                  <option value="">All Types</option>
                   <option value="NORMAL">NORMAL</option>
                   <option value="MANUAL">MANUAL</option>
                   <option value="ADJUSTED">ADJUSTED</option>
@@ -425,7 +425,6 @@ export default function DailyReportPage() {
                   height: '36px',
                   padding: '0 12px',
                   borderRadius: '8px',
-                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
                   fontSize: '12px',
@@ -458,9 +457,9 @@ export default function DailyReportPage() {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.65)',
+                backgroundColor: 'rgba(3, 7, 18, 0.8)',
                 backdropFilter: 'blur(4px)',
-                zIndex: 1100,
+                zIndex: 99999,
                 display: 'flex',
                 alignItems: 'flex-end',
                 justifyContent: 'center',
@@ -468,60 +467,50 @@ export default function DailyReportPage() {
               onClick={() => setShowMobileFilters(false)}
             >
               <div
+                className="glass-card"
                 style={{
                   width: '100%',
                   maxWidth: '500px',
-                  backgroundColor: '#0f172a',
+                  borderBottomLeftRadius: 0,
+                  borderBottomRightRadius: 0,
                   borderTopLeftRadius: '20px',
                   borderTopRightRadius: '20px',
-                  border: '1px solid var(--border-medium)',
-                  borderBottom: 'none',
                   padding: '20px',
-                  boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-                  maxHeight: '85vh',
-                  overflowY: 'auto',
+                  backgroundColor: '#0d121f',
+                  border: '1px solid var(--border-medium)',
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
                     <Filter size={16} color="#818cf8" />
-                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Report Filters</h3>
+                    <span>Filter Daily Attendance</span>
                   </div>
                   <button
                     onClick={() => setShowMobileFilters(false)}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
                   >
                     <X size={18} />
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
-                      Report Date
+                      Date
                     </label>
                     <input
                       type="date"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
                       className="form-input"
-                      style={{
-                        width: '100%',
-                        height: '40px',
-                        padding: '0 12px',
-                        fontSize: '13px',
-                        color: '#ffffff',
-                        backgroundColor: 'rgba(255,255,255,0.05)',
-                        border: '1px solid var(--border-medium)',
-                        borderRadius: '10px',
-                      }}
+                      style={{ width: '100%', height: '40px', padding: '0 10px', fontSize: '12.5px' }}
                     />
                   </div>
 
                   <div>
                     <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
-                      Branch Location
+                      Branch
                     </label>
                     <select
                       value={branchId}
@@ -530,8 +519,8 @@ export default function DailyReportPage() {
                       style={{
                         width: '100%',
                         height: '40px',
-                        padding: '0 12px',
-                        fontSize: '13px',
+                        padding: '0 10px',
+                        fontSize: '12.5px',
                         color: '#ffffff',
                         backgroundColor: 'rgba(255,255,255,0.05)',
                         border: '1px solid var(--border-medium)',
@@ -558,8 +547,8 @@ export default function DailyReportPage() {
                       style={{
                         width: '100%',
                         height: '40px',
-                        padding: '0 12px',
-                        fontSize: '13px',
+                        padding: '0 10px',
+                        fontSize: '12.5px',
                         color: '#ffffff',
                         backgroundColor: 'rgba(255,255,255,0.05)',
                         border: '1px solid var(--border-medium)',
@@ -575,64 +564,62 @@ export default function DailyReportPage() {
                     </select>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
-                        Attendance Status
-                      </label>
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        className="form-input"
-                        style={{
-                          width: '100%',
-                          height: '40px',
-                          padding: '0 10px',
-                          fontSize: '12.5px',
-                          color: '#ffffff',
-                          backgroundColor: 'rgba(255,255,255,0.05)',
-                          border: '1px solid var(--border-medium)',
-                          borderRadius: '10px',
-                        }}
-                      >
-                        <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Statuses</option>
-                        <option value="PRESENT" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>PRESENT</option>
-                        <option value="PARTIAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>PARTIAL</option>
-                        <option value="HOLIDAY" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>HOLIDAY</option>
-                        <option value="LEAVE" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>LEAVE</option>
-                        <option value="ABSENT" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>ABSENT</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      Attendance Status
+                    </label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 10px',
+                        fontSize: '12.5px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Statuses</option>
+                      <option value="PRESENT" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>PRESENT</option>
+                      <option value="PARTIAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>PARTIAL</option>
+                      <option value="HOLIDAY" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>HOLIDAY</option>
+                      <option value="LEAVE" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>LEAVE</option>
+                      <option value="ABSENT" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>ABSENT</option>
+                    </select>
+                  </div>
 
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
-                        Source Type
-                      </label>
-                      <select
-                        value={source}
-                        onChange={(e) => setSource(e.target.value)}
-                        className="form-input"
-                        style={{
-                          width: '100%',
-                          height: '40px',
-                          padding: '0 10px',
-                          fontSize: '12.5px',
-                          color: '#ffffff',
-                          backgroundColor: 'rgba(255,255,255,0.05)',
-                          border: '1px solid var(--border-medium)',
-                          borderRadius: '10px',
-                        }}
-                      >
-                        <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Sources</option>
-                        <option value="NORMAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>NORMAL</option>
-                        <option value="MANUAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>MANUAL</option>
-                        <option value="ADJUSTED" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>ADJUSTED</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                      Attendance Type
+                    </label>
+                    <select
+                      value={source}
+                      onChange={(e) => setSource(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 10px',
+                        fontSize: '12.5px',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Types</option>
+                      <option value="NORMAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>NORMAL</option>
+                      <option value="MANUAL" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>MANUAL</option>
+                      <option value="ADJUSTED" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>ADJUSTED</option>
+                    </select>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                   <button
                     onClick={() => {
                       setBranchId('');

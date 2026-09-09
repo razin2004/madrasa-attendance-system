@@ -33,7 +33,7 @@ export function generateAttendanceReportCsv(params: {
     'Clock In',
     'Clock Out',
     'Status',
-    'Source',
+    'Type',
     'Leave Type',
     'Reason / Justification',
   ];
