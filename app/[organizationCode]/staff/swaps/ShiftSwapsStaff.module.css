@@ -65,7 +65,23 @@
   color: #ffffff;
 }
 
+.filterToggleBtn {
+  display: none;
+}
+
+.desktopFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 @media (max-width: 768px) {
+  .filterToggleBtn {
+    display: flex !important;
+  }
+  .desktopFilterGroup {
+    display: none !important;
+  }
   .headerBar {
     padding: 16px;
   }

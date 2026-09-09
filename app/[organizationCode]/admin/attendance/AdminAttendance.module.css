@@ -114,12 +114,12 @@
 }
 
 .filterToggleBtn {
+  display: none;
   position: absolute;
   right: 5px;
   top: 4px;
   width: 30px;
   height: 30px;
-  display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
@@ -128,6 +128,12 @@
   color: #ffffff;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.desktopFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .filterToggleBtnActive {
@@ -272,8 +278,13 @@
     gap: 8px;
   }
 
-  .desktop-filters-row {
+  .desktop-filters-row,
+  .desktopFilterGroup {
     display: none !important;
+  }
+
+  .filterToggleBtn {
+    display: flex !important;
   }
 
   .filterBar > div,

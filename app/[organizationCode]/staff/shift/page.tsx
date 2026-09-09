@@ -165,6 +165,7 @@ export default function StaffShiftPage() {
           <button
             type="button"
             onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className={styles.filterToggleBtn}
             style={{
               position: 'absolute',
               right: '6px',
@@ -176,7 +177,6 @@ export default function StaffShiftPage() {
               backgroundColor: isFilterActive ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.06)',
               border: isFilterActive ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(255, 255, 255, 0.12)',
               color: isFilterActive ? '#818cf8' : '#ffffff',
-              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
@@ -185,6 +185,52 @@ export default function StaffShiftPage() {
           >
             <Filter size={15} color={isFilterActive ? '#818cf8' : 'currentColor'} />
           </button>
+        </div>
+
+        {/* Desktop Inline Filters */}
+        <div className={styles.desktopFilterGroup}>
+          <select
+            value={dayFilter}
+            onChange={(e) => setDayFilter(e.target.value)}
+            style={{
+              height: '36px',
+              padding: '0 10px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#ffffff',
+              fontSize: '12.5px',
+              outline: 'none',
+            }}
+          >
+            <option value="ALL">All Weekdays</option>
+            <option value="MONDAY">Monday</option>
+            <option value="TUESDAY">Tuesday</option>
+            <option value="WEDNESDAY">Wednesday</option>
+            <option value="THURSDAY">Thursday</option>
+            <option value="FRIDAY">Friday</option>
+            <option value="SATURDAY">Saturday</option>
+            <option value="SUNDAY">Sunday</option>
+          </select>
+
+          <select
+            value={dutyFilter}
+            onChange={(e) => setDutyFilter(e.target.value)}
+            style={{
+              height: '36px',
+              padding: '0 10px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#ffffff',
+              fontSize: '12.5px',
+              outline: 'none',
+            }}
+          >
+            <option value="ALL">All Duty Statuses</option>
+            <option value="WORKING">Working Shift Days</option>
+            <option value="OFF">Rest / Off Days</option>
+          </select>
         </div>
       </div>
 

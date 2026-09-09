@@ -275,9 +275,9 @@ export default function AdminAttendancePage() {
             </div>
           </div>
 
-          {/* Search Field with Pinned Filter Icon (Staff Panel Style) */}
-          <div style={{ marginBottom: '16px', width: '100%' }}>
-            <div className={styles.searchInputWrapper}>
+          {/* Search Field & Inline Desktop Filters */}
+          <div style={{ marginBottom: '16px', width: '100%', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className={styles.searchInputWrapper} style={{ flex: 1, minWidth: '240px' }}>
               <Search size={15} className={styles.searchIcon} />
               <input
                 type="text"
@@ -321,6 +321,52 @@ export default function AdminAttendancePage() {
               >
                 <Filter size={15} color={(source || (date && date !== todayStr)) ? '#818cf8' : 'currentColor'} />
               </button>
+            </div>
+
+            {/* Desktop Inline Filters */}
+            <div className={styles.desktopFilterGroup}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Date:</span>
+                <input
+                  type="date"
+                  className="form-input"
+                  style={{
+                    height: '38px',
+                    fontSize: '12.5px',
+                    backgroundColor: '#131b2e',
+                    color: '#ffffff',
+                    colorScheme: 'dark',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    padding: '0 10px',
+                  }}
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Source:</span>
+                <select
+                  className="form-input"
+                  style={{
+                    height: '38px',
+                    fontSize: '12.5px',
+                    backgroundColor: '#131b2e',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    padding: '0 10px',
+                  }}
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                >
+                  <option value="">All Verification Sources</option>
+                  <option value="NORMAL">NORMAL (3-Layer Verified)</option>
+                  <option value="MANUAL">MANUAL (Admin Created)</option>
+                  <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
+                </select>
+              </div>
             </div>
           </div>
 

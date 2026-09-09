@@ -52,9 +52,19 @@
 .filterBar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+}
+
+.filterToggleBtn {
+  display: none;
+}
+
+.desktopFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .tableCard {
@@ -156,6 +166,14 @@
   .filterBar button {
     flex: 1;
     justify-content: center;
+  }
+
+  .filterToggleBtn {
+    display: flex !important;
+  }
+
+  .desktopFilterGroup {
+    display: none !important;
   }
 
   .tableCard {

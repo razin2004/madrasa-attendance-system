@@ -227,6 +227,7 @@ export default function StaffLeaveDashboardPage() {
           <button
             type="button"
             onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className={styles.filterToggleBtn}
             style={{
               position: 'absolute',
               right: '6px',
@@ -238,7 +239,6 @@ export default function StaffLeaveDashboardPage() {
               backgroundColor: isFilterActive ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.06)',
               border: isFilterActive ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(255, 255, 255, 0.12)',
               color: isFilterActive ? '#818cf8' : '#ffffff',
-              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
@@ -247,6 +247,46 @@ export default function StaffLeaveDashboardPage() {
           >
             <Filter size={15} color={isFilterActive ? '#818cf8' : 'currentColor'} />
           </button>
+        </div>
+
+        {/* Desktop Inline Filters */}
+        <div className={styles.desktopFilterGroup}>
+          {/* Status Tabs */}
+          <div style={{ display: 'flex', gap: '4px', backgroundColor: 'rgba(255, 255, 255, 0.04)', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((st) => (
+              <button
+                key={st}
+                type="button"
+                onClick={() => setStatusFilter(st)}
+                className={`btn btn-sm ${statusFilter === st ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+
+          {/* Category Dropdown */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            style={{
+              height: '36px',
+              padding: '0 10px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#ffffff',
+              fontSize: '12.5px',
+              outline: 'none',
+            }}
+          >
+            <option value="ALL">All Categories</option>
+            <option value="ANNUAL">Annual Leave</option>
+            <option value="SICK">Sick Leave</option>
+            <option value="DUTY">Duty Leave</option>
+            <option value="OTHER">Casual / Other</option>
+          </select>
         </div>
       </div>
 

@@ -173,7 +173,23 @@
   }
 }
 
+.filterToggleBtn {
+  display: none;
+}
+
+.desktopFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 @media (max-width: 767px) {
+  .filterToggleBtn {
+    display: flex !important;
+  }
+  .desktopFilterGroup {
+    display: none !important;
+  }
   .shiftContainer {
     padding: 14px 12px 80px 12px;
   }

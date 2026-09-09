@@ -271,6 +271,7 @@ export default function StaffShiftSwapsPage() {
             <button
               type="button"
               onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={styles.filterToggleBtn}
               style={{
                 position: 'absolute',
                 right: '6px',
@@ -282,7 +283,6 @@ export default function StaffShiftSwapsPage() {
                 backgroundColor: statusFilter !== 'ALL' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.06)',
                 border: statusFilter !== 'ALL' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(255, 255, 255, 0.12)',
                 color: statusFilter !== 'ALL' ? '#818cf8' : '#ffffff',
-                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
@@ -291,6 +291,29 @@ export default function StaffShiftSwapsPage() {
             >
               <Filter size={15} color={statusFilter !== 'ALL' ? '#818cf8' : 'currentColor'} />
             </button>
+          </div>
+
+          {/* Desktop Inline Status Filters */}
+          <div className={styles.desktopFilterGroup}>
+            <div style={{ display: 'flex', gap: '4px', backgroundColor: 'rgba(255, 255, 255, 0.04)', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              {[
+                { id: 'ALL', label: 'All Status' },
+                { id: 'PENDING_PEER', label: 'Pending Peer' },
+                { id: 'PEER_ACCEPTED', label: 'Peer Accepted' },
+                { id: 'APPROVED', label: 'Approved' },
+                { id: 'REJECTED', label: 'Rejected' },
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => setStatusFilter(st.id)}
+                  className={`btn btn-sm ${statusFilter === st.id ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
