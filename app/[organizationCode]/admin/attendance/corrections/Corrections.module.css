@@ -220,6 +220,8 @@
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .badgePENDING {

@@ -469,7 +469,7 @@ export default function AdminAttendanceCorrectionsPage() {
                               onClick={() => {
                                 if (profileId) router.push(`/${organizationCode}/admin/staff/${profileId}`);
                               }}
-                              style={{ cursor: 'pointer' }}
+                              style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
                               title="View Staff Profile"
                             >
                               <div className={styles.staffName} style={{ color: '#818cf8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
@@ -477,13 +477,13 @@ export default function AdminAttendanceCorrectionsPage() {
                               </div>
                               <div className={styles.staffId}>ID: {getStaffId(item)}</div>
                             </td>
-                            <td className={styles.td} style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                            <td className={styles.td} style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                               {formatDateString(item.date)}
                             </td>
-                            <td className={styles.td}>
+                            <td className={styles.td} style={{ whiteSpace: 'nowrap' }}>
                               {renderTypeBadge(item.type)}
                             </td>
-                            <td className={styles.td} style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)' }}>
+                            <td className={styles.td} style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                               In: <span style={{ color: '#34d399', fontWeight: 700 }}>{formatPunchTime(item.requestedClockIn)}</span> &bull; Out:{' '}
                               <span style={{ color: '#fbbf24', fontWeight: 700 }}>{formatPunchTime(item.requestedClockOut)}</span>
                             </td>

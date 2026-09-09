@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   ShieldCheck,
   CheckCircle2,
   XCircle,
@@ -14,11 +13,14 @@ import {
   Calendar,
   AlertCircle,
   FileText,
+  Loader2,
+  ArrowLeft,
+  Building2,
 } from 'lucide-react';
-import { OrgAdminSidebar } from '../../../../../../components/layout/org-admin-sidebar';
-import { OrgAdminMobileNav } from '../../../../../../components/layout/org-admin-mobile-nav';
-import { OrgAdminHeader } from '../../../../../../components/layout/org-admin-header';
-import { useToast } from '../../../../../../components/feedback/toast-provider';
+import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
+import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
+import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+import { useToast } from '@/components/feedback/toast-provider';
 import styles from './CorrectionReview.module.css';
 
 interface PageProps {
@@ -53,17 +55,46 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     return `${hours}:${minutes}`;
   };
 
+  const formatTime = (iso?: string | null) => {
+    if (!iso) return 'None';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return iso;
+    }
+  };
+
+  const formatDate = (iso?: string | null) => {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toISOString().slice(0, 10);
+    } catch {
+      return String(iso);
+    }
+  };
+
   useEffect(() => {
-    // Load metadata and request detail
+    if (!organizationCode || !requestId) return;
+
+    setLoading(true);
+    setErrorMsg(null);
+
     Promise.all([
-      fetch(`/api/org/${organizationCode}/metadata`).then((r) => r.json()),
+      fetch(`/api/org/${organizationCode}/branding`)
+        .then((r) => (r.ok ? r.json() : {}))
+        .catch(() => ({})),
       fetch(`/api/org/${organizationCode}/attendance/admin/corrections/${requestId}`).then((r) =>
         r.json()
       ),
     ])
-      .then(([metaRes, detailRes]) => {
-        if (metaRes.organization) setOrgData(metaRes.organization);
-        if (detailRes.success && detailRes.request) {
+      .then(([brandRes, detailRes]) => {
+        if ((brandRes as any)?.organization) setOrgData((brandRes as any).organization);
+
+        if (detailRes && detailRes.success && detailRes.request) {
           setRequest(detailRes.request);
           setExistingRecords(detailRes.existingRecords || []);
 
@@ -72,12 +103,12 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
           if (reqIn) setCustomClockIn(formatIsoToTimeInput(reqIn));
           if (reqOut) setCustomClockOut(formatIsoToTimeInput(reqOut));
         } else {
-          setErrorMsg(detailRes.error || 'Correction request not found.');
+          setErrorMsg(detailRes?.error || 'Correction request detail not found.');
         }
       })
       .catch((err) => {
         console.error('Error fetching request detail:', err);
-        setErrorMsg('Network error loading request detail.');
+        setErrorMsg('Failed to load request detail. Please check network connection.');
       })
       .finally(() => {
         setLoading(false);
@@ -149,9 +180,41 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     }
   };
 
-  const formatTime = (iso?: string | null) => {
-    if (!iso) return 'None';
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const staffName = request?.staffProfile?.name || request?.staff?.name || 'Staff Member';
+  const staffId = request?.staffProfile?.staffId || request?.staff?.staffId || '—';
+  const branchName =
+    request?.branch?.name || request?.staffProfile?.branchAssignments?.[0]?.branch?.name || 'Unassigned';
+
+  const renderTypeBadge = (type?: string) => {
+    if (!type) return null;
+    if (type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_CLOCK_IN') {
+      return (
+        <span
+          className={styles.badge}
+          style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+        >
+          🔴 Unverified Clock In
+        </span>
+      );
+    }
+    if (type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_CLOCK_OUT') {
+      return (
+        <span
+          className={styles.badge}
+          style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+        >
+          🟡 Unverified Clock Out
+        </span>
+      );
+    }
+    return (
+      <span
+        className={styles.badge}
+        style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}
+      >
+        🔵 Manual Entry Request
+      </span>
+    );
   };
 
   return (
@@ -167,26 +230,42 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
           organizationCode={organizationCode}
           logoUrl={orgData?.logoUrl}
           panelTitle="Review Attendance Correction"
-          panelSubtitle={request ? `Target Date: ${new Date(request.date).toISOString().slice(0, 10)}` : 'Review employee correction request'}
+          panelSubtitle={request ? `Target Punch Date: ${formatDate(request.date)}` : 'Review employee correction request'}
           backHref={`/${organizationCode}/admin/attendance/corrections`}
         />
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-            Loading request review...
+          <div style={{ textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>
+            <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto 16px auto', color: '#818cf8' }} />
+            <p style={{ fontSize: '15px', fontWeight: 600, color: '#f1f5f9' }}>Loading correction details...</p>
           </div>
         ) : errorMsg || !request ? (
-          <div className={styles.card} style={{ textAlign: 'center', padding: '40px' }}>
-            <AlertCircle size={36} color="#ef4444" style={{ margin: '0 auto 12px' }} />
-            <h3 style={{ color: '#ffffff' }}>Error Loading Request</h3>
-            <p style={{ color: '#94a3b8' }}>{errorMsg}</p>
+          <div className={styles.card} style={{ textAlign: 'center', padding: '48px 24px', marginTop: '24px' }}>
+            <AlertCircle size={40} color="#ef4444" style={{ margin: '0 auto 16px auto' }} />
+            <h3 style={{ color: '#ffffff', fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0' }}>
+              Error Loading Request
+            </h3>
+            <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 20px 0' }}>{errorMsg}</p>
+            <button
+              onClick={() => router.push(`/${organizationCode}/admin/attendance/corrections`)}
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <ArrowLeft size={14} />
+              <span>Back to Corrections Queue</span>
+            </button>
           </div>
         ) : (
           <>
+            {/* Top Bar Badges */}
             <div className={styles.header} style={{ marginTop: '16px' }}>
-              <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span className={`${styles.badge} ${styles[`badge${request.status}`]}`}>
                   Status: {request.status}
+                </span>
+                {renderTypeBadge(request.type)}
+                <span className={styles.badge} style={{ background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155' }}>
+                  📅 Date: {formatDate(request.date)}
                 </span>
               </div>
             </div>
@@ -202,29 +281,27 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                 <div className={styles.detailsGrid}>
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Staff Member</span>
-                    <span className={styles.detailVal}>{request.staffProfile?.name}</span>
+                    <span className={styles.detailVal} style={{ color: '#818cf8' }}>{staffName}</span>
                   </div>
 
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Staff ID</span>
-                    <span className={styles.detailVal}>{request.staffProfile?.staffId}</span>
+                    <span className={styles.detailVal}>{staffId}</span>
                   </div>
 
                   <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Branch</span>
-                    <span className={styles.detailVal}>
-                      {request.branch?.name || request.staffProfile?.branchAssignments?.[0]?.branch?.name || 'Unassigned'}
-                    </span>
+                    <span className={styles.detailLabel}>Assigned Branch</span>
+                    <span className={styles.detailVal}>{branchName}</span>
                   </div>
 
                   <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Correction Type</span>
-                    <span className={styles.detailVal}>{request.type.replace(/_/g, ' ')}</span>
+                    <span className={styles.detailLabel}>Correction Category</span>
+                    <span className={styles.detailVal}>{request.type?.replace(/_/g, ' ')}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Side-by-Side Comparison Box */}
+              {/* Side-by-Side Time Punch Comparison */}
               <div className={styles.card}>
                 <h3 className={styles.cardTitle}>
                   <Clock size={18} color="#f59e0b" />
@@ -235,47 +312,49 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                   <div className={styles.comparisonCol}>
                     <div className={styles.colHeader}>Original Recorded Time</div>
                     <div className={styles.colValue} style={{ color: '#94a3b8' }}>
-                      In: {formatTime(request.originalClockIn)}
+                      In: <span style={{ color: '#e2e8f0' }}>{formatTime(request.originalClockIn)}</span>
                       <br />
-                      Out: {formatTime(request.originalClockOut)}
+                      Out: <span style={{ color: '#e2e8f0' }}>{formatTime(request.originalClockOut)}</span>
                     </div>
                   </div>
 
                   <div className={styles.comparisonCol}>
                     <div className={styles.colHeader} style={{ color: '#38bdf8' }}>
-                      Requested Adjusted Time
+                      Requested Punch Correction
                     </div>
                     <div className={styles.colValue} style={{ color: '#34d399' }}>
-                      In: {formatTime(request.requestedClockIn)}
+                      In: <strong>{formatTime(request.requestedClockIn)}</strong>
                       <br />
-                      Out: {formatTime(request.requestedClockOut)}
+                      Out: <strong style={{ color: '#fbbf24' }}>{formatTime(request.requestedClockOut)}</strong>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Staff Reason */}
+              {/* Staff Justification / Reason Box */}
               <div className={styles.card}>
                 <h3 className={styles.cardTitle}>
                   <FileText size={18} color="#818cf8" />
                   <span>Staff Justification / Outage Reason</span>
                 </h3>
-                <div className={styles.reasonBox}>{request.reason}</div>
+                <div className={styles.reasonBox}>
+                  &ldquo;{request.reason || 'No detailed explanation provided.'}&rdquo;
+                </div>
               </div>
 
-              {/* Admin Action Box (If PENDING) */}
+              {/* Administrator Decision Card (If PENDING) */}
               {request.status === 'PENDING' ? (
                 <div className={styles.actionCard}>
                   <h3 className={styles.cardTitle}>
                     <ShieldCheck size={18} color="#10b981" />
-                    <span>Administrator Decision</span>
+                    <span>Administrator Decision &amp; Time Override</span>
                   </h3>
 
                   {/* Custom Clock-In / Clock-Out Override Inputs */}
                   <div style={{ marginBottom: '20px', padding: '16px', background: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b' }}>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Clock size={15} />
-                      <span>Approved Punch Time Override (Admin Custom Time)</span>
+                      <span>Approved Punch Time Override (Customize below if required)</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       <div>
@@ -330,11 +409,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                       fontWeight: 600,
                     }}
                   >
-                    Feedback / Reason Note (Required for Rejection, Optional for Approval)
+                    Feedback / Review Note (Required for Rejection, Optional for Approval)
                   </label>
                   <textarea
                     className={styles.textarea}
-                    placeholder="Enter review feedback, verification notes, or reason if rejecting..."
+                    placeholder="Enter review notes, justification comments, or reason if rejecting..."
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                   />
@@ -346,7 +425,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                       disabled={actionLoading}
                       onClick={handleReject}
                     >
-                      <XCircle size={16} />
+                      {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
                       <span>{actionLoading ? 'Processing...' : 'Reject Request'}</span>
                     </button>
 
@@ -356,7 +435,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                       disabled={actionLoading}
                       onClick={handleApprove}
                     >
-                      <CheckCircle2 size={16} />
+                      {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                       <span>{actionLoading ? 'Processing...' : 'Approve & Adjust Attendance'}</span>
                     </button>
                   </div>
