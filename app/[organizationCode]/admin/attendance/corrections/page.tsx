@@ -141,13 +141,38 @@ export default function AdminAttendanceCorrectionsPage() {
     let staffReason: string | null = null;
     let rawFailures: string[] = [];
 
-    // Extract staffReason if present as Reason: "..." or Reason: ...
-    const reasonMatch = text.match(/Reason:\s*["']([^"']+)["']/i) || text.match(/Reason:\s*([^(||\n]+)/i);
-    if (reasonMatch && reasonMatch[1]) {
-      const matched = reasonMatch[1].trim();
-      if (matched && !matched.toLowerCase().startsWith('failures:')) {
-        staffReason = matched;
+    // Split by "| Clock Out:" or "Clock Out:" to parse both Clock In & Clock Out parts
+    const parts = text.split(/\|\s*Clock Out:/i);
+    const inPart = parts[0] || '';
+    const outPart = parts[1] || '';
+
+    // Extract In Reason
+    let inReason: string | null = null;
+    const inMatch = inPart.match(/Reason:\s*["']([^"']+)["']/i) || inPart.match(/Reason:\s*([^(|\n]+)/i);
+    if (inMatch && inMatch[1]) {
+      const m = inMatch[1].trim();
+      if (m && !m.toLowerCase().startsWith('failures:')) inReason = m;
+    }
+
+    // Extract Out Reason
+    let outReason: string | null = null;
+    if (outPart) {
+      const outMatch = outPart.match(/Reason:\s*["']([^"']+)["']/i) || outPart.match(/Reason:\s*([^(|\n]+)/i);
+      if (outMatch && outMatch[1]) {
+        const m = outMatch[1].trim();
+        if (m && !m.toLowerCase().startsWith('failures:')) outReason = m;
       }
+    }
+
+    // Construct staffReason
+    if (inReason && outReason) {
+      staffReason = `Clock-In: "${inReason}" • Clock-Out: "${outReason}"`;
+    } else if (inReason && outPart) {
+      staffReason = `Clock-In: "${inReason}"`;
+    } else if (inReason) {
+      staffReason = inReason;
+    } else if (outReason) {
+      staffReason = `Clock-Out: "${outReason}"`;
     }
 
     // Clean up "Clock Out: Unverified punch" markers
@@ -168,9 +193,9 @@ export default function AdminAttendanceCorrectionsPage() {
     }
 
     if (rawFailures.length === 0 && text.includes('Failures:')) {
-      const parts = text.split(/Failures:/gi);
-      for (let i = 1; i < parts.length; i++) {
-        let segment = parts[i].split(/\|/)[0].trim();
+      const failureParts = text.split(/Failures:/gi);
+      for (let i = 1; i < failureParts.length; i++) {
+        let segment = failureParts[i].split(/\|/)[0].trim();
         if (segment.endsWith(')')) segment = segment.slice(0, -1).trim();
         const items = segment
           .split(/;\s*(?![^()]*\))/g)
@@ -186,8 +211,8 @@ export default function AdminAttendanceCorrectionsPage() {
 
     if (!staffReason) {
       if (text.includes('Failures:')) {
-        const parts = text.split(/Failures:/i);
-        const before = parts[0]
+        const segments = text.split(/Failures:/i);
+        const before = segments[0]
           .replace(/Unverified punch\.?/gi, '')
           .replace(/Reason:\s*/gi, '')
           .replace(/[()]/gi, '')
@@ -449,8 +474,22 @@ export default function AdminAttendanceCorrectionsPage() {
     }
   };
 
-  const renderTypeBadge = (type: string) => {
-    if (type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_CLOCK_IN') {
+  const renderTypeBadge = (item: CorrectionRequest | string) => {
+    const typeStr = typeof item === 'string' ? item : item.type;
+    const hasIn = typeof item === 'object' ? Boolean(item.requestedClockIn || typeStr === 'MISSING_CLOCK_IN' || typeStr === 'INCORRECT_CLOCK_IN') : typeStr === 'MISSING_CLOCK_IN' || typeStr === 'INCORRECT_CLOCK_IN';
+    const hasOut = typeof item === 'object' ? Boolean(item.requestedClockOut || typeStr === 'MISSING_CLOCK_OUT' || typeStr === 'INCORRECT_CLOCK_OUT') : typeStr === 'MISSING_CLOCK_OUT' || typeStr === 'INCORRECT_CLOCK_OUT';
+
+    if (hasIn && hasOut) {
+      return (
+        <span
+          className={styles.badge}
+          style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+        >
+          🔴 Unverified Clock In &amp; Out
+        </span>
+      );
+    }
+    if (hasIn) {
       return (
         <span
           className={styles.badge}
@@ -460,7 +499,7 @@ export default function AdminAttendanceCorrectionsPage() {
         </span>
       );
     }
-    if (type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_CLOCK_OUT') {
+    if (hasOut) {
       return (
         <span
           className={styles.badge}
@@ -672,7 +711,7 @@ export default function AdminAttendanceCorrectionsPage() {
                               {formatDateString(item.date)}
                             </td>
                             <td className={styles.td} style={{ whiteSpace: 'nowrap' }}>
-                              {renderTypeBadge(item.type)}
+                              {renderTypeBadge(item)}
                             </td>
                             <td className={styles.td} style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                               In: <span style={{ color: '#34d399', fontWeight: 700 }}>{formatPunchTime(item.requestedClockIn)}</span> &bull; Out:{' '}
@@ -792,7 +831,7 @@ export default function AdminAttendanceCorrectionsPage() {
                           <div className={styles.stackedCol}>
                             <span className={styles.colLabel}>Date &amp; Problem Type</span>
                             <span className={styles.colVal}>{formatDateString(item.date)}</span>
-                            <div style={{ marginTop: '4px' }}>{renderTypeBadge(item.type)}</div>
+                            <div style={{ marginTop: '4px' }}>{renderTypeBadge(item)}</div>
                           </div>
                           <div className={styles.stackedCol}>
                             <span className={styles.colLabel}>Requested Time</span>

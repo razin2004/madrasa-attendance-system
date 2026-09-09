@@ -89,13 +89,38 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     let staffReason: string | null = null;
     let rawFailures: string[] = [];
 
-    // Extract staffReason if present as Reason: "..." or Reason: ...
-    const reasonMatch = text.match(/Reason:\s*["']([^"']+)["']/i) || text.match(/Reason:\s*([^(||\n]+)/i);
-    if (reasonMatch && reasonMatch[1]) {
-      const matched = reasonMatch[1].trim();
-      if (matched && !matched.toLowerCase().startsWith('failures:')) {
-        staffReason = matched;
+    // Split by "| Clock Out:" or "Clock Out:" to parse both Clock In & Clock Out parts
+    const parts = text.split(/\|\s*Clock Out:/i);
+    const inPart = parts[0] || '';
+    const outPart = parts[1] || '';
+
+    // Extract In Reason
+    let inReason: string | null = null;
+    const inMatch = inPart.match(/Reason:\s*["']([^"']+)["']/i) || inPart.match(/Reason:\s*([^(|\n]+)/i);
+    if (inMatch && inMatch[1]) {
+      const m = inMatch[1].trim();
+      if (m && !m.toLowerCase().startsWith('failures:')) inReason = m;
+    }
+
+    // Extract Out Reason
+    let outReason: string | null = null;
+    if (outPart) {
+      const outMatch = outPart.match(/Reason:\s*["']([^"']+)["']/i) || outPart.match(/Reason:\s*([^(|\n]+)/i);
+      if (outMatch && outMatch[1]) {
+        const m = outMatch[1].trim();
+        if (m && !m.toLowerCase().startsWith('failures:')) outReason = m;
       }
+    }
+
+    // Construct staffReason
+    if (inReason && outReason) {
+      staffReason = `Clock-In: "${inReason}" • Clock-Out: "${outReason}"`;
+    } else if (inReason && outPart) {
+      staffReason = `Clock-In: "${inReason}"`;
+    } else if (inReason) {
+      staffReason = inReason;
+    } else if (outReason) {
+      staffReason = `Clock-Out: "${outReason}"`;
     }
 
     // Clean up "Clock Out: Unverified punch" markers
@@ -116,9 +141,9 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     }
 
     if (rawFailures.length === 0 && text.includes('Failures:')) {
-      const parts = text.split(/Failures:/gi);
-      for (let i = 1; i < parts.length; i++) {
-        let segment = parts[i].split(/\|/)[0].trim();
+      const failureParts = text.split(/Failures:/gi);
+      for (let i = 1; i < failureParts.length; i++) {
+        let segment = failureParts[i].split(/\|/)[0].trim();
         if (segment.endsWith(')')) segment = segment.slice(0, -1).trim();
         const items = segment
           .split(/;\s*(?![^()]*\))/g)
@@ -134,8 +159,8 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
 
     if (!staffReason) {
       if (text.includes('Failures:')) {
-        const parts = text.split(/Failures:/i);
-        const before = parts[0]
+        const segments = text.split(/Failures:/i);
+        const before = segments[0]
           .replace(/Unverified punch\.?/gi, '')
           .replace(/Reason:\s*/gi, '')
           .replace(/[()]/gi, '')
@@ -173,17 +198,34 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     }
   };
 
-  const formatTypeName = (type?: string) => {
-    if (!type) return 'Attendance Correction';
-    if (type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_CLOCK_IN') return 'Unverified Clock In';
-    if (type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_CLOCK_OUT') return 'Unverified Clock Out';
-    if (type === 'MANUAL_ENTRY') return 'Manual Entry Request';
-    return type.replace(/_/g, ' ');
+  const formatTypeName = (req?: any) => {
+    if (!req) return 'Attendance Correction';
+    const typeStr = typeof req === 'string' ? req : req.type;
+    const hasIn = typeof req === 'object' ? Boolean(req.requestedClockIn || typeStr === 'MISSING_CLOCK_IN' || typeStr === 'INCORRECT_CLOCK_IN') : typeStr === 'MISSING_CLOCK_IN' || typeStr === 'INCORRECT_CLOCK_IN';
+    const hasOut = typeof req === 'object' ? Boolean(req.requestedClockOut || typeStr === 'MISSING_CLOCK_OUT' || typeStr === 'INCORRECT_CLOCK_OUT') : typeStr === 'MISSING_CLOCK_OUT' || typeStr === 'INCORRECT_CLOCK_OUT';
+    if (hasIn && hasOut) return 'Unverified Clock In & Out';
+    if (hasIn) return 'Unverified Clock In';
+    if (hasOut) return 'Unverified Clock Out';
+    if (typeStr === 'MANUAL_ENTRY') return 'Manual Entry Request';
+    return typeStr?.replace(/_/g, ' ') || 'Attendance Correction';
   };
 
-  const renderTypeBadge = (type?: string) => {
-    if (!type) return null;
-    if (type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_CLOCK_IN') {
+  const renderTypeBadge = (req?: any) => {
+    if (!req) return null;
+    const typeStr = typeof req === 'string' ? req : req.type;
+    const hasIn = typeof req === 'object' ? Boolean(req.requestedClockIn || typeStr === 'MISSING_CLOCK_IN' || typeStr === 'INCORRECT_CLOCK_IN') : typeStr === 'MISSING_CLOCK_IN' || typeStr === 'INCORRECT_CLOCK_IN';
+    const hasOut = typeof req === 'object' ? Boolean(req.requestedClockOut || typeStr === 'MISSING_CLOCK_OUT' || typeStr === 'INCORRECT_CLOCK_OUT') : typeStr === 'MISSING_CLOCK_OUT' || typeStr === 'INCORRECT_CLOCK_OUT';
+    if (hasIn && hasOut) {
+      return (
+        <span
+          className={styles.badge}
+          style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+        >
+          🔴 Unverified Clock In &amp; Out
+        </span>
+      );
+    }
+    if (hasIn) {
       return (
         <span
           className={styles.badge}
@@ -193,7 +235,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
         </span>
       );
     }
-    if (type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_CLOCK_OUT') {
+    if (hasOut) {
       return (
         <span
           className={styles.badge}
@@ -392,7 +434,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                   <span className={`${styles.badge} ${styles[`badge${request.status}`]}`}>
                     Status: {request.status}
                   </span>
-                  {renderTypeBadge(request.type)}
+                  {renderTypeBadge(request)}
                   <span className={styles.badge} style={{ background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155' }}>
                     📅 Date: {formatDate(request.date)}
                   </span>
@@ -423,7 +465,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                         </span>
                       </div>
                       <div style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', lineHeight: '1.5', fontStyle: parsed.staffReason ? 'normal' : 'italic' }}>
-                        {parsed.staffReason ? `"${parsed.staffReason}"` : 'No custom justification text entered by staff.'}
+                        {parsed.staffReason ? parsed.staffReason : 'No custom justification text entered by staff.'}
                       </div>
                     </div>
                   );
@@ -456,7 +498,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
 
                       <div className={styles.detailItem}>
                         <span className={styles.detailLabel}>Correction Category</span>
-                        <span className={styles.detailVal}>{formatTypeName(request.type)}</span>
+                        <span className={styles.detailVal}>{formatTypeName(request)}</span>
                       </div>
                     </div>
                   </div>
