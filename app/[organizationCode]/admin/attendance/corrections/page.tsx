@@ -42,6 +42,14 @@ interface CorrectionRequest {
   };
 }
 
+const REJECTION_PRESETS = [
+  'Unverified location / Outside geofence',
+  'Unapproved network / Wi-Fi',
+  'Unregistered mobile device',
+  'Incorrect punch time submitted',
+  'Insufficient explanation provided',
+];
+
 export default function AdminAttendanceCorrectionsPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -560,9 +568,10 @@ export default function AdminAttendanceCorrectionsPage() {
                           <tr
                             key={item.id}
                             className={styles.tr}
+                            onClick={() => router.push(`/${organizationCode}/admin/attendance/corrections/${item.id}`)}
                             style={{ background: isSelected ? 'rgba(99, 102, 241, 0.1)' : undefined }}
                           >
-                            <td className={styles.td} style={{ textAlign: 'center' }}>
+                            <td className={styles.td} style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                               {isPending ? (
                                 <input
                                   type="checkbox"
@@ -574,7 +583,8 @@ export default function AdminAttendanceCorrectionsPage() {
                             </td>
                             <td
                               className={styles.td}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (profileId) router.push(`/${organizationCode}/admin/staff/${profileId}`);
                               }}
                               style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -620,7 +630,7 @@ export default function AdminAttendanceCorrectionsPage() {
                                  );
                                })()}
                              </td>
-                            <td className={styles.td} style={{ textAlign: 'right' }}>
+                            <td className={styles.td} style={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
                               {isPending ? (
                                 <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end' }}>
                                   <Link
@@ -682,6 +692,7 @@ export default function AdminAttendanceCorrectionsPage() {
                       <div
                         key={item.id}
                         className={styles.requestCard}
+                        onClick={() => router.push(`/${organizationCode}/admin/attendance/corrections/${item.id}`)}
                         style={{ borderLeft: isSelected ? '3px solid #6366f1' : undefined }}
                       >
                         <div className={styles.cardHeader}>
@@ -691,11 +702,13 @@ export default function AdminAttendanceCorrectionsPage() {
                                 type="checkbox"
                                 className={styles.checkbox}
                                 checked={isSelected}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={() => toggleSelect(item.id)}
                               />
                             )}
                             <div
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (profileId) router.push(`/${organizationCode}/admin/staff/${profileId}`);
                               }}
                               style={{ cursor: 'pointer' }}
@@ -747,7 +760,7 @@ export default function AdminAttendanceCorrectionsPage() {
                           );
                         })()}
 
-                        <div className={styles.cardActions}>
+                        <div className={styles.cardActions} onClick={(e) => e.stopPropagation()}>
                           <Link
                             href={`/${organizationCode}/admin/attendance/corrections/${item.id}`}
                             className="btn btn-secondary btn-sm"
@@ -833,32 +846,45 @@ export default function AdminAttendanceCorrectionsPage() {
       {/* Approval Confirmation Modal */}
       {approveModal.isOpen && (
         <div className={styles.modalBackdrop}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399' }}>
-                <CheckCircle2 size={20} />
-                <span>Confirm Attendance Approval</span>
-              </h3>
+          <div className={styles.approveModalCard}>
+            <div className={styles.approveModalHeader}>
+              <div className={styles.rejectHeaderTitleGroup}>
+                <div className={styles.approveIconBadge}>
+                  <CheckCircle2 size={22} color="#10b981" />
+                </div>
+                <div>
+                  <h3 className={styles.approveModalTitle}>Confirm Approval</h3>
+                  <p className={styles.approveModalSub}>
+                    {approveModal.requestIds.length === 1
+                      ? `Approving request for ${approveModal.staffName || 'Staff Member'}`
+                      : `Approving ${approveModal.requestIds.length} selected requests`}
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setApproveModal({ isOpen: false, requestIds: [] })}
                 disabled={modalActionLoading}
+                className={styles.modalCloseBtn}
               >
                 <X size={18} />
               </button>
             </div>
-            <div style={{ padding: '20px' }}>
-              <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: '20px', lineHeight: 1.5 }}>
+
+            <div className={styles.approveModalBody}>
+              <p className={styles.modalConfirmText}>
                 {approveModal.requestIds.length === 1
                   ? `Are you sure you want to approve the attendance correction request for ${approveModal.staffName || 'this staff member'}?`
                   : `Are you sure you want to BULK APPROVE ${approveModal.requestIds.length} selected attendance correction request(s)?`}
               </p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+
+              <div className={styles.approveModalFooter}>
                 <button
                   type="button"
                   onClick={() => setApproveModal({ isOpen: false, requestIds: [] })}
                   disabled={modalActionLoading}
                   className="btn btn-secondary btn-sm"
+                  style={{ padding: '9px 16px', borderRadius: '10px', fontSize: '13px' }}
                 >
                   Cancel
                 </button>
@@ -866,11 +892,10 @@ export default function AdminAttendanceCorrectionsPage() {
                   type="button"
                   onClick={confirmApproval}
                   disabled={modalActionLoading}
-                  className="btn btn-success btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', fontWeight: 600 }}
+                  className={styles.approveConfirmBtn}
                 >
                   {modalActionLoading ? (
-                    <Loader2 size={15} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <CheckCircle2 size={16} />
                   )}
@@ -891,59 +916,98 @@ export default function AdminAttendanceCorrectionsPage() {
       {/* Rejection Confirmation Modal */}
       {rejectModal.isOpen && (
         <div className={styles.modalBackdrop}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171' }}>
-                <XCircle size={20} />
-                <span>Confirm Attendance Rejection</span>
-              </h3>
+          <div className={styles.rejectModalCard}>
+            <div className={styles.rejectModalHeader}>
+              <div className={styles.rejectHeaderTitleGroup}>
+                <div className={styles.rejectIconBadge}>
+                  <XCircle size={22} color="#f43f5e" />
+                </div>
+                <div>
+                  <h3 className={styles.rejectModalTitle}>Confirm Rejection</h3>
+                  <p className={styles.rejectModalSub}>
+                    {rejectModal.requestIds.length === 1
+                      ? `Rejecting request for ${rejectModal.staffName || 'Staff Member'}`
+                      : `Rejecting ${rejectModal.requestIds.length} selected requests`}
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setRejectModal({ isOpen: false, requestIds: [], reason: '' })}
                 disabled={modalActionLoading}
+                className={styles.modalCloseBtn}
               >
                 <X size={18} />
               </button>
             </div>
-            <div style={{ padding: '20px' }}>
-              <p style={{ fontSize: '13.5px', color: '#cbd5e1', marginBottom: '12px', lineHeight: 1.5 }}>
-                {rejectModal.requestIds.length === 1
-                  ? `Please enter a rejection reason for ${rejectModal.staffName || 'this staff member'}'s request:`
-                  : `Please enter a rejection reason for ${rejectModal.requestIds.length} selected request(s):`}
-              </p>
 
-              <textarea
-                rows={3}
-                value={rejectModal.reason}
-                onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
-                placeholder="Enter rejection reason..."
-                className="form-control"
-                style={{
-                  width: '100%',
-                  backgroundColor: '#0f172a',
-                  color: '#ffffff',
-                  resize: 'none',
-                  marginBottom: '8px',
-                  borderColor: isRejectButtonEnabled ? '#10b981' : '#334155',
-                }}
-              />
+            <div className={styles.rejectModalBody}>
+              <label className={styles.rejectLabel}>
+                Reason for Rejection <span style={{ color: '#f43f5e' }}>*</span>
+              </label>
 
-              <div style={{ fontSize: '11.5px', marginBottom: '20px', fontWeight: 600 }}>
-                {rejectModal.reason.trim().length === 0 ? (
-                  <span style={{ color: '#ef4444' }}>⚠️ Rejection reason is required.</span>
-                ) : rejectModal.reason.trim().length === 1 ? (
-                  <span style={{ color: '#fbbf24' }}>⚠️ Minimum 2 letters required (1/2).</span>
-                ) : (
-                  <span style={{ color: '#34d399' }}>✓ Valid rejection reason.</span>
-                )}
+              {/* Quick Reason Presets */}
+              <div className={styles.presetContainer}>
+                <span className={styles.presetHeading}>Quick Reasons:</span>
+                <div className={styles.presetBadges}>
+                  {REJECTION_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className={styles.presetBadge}
+                      onClick={() => {
+                        if (!rejectModal.reason) {
+                          setRejectModal({ ...rejectModal, reason: preset });
+                        } else if (!rejectModal.reason.includes(preset)) {
+                          setRejectModal({ ...rejectModal, reason: `${rejectModal.reason}; ${preset}` });
+                        }
+                      }}
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <div style={{ position: 'relative' }}>
+                <textarea
+                  rows={3}
+                  value={rejectModal.reason}
+                  onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
+                  placeholder="Type rejection reason or tap quick reasons above..."
+                  className={styles.rejectTextarea}
+                  style={{
+                    borderColor: isRejectButtonEnabled
+                      ? 'rgba(16, 185, 129, 0.5)'
+                      : rejectModal.reason.length > 0
+                      ? 'rgba(245, 158, 11, 0.5)'
+                      : 'rgba(239, 68, 68, 0.3)',
+                  }}
+                />
+              </div>
+
+              <div className={styles.validationRow}>
+                <div>
+                  {rejectModal.reason.trim().length === 0 ? (
+                    <span className={styles.valStatusReq}>⚠️ Rejection reason is required</span>
+                  ) : rejectModal.reason.trim().length === 1 ? (
+                    <span className={styles.valStatusWarn}>⚠️ Minimum 2 letters required (1/2)</span>
+                  ) : (
+                    <span className={styles.valStatusValid}>✓ Valid rejection reason</span>
+                  )}
+                </div>
+                <span className={styles.charCount}>
+                  {rejectModal.reason.trim().length} chars
+                </span>
+              </div>
+
+              <div className={styles.rejectModalFooter}>
                 <button
                   type="button"
                   onClick={() => setRejectModal({ isOpen: false, requestIds: [], reason: '' })}
                   disabled={modalActionLoading}
                   className="btn btn-secondary btn-sm"
+                  style={{ padding: '9px 16px', borderRadius: '10px', fontSize: '13px' }}
                 >
                   Cancel
                 </button>
@@ -951,19 +1015,14 @@ export default function AdminAttendanceCorrectionsPage() {
                   type="button"
                   onClick={confirmRejection}
                   disabled={!isRejectButtonEnabled || modalActionLoading}
-                  className="btn btn-danger btn-sm"
+                  className={styles.rejectConfirmBtn}
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 18px',
-                    fontWeight: 600,
                     opacity: !isRejectButtonEnabled || modalActionLoading ? 0.5 : 1,
                     cursor: !isRejectButtonEnabled || modalActionLoading ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {modalActionLoading ? (
-                    <Loader2 size={15} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <XCircle size={16} />
                   )}

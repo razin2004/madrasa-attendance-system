@@ -641,69 +641,113 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
 
       {/* Rejection Confirmation Modal for Detail Page (Requires Min 2 letters) */}
       {showRejectConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ width: '100%', maxWidth: '480px', background: '#111827', border: '1px solid #1f2937', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #1f2937', background: 'rgba(15, 23, 42, 0.8)' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#f87171', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <XCircle size={20} />
-                <span>Confirm Attendance Rejection</span>
-              </h3>
-              <button type="button" onClick={() => setShowRejectConfirm(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ width: '100%', maxWidth: '500px', background: 'linear-gradient(145deg, #0f172a, #1e1b4b)', border: '1px solid rgba(244, 63, 94, 0.35)', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(244, 63, 94, 0.15)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', background: 'rgba(244, 63, 94, 0.08)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <XCircle size={22} color="#f43f5e" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#ffffff', margin: 0, lineHeight: 1.2 }}>Confirm Rejection</h3>
+                  <p style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '3px', margin: 0, lineHeight: 1.2 }}>Rejecting request for {staffName}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setShowRejectConfirm(false)} style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={18} />
               </button>
             </div>
-            <div style={{ padding: '20px' }}>
-              <p style={{ fontSize: '13.5px', color: '#cbd5e1', marginBottom: '12px', lineHeight: 1.5 }}>
-                Please enter a rejection reason for <strong>{staffName}</strong>&apos;s request (minimum 2 characters):
-              </p>
+            <div style={{ padding: '24px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#e2e8f0', marginBottom: '10px' }}>
+                Reason for Rejection <span style={{ color: '#f43f5e' }}>*</span>
+              </label>
+              
+              {/* Quick Reason Presets */}
+              <div style={{ marginBottom: '12px' }}>
+                <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Quick Reasons:</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {['Unverified location / Outside geofence', 'Unapproved network / Wi-Fi', 'Unregistered mobile device', 'Incorrect punch time submitted', 'Insufficient explanation provided'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        const current = rejectReason || comment;
+                        const updated = !current ? preset : !current.includes(preset) ? `${current}; ${preset}` : current;
+                        setRejectReason(updated);
+                        setComment(updated);
+                      }}
+                      style={{ background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#cbd5e1', borderRadius: '6px', padding: '4px 9px', fontSize: '11.5px', cursor: 'pointer' }}
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <textarea
                 rows={3}
-                value={rejectReason}
+                value={rejectReason || comment}
                 onChange={(e) => {
                   setRejectReason(e.target.value);
                   setComment(e.target.value);
                 }}
-                placeholder="Enter rejection reason (at least 2 characters)..."
-                className="form-control"
+                placeholder="Type rejection reason or tap quick reasons above..."
                 style={{
                   width: '100%',
-                  backgroundColor: '#0f172a',
+                  backgroundColor: 'rgba(3, 7, 18, 0.7)',
                   color: '#ffffff',
+                  borderRadius: '12px',
+                  border: `1px solid ${isRejectEnabled ? 'rgba(16, 185, 129, 0.5)' : (rejectReason || comment).length > 0 ? 'rgba(245, 158, 11, 0.5)' : 'rgba(239, 68, 68, 0.3)'}`,
+                  padding: '12px',
+                  fontSize: '13.5px',
+                  lineHeight: 1.5,
                   resize: 'none',
-                  marginBottom: '8px',
-                  borderColor: isRejectEnabled ? '#10b981' : '#334155',
+                  outline: 'none',
+                  boxSizing: 'border-box',
                 }}
               />
-              <div style={{ fontSize: '11.5px', marginBottom: '20px', fontWeight: 600 }}>
-                {(rejectReason.trim() || comment.trim()).length === 0 ? (
-                  <span style={{ color: '#ef4444' }}>⚠️ Rejection reason is required.</span>
-                ) : (rejectReason.trim() || comment.trim()).length === 1 ? (
-                  <span style={{ color: '#fbbf24' }}>⚠️ Minimum 2 letters required (1/2).</span>
-                ) : (
-                  <span style={{ color: '#34d399' }}>✓ Valid rejection reason.</span>
-                )}
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, marginTop: '8px', marginBottom: '24px' }}>
+                <div>
+                  {(rejectReason.trim() || comment.trim()).length === 0 ? (
+                    <span style={{ color: '#ef4444' }}>⚠️ Rejection reason is required</span>
+                  ) : (rejectReason.trim() || comment.trim()).length === 1 ? (
+                    <span style={{ color: '#fbbf24' }}>⚠️ Minimum 2 letters required (1/2)</span>
+                  ) : (
+                    <span style={{ color: '#34d399' }}>✓ Valid rejection reason</span>
+                  )}
+                </div>
+                <span style={{ color: '#64748b', fontFamily: 'var(--font-mono)', fontSize: '11.5px' }}>
+                  {(rejectReason.trim() || comment.trim()).length} chars
+                </span>
               </div>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button type="button" onClick={() => setShowRejectConfirm(false)} disabled={actionLoading} className="btn btn-secondary btn-sm">
+                <button type="button" onClick={() => setShowRejectConfirm(false)} disabled={actionLoading} className="btn btn-secondary btn-sm" style={{ padding: '9px 16px', borderRadius: '10px', fontSize: '13px' }}>
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleRejectSubmit}
                   disabled={!isRejectEnabled || actionLoading}
-                  className="btn btn-danger btn-sm"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
-                    padding: '8px 18px',
-                    fontWeight: 600,
+                    padding: '9px 20px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #f43f5e, #e11d48)',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    border: 'none',
+                    boxShadow: '0 4px 14px rgba(244, 63, 94, 0.4)',
                     opacity: !isRejectEnabled || actionLoading ? 0.5 : 1,
                     cursor: !isRejectEnabled || actionLoading ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {actionLoading ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={16} />}
-                  <span>{actionLoading ? 'Rejecting...' : 'Confirm Rejection'}</span>
+                  {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
+                  <span>{actionLoading ? 'Rejecting...' : 'Reject Request'}</span>
                 </button>
               </div>
             </div>
