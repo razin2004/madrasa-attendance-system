@@ -1090,7 +1090,7 @@ export default function StaffDashboardPage() {
       <AttendanceWarningModal
         isOpen={showWarningModal}
         onClose={() => setShowWarningModal(false)}
-        onConfirm={() => executeClockAction(warningActionType, true)}
+        onConfirm={(reason) => executeClockAction(warningActionType, true, reason)}
         actionType={warningActionType}
         submitting={submittingUnverified}
         evaluation={precheck}
