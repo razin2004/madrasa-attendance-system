@@ -53,6 +53,7 @@ export async function POST(
       },
       deviceLabel,
       userAgent,
+      submitForApproval: Boolean(body.submitForApproval),
     });
 
     if (!result.success) {
@@ -64,6 +65,16 @@ export async function POST(
         },
         { status: 400 }
       );
+    }
+
+    if (result.pendingApproval) {
+      return NextResponse.json({
+        success: true,
+        pendingApproval: true,
+        message: 'Clock-in request submitted to Admin panel for approval.',
+        evaluation: result.evaluation,
+        pendingCorrectionRequest: result.pendingCorrectionRequest,
+      });
     }
 
     return NextResponse.json({

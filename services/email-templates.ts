@@ -1344,3 +1344,74 @@ ${data.loginUrl}
   return { subject, html, text };
 }
 
+/**
+ * 23. Additional Shift Assigned (Sent to Staff Member)
+ */
+export function templateAdditionalShiftAssigned(data: {
+  staffName: string;
+  orgName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  title?: string | null;
+  notes?: string | null;
+  loginUrl: string;
+}): EmailTemplatePayload {
+  const subject = `ShiftGuard — Additional Shift Assigned: ${data.date} (${data.startTime} – ${data.endTime})`;
+  const html = emailWrapper(
+    'Additional Shift Assigned',
+    `
+    <h2 class="title" style="color: #fbbf24;">⚡ Additional Shift Assigned</h2>
+    <p>Hello <strong>${data.staffName}</strong>,</p>
+    <p>An additional shift has been assigned to your profile at <strong>${data.orgName}</strong>:</p>
+
+    <div class="box" style="border-left: 4px solid #f59e0b;">
+      <div class="credential-item">
+        <div class="credential-label">Shift Title</div>
+        <div class="credential-value" style="color: #fbbf24;">${data.title || 'Additional Shift / Overtime'}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Shift Date</div>
+        <div class="credential-value" style="color: #ffffff;">${data.date}</div>
+      </div>
+      <div class="credential-item">
+        <div class="credential-label">Shift Hours</div>
+        <div class="credential-value" style="color: #38bdf8;">${data.startTime} – ${data.endTime}</div>
+      </div>
+      ${
+        data.notes
+          ? `
+      <div class="credential-item">
+        <div class="credential-label">Notes / Instructions</div>
+        <div style="color: #cbd5e1; font-size: 13.5px;">${data.notes}</div>
+      </div>
+      `
+          : ''
+      }
+    </div>
+
+    <div style="text-align: center;">
+      <a href="${data.loginUrl}" class="btn">View Attendance &amp; Schedule &rarr;</a>
+    </div>
+    `
+  );
+
+  const text = `
+SHIFTGUARD — ADDITIONAL SHIFT ASSIGNED
+
+Hello ${data.staffName},
+
+An additional shift (${data.title || 'Additional Shift'}) has been assigned to your profile at ${data.orgName}:
+
+Shift Date: ${data.date}
+Shift Hours: ${data.startTime} - ${data.endTime}
+${data.notes ? `Notes: ${data.notes}\n` : ''}
+
+View Schedule:
+${data.loginUrl}
+  `.trim();
+
+  return { subject, html, text };
+}
+
+

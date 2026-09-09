@@ -3,6 +3,8 @@ import { calculateStaffDaySchedule } from './roster.service';
 import { AttendanceSource, LeaveType, Weekday } from '@prisma/client';
 import { formatUtcDateString, normalizeDate } from './attendance.service';
 
+import { formatTimeInTimezone } from '@/lib/timezone';
+
 export interface DailyReportFilterParams {
   organizationId: string;
   date: string; // "YYYY-MM-DD"
@@ -34,6 +36,13 @@ export interface DateRangeReportFilterParams {
   search?: string;
 }
 
+export interface BreakDetail {
+  clockOutTime: string;
+  clockInTime: string;
+  durationMinutes: number;
+  durationFormatted: string;
+}
+
 export interface AttendanceReportRow {
   staffProfileId: string;
   staffId: string;
@@ -44,6 +53,7 @@ export interface AttendanceReportRow {
   dayOfWeek: string;
   branchId: string | null;
   branchName: string;
+  branchTimezone: string;
   shiftPatternName: string;
   scheduledStart: string | null;
   scheduledEnd: string | null;
@@ -53,6 +63,17 @@ export interface AttendanceReportRow {
   clockOutTime: string | null;
   clockInIso: string | null;
   clockOutIso: string | null;
+  displayClockInTime: string | null;
+  displayClockOutTime: string | null;
+  lateInMinutes: number;
+  lateInFormatted: string;
+  earlyOutMinutes: number;
+  earlyOutFormatted: string;
+  totalBreakMinutes: number;
+  totalBreakFormatted: string;
+  breakDetails: BreakDetail[];
+  totalWorkingHoursMinutes: number;
+  totalWorkingHoursFormatted: string;
   status:
     | 'PRESENT'
     | 'PARTIAL'
@@ -72,6 +93,8 @@ export interface AttendanceReportRow {
   creatorName: string | null;
   reviewerName: string | null;
   adjustmentReason: string | null;
+  isAdditionalShift?: boolean;
+  additionalShiftId?: string | null;
 }
 
 export interface ReportMetricsSummary {
@@ -106,6 +129,198 @@ export function parseIsoDateString(dateStr: string): Date {
   return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
 }
 
+export function formatMinutesToDuration(minutes: number): string {
+  if (!minutes || minutes <= 0) return '0 mins';
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs > 0 && mins > 0) return `${hrs} hr${hrs > 1 ? 's' : ''} ${mins} min${mins > 1 ? 's' : ''}`;
+  if (hrs > 0) return `${hrs} hr${hrs > 1 ? 's' : ''}`;
+  return `${mins} min${mins > 1 ? 's' : ''}`;
+}
+
+/**
+ * Calculates display times, breaks, late/early durations, and total working hours.
+ */
+export function calculateAttendanceMetricsForPunches(params: {
+  records: Array<{ type: string; timestamp: Date }>;
+  scheduledStart: string | null; // "HH:MM" 24h
+  scheduledEnd: string | null;   // "HH:MM" 24h
+  timezone: string;
+}) {
+  const { records, scheduledStart, scheduledEnd, timezone } = params;
+
+  const sortedRecords = [...records].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  const clockInRecords = sortedRecords.filter((r) => r.type === 'CLOCK_IN');
+  const clockOutRecords = sortedRecords.filter((r) => r.type === 'CLOCK_OUT');
+
+  const firstClockIn = clockInRecords[0];
+  const lastClockOut = clockOutRecords[clockOutRecords.length - 1];
+
+  if (!firstClockIn) {
+    return {
+      displayClockInTime: null,
+      displayClockOutTime: null,
+      lateInMinutes: 0,
+      lateInFormatted: '—',
+      earlyOutMinutes: 0,
+      earlyOutFormatted: '—',
+      totalBreakMinutes: 0,
+      totalBreakFormatted: '—',
+      breakDetails: [],
+      totalWorkingHoursMinutes: 0,
+      totalWorkingHoursFormatted: '0 hrs',
+    };
+  }
+
+  // 1. Calculate Multi-punch Breaks
+  const breakDetails: BreakDetail[] = [];
+  let totalBreakMinutes = 0;
+
+  for (let i = 0; i < sortedRecords.length - 1; i++) {
+    const current = sortedRecords[i];
+    const next = sortedRecords[i + 1];
+
+    if (current.type === 'CLOCK_OUT' && next.type === 'CLOCK_IN') {
+      const diffMs = next.timestamp.getTime() - current.timestamp.getTime();
+      if (diffMs > 0) {
+        const breakMins = Math.floor(diffMs / (1000 * 60));
+        totalBreakMinutes += breakMins;
+
+        breakDetails.push({
+          clockOutTime: formatTimeInTimezone(current.timestamp, timezone),
+          clockInTime: formatTimeInTimezone(next.timestamp, timezone),
+          durationMinutes: breakMins,
+          durationFormatted: formatMinutesToDuration(breakMins),
+        });
+      }
+    }
+  }
+
+  // 2. Parse Scheduled Shift Start & End in Minutes from midnight (if available)
+  let schedStartMins: number | null = null;
+  let schedEndMins: number | null = null;
+
+  if (scheduledStart && scheduledStart.includes(':')) {
+    const [sh, sm] = scheduledStart.split(':').map((v) => parseInt(v, 10));
+    schedStartMins = sh * 60 + sm;
+  }
+  if (scheduledEnd && scheduledEnd.includes(':')) {
+    const [eh, em] = scheduledEnd.split(':').map((v) => parseInt(v, 10));
+    schedEndMins = eh * 60 + em;
+    if (schedStartMins !== null && schedEndMins < schedStartMins) {
+      schedEndMins += 24 * 60; // Overnight shift handle
+    }
+  }
+
+  // 3. Extract actual Clock-In time in branch timezone
+  const inBranchParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  }).formatToParts(firstClockIn.timestamp);
+
+  let actualInHour = 0;
+  let actualInMin = 0;
+  for (const part of inBranchParts) {
+    if (part.type === 'hour') actualInHour = parseInt(part.value, 10) % 24;
+    if (part.type === 'minute') actualInMin = parseInt(part.value, 10);
+  }
+  const actualInMins = actualInHour * 60 + actualInMin;
+
+  // Clock-In Rounding & Late In calculation
+  let displayClockInTime = formatTimeInTimezone(firstClockIn.timestamp, timezone);
+  let lateInMinutes = 0;
+
+  if (schedStartMins !== null) {
+    if (actualInMins < schedStartMins) {
+      // Early arrival: display official shift start time
+      const [sh, sm] = scheduledStart!.split(':').map(Number);
+      const isPm = sh >= 12;
+      const h12 = sh % 12 || 12;
+      displayClockInTime = `${String(h12).padStart(2, '0')}:${String(sm).padStart(2, '0')} ${isPm ? 'PM' : 'AM'}`;
+      lateInMinutes = 0;
+    } else if (actualInMins > schedStartMins) {
+      // Late arrival: display exact late clock-in time
+      displayClockInTime = formatTimeInTimezone(firstClockIn.timestamp, timezone);
+      lateInMinutes = actualInMins - schedStartMins;
+    } else {
+      lateInMinutes = 0;
+    }
+  }
+
+  // 4. Extract actual Clock-Out time in branch timezone & Early Out calculation
+  let displayClockOutTime: string | null = null;
+  let earlyOutMinutes = 0;
+
+  if (lastClockOut) {
+    const outBranchParts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    }).formatToParts(lastClockOut.timestamp);
+
+    let actualOutHour = 0;
+    let actualOutMin = 0;
+    for (const part of outBranchParts) {
+      if (part.type === 'hour') actualOutHour = parseInt(part.value, 10) % 24;
+      if (part.type === 'minute') actualOutMin = parseInt(part.value, 10);
+    }
+    let actualOutMins = actualOutHour * 60 + actualOutMin;
+    if (schedStartMins !== null && actualOutMins < schedStartMins) {
+      actualOutMins += 24 * 60; // Overnight clock out handle
+    }
+
+    if (schedEndMins !== null) {
+      if (actualOutMins > schedEndMins) {
+        // Late Departure: display official shift end time
+        const [eh, em] = scheduledEnd!.split(':').map(Number);
+        const isPm = eh >= 12;
+        const h12 = eh % 12 || 12;
+        displayClockOutTime = `${String(h12).padStart(2, '0')}:${String(em).padStart(2, '0')} ${isPm ? 'PM' : 'AM'}`;
+        earlyOutMinutes = 0;
+      } else if (actualOutMins < schedEndMins) {
+        // Early Departure: display actual early clock-out time
+        displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp, timezone);
+        earlyOutMinutes = schedEndMins - actualOutMins;
+      } else {
+        displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp, timezone);
+        earlyOutMinutes = 0;
+      }
+    } else {
+      displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp, timezone);
+    }
+  }
+
+  // 5. Total Working Hours Calculation Formula:
+  // Total Working Hours = Total Shift Time - (Total Break Time + Late In Duration + Early Out Duration)
+  let totalWorkingHoursMinutes = 0;
+
+  if (schedStartMins !== null && schedEndMins !== null && lastClockOut) {
+    const totalShiftTime = schedEndMins - schedStartMins;
+    totalWorkingHoursMinutes = Math.max(0, totalShiftTime - (totalBreakMinutes + lateInMinutes + earlyOutMinutes));
+  } else if (lastClockOut) {
+    // Unscheduled shift: elapsed time minus breaks
+    const elapsedMinutes = Math.floor((lastClockOut.timestamp.getTime() - firstClockIn.timestamp.getTime()) / (1000 * 60));
+    totalWorkingHoursMinutes = Math.max(0, elapsedMinutes - totalBreakMinutes);
+  }
+
+  return {
+    displayClockInTime,
+    displayClockOutTime: displayClockOutTime || '—',
+    lateInMinutes,
+    lateInFormatted: lateInMinutes > 0 ? formatMinutesToDuration(lateInMinutes) : '—',
+    earlyOutMinutes,
+    earlyOutFormatted: earlyOutMinutes > 0 ? formatMinutesToDuration(earlyOutMinutes) : '—',
+    totalBreakMinutes,
+    totalBreakFormatted: totalBreakMinutes > 0 ? formatMinutesToDuration(totalBreakMinutes) : '—',
+    breakDetails,
+    totalWorkingHoursMinutes,
+    totalWorkingHoursFormatted: formatMinutesToDuration(totalWorkingHoursMinutes),
+  };
+}
+
 /**
  * 1. Calculate Daily Attendance Report (Section 6 - 20, 28 - 35)
  */
@@ -134,7 +349,7 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       user: { select: { id: true, name: true, status: true, email: true } },
       branchAssignments: {
         include: {
-          branch: { select: { id: true, name: true, status: true } },
+          branch: { select: { id: true, name: true, status: true, timezone: true } },
         },
       },
       shiftAssignments: {
@@ -175,7 +390,7 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       verificationStatus: 'VERIFIED',
     },
     include: {
-      branch: { select: { id: true, name: true } },
+      branch: { select: { id: true, name: true, timezone: true } },
       creatorUser: { select: { id: true, name: true } },
       correctionRequest: {
         include: {
@@ -367,6 +582,15 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     else if (source === 'MANUAL') metrics.sourceMetrics.manualCount++;
     else if (source === 'ADJUSTED') metrics.sourceMetrics.adjustedCount++;
 
+    const branchTimezone = recordedBranch?.timezone || profile.branchAssignments[0]?.branch.timezone || 'Asia/Kolkata';
+
+    const metricsCalc = calculateAttendanceMetricsForPunches({
+      records: staffRecords,
+      scheduledStart: schedule.startTime,
+      scheduledEnd: schedule.endTime,
+      timezone: branchTimezone,
+    });
+
     rows.push({
       staffProfileId: profile.id,
       staffId: profile.staffId,
@@ -377,15 +601,27 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       dayOfWeek,
       branchId,
       branchName,
+      branchTimezone,
       shiftPatternName: schedule.shiftPatternName || 'Default Shift',
       scheduledStart: schedule.startTime,
       scheduledEnd: schedule.endTime,
       isOvernight: schedule.isOvernight,
       isRosterHoliday: schedule.isHoliday,
-      clockInTime: clockInRecord ? clockInRecord.timestamp.toISOString().slice(11, 16) : null,
-      clockOutTime: clockOutRecord ? clockOutRecord.timestamp.toISOString().slice(11, 16) : null,
+      clockInTime: clockInRecord ? formatTimeInTimezone(clockInRecord.timestamp, branchTimezone) : null,
+      clockOutTime: clockOutRecord ? formatTimeInTimezone(clockOutRecord.timestamp, branchTimezone) : null,
       clockInIso: clockInRecord?.timestamp.toISOString() || null,
       clockOutIso: clockOutRecord?.timestamp.toISOString() || null,
+      displayClockInTime: metricsCalc.displayClockInTime,
+      displayClockOutTime: metricsCalc.displayClockOutTime,
+      lateInMinutes: metricsCalc.lateInMinutes,
+      lateInFormatted: metricsCalc.lateInFormatted,
+      earlyOutMinutes: metricsCalc.earlyOutMinutes,
+      earlyOutFormatted: metricsCalc.earlyOutFormatted,
+      totalBreakMinutes: metricsCalc.totalBreakMinutes,
+      totalBreakFormatted: metricsCalc.totalBreakFormatted,
+      breakDetails: metricsCalc.breakDetails,
+      totalWorkingHoursMinutes: metricsCalc.totalWorkingHoursMinutes,
+      totalWorkingHoursFormatted: metricsCalc.totalWorkingHoursFormatted,
       status,
       source,
       leaveType: staffLeave?.type || null,
@@ -478,7 +714,7 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
       verificationStatus: 'VERIFIED',
     },
     include: {
-      branch: { select: { id: true, name: true } },
+      branch: { select: { id: true, name: true, timezone: true } },
       creatorUser: { select: { id: true, name: true } },
       correctionRequest: {
         include: { reviewerUser: { select: { id: true, name: true } } },
@@ -495,6 +731,15 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
       status: 'APPROVED',
       startDate: { lte: endOfMonth },
       endDate: { gte: startOfMonth },
+    },
+  });
+
+  // Batch query all additional shifts for the entire month
+  const monthAdditionalShifts = await prisma.additionalShift.findMany({
+    where: {
+      organizationId,
+      staffProfileId: targetStaffProfileId,
+      date: { gte: startOfMonth, lte: endOfMonth },
     },
   });
 
@@ -620,6 +865,15 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
       reviewerName = cr?.reviewerUser?.name || null;
     }
 
+    const rowTimezone = recordedBranch?.timezone || staffFull.branchAssignments[0]?.branch.timezone || 'Asia/Kolkata';
+
+    const dayMetricsCalc = calculateAttendanceMetricsForPunches({
+      records: dayRecords.filter((r) => !r.isAdditionalShift && !r.additionalShiftId),
+      scheduledStart: schedule.startTime,
+      scheduledEnd: schedule.endTime,
+      timezone: rowTimezone,
+    });
+
     daysRows.push({
       staffProfileId: staffFull.id,
       staffId: staffFull.staffId,
@@ -630,15 +884,27 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
       dayOfWeek,
       branchId: rowBranchId,
       branchName: rowBranchName,
+      branchTimezone: rowTimezone,
       shiftPatternName: schedule.shiftPatternName || 'Default Shift',
       scheduledStart: schedule.startTime,
       scheduledEnd: schedule.endTime,
       isOvernight: schedule.isOvernight,
       isRosterHoliday: schedule.isHoliday,
-      clockInTime: clockInRecord ? clockInRecord.timestamp.toISOString().slice(11, 16) : null,
-      clockOutTime: clockOutRecord ? clockOutRecord.timestamp.toISOString().slice(11, 16) : null,
+      clockInTime: clockInRecord ? formatTimeInTimezone(clockInRecord.timestamp, rowTimezone) : null,
+      clockOutTime: clockOutRecord ? formatTimeInTimezone(clockOutRecord.timestamp, rowTimezone) : null,
       clockInIso: clockInRecord?.timestamp.toISOString() || null,
       clockOutIso: clockOutRecord?.timestamp.toISOString() || null,
+      displayClockInTime: dayMetricsCalc.displayClockInTime,
+      displayClockOutTime: dayMetricsCalc.displayClockOutTime,
+      lateInMinutes: dayMetricsCalc.lateInMinutes,
+      lateInFormatted: dayMetricsCalc.lateInFormatted,
+      earlyOutMinutes: dayMetricsCalc.earlyOutMinutes,
+      earlyOutFormatted: dayMetricsCalc.earlyOutFormatted,
+      totalBreakMinutes: dayMetricsCalc.totalBreakMinutes,
+      totalBreakFormatted: dayMetricsCalc.totalBreakFormatted,
+      breakDetails: dayMetricsCalc.breakDetails,
+      totalWorkingHoursMinutes: dayMetricsCalc.totalWorkingHoursMinutes,
+      totalWorkingHoursFormatted: dayMetricsCalc.totalWorkingHoursFormatted,
       status: rowStatus,
       source: rowSource,
       leaveType: dayLeave?.type || null,
@@ -650,7 +916,83 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
       creatorName,
       reviewerName,
       adjustmentReason,
+      isAdditionalShift: false,
     });
+
+    // Check if there are Additional Shifts for this date
+    const dayAddShifts = monthAdditionalShifts.filter((s) => {
+      const sDateStr = s.date.toISOString().slice(0, 10);
+      return sDateStr === dayStr;
+    });
+
+    for (const addShift of dayAddShifts) {
+      // Additional shift attendance records (records tagged with isAdditionalShift: true or matching shift window)
+      const addRecords = dayRecords.filter((r) => r.isAdditionalShift || r.additionalShiftId === addShift.id);
+      const addClockInRecord = addRecords.find((r) => r.type === 'CLOCK_IN');
+      const addClockOutRecord = addRecords.find((r) => r.type === 'CLOCK_OUT');
+
+      let addStatus: AttendanceReportRow['status'] = 'NOT YET CLOCKED IN';
+      if (addClockInRecord && addClockOutRecord) {
+        addStatus = 'PRESENT';
+      } else if (addClockInRecord) {
+        addStatus = isToday ? 'IN PROGRESS' : 'PARTIAL';
+      } else {
+        addStatus = 'OFF DUTY';
+      }
+
+      const addMetricsCalc = calculateAttendanceMetricsForPunches({
+        records: addRecords,
+        scheduledStart: addShift.startTime,
+        scheduledEnd: addShift.endTime,
+        timezone: rowTimezone,
+      });
+
+      daysRows.push({
+        staffProfileId: staffFull.id,
+        staffId: staffFull.staffId,
+        staffName: staffFull.name,
+        staffPhone: staffFull.phone || '',
+        accountStatus: staffFull.user.status,
+        date: dayStr,
+        dayOfWeek,
+        branchId: rowBranchId,
+        branchName: rowBranchName,
+        branchTimezone: rowTimezone,
+        shiftPatternName: addShift.title || '⚡ Additional Shift',
+        scheduledStart: addShift.startTime,
+        scheduledEnd: addShift.endTime,
+        isOvernight: addShift.isOvernight,
+        isRosterHoliday: false,
+        clockInTime: addClockInRecord ? formatTimeInTimezone(addClockInRecord.timestamp, rowTimezone) : null,
+        clockOutTime: addClockOutRecord ? formatTimeInTimezone(addClockOutRecord.timestamp, rowTimezone) : null,
+        clockInIso: addClockInRecord?.timestamp.toISOString() || null,
+        clockOutIso: addClockOutRecord?.timestamp.toISOString() || null,
+        displayClockInTime: addMetricsCalc.displayClockInTime,
+        displayClockOutTime: addMetricsCalc.displayClockOutTime,
+        lateInMinutes: addMetricsCalc.lateInMinutes,
+        lateInFormatted: addMetricsCalc.lateInFormatted,
+        earlyOutMinutes: addMetricsCalc.earlyOutMinutes,
+        earlyOutFormatted: addMetricsCalc.earlyOutFormatted,
+        totalBreakMinutes: addMetricsCalc.totalBreakMinutes,
+        totalBreakFormatted: addMetricsCalc.totalBreakFormatted,
+        breakDetails: addMetricsCalc.breakDetails,
+        totalWorkingHoursMinutes: addMetricsCalc.totalWorkingHoursMinutes,
+        totalWorkingHoursFormatted: addMetricsCalc.totalWorkingHoursFormatted,
+        status: addStatus,
+        source: addClockInRecord?.source || '—',
+        leaveType: null,
+        leaveTypeName: null,
+        leaveReason: null,
+        hasConflict: false,
+        conflictDetails: null,
+        manualReason: null,
+        creatorName: null,
+        reviewerName: null,
+        adjustmentReason: null,
+        isAdditionalShift: true,
+        additionalShiftId: addShift.id,
+      });
+    }
   }
 
   // Aggregate Monthly Summary Metrics

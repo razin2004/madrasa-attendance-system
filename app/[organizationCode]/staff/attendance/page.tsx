@@ -19,6 +19,8 @@ import {
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from './StaffAttendanceHistory.module.css';
 
+import { BreakPopover } from '@/components/attendance/break-popover';
+
 export default function StaffAttendancePage() {
   const params = useParams();
   const orgCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -56,18 +58,6 @@ export default function StaffAttendancePage() {
 
   const metrics = reportData?.monthlyMetrics;
   const rows = reportData?.daysRows || [];
-
-  const formatDisplayTime = (timeStr?: string | null, isoStr?: string | null) => {
-    if (isoStr) {
-      try {
-        const d = new Date(isoStr);
-        if (!isNaN(d.getTime())) {
-          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-      } catch {}
-    }
-    return timeStr || '—';
-  };
 
   return (
     <div className={styles.attendanceContainer}>
@@ -178,38 +168,64 @@ export default function StaffAttendancePage() {
                 <tr>
                   <th>Date</th>
                   <th>Shift Pattern</th>
-                  <th>Sched. Start</th>
-                  <th>Clock In</th>
-                  <th>Sched. End</th>
-                  <th>Clock Out</th>
+                  <th>Clock In Time</th>
+                  <th>Clock Out Time</th>
+                  <th>Break Time</th>
+                  <th>Total Working Hours</th>
                   <th>Status</th>
-                  <th>Source</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row: any) => {
+                {rows.map((row: any, idx: number) => {
                   const isPresent = row.status === 'PRESENT';
                   const isPartial = row.status === 'PARTIAL' || row.status === 'IN PROGRESS';
                   const isAbsent = row.status === 'ABSENT';
                   const isLeave = row.status === 'APPROVED LEAVE';
                   const isHoliday = row.status === 'HOLIDAY';
+                  const isAdd = row.isAdditionalShift;
+
+                  const breaksList = (row.breakDetails || []).map((b: any, bIdx: number) => ({
+                    breakNumber: bIdx + 1,
+                    startTime: b.clockOutTime,
+                    endTime: b.clockInTime,
+                    durationMinutes: b.durationMinutes,
+                  }));
 
                   return (
-                    <tr key={row.date}>
+                    <tr
+                      key={isAdd ? `${row.date}-add-${idx}` : `${row.date}-reg-${idx}`}
+                      style={
+                        isAdd
+                          ? { backgroundColor: 'rgba(245, 158, 11, 0.06)', borderLeft: '3px solid #f59e0b' }
+                          : undefined
+                      }
+                    >
                       <td style={{ fontWeight: 600, color: '#ffffff' }}>
                         {row.date}
                         <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '6px' }}>
-                          ({row.dayOfWeek.slice(0, 3)})
+                          ({row.dayOfWeek?.slice(0, 3)})
                         </span>
                       </td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{row.shiftPatternName}</td>
-                      <td style={{ color: 'var(--text-muted)' }}>{row.scheduledStart || '—'}</td>
-                      <td style={{ fontWeight: 700, color: row.clockInIso || row.clockInTime ? '#34d399' : 'var(--text-muted)' }}>
-                        {formatDisplayTime(row.clockInTime, row.clockInIso)}
+                      <td>
+                        {isAdd ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11px', fontWeight: 700 }}>
+                            ⚡ {row.shiftPatternName || 'Additional Shift'}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-secondary)' }}>{row.shiftPatternName}</span>
+                        )}
                       </td>
-                      <td style={{ color: 'var(--text-muted)' }}>{row.scheduledEnd || '—'}</td>
-                      <td style={{ fontWeight: 700, color: row.clockOutIso || row.clockOutTime ? '#fbbf24' : 'var(--text-muted)' }}>
-                        {formatDisplayTime(row.clockOutTime, row.clockOutIso)}
+                      <td style={{ fontWeight: 700, color: row.displayClockInTime || row.clockInTime ? '#34d399' : 'var(--text-muted)' }}>
+                        {row.displayClockInTime || row.clockInTime || '—'}
+                      </td>
+                      <td style={{ fontWeight: 700, color: row.displayClockOutTime || row.clockOutTime ? '#fbbf24' : 'var(--text-muted)' }}>
+                        {row.displayClockOutTime || row.clockOutTime || '—'}
+                      </td>
+                      <td>
+                        <BreakPopover totalBreakMinutes={row.totalBreakMinutes || 0} breaks={breaksList} />
+                      </td>
+                      <td style={{ fontWeight: 700, color: '#818cf8' }}>
+                        {row.totalWorkingHoursFormatted || '0 hrs'}
                       </td>
                       <td>
                         <span
@@ -230,9 +246,6 @@ export default function StaffAttendancePage() {
                           {row.status}
                         </span>
                       </td>
-                      <td style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                        {row.source}
-                      </td>
                     </tr>
                   );
                 })}
@@ -242,12 +255,20 @@ export default function StaffAttendancePage() {
 
           {/* Mobile Cards List View */}
           <div className={styles.mobileCardsList}>
-            {rows.map((row: any) => {
+            {rows.map((row: any, idx: number) => {
               const isPresent = row.status === 'PRESENT';
               const isPartial = row.status === 'PARTIAL' || row.status === 'IN PROGRESS';
               const isAbsent = row.status === 'ABSENT';
               const isLeave = row.status === 'APPROVED LEAVE';
               const isHoliday = row.status === 'HOLIDAY';
+              const isAdd = row.isAdditionalShift;
+
+              const breaksList = (row.breakDetails || []).map((b: any, bIdx: number) => ({
+                breakNumber: bIdx + 1,
+                startTime: b.clockOutTime,
+                endTime: b.clockInTime,
+                durationMinutes: b.durationMinutes,
+              }));
 
               const formattedDate = (() => {
                 try {
@@ -260,15 +281,21 @@ export default function StaffAttendancePage() {
               })();
 
               return (
-                <div key={row.date} className={styles.historyCardMobile}>
+                <div
+                  key={isAdd ? `${row.date}-add-${idx}` : `${row.date}-reg-${idx}`}
+                  className={styles.historyCardMobile}
+                  style={isAdd ? { borderColor: 'rgba(245, 158, 11, 0.4)', backgroundColor: 'rgba(245, 158, 11, 0.05)' } : undefined}
+                >
                   <div className={styles.cardHeaderMobile}>
                     <div className={styles.cardDateGroup}>
-                      <div className={styles.calendarIconBox}>
-                        <Calendar size={15} color="#818cf8" />
+                      <div className={styles.calendarIconBox} style={isAdd ? { backgroundColor: 'rgba(245, 158, 11, 0.15)' } : undefined}>
+                        {isAdd ? <span style={{ color: '#fbbf24', fontSize: '13px' }}>⚡</span> : <Calendar size={15} color="#818cf8" />}
                       </div>
                       <div>
                         <div className={styles.cardDateText}>{formattedDate}</div>
-                        <div className={styles.cardDayText}>{row.dayOfWeek}</div>
+                        <div className={styles.cardDayText}>
+                          {row.dayOfWeek} {isAdd ? '• Additional Shift' : ''}
+                        </div>
                       </div>
                     </div>
                     <span
@@ -297,32 +324,34 @@ export default function StaffAttendancePage() {
                     <div className={styles.shiftInfoRow}>
                       <span className={styles.shiftLabel}>Shift:</span>
                       <span className={styles.shiftValue}>{row.shiftPatternName || 'Default Shift'}</span>
-                      {row.scheduledStart && row.scheduledEnd && (
-                        <span className={styles.shiftScheduleText}>({row.scheduledStart} – {row.scheduledEnd})</span>
-                      )}
                     </div>
 
                     <div className={styles.punchGridMobile}>
                       <div className={styles.punchBoxIn}>
                         <span className={styles.punchBoxLabel}>Clock In</span>
                         <span className={styles.punchBoxTime}>
-                          {formatDisplayTime(row.clockInTime, row.clockInIso)}
+                          {row.displayClockInTime || row.clockInTime || '—'}
                         </span>
                       </div>
 
                       <div className={styles.punchBoxOut}>
                         <span className={styles.punchBoxLabel}>Clock Out</span>
                         <span className={styles.punchBoxTime}>
-                          {formatDisplayTime(row.clockOutTime, row.clockOutIso)}
+                          {row.displayClockOutTime || row.clockOutTime || '—'}
                         </span>
                       </div>
                     </div>
 
-                    {row.source && (
-                      <div className={styles.cardFooterMobile}>
-                        <span className={styles.sourceTag}>Source: {row.source}</span>
+                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Break:</span>
+                        <BreakPopover totalBreakMinutes={row.totalBreakMinutes || 0} breaks={breaksList} />
                       </div>
-                    )}
+                      <div>
+                        <span style={{ color: 'var(--text-muted)', marginRight: '6px' }}>Working Hours:</span>
+                        <span style={{ fontWeight: 700, color: '#818cf8' }}>{row.totalWorkingHoursFormatted || '0 hrs'}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );

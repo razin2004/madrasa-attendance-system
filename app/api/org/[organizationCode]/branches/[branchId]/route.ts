@@ -79,10 +79,17 @@ export async function PATCH(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { name, address, geofenceRadiusMeters } = body;
+    const { name, address, geofenceRadiusMeters, timezone } = body;
 
     const updateData: any = {};
     const changes: Record<string, { old: any; new: any }> = {};
+
+    if (timezone !== undefined && typeof timezone === 'string' && timezone.trim()) {
+      if (timezone.trim() !== existingBranch.timezone) {
+        changes.timezone = { old: existingBranch.timezone, new: timezone.trim() };
+        updateData.timezone = timezone.trim();
+      }
+    }
 
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length < 2) {

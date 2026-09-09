@@ -67,7 +67,7 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { name, address, latitude, longitude, locationAccuracyMeters, geofenceRadiusMeters } = body;
+    const { name, address, latitude, longitude, locationAccuracyMeters, geofenceRadiusMeters, timezone } = body;
 
     // 1. Validation
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
@@ -106,12 +106,13 @@ export async function POST(
     const detectedPublicIp = extractClientPublicIp(request);
     const actorName = auth.session.user.name || auth.session.user.email;
 
-    // 3. Create Branch with Network Identity
+    // 3. Create Branch with Network Identity & Time Zone
     const branch = await prisma.branch.create({
       data: {
         organizationId: auth.organization.id,
         name: name.trim(),
         address: address.trim(),
+        timezone: (typeof timezone === 'string' && timezone.trim()) ? timezone.trim() : 'Asia/Kolkata',
         latitude: numLat,
         longitude: numLng,
         locationAccuracyMeters: locationAccuracyMeters ? parseFloat(locationAccuracyMeters) : null,

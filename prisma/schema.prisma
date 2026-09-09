@@ -163,6 +163,7 @@ model Organization {
   emailLogs         EmailLog[]
   securityTokens    SecurityToken[]
   shiftSwapRequests ShiftSwapRequest[]
+  additionalShifts  AdditionalShift[]
 
   @@index([organizationCode])
   @@index([status])
@@ -188,6 +189,7 @@ model Branch {
   locationCapturedAt     DateTime?
   locationCapturedBy     String?
   status                 BranchStatus @default(ACTIVE)
+  timezone               String       @default("Asia/Kolkata")
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
 
@@ -284,6 +286,7 @@ model StaffProfile {
   requestedSwapRequests ShiftSwapRequest[] @relation("RequesterSwapRequests")
   peerSwapRequests      ShiftSwapRequest[] @relation("PeerSwapRequests")
   recipientSwapRequests ShiftSwapRecipient[] @relation("RecipientPeerSwaps")
+  additionalShifts      AdditionalShift[]
 
   @@unique([organizationId, staffId])
   @@index([organizationId])
@@ -412,6 +415,30 @@ model StaffShiftOverride {
   @@map("staff_shift_overrides")
 }
 
+model AdditionalShift {
+  id             String   @id @default(uuid())
+  organizationId String
+  staffProfileId String
+  date           DateTime // Midnight-normalized target date (e.g. 2026-08-21)
+  startTime      String   // e.g. "11:00"
+  endTime        String   // e.g. "16:00"
+  isOvernight    Boolean  @default(false)
+  title          String?  // e.g. "Overtime", "Special Holiday Shift"
+  notes          String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staffProfile      StaffProfile       @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  attendanceRecords AttendanceRecord[]
+
+  @@index([organizationId])
+  @@index([staffProfileId, date])
+  @@map("additional_shifts")
+}
+
 // =========================================================================
 // Phase 5: Attendance Verification & Time Tracking Models
 // =========================================================================
@@ -431,6 +458,10 @@ model AttendanceRecord {
   manualReason         String?
   createdById          String?
   correctionRequestId  String?
+
+  // Additional Shift Context
+  isAdditionalShift    Boolean                      @default(false)
+  additionalShiftId    String?
 
   // Three-Layer Audit Details
   deviceStatus         DeviceStatus                 // Status of device at time of clock-in
@@ -466,6 +497,7 @@ model AttendanceRecord {
   correctionRequest    AttendanceCorrectionRequest? @relation("CorrectedAttendanceRecords", fields: [correctionRequestId], references: [id], onDelete: SetNull)
   targetedByCorrections AttendanceCorrectionRequest[] @relation("CorrectionTargetRecord")
   adjustmentAudits     AttendanceAdjustmentAudit[]
+  additionalShift      AdditionalShift?             @relation(fields: [additionalShiftId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([organizationId, timestamp])

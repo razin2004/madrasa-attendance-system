@@ -32,6 +32,7 @@ import {
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import { CorrectionRequestModal } from '@/components/attendance/correction-request-modal';
+import { AttendanceWarningModal } from '@/components/attendance/attendance-warning-modal';
 import { getClientPublicIp } from '@/lib/client-location-ip';
 import styles from './StaffDashboard.module.css';
 
@@ -131,6 +132,11 @@ export default function StaffDashboardPage() {
 
   // Correction Request Modal State
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+
+  // Attendance Verification Warning Modal State
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [warningActionType, setWarningActionType] = useState<'CLOCK_IN' | 'CLOCK_OUT'>('CLOCK_IN');
+  const [submittingUnverified, setSubmittingUnverified] = useState(false);
 
   // Device Binding Confirmation Modal State
   const [showDeviceBindingModal, setShowDeviceBindingModal] = useState(false);
@@ -406,9 +412,18 @@ export default function StaffDashboardPage() {
     }
   };
 
-  const executeClockAction = async (actionType: 'CLOCK_IN' | 'CLOCK_OUT') => {
+  const executeClockAction = async (actionType: 'CLOCK_IN' | 'CLOCK_OUT', submitForApproval: boolean = false) => {
     setClocking(true);
+    if (submitForApproval) setSubmittingUnverified(true);
+
     try {
+      if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && !navigator.onLine) {
+        toast.error('No internet connection. Please check your network connection.');
+        setClocking(false);
+        setSubmittingUnverified(false);
+        return;
+      }
+
       const deviceSecret = getOrCreateDeviceSecret();
       let clientIp: string | null = null;
       try {
@@ -417,58 +432,13 @@ export default function StaffDashboardPage() {
 
       const coords = locationCoords || (await requestGeolocation().catch(() => null));
 
-      // 1. Mandatory Live Backend Security Evaluation
-      const precheckHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (clientIp) precheckHeaders['x-client-public-ip'] = clientIp;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (clientIp) headers['x-client-public-ip'] = clientIp;
 
-      const precheckBody: any = { deviceSecret };
-      if (coords) {
-        precheckBody.latitude = coords.latitude;
-        precheckBody.longitude = coords.longitude;
-        if (coords.accuracy !== undefined) precheckBody.accuracy = coords.accuracy;
-      }
-
-      const livePrecheckRes = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
-        method: 'POST',
-        headers: precheckHeaders,
-        body: JSON.stringify(precheckBody),
-        cache: 'no-store',
-      });
-
-      const livePrecheckData = await livePrecheckRes.json();
-      let candidateBranchId = precheck?.candidateBranch?.id;
-
-      if (livePrecheckData.success && livePrecheckData.evaluation) {
-        setPrecheck(livePrecheckData.evaluation);
-        if (livePrecheckData.todayStatus) setTodayStatus(livePrecheckData.todayStatus);
-        if (livePrecheckData.evaluation.candidateBranch?.id) {
-          candidateBranchId = livePrecheckData.evaluation.candidateBranch.id;
-        }
-
-        if (!livePrecheckData.evaluation.isReady) {
-          let errorMsg = 'Attendance verification failed.';
-          if (!livePrecheckData.evaluation.layer2Network?.isVerified) {
-            errorMsg = livePrecheckData.evaluation.layer2Network?.message || 'Your current network IP is not registered for your branch.';
-          } else if (!livePrecheckData.evaluation.layer3Geofence?.isVerified) {
-            errorMsg = livePrecheckData.evaluation.layer3Geofence?.message || 'Outside branch geofence boundary.';
-          } else if (!livePrecheckData.evaluation.layer1Device?.isVerified) {
-            errorMsg = 'Current device is not registered to your account.';
-          }
-
-          toast.error(errorMsg);
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('shiftguard_precheck_updated', { detail: false }));
-          }
-          setClocking(false);
-          return;
-        }
-      }
-
-      // 2. Verified Live Security Passed -> Execute Punch
       const payload: any = {
-        action: actionType,
         deviceSecret,
-        branchId: candidateBranchId,
+        branchId: precheck?.candidateBranch?.id,
+        submitForApproval,
       };
 
       if (coords) {
@@ -480,27 +450,46 @@ export default function StaffDashboardPage() {
       const endpoint = actionType === 'CLOCK_IN' ? 'clock-in' : 'clock-out';
       const res = await fetch(`/api/org/${orgCode}/attendance/${endpoint}`, {
         method: 'POST',
-        headers: precheckHeaders,
+        headers,
         body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success(
-          actionType === 'CLOCK_IN'
-            ? 'Clocked in successfully!'
-            : 'Clocked out successfully!'
-        );
+        if (data.pendingApproval) {
+          toast.info('Your request has been sent to the Admin panel. Clock-in/out will only take effect once approved by the Admin.');
+        } else {
+          toast.success(
+            actionType === 'CLOCK_IN'
+              ? 'Clocked in successfully!'
+              : 'Clocked out successfully!'
+          );
+        }
         setShowEarlyClockOutModal(false);
+        setShowWarningModal(false);
         initData();
       } else {
         toast.error(data.error || `Failed to ${actionType === 'CLOCK_IN' ? 'clock in' : 'clock out'}.`);
         if (data.evaluation) setPrecheck(data.evaluation);
       }
-    } catch {
-      toast.error('Network error recording attendance punch.');
+    } catch (err) {
+      if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && !navigator.onLine) {
+        toast.error('No internet connection. Please check your network connection.');
+      } else {
+        console.error('Clock action error:', err);
+      }
     } finally {
       setClocking(false);
+      setSubmittingUnverified(false);
+    }
+  };
+
+  const startClockFlow = (actionType: 'CLOCK_IN' | 'CLOCK_OUT') => {
+    if (!precheck?.isReady) {
+      setWarningActionType(actionType);
+      setShowWarningModal(true);
+    } else {
+      executeClockAction(actionType, false);
     }
   };
 
@@ -508,7 +497,7 @@ export default function StaffDashboardPage() {
     if (!todayStatus) return;
 
     if (!todayStatus.isClockedIn) {
-      executeClockAction('CLOCK_IN');
+      startClockFlow('CLOCK_IN');
     } else {
       const schedEndStr = todayStatus.schedule?.endTime;
       if (schedEndStr) {
@@ -525,7 +514,7 @@ export default function StaffDashboardPage() {
           return;
         }
       }
-      executeClockAction('CLOCK_OUT');
+      startClockFlow('CLOCK_OUT');
     }
   };
 
@@ -568,16 +557,6 @@ export default function StaffDashboardPage() {
             <h1 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.2px' }}>
               {staffInfo?.name || 'Staff Attendance Portal'}
             </h1>
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0 0', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span>Staff ID:</span>
-              <span style={{ fontFamily: 'var(--font-mono)', color: '#a5b4fc', fontWeight: 700 }}>{staffInfo?.staffId || '—'}</span>
-              {(staffInfo?.user?.email || staffInfo?.email) && (
-                <>
-                  <span>&bull;</span>
-                  <span style={{ color: '#cbd5e1' }}>{staffInfo?.user?.email || staffInfo?.email}</span>
-                </>
-              )}
-            </p>
           </div>
         </div>
 
@@ -687,14 +666,8 @@ export default function StaffDashboardPage() {
                 </div>
               ) : (
                 <div style={{ width: '100%' }}>
-                  <div className={`${styles.statusPill} ${isClockedIn && isReadyToClock ? styles.statusPillIn : isReadyToClock ? styles.statusPillReady : styles.statusPillLock}`}>
-                    {isClockedIn && isReadyToClock
-                      ? '● Currently Clocked In'
-                      : isClockedIn && !isReadyToClock
-                      ? '● Clock Out Locked — Verification Required'
-                      : isReadyToClock
-                      ? '● Security Verified — Ready to Clock In'
-                      : '● Verification Checks Required'}
+                  <div className={`${styles.statusPill} ${isClockedIn ? styles.statusPillIn : styles.statusPillReady}`}>
+                    {staffInfo?.name || 'Staff User'}
                   </div>
 
                   {isClockedIn && (
@@ -713,11 +686,9 @@ export default function StaffDashboardPage() {
                   {/* Punch Button */}
                   <button
                     onClick={handleClockButtonClick}
-                    disabled={!isReadyToClock || clocking || checking}
+                    disabled={!hasSchedule || isCompleted || clocking || checking}
                     className={`${styles.clockButton} ${styles.punchButtonCircle} ${
-                      !isReadyToClock
-                        ? styles.clockButtonDisabled
-                        : isClockedIn
+                      isClockedIn
                         ? styles.clockButtonOut
                         : styles.clockButtonIn
                     }`}
@@ -776,149 +747,6 @@ export default function StaffDashboardPage() {
                   )}
                 </div>
               )}
-            </div>
-
-            <div className={styles.zeroTrustFooter}>
-              <ShieldCheck size={15} color="#818cf8" />
-              <span>ShiftGuard 3-Layer Zero-Trust Security Verification</span>
-            </div>
-          </div>
-
-          {/* PANEL 2: 3-LAYER SECURITY DIAGNOSTICS STACK */}
-          <div>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                <ShieldCheck size={18} color="#818cf8" />
-                <span>Security Diagnostics Stack</span>
-              </h2>
-              <span className={styles.sectionSubtitle}>Live Real-Time Checks</span>
-            </div>
-
-            <div className={styles.verificationGrid}>
-              {/* LAYER 1: REGISTERED DEVICE */}
-              <div
-                className={`${styles.verificationCard} ${
-                  precheck?.layer1Device.isVerified ? styles.verificationVerified : styles.verificationFailed
-                }`}
-              >
-                <div className={styles.cardTopRow}>
-                  <div className={styles.cardIconTitleGroup}>
-                    <div className={styles.layerIconBox} style={{ backgroundColor: precheck?.layer1Device.isVerified ? 'rgba(16, 185, 129, 0.14)' : 'rgba(244, 63, 94, 0.14)' }}>
-                      <Smartphone size={18} color={precheck?.layer1Device.isVerified ? '#34d399' : '#f43f5e'} />
-                    </div>
-                    <div>
-                      <span className={styles.layerPill}>Layer 1</span>
-                      <div className={styles.layerTitle}>Registered Staff Device</div>
-                    </div>
-                  </div>
-                  {precheck?.layer1Device.isVerified ? <CheckCircle2 size={18} color="#34d399" /> : <XCircle size={18} color="#f43f5e" />}
-                </div>
-                <div className={styles.layerMessage}>
-                  {precheck?.layer1Device.message || 'Evaluating device binding secret...'}
-                </div>
-              </div>
-
-              {/* LAYER 2: BRANCH NETWORK PUBLIC IP */}
-              <div
-                className={`${styles.verificationCard} ${
-                  precheck?.layer2Network.isVerified ? styles.verificationVerified : styles.verificationFailed
-                }`}
-              >
-                <div className={styles.cardTopRow}>
-                  <div className={styles.cardIconTitleGroup}>
-                    <div className={styles.layerIconBox} style={{ backgroundColor: precheck?.layer2Network.isVerified ? 'rgba(16, 185, 129, 0.14)' : 'rgba(244, 63, 94, 0.14)' }}>
-                      <Wifi size={18} color={precheck?.layer2Network.isVerified ? '#34d399' : '#f43f5e'} />
-                    </div>
-                    <div>
-                      <span className={styles.layerPill}>Layer 2</span>
-                      <div className={styles.layerTitle}>Branch Network Wi-Fi IP</div>
-                    </div>
-                  </div>
-                  {precheck?.layer2Network.isVerified ? <CheckCircle2 size={18} color="#34d399" /> : <XCircle size={18} color="#f43f5e" />}
-                </div>
-                <div className={styles.layerMessage}>
-                  {precheck?.layer2Network.message || 'Evaluating public network IP identity...'}
-                </div>
-              </div>
-
-              {/* LAYER 3: GEOFENCE GPS DISTANCE */}
-              <div
-                className={`${styles.verificationCard} ${
-                  precheck?.layer3Geofence.isVerified
-                    ? styles.verificationVerified
-                    : locationError
-                    ? styles.verificationWarning
-                    : styles.verificationFailed
-                }`}
-              >
-                <div className={styles.cardTopRow}>
-                  <div className={styles.cardIconTitleGroup}>
-                    <div className={styles.layerIconBox} style={{ backgroundColor: precheck?.layer3Geofence.isVerified ? 'rgba(16, 185, 129, 0.14)' : locationError ? 'rgba(245, 158, 11, 0.14)' : 'rgba(244, 63, 94, 0.14)' }}>
-                      <MapPin size={18} color={precheck?.layer3Geofence.isVerified ? '#34d399' : locationError ? '#fbbf24' : '#f43f5e'} />
-                    </div>
-                    <div>
-                      <span className={styles.layerPill}>Layer 3</span>
-                      <div className={styles.layerTitle}>Branch Geofence GPS</div>
-                    </div>
-                  </div>
-                  {precheck?.layer3Geofence.isVerified ? (
-                    <CheckCircle2 size={18} color="#34d399" />
-                  ) : (
-                    <XCircle size={18} color={locationError ? '#fbbf24' : '#f43f5e'} />
-                  )}
-                </div>
-
-                <div className={styles.layerMessage}>
-                  {locationError ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <span style={{ color: '#fbbf24' }}>{locationError}</span>
-                      <button
-                        onClick={handleManualRefresh}
-                        disabled={checking}
-                        className="btn btn-secondary btn-sm"
-                        style={{ alignSelf: 'flex-start', fontSize: '11px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <Navigation size={12} className={checking ? 'animate-spin' : ''} />
-                        <span>{checking ? 'Verifying Location...' : 'Enable / Retry Location'}</span>
-                      </button>
-                    </div>
-                  ) : (
-                    precheck?.layer3Geofence.message || 'Evaluating GPS geofence boundary...'
-                  )}
-                </div>
-
-                {precheck?.layer3Geofence.distanceMeters !== undefined && precheck.layer3Geofence.distanceMeters >= 0 && (
-                  <div className={styles.distanceDetail}>
-                    Calculated Distance: <strong style={{ color: precheck.layer3Geofence.isVerified ? '#34d399' : '#f87171' }}>{precheck.layer3Geofence.distanceMeters}m</strong> (Allowed Radius: {precheck.layer3Geofence.allowedRadiusMeters || 150}m
-                    {precheck.layer3Geofence.accuracyMeters !== undefined ? `, Accuracy: ±${precheck.layer3Geofence.accuracyMeters}m` : ''})
-                  </div>
-                )}
-              </div>
-
-              {/* SHIFT SCHEDULE VALIDATION */}
-              <div
-                className={`${styles.verificationCard} ${
-                  hasSchedule ? styles.verificationVerified : styles.verificationFailed
-                }`}
-              >
-                <div className={styles.cardTopRow}>
-                  <div className={styles.cardIconTitleGroup}>
-                    <div className={styles.layerIconBox} style={{ backgroundColor: hasSchedule ? 'rgba(16, 185, 129, 0.14)' : 'rgba(244, 63, 94, 0.14)' }}>
-                      <Clock size={18} color={hasSchedule ? '#34d399' : '#f43f5e'} />
-                    </div>
-                    <div>
-                      <span className={styles.layerPill}>Shift Check</span>
-                      <div className={styles.layerTitle}>Shift Roster Assigned</div>
-                    </div>
-                  </div>
-                  {hasSchedule ? <CheckCircle2 size={18} color="#34d399" /> : <XCircle size={18} color="#f43f5e" />}
-                </div>
-                <div className={styles.layerMessage}>
-                  {hasSchedule && todayStatus?.schedule?.startTime && todayStatus?.schedule?.endTime
-                    ? `${todayStatus.schedule.shiftPatternName || 'Scheduled Shift'}: ${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime}`
-                    : 'No active shift schedule assigned for today.'}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -1182,6 +1010,16 @@ export default function StaffDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Attendance Verification Warning Modal */}
+      <AttendanceWarningModal
+        isOpen={showWarningModal}
+        onClose={() => setShowWarningModal(false)}
+        onConfirm={() => executeClockAction(warningActionType, true)}
+        actionType={warningActionType}
+        submitting={submittingUnverified}
+        evaluation={precheck}
+      />
     </div>
   );
 }

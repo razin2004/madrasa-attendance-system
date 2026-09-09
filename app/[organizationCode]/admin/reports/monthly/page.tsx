@@ -36,6 +36,8 @@ interface BranchOption {
   name: string;
 }
 
+import { BreakPopover } from '@/components/attendance/break-popover';
+
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 
 export default function MonthlyReportPage() {
@@ -715,14 +717,23 @@ export default function MonthlyReportPage() {
                         <th className={styles.th}>Branch</th>
                         <th className={styles.th}>Clock In</th>
                         <th className={styles.th}>Clock Out</th>
+                        <th className={styles.th}>Late In</th>
+                        <th className={styles.th}>Early Out</th>
+                        <th className={styles.th}>Break Time</th>
+                        <th className={styles.th}>Total Working Hours</th>
                         <th className={styles.th}>Status</th>
-                        <th className={styles.th}>Source</th>
-                        <th className={styles.th}>Leave / Reason Details</th>
+                        <th className={styles.th}>Details</th>
                       </tr>
                     </thead>
                     <tbody>
                       {report.daysRows.map((row: any, idx: number) => {
                         const statusKey = (row.status || '').replace(/ /g, '_');
+                        const breaksList = (row.breakDetails || []).map((b: any, bIdx: number) => ({
+                          breakNumber: bIdx + 1,
+                          startTime: b.clockOutTime,
+                          endTime: b.clockInTime,
+                          durationMinutes: b.durationMinutes,
+                        }));
                         return (
                           <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                             <td className={styles.td}>
@@ -750,27 +761,43 @@ export default function MonthlyReportPage() {
                             </td>
 
                             <td className={styles.td}>
-                              <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{row.clockInTime || '—'}</strong>
+                              <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>
+                                {row.displayClockInTime || row.clockInTime || '—'}
+                              </strong>
                             </td>
 
                             <td className={styles.td}>
-                              <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>{row.clockOutTime || '—'}</strong>
+                              <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>
+                                {row.displayClockOutTime || row.clockOutTime || '—'}
+                              </strong>
+                            </td>
+
+                            <td className={styles.td}>
+                              <span style={{ color: row.lateInMinutes > 0 ? '#f87171' : 'var(--text-muted)', fontWeight: row.lateInMinutes > 0 ? 700 : 400 }}>
+                                {row.lateInFormatted || '—'}
+                              </span>
+                            </td>
+
+                            <td className={styles.td}>
+                              <span style={{ color: row.earlyOutMinutes > 0 ? '#f87171' : 'var(--text-muted)', fontWeight: row.earlyOutMinutes > 0 ? 700 : 400 }}>
+                                {row.earlyOutFormatted || '—'}
+                              </span>
+                            </td>
+
+                            <td className={styles.td}>
+                              <BreakPopover totalBreakMinutes={row.totalBreakMinutes || 0} breaks={breaksList} />
+                            </td>
+
+                            <td className={styles.td}>
+                              <strong style={{ color: '#818cf8', fontWeight: 800 }}>
+                                {row.totalWorkingHoursFormatted || '0 hrs'}
+                              </strong>
                             </td>
 
                             <td className={styles.td}>
                               <span className={`${styles.statusBadge} ${styles[`status${statusKey}`]}`}>
                                 {row.status}
                               </span>
-                            </td>
-
-                            <td className={styles.td}>
-                              {row.source !== '—' ? (
-                                <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>
-                                  {row.source}
-                                </span>
-                              ) : (
-                                <span style={{ color: 'var(--text-muted)' }}>—</span>
-                              )}
                             </td>
 
                             <td className={styles.td} style={{ fontSize: '12px' }}>
@@ -801,6 +828,12 @@ export default function MonthlyReportPage() {
                 <div className={styles.mobileCardFeed}>
                   {report.daysRows.map((row: any, idx: number) => {
                     const statusKey = row.status.replace(/ /g, '_');
+                    const breaksList = (row.breakDetails || []).map((b: any, bIdx: number) => ({
+                      breakNumber: bIdx + 1,
+                      startTime: b.clockOutTime,
+                      endTime: b.clockInTime,
+                      durationMinutes: b.durationMinutes,
+                    }));
                     return (
                       <div key={idx} className={styles.reportCardItem}>
                         {/* Header: Date & Day + Status */}
@@ -827,28 +860,35 @@ export default function MonthlyReportPage() {
                         <div className={styles.clockGrid}>
                           <div>
                             <span className={styles.clockLabel}>Clock In</span>
-                            <span className={styles.clockVal} style={{ color: '#34d399' }}>{row.clockInTime || '—'}</span>
+                            <span className={styles.clockVal} style={{ color: '#34d399' }}>
+                              {row.displayClockInTime || row.clockInTime || '—'}
+                            </span>
                           </div>
                           <div>
                             <span className={styles.clockLabel}>Clock Out</span>
-                            <span className={styles.clockVal} style={{ color: '#fbbf24' }}>{row.clockOutTime || '—'}</span>
+                            <span className={styles.clockVal} style={{ color: '#fbbf24' }}>
+                              {row.displayClockOutTime || row.clockOutTime || '—'}
+                            </span>
                           </div>
                           <div>
-                            <span className={styles.clockLabel}>Source</span>
-                            <span className={styles.clockVal}>
-                              {row.source !== '—' ? (
-                                <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>
-                                  {row.source}
-                                </span>
-                              ) : (
-                                <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>—</span>
-                              )}
+                            <span className={styles.clockLabel}>Working Hours</span>
+                            <span className={styles.clockVal} style={{ color: '#818cf8', fontWeight: 800 }}>
+                              {row.totalWorkingHoursFormatted || '0 hrs'}
                             </span>
                           </div>
                         </div>
 
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '12px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                          <div>Late In: <span style={{ color: row.lateInMinutes > 0 ? '#f87171' : 'inherit' }}>{row.lateInFormatted}</span></div>
+                          <div>Early Out: <span style={{ color: row.earlyOutMinutes > 0 ? '#f87171' : 'inherit' }}>{row.earlyOutFormatted}</span></div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>Break:</span>
+                            <BreakPopover totalBreakMinutes={row.totalBreakMinutes || 0} breaks={breaksList} />
+                          </div>
+                        </div>
+
                         {(row.leaveTypeName || row.manualReason || row.adjustmentReason) && (
-                          <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', paddingTop: '4px', marginTop: '6px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                             {row.leaveTypeName && <span style={{ color: '#38bdf8', fontWeight: 600, marginRight: '6px' }}>{row.leaveTypeName}</span>}
                             {(row.manualReason || row.adjustmentReason) && (
                               <span style={{ fontStyle: 'italic', color: '#fbbf24' }}>
@@ -870,4 +910,3 @@ export default function MonthlyReportPage() {
     </div>
   );
 }
-

@@ -423,9 +423,12 @@ export async function recordAttendance(params: {
   coordinates?: LocationInput | null;
   deviceLabel?: string | null;
   userAgent?: string | null;
+  submitForApproval?: boolean;
 }): Promise<{
   success: boolean;
   record?: any;
+  pendingApproval?: boolean;
+  pendingCorrectionRequest?: any;
   error?: string;
   evaluation: ThreeLayerEvaluationResult;
 }> {
@@ -461,8 +464,70 @@ export async function recordAttendance(params: {
     };
   }
 
-  // 3. Strict Three-Layer Security Verification (Section 1, 13, 16, 25, 26, 27, 28)
+  // 3. Three-Layer Security Verification Check & Warning Approval Workflow
   if (!evaluation.isReady) {
+    if (params.submitForApproval) {
+      const todayNormalized = normalizeDate(now);
+
+      // Check if there is already a pending request for today
+      const existingPending = await prisma.attendanceCorrectionRequest.findFirst({
+        where: {
+          organizationId: params.organizationId,
+          staffProfileId: params.staffProfileId,
+          date: todayNormalized,
+          status: 'PENDING',
+        },
+      });
+
+      if (existingPending) {
+        return {
+          success: false,
+          error: 'You already have a pending clock-in/out approval request for today.',
+          evaluation,
+        };
+      }
+
+      const failureMsg = evaluation.failureReasons.length > 0
+        ? `Unverified punch. Failures: ${evaluation.failureReasons.join('; ')}`
+        : 'Unverified punch submitted for admin approval.';
+
+      const correctionRequest = await prisma.attendanceCorrectionRequest.create({
+        data: {
+          organizationId: params.organizationId,
+          staffProfileId: params.staffProfileId,
+          branchId: evaluation.candidateBranch?.id || null,
+          type: params.type === 'CLOCK_IN' ? 'MISSING_CLOCK_IN' : 'MISSING_CLOCK_OUT',
+          date: todayNormalized,
+          requestedClockIn: params.type === 'CLOCK_IN' ? now : null,
+          requestedClockOut: params.type === 'CLOCK_OUT' ? now : null,
+          reason: failureMsg,
+          status: 'PENDING',
+          createdById: params.userId,
+        },
+      });
+
+      await recordAuditLog({
+        organizationId: params.organizationId,
+        actorUserId: params.userId,
+        action: 'ATTENDANCE_CORRECTION_REQUESTED',
+        entityType: 'AttendanceCorrectionRequest',
+        entityId: correctionRequest.id,
+        metadata: {
+          staffProfileId: params.staffProfileId,
+          type: params.type,
+          unverifiedSubmission: true,
+          failureReasons: evaluation.failureReasons,
+        },
+      });
+
+      return {
+        success: true,
+        pendingApproval: true,
+        pendingCorrectionRequest: correctionRequest,
+        evaluation,
+      };
+    }
+
     let errorMessage = 'Attendance verification failed.';
     if (!evaluation.layer1Device.isVerified) {
       errorMessage =

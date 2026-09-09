@@ -83,6 +83,19 @@ export default function ShiftPatternsPage() {
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
+  // Additional Shift Modal & Data State
+  const [additionalModalOpen, setAdditionalModalOpen] = useState(false);
+  const [staffList, setStaffList] = useState<{ id: string; name: string; staffId: string }[]>([]);
+  const [additionalShifts, setAdditionalShifts] = useState<any[]>([]);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+  const [addDate, setAddDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [addStartTime, setAddStartTime] = useState('11:00');
+  const [addEndTime, setAddEndTime] = useState('16:00');
+  const [addTitle, setAddTitle] = useState('Overtime Shift');
+  const [addNotes, setAddNotes] = useState('');
+  const [submittingAdditional, setSubmittingAdditional] = useState(false);
+  const [additionalError, setAdditionalError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchInitialData();
   }, [organizationCode]);
@@ -91,14 +104,19 @@ export default function ShiftPatternsPage() {
     try {
       setLoading(true);
       setHasError(false);
-      const brandRes = await fetch(`/api/org/${organizationCode}/branding`);
+      const [brandRes, shiftRes, staffRes, addRes] = await Promise.all([
+        fetch(`/api/org/${organizationCode}/branding`),
+        fetch(`/api/org/${organizationCode}/shift-patterns`),
+        fetch(`/api/org/${organizationCode}/staff`),
+        fetch(`/api/org/${organizationCode}/shifts/additional`),
+      ]);
+
       const brandData = await brandRes.json();
       if (brandData.success) {
         setBranding(brandData.organization);
       }
 
-      const res = await fetch(`/api/org/${organizationCode}/shift-patterns`);
-      const data = await res.json();
+      const data = await shiftRes.json();
       if (data.success) {
         setPatterns(data.shiftPatterns);
         setCounts(data.counts);
@@ -106,11 +124,91 @@ export default function ShiftPatternsPage() {
         setHasError(true);
         toast.error(data.error || 'Failed to load shift patterns.');
       }
+
+      const staffData = await staffRes.json();
+      if (staffData.success && Array.isArray(staffData.staff)) {
+        setStaffList(
+          staffData.staff.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            staffId: s.staffId,
+          }))
+        );
+      }
+
+      const addData = await addRes.json();
+      if (addData.success && Array.isArray(addData.additionalShifts)) {
+        setAdditionalShifts(addData.additionalShifts);
+      }
     } catch {
       setHasError(true);
       toast.error('Network error loading shift patterns.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateAdditionalShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdditionalError(null);
+
+    if (selectedStaffIds.length === 0) {
+      setAdditionalError('Please select at least one staff member.');
+      return;
+    }
+    if (!addDate || !addStartTime || !addEndTime) {
+      setAdditionalError('Please specify date, start time, and end time.');
+      return;
+    }
+
+    try {
+      setSubmittingAdditional(true);
+      const res = await fetch(`/api/org/${organizationCode}/shifts/additional`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          staffProfileIds: selectedStaffIds,
+          date: addDate,
+          startTime: addStartTime,
+          endTime: addEndTime,
+          title: addTitle.trim() || 'Overtime Shift',
+          notes: addNotes.trim() || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Additional shift assigned successfully!');
+        setAdditionalModalOpen(false);
+        setSelectedStaffIds([]);
+        setAddNotes('');
+        fetchInitialData();
+      } else {
+        setAdditionalError(data.error || 'Failed to assign additional shift.');
+        toast.error(data.error || 'Intersection or validation error.');
+      }
+    } catch {
+      setAdditionalError('Network connection error.');
+      toast.error('Network error.');
+    } finally {
+      setSubmittingAdditional(false);
+    }
+  };
+
+  const handleDeleteAdditionalShift = async (id: string) => {
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/shifts/additional?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Additional shift removed.');
+        fetchInitialData();
+      } else {
+        toast.error(data.error || 'Failed to remove additional shift.');
+      }
+    } catch {
+      toast.error('Network error removing shift.');
     }
   };
 
@@ -199,6 +297,32 @@ export default function ShiftPatternsPage() {
                   gap: '2px',
                 }}
               >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    setAdditionalModalOpen(true);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#fbbf24',
+                    border: 'none',
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    width: '100%',
+                    textAlign: 'left',
+                  }}
+                >
+                  <Plus size={15} color="#fbbf24" />
+                  <span>⚡ Assign Additional Shift</span>
+                </button>
+
                 <Link
                   href={`/${organizationCode}/admin/shifts/new`}
                   onClick={() => setHeaderMenuOpen(false)}
@@ -212,7 +336,6 @@ export default function ShiftPatternsPage() {
                     textDecoration: 'none',
                     fontSize: '13px',
                     fontWeight: 600,
-                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
                   }}
                 >
                   <Plus size={15} color="#818cf8" />
@@ -502,8 +625,329 @@ export default function ShiftPatternsPage() {
               ))}
             </div>
           )}
+
+          {/* ACTIVE ADDITIONAL SHIFTS LIST SECTION */}
+          {additionalShifts.length > 0 && (
+            <div style={{ marginTop: '40px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#fbbf24' }}>⚡</span>
+                    <span>Assigned Additional Shifts ({additionalShifts.length})</span>
+                  </h2>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Overtime and special holiday shift assignments for staff members.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setAdditionalModalOpen(true)}
+                  className="btn btn-primary btn-sm"
+                  style={{ backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#000000', fontWeight: 700 }}
+                >
+                  + Assign Additional Shift
+                </button>
+              </div>
+
+              <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-medium)', backgroundColor: 'rgba(15, 23, 42, 0.6)' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Staff Member</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Date</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Shift Hours</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Shift Title</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {additionalShifts.map((shift) => (
+                      <tr key={shift.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={{ padding: '14px 16px' }}>
+                          <div style={{ fontWeight: 700, color: '#ffffff' }}>{shift.staffName}</div>
+                          <div style={{ fontSize: '11.5px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>{shift.staffId}</div>
+                        </td>
+                        <td style={{ padding: '14px 16px', color: '#f1f5f9', fontWeight: 600 }}>{shift.date}</td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700, fontSize: '12px' }}>
+                            <Clock size={12} />
+                            <span>{shift.startTime} – {shift.endTime}</span>
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '9999px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11px', fontWeight: 700 }}>
+                            {shift.title}
+                          </span>
+                          {shift.notes && <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '3px' }}>{shift.notes}</div>}
+                        </td>
+                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                          <button
+                            onClick={() => handleDeleteAdditionalShift(shift.id)}
+                            className="btn btn-danger-subtle btn-sm"
+                            style={{ fontSize: '11.5px', padding: '4px 10px' }}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </main>
       </div>
+
+      {/* ASSIGN ADDITIONAL SHIFT MODAL */}
+      {additionalModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            className="glass-card"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              backgroundColor: '#0d121f',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '16px',
+              padding: '28px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.9)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24' }}>
+                  ⚡
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Assign Additional Shift</h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>Overtime or special holiday shift assignment</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAdditionalModalOpen(false);
+                  setAdditionalError(null);
+                }}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {additionalError && (
+              <div
+                style={{
+                  backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  color: '#fb7185',
+                  padding: '12px 14px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '8px',
+                }}
+              >
+                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>{additionalError}</div>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateAdditionalShift} noValidate>
+              {/* Target Staff Selection */}
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ margin: 0 }}>
+                    Select Staff Member(s)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedStaffIds.length === staffList.length) {
+                        setSelectedStaffIds([]);
+                      } else {
+                        setSelectedStaffIds(staffList.map((s) => s.id));
+                      }
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {selectedStaffIds.length === staffList.length ? 'Deselect All' : `Select All (${staffList.length})`}
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    maxHeight: '140px',
+                    overflowY: 'auto',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+                    padding: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  {staffList.map((staff) => {
+                    const isSelected = selectedStaffIds.includes(staff.id);
+                    return (
+                      <label
+                        key={staff.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          color: '#ffffff',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedStaffIds([...selectedStaffIds, staff.id]);
+                            } else {
+                              setSelectedStaffIds(selectedStaffIds.filter((id) => id !== staff.id));
+                            }
+                          }}
+                          style={{ accentColor: '#6366f1', width: '16px', height: '16px' }}
+                        />
+                        <span style={{ fontWeight: 600 }}>{staff.name}</span>
+                        <span style={{ color: '#818cf8', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>({staff.staffId})</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Target Date */}
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" htmlFor="addDate">
+                  Shift Target Date
+                </label>
+                <input
+                  id="addDate"
+                  type="date"
+                  value={addDate}
+                  onChange={(e) => setAddDate(e.target.value)}
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              {/* Time Interval Inputs */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" htmlFor="addStartTime">
+                    Start Time
+                  </label>
+                  <input
+                    id="addStartTime"
+                    type="time"
+                    value={addStartTime}
+                    onChange={(e) => setAddStartTime(e.target.value)}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" htmlFor="addEndTime">
+                    End Time
+                  </label>
+                  <input
+                    id="addEndTime"
+                    type="time"
+                    value={addEndTime}
+                    onChange={(e) => setAddEndTime(e.target.value)}
+                    className="form-input"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Shift Title / Reason */}
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" htmlFor="addTitle">
+                  Shift Title / Classification
+                </label>
+                <input
+                  id="addTitle"
+                  type="text"
+                  placeholder="e.g. Overtime Shift, Holiday Duty"
+                  value={addTitle}
+                  onChange={(e) => setAddTitle(e.target.value)}
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              {/* Notes */}
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label className="form-label" htmlFor="addNotes">
+                  Additional Notes (Included in email notification)
+                </label>
+                <textarea
+                  id="addNotes"
+                  placeholder="e.g. Special coverage for event."
+                  value={addNotes}
+                  onChange={(e) => setAddNotes(e.target.value)}
+                  className="form-input"
+                  rows={2}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setAdditionalModalOpen(false)}
+                  className="btn btn-secondary"
+                  disabled={submittingAdditional}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingAdditional || selectedStaffIds.length === 0}
+                  className="btn btn-primary"
+                  style={{ backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#000000', fontWeight: 700 }}
+                >
+                  {submittingAdditional ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Validating &amp; Assigning...</span>
+                    </>
+                  ) : (
+                    <span>Assign Shift ({selectedStaffIds.length} Selected)</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal
