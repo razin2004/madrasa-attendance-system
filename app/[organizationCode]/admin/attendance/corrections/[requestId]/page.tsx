@@ -16,6 +16,8 @@ import {
   Calendar,
   Building2,
   X,
+  MessageSquare,
+  ShieldAlert,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -59,6 +61,47 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
+  };
+
+  const parseReasonAndFailures = (rawReason?: string | null) => {
+    if (!rawReason || !rawReason.trim()) {
+      return { staffReason: null, securityFailures: [] };
+    }
+
+    let text = rawReason.trim();
+    let staffReason: string | null = null;
+    let securityFailures: string[] = [];
+
+    const reasonMatch = text.match(/Reason:\s*["']?([^"(|)]+)["']?/i);
+    if (reasonMatch && reasonMatch[1]) {
+      const matched = reasonMatch[1].trim();
+      if (matched && !matched.toLowerCase().startsWith('failures:')) {
+        staffReason = matched;
+      }
+    }
+
+    const failureMatch = text.match(/Failures:\s*([^)]+)/i);
+    if (failureMatch && failureMatch[1]) {
+      const rawFailuresStr = failureMatch[1].trim();
+      securityFailures = rawFailuresStr
+        .split(';')
+        .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
+        .filter(Boolean);
+    }
+
+    if (!staffReason) {
+      if (text.includes('Failures:')) {
+        const parts = text.split(/Failures:/i);
+        const before = parts[0].replace(/Unverified punch\.?/i, '').replace(/Reason:\s*/i, '').trim();
+        if (before && before !== 'Unverified punch') {
+          staffReason = before;
+        }
+      } else {
+        staffReason = text;
+      }
+    }
+
+    return { staffReason, securityFailures };
   };
 
   const formatTime = (iso?: string | null) => {
@@ -303,6 +346,35 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
               </div>
 
               <div className={styles.cardsContainer}>
+                {/* TOP PROMINENT STAFF JUSTIFICATION BANNER */}
+                {(() => {
+                  const parsed = parseReasonAndFailures(request.reason);
+                  return (
+                    <div
+                      style={{
+                        marginBottom: '24px',
+                        padding: '20px 24px',
+                        borderRadius: '16px',
+                        backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                        border: '1px solid rgba(99, 102, 241, 0.35)',
+                        boxShadow: '0 8px 30px -5px rgba(99, 102, 241, 0.25)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                        <div style={{ padding: '6px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <MessageSquare size={18} color="#818cf8" />
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                          Staff Submitted Justification / Main Reason
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', lineHeight: '1.5', fontStyle: parsed.staffReason ? 'normal' : 'italic' }}>
+                        {parsed.staffReason ? `"${parsed.staffReason}"` : 'No custom justification text entered by staff.'}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* 2 Column Grid for Desktop */}
                 <div className={styles.gridTwoCol}>
                   {/* Staff & Incident Information Card */}
@@ -366,16 +438,31 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                {/* Staff Justification / Reason Box */}
-                <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>
-                    <FileText size={18} color="#818cf8" />
-                    <span>Staff Justification / Outage Reason</span>
-                  </h3>
-                  <div className={styles.reasonBox}>
-                    &ldquo;{request.reason || 'No detailed explanation provided.'}&rdquo;
-                  </div>
-                </div>
+                {/* SECURITY VERIFICATION FAILURES CARD */}
+                {(() => {
+                  const parsed = parseReasonAndFailures(request.reason);
+                  if (parsed.securityFailures.length === 0) return null;
+                  return (
+                    <div className={styles.card} style={{ marginTop: '20px' }}>
+                      <h3 className={styles.cardTitle} style={{ color: '#fb7185' }}>
+                        <ShieldAlert size={18} color="#fb7185" />
+                        <span>Security Verification Failures ({parsed.securityFailures.length} {parsed.securityFailures.length === 1 ? 'Layer' : 'Layers'} Failed)</span>
+                      </h3>
+                      <div style={{ padding: '18px 20px', borderRadius: '14px', backgroundColor: 'rgba(244, 63, 94, 0.06)', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {parsed.securityFailures.map((failure, idx) => (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', fontSize: '13.5px', color: '#f8fafc' }}>
+                              <span style={{ padding: '3px 10px', borderRadius: '6px', backgroundColor: 'rgba(244, 63, 94, 0.2)', color: '#fb7185', fontWeight: 800, fontSize: '11px', flexShrink: 0, marginTop: '1px' }}>
+                                Point {idx + 1}
+                              </span>
+                              <span style={{ lineHeight: '1.5', fontWeight: 500 }}>{failure}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Administrator Decision Card (If PENDING) */}
                 {request.status === 'PENDING' ? (

@@ -106,6 +106,47 @@ export default function AdminAttendanceCorrectionsPage() {
     }
   };
 
+  const parseReasonAndFailures = (rawReason?: string | null) => {
+    if (!rawReason || !rawReason.trim()) {
+      return { staffReason: null, securityFailures: [] };
+    }
+
+    let text = rawReason.trim();
+    let staffReason: string | null = null;
+    let securityFailures: string[] = [];
+
+    const reasonMatch = text.match(/Reason:\s*["']?([^"(|)]+)["']?/i);
+    if (reasonMatch && reasonMatch[1]) {
+      const matched = reasonMatch[1].trim();
+      if (matched && !matched.toLowerCase().startsWith('failures:')) {
+        staffReason = matched;
+      }
+    }
+
+    const failureMatch = text.match(/Failures:\s*([^)]+)/i);
+    if (failureMatch && failureMatch[1]) {
+      const rawFailuresStr = failureMatch[1].trim();
+      securityFailures = rawFailuresStr
+        .split(';')
+        .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
+        .filter(Boolean);
+    }
+
+    if (!staffReason) {
+      if (text.includes('Failures:')) {
+        const parts = text.split(/Failures:/i);
+        const before = parts[0].replace(/Unverified punch\.?/i, '').replace(/Reason:\s*/i, '').trim();
+        if (before && before !== 'Unverified punch') {
+          staffReason = before;
+        }
+      } else {
+        staffReason = text;
+      }
+    }
+
+    return { staffReason, securityFailures };
+  };
+
   useEffect(() => {
     if (!organizationCode) return;
     fetch(`/api/org/${organizationCode}/branding`)
@@ -554,9 +595,31 @@ export default function AdminAttendanceCorrectionsPage() {
                               In: <span style={{ color: '#34d399', fontWeight: 700 }}>{formatPunchTime(item.requestedClockIn)}</span> &bull; Out:{' '}
                               <span style={{ color: '#fbbf24', fontWeight: 700 }}>{formatPunchTime(item.requestedClockOut)}</span>
                             </td>
-                            <td className={styles.td} style={{ fontSize: '12.5px', color: '#94a3b8', fontStyle: 'italic', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              &ldquo;{item.reason}&rdquo;
-                            </td>
+                             <td className={styles.td} style={{ fontSize: '12px', maxWidth: '300px' }}>
+                               {(() => {
+                                 const parsed = parseReasonAndFailures(item.reason);
+                                 return (
+                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                     {parsed.staffReason ? (
+                                       <div style={{ fontWeight: 700, color: '#818cf8', fontSize: '12.5px' }}>
+                                         💬 &ldquo;{parsed.staffReason}&rdquo;
+                                       </div>
+                                     ) : null}
+                                     {parsed.securityFailures.length > 0 ? (
+                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '11px', color: '#fb7185' }}>
+                                         {parsed.securityFailures.map((f, i) => (
+                                           <div key={i} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                             • Point {i + 1}: {f}
+                                           </div>
+                                         ))}
+                                       </div>
+                                     ) : !parsed.staffReason ? (
+                                       <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>&ldquo;{item.reason}&rdquo;</span>
+                                     ) : null}
+                                   </div>
+                                 );
+                               })()}
+                             </td>
                             <td className={styles.td} style={{ textAlign: 'right' }}>
                               {isPending ? (
                                 <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -659,11 +722,30 @@ export default function AdminAttendanceCorrectionsPage() {
                           </div>
                         </div>
 
-                        {item.reason && (
-                          <div className={styles.reasonQuote}>
-                            &ldquo;{item.reason}&rdquo;
-                          </div>
-                        )}
+                        {item.reason && (() => {
+                          const parsed = parseReasonAndFailures(item.reason);
+                          return (
+                            <div className={styles.reasonQuote} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {parsed.staffReason ? (
+                                <div style={{ fontWeight: 700, color: '#818cf8', fontSize: '13px' }}>
+                                  💬 Justification: &ldquo;{parsed.staffReason}&rdquo;
+                                </div>
+                              ) : null}
+                              {parsed.securityFailures.length > 0 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase' }}>
+                                    Security Failure Points ({parsed.securityFailures.length}):
+                                  </div>
+                                  {parsed.securityFailures.map((f, i) => (
+                                    <div key={i} style={{ fontSize: '11.5px', color: '#f8fafc', paddingLeft: '6px', borderLeft: '2px solid rgba(244, 63, 94, 0.4)' }}>
+                                      <strong>Point {i + 1}:</strong> {f}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         <div className={styles.cardActions}>
                           <Link
