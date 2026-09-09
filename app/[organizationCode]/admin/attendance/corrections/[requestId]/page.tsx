@@ -65,6 +65,21 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     return `${hours}:${minutes}`;
   };
 
+  const getShortFailureLabel = (failure: string): string => {
+    if (!failure) return '';
+    const f = failure.toLowerCase();
+    if (f.includes('device') || f.includes('browser') || f.includes('registered')) {
+      return 'Unregistered Device';
+    }
+    if (f.includes('network') || f.includes('ip') || f.includes('wifi') || f.includes('branch network')) {
+      return 'Unapproved Network';
+    }
+    if (f.includes('geofence') || f.includes('outside') || f.includes('location') || f.includes('gps') || f.includes('radius') || f.includes('perimeter')) {
+      return 'Outside Geofence';
+    }
+    return failure;
+  };
+
   const parseReasonAndFailures = (rawReason?: string | null) => {
     if (!rawReason || !rawReason.trim()) {
       return { staffReason: null, securityFailures: [] };
@@ -72,10 +87,10 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
 
     let text = rawReason.trim();
     let staffReason: string | null = null;
-    let securityFailures: string[] = [];
+    let rawFailures: string[] = [];
 
     // Extract staffReason if present as Reason: "..." or Reason: ...
-    const reasonMatch = text.match(/Reason:\s*["']([^"']+)["']/i) || text.match(/Reason:\s*([^(\n]+)/i);
+    const reasonMatch = text.match(/Reason:\s*["']([^"']+)["']/i) || text.match(/Reason:\s*([^(||\n]+)/i);
     if (reasonMatch && reasonMatch[1]) {
       const matched = reasonMatch[1].trim();
       if (matched && !matched.toLowerCase().startsWith('failures:')) {
@@ -83,27 +98,48 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
       }
     }
 
-    // Extract failures portion
-    const failuresIdx = text.indexOf('Failures:');
-    if (failuresIdx !== -1) {
-      let rawFailuresStr = text.slice(failuresIdx + 'Failures:'.length).trim();
-      if (rawFailuresStr.endsWith(')')) {
-        rawFailuresStr = rawFailuresStr.slice(0, -1).trim();
+    // Clean up "Clock Out: Unverified punch" markers
+    const cleanFailuresText = text
+      .replace(/\|\s*Clock Out:\s*Unverified punch\.?/gi, ';')
+      .replace(/Clock Out:\s*Unverified punch\.?/gi, ';')
+      .replace(/Unverified punch\.?/gi, '');
+
+    const failuresMatches = cleanFailuresText.matchAll(/Failures:\s*([^()|\n]+(?:\([^)]*\))?)/gi);
+    for (const match of failuresMatches) {
+      if (match[1]) {
+        const items = match[1]
+          .split(/;\s*(?![^()]*\))/g)
+          .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
+          .filter(Boolean);
+        rawFailures.push(...items);
       }
-      securityFailures = Array.from(
-        new Set(
-          rawFailuresStr
-            .split(/;\s*(?![^()]*\))/g)
-            .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
-            .filter(Boolean)
-        )
-      );
     }
+
+    if (rawFailures.length === 0 && text.includes('Failures:')) {
+      const parts = text.split(/Failures:/gi);
+      for (let i = 1; i < parts.length; i++) {
+        let segment = parts[i].split(/\|/)[0].trim();
+        if (segment.endsWith(')')) segment = segment.slice(0, -1).trim();
+        const items = segment
+          .split(/;\s*(?![^()]*\))/g)
+          .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
+          .filter(Boolean);
+        rawFailures.push(...items);
+      }
+    }
+
+    const securityFailures = Array.from(
+      new Set(rawFailures.map((f) => getShortFailureLabel(f)))
+    );
 
     if (!staffReason) {
       if (text.includes('Failures:')) {
         const parts = text.split(/Failures:/i);
-        const before = parts[0].replace(/Unverified punch\.?/i, '').replace(/Reason:\s*/i, '').replace(/[()]/g, '').trim();
+        const before = parts[0]
+          .replace(/Unverified punch\.?/gi, '')
+          .replace(/Reason:\s*/gi, '')
+          .replace(/[()]/gi, '')
+          .trim();
         if (before && before.toLowerCase() !== 'unverified punch') {
           staffReason = before;
         }
@@ -466,14 +502,26 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                         <ShieldAlert size={18} color="#fb7185" />
                         <span>Security Verification Failures ({parsed.securityFailures.length} of 3 Security Layers Failed)</span>
                       </h3>
-                      <div style={{ padding: '18px 20px', borderRadius: '14px', backgroundColor: 'rgba(244, 63, 94, 0.06)', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ padding: '16px 20px', borderRadius: '14px', backgroundColor: 'rgba(244, 63, 94, 0.06)', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                           {parsed.securityFailures.map((failure, idx) => (
-                            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13.5px', color: '#f8fafc' }}>
-                              <span style={{ color: '#fb7185', fontWeight: 800, fontSize: '18px', lineHeight: '1', flexShrink: 0, marginTop: '2px' }}>
-                                •
-                              </span>
-                              <span style={{ lineHeight: '1.5', fontWeight: 500 }}>{failure}</span>
+                            <div
+                              key={idx}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                                border: '1px solid rgba(244, 63, 94, 0.3)',
+                                color: '#f87171',
+                                fontWeight: 700,
+                                fontSize: '13px',
+                              }}
+                            >
+                              <span style={{ fontSize: '14px', fontWeight: 900 }}>•</span>
+                              <span>{failure}</span>
                             </div>
                           ))}
                         </div>
