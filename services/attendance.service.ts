@@ -465,6 +465,28 @@ export async function recordAttendance(params: {
     };
   }
 
+  // Clock In must be before shift end time
+  if (params.type === 'CLOCK_IN' && daySchedule.endTime) {
+    const [endH, endM] = daySchedule.endTime.split(':').map((s) => parseInt(s, 10));
+    let shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+
+    if (daySchedule.isOvernight && daySchedule.startTime) {
+      const [startH, startM] = daySchedule.startTime.split(':').map((s) => parseInt(s, 10));
+      const shiftStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH, startM, 0, 0);
+      if (shiftEnd <= shiftStart) {
+        shiftEnd.setDate(shiftEnd.getDate() + 1);
+      }
+    }
+
+    if (now >= shiftEnd) {
+      return {
+        success: false,
+        error: 'Cannot clock in after your shift has ended.',
+        evaluation,
+      };
+    }
+  }
+
   // 3. Three-Layer Security Verification Check & Warning Approval Workflow
   if (!evaluation.isReady) {
     if (params.submitForApproval) {
@@ -977,6 +999,31 @@ export async function submitAttendanceCorrectionRequest(params: {
   if (parsedClockIn && parsedClockOut && parsedClockOut <= parsedClockIn) {
     // Check if end is next day overnight or invalid
     throw new Error('Clock-out time cannot be earlier than or equal to clock-in time.');
+  }
+
+  if (parsedClockIn) {
+    const staffAssignments = await prisma.shiftAssignment.findMany({
+      where: { staffProfileId: params.staffProfileId },
+      include: { shiftPattern: { include: { weeklyDays: true } } },
+    });
+    const staffOverrides = await prisma.staffShiftOverride.findMany({
+      where: { staffProfileId: params.staffProfileId },
+    });
+    const targetSchedule = calculateStaffDaySchedule(targetDate, staffAssignments, staffOverrides);
+    if (targetSchedule.endTime) {
+      const [endH, endM] = targetSchedule.endTime.split(':').map((s) => parseInt(s, 10));
+      let shiftEnd = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), endH, endM, 0, 0);
+      if (targetSchedule.isOvernight && targetSchedule.startTime) {
+        const [startH, startM] = targetSchedule.startTime.split(':').map((s) => parseInt(s, 10));
+        const shiftStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), startH, startM, 0, 0);
+        if (shiftEnd <= shiftStart) {
+          shiftEnd.setDate(shiftEnd.getDate() + 1);
+        }
+      }
+      if (parsedClockIn >= shiftEnd) {
+        throw new Error('Requested clock-in time cannot be after the scheduled shift end time.');
+      }
+    }
   }
 
   // Section 14: Duplicate / conflicting pending request check
