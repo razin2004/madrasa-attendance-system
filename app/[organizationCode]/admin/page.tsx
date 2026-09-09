@@ -274,51 +274,19 @@ export default function OrgAdminLandingPage() {
                       boxShadow: '0 8px 25px -5px rgba(245, 158, 11, 0.15)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          padding: '10px',
-                          borderRadius: '12px',
-                          backgroundColor: 'rgba(245, 158, 11, 0.18)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          position: 'relative',
-                        }}
-                      >
-                        <AlertTriangle size={20} color="#fbbf24" />
-                        <span
-                          style={{
-                            position: 'absolute',
-                            top: '-2px',
-                            right: '-2px',
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: '#f59e0b',
-                            boxShadow: '0 0 8px #f59e0b',
-                          }}
-                        />
+                    <div className={styles.alertCardContent}>
+                      <div className={styles.alertIconCircle}>
+                        <AlertTriangle size={18} color="#fbbf24" />
+                        <span className={styles.alertDot} />
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <div className={styles.alertCardTitle}>
                           <span>Pending Attendance Corrections</span>
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              fontWeight: 800,
-                              padding: '2px 8px',
-                              borderRadius: '20px',
-                              backgroundColor: '#f59e0b',
-                              color: '#0f172a',
-                              letterSpacing: '0.2px',
-                            }}
-                          >
+                          <span className={styles.alertBadge}>
                             {pendingCorrectionsCount} {pendingCorrectionsCount === 1 ? 'Pending' : 'Pending'}
                           </span>
                         </div>
-                        <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div className={styles.alertCardSubtext}>
                           {pendingCorrectionsCount === 1
                             ? '1 unverified clock-in/out request requires administrator review.'
                             : `${pendingCorrectionsCount} unverified clock-in/out requests require administrator review.`}
@@ -327,17 +295,7 @@ export default function OrgAdminLandingPage() {
                     </div>
                     <Link
                       href={`/${orgCode}/admin/attendance/corrections`}
-                      className="btn btn-warning btn-sm"
-                      style={{
-                        borderRadius: '10px',
-                        flexShrink: 0,
-                        fontWeight: 700,
-                        fontSize: '12px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        whiteSpace: 'nowrap',
-                      }}
+                      className={`btn btn-warning btn-sm ${styles.alertCardBtn}`}
                     >
                       <span>Review Corrections ({pendingCorrectionsCount})</span>
                       <ArrowRight size={13} />
