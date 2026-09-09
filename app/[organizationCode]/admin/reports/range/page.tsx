@@ -269,47 +269,45 @@ export default function DateRangeReportPage() {
 
           {/* Date Range Metrics Overview Cards */}
           {report?.metrics && (
-            <div className={styles.metricsOverview} style={{ margin: '0 0 24px 0' }}>
-              <div className={styles.metricsGrid}>
-                <div className={styles.metricBox}>
-                  <div className={styles.metricLabel}>Total Evaluated</div>
-                  <div className={styles.metricVal}>{report.metrics.totalCount}</div>
-                </div>
+            <div className={styles.metricsGrid} style={{ margin: '0 0 24px 0' }}>
+              <div className={styles.metricCard} style={{ borderLeft: '3px solid #3b82f6' }}>
+                <div className={styles.metricLabel}>Total Evaluated</div>
+                <div className={styles.metricValue}>{report.metrics.totalCount}</div>
+              </div>
 
-                <div className={styles.metricBox}>
-                  <div className={styles.metricLabel}>Present</div>
-                  <div className={styles.metricVal} style={{ color: '#34d399' }}>
-                    {report.metrics.presentCount}
-                  </div>
+              <div className={styles.metricCard} style={{ borderLeft: '3px solid #10b981' }}>
+                <div className={styles.metricLabel}>Present</div>
+                <div className={styles.metricValue} style={{ color: '#34d399' }}>
+                  {report.metrics.presentCount}
                 </div>
+              </div>
 
-                <div className={styles.metricBox}>
-                  <div className={styles.metricLabel}>Approved Leave</div>
-                  <div className={styles.metricVal} style={{ color: '#38bdf8' }}>
-                    {report.metrics.leaveCount}
-                  </div>
+              <div className={styles.metricCard} style={{ borderLeft: '3px solid #38bdf8' }}>
+                <div className={styles.metricLabel}>Approved Leave</div>
+                <div className={styles.metricValue} style={{ color: '#38bdf8' }}>
+                  {report.metrics.leaveCount}
                 </div>
+              </div>
 
-                <div className={styles.metricBox}>
-                  <div className={styles.metricLabel}>Absent</div>
-                  <div className={styles.metricVal} style={{ color: '#f87171' }}>
-                    {report.metrics.absentCount}
-                  </div>
+              <div className={styles.metricCard} style={{ borderLeft: '3px solid #ef4444' }}>
+                <div className={styles.metricLabel}>Absent</div>
+                <div className={styles.metricValue} style={{ color: '#f87171' }}>
+                  {report.metrics.absentCount}
                 </div>
+              </div>
 
-                <div className={styles.metricBox}>
-                  <div className={styles.metricLabel}>Verified (Normal)</div>
-                  <div className={styles.metricVal} style={{ color: '#34d399' }}>
-                    {report.metrics.sourceMetrics?.normalCount || 0}
-                  </div>
+              <div className={styles.metricCard} style={{ borderLeft: '3px solid #059669' }}>
+                <div className={styles.metricLabel}>Verified (Normal)</div>
+                <div className={styles.metricValue} style={{ color: '#34d399' }}>
+                  {report.metrics.sourceMetrics?.normalCount || 0}
                 </div>
+              </div>
 
-                <div className={styles.metricBox}>
-                  <div className={styles.metricLabel}>Manual / Adjusted</div>
-                  <div className={styles.metricVal} style={{ color: '#fbbf24' }}>
-                    {(report.metrics.sourceMetrics?.manualCount || 0) +
-                      (report.metrics.sourceMetrics?.adjustedCount || 0)}
-                  </div>
+              <div className={styles.metricCard} style={{ borderLeft: '3px solid #d97706' }}>
+                <div className={styles.metricLabel}>Manual / Adjusted</div>
+                <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
+                  {(report.metrics.sourceMetrics?.manualCount || 0) +
+                    (report.metrics.sourceMetrics?.adjustedCount || 0)}
                 </div>
               </div>
             </div>

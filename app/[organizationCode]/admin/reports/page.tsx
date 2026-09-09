@@ -191,42 +191,42 @@ export default function ReportsDashboardPage() {
               </div>
             ) : (
               <div className={styles.metricsGrid}>
-                <div className={styles.metricBox}>
+                <div className={styles.metricCard} style={{ borderLeft: '3px solid #3b82f6' }}>
                   <div className={styles.metricLabel}>Total Staff Evaluated</div>
-                  <div className={styles.metricVal}>{summary?.todayMetrics?.totalCount || 0}</div>
+                  <div className={styles.metricValue}>{summary?.todayMetrics?.totalCount || 0}</div>
                 </div>
 
-                <div className={styles.metricBox}>
+                <div className={styles.metricCard} style={{ borderLeft: '3px solid #10b981' }}>
                   <div className={styles.metricLabel}>Present</div>
-                  <div className={styles.metricVal} style={{ color: '#34d399' }}>
+                  <div className={styles.metricValue} style={{ color: '#34d399' }}>
                     {summary?.todayMetrics?.presentCount || 0}
                   </div>
                 </div>
 
-                <div className={styles.metricBox}>
+                <div className={styles.metricCard} style={{ borderLeft: '3px solid #38bdf8' }}>
                   <div className={styles.metricLabel}>Approved Leave</div>
-                  <div className={styles.metricVal} style={{ color: '#38bdf8' }}>
+                  <div className={styles.metricValue} style={{ color: '#38bdf8' }}>
                     {summary?.todayMetrics?.leaveCount || 0}
                   </div>
                 </div>
 
-                <div className={styles.metricBox}>
+                <div className={styles.metricCard} style={{ borderLeft: '3px solid #ef4444' }}>
                   <div className={styles.metricLabel}>Absent</div>
-                  <div className={styles.metricVal} style={{ color: '#f87171' }}>
+                  <div className={styles.metricValue} style={{ color: '#f87171' }}>
                     {summary?.todayMetrics?.absentCount || 0}
                   </div>
                 </div>
 
-                <div className={styles.metricBox}>
+                <div className={styles.metricCard} style={{ borderLeft: '3px solid #059669' }}>
                   <div className={styles.metricLabel}>Verified (Normal)</div>
-                  <div className={styles.metricVal} style={{ color: '#34d399' }}>
+                  <div className={styles.metricValue} style={{ color: '#34d399' }}>
                     {summary?.todayMetrics?.sourceMetrics?.normalCount || 0}
                   </div>
                 </div>
 
-                <div className={styles.metricBox}>
+                <div className={styles.metricCard} style={{ borderLeft: '3px solid #d97706' }}>
                   <div className={styles.metricLabel}>Manual / Adjusted</div>
-                  <div className={styles.metricVal} style={{ color: '#fbbf24' }}>
+                  <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
                     {(summary?.todayMetrics?.sourceMetrics?.manualCount || 0) +
                       (summary?.todayMetrics?.sourceMetrics?.adjustedCount || 0)}
                   </div>
