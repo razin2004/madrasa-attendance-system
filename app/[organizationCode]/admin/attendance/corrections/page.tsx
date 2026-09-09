@@ -152,9 +152,11 @@ export default function AdminAttendanceCorrectionsPage() {
 
   const openBulkApprove = () => {
     if (selectedIds.length === 0) return;
+    const singleItem = selectedIds.length === 1 ? requests.find((r) => r.id === selectedIds[0]) : null;
     setApproveModal({
       isOpen: true,
       requestIds: selectedIds,
+      staffName: singleItem ? getStaffName(singleItem) : undefined,
     });
   };
 
@@ -212,10 +214,12 @@ export default function AdminAttendanceCorrectionsPage() {
 
   const openBulkReject = () => {
     if (selectedIds.length === 0) return;
+    const singleItem = selectedIds.length === 1 ? requests.find((r) => r.id === selectedIds[0]) : null;
     setRejectModal({
       isOpen: true,
       requestIds: selectedIds,
       reason: '',
+      staffName: singleItem ? getStaffName(singleItem) : undefined,
     });
   };
 
@@ -764,7 +768,7 @@ export default function AdminAttendanceCorrectionsPage() {
             <div style={{ padding: '20px' }}>
               <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: '20px', lineHeight: 1.5 }}>
                 {approveModal.requestIds.length === 1
-                  ? `Are you sure you want to approve the attendance correction request for ${approveModal.staffName}?`
+                  ? `Are you sure you want to approve the attendance correction request for ${approveModal.staffName || 'this staff member'}?`
                   : `Are you sure you want to BULK APPROVE ${approveModal.requestIds.length} selected attendance correction request(s)?`}
               </p>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
@@ -802,7 +806,7 @@ export default function AdminAttendanceCorrectionsPage() {
         </div>
       )}
 
-      {/* Rejection Confirmation Modal (Mandatory Reason >= 2 characters) */}
+      {/* Rejection Confirmation Modal */}
       {rejectModal.isOpen && (
         <div className={styles.modalBackdrop}>
           <div className={styles.modalContent}>
@@ -822,15 +826,15 @@ export default function AdminAttendanceCorrectionsPage() {
             <div style={{ padding: '20px' }}>
               <p style={{ fontSize: '13.5px', color: '#cbd5e1', marginBottom: '12px', lineHeight: 1.5 }}>
                 {rejectModal.requestIds.length === 1
-                  ? `Please enter a rejection reason for ${rejectModal.staffName}'s request (minimum 2 characters):`
-                  : `Please enter a rejection reason for ${rejectModal.requestIds.length} selected request(s) (minimum 2 characters):`}
+                  ? `Please enter a rejection reason for ${rejectModal.staffName || 'this staff member'}'s request:`
+                  : `Please enter a rejection reason for ${rejectModal.requestIds.length} selected request(s):`}
               </p>
 
               <textarea
                 rows={3}
                 value={rejectModal.reason}
                 onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
-                placeholder="Enter rejection reason (at least 2 characters)..."
+                placeholder="Enter rejection reason..."
                 className="form-control"
                 style={{
                   width: '100%',
