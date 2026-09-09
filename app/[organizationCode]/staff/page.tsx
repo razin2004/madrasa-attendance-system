@@ -486,6 +486,7 @@ export default function StaffDashboardPage() {
 
   const startClockFlow = (actionType: 'CLOCK_IN' | 'CLOCK_OUT') => {
     if (!precheck?.isReady) {
+      setClocking(false);
       setWarningActionType(actionType);
       setShowWarningModal(true);
     } else {
@@ -494,17 +495,17 @@ export default function StaffDashboardPage() {
   };
 
   const handleClockButtonClick = () => {
-    if (!todayStatus) return;
+    if (!todayStatus || clocking || checking) return;
 
     if (!todayStatus.isClockedIn) {
+      setClocking(true);
       startClockFlow('CLOCK_IN');
     } else {
       const schedEndStr = todayStatus.schedule?.endTime;
       if (schedEndStr) {
         const now = new Date();
         const [hStr, mStr] = schedEndStr.split(':');
-        const endTimes = new Date();
-        endTimes.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+        const endTimes = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
 
         if (now < endTimes) {
           const diffMs = endTimes.getTime() - now.getTime();
@@ -514,6 +515,7 @@ export default function StaffDashboardPage() {
           return;
         }
       }
+      setClocking(true);
       startClockFlow('CLOCK_OUT');
     }
   };
@@ -531,8 +533,26 @@ export default function StaffDashboardPage() {
     }
   }
 
+  const isShiftEndedWithoutClockIn = (() => {
+    if (!todayStatus || todayStatus.isClockedIn) return false;
+    if (!todayStatus.schedule || !todayStatus.schedule.endTime || !todayStatus.schedule.isScheduled) return false;
+
+    const now = new Date();
+    const [endH, endM] = todayStatus.schedule.endTime.split(':').map((v: string) => parseInt(v, 10));
+    let shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+
+    if (todayStatus.schedule.isOvernight && todayStatus.schedule.startTime) {
+      const [startH] = todayStatus.schedule.startTime.split(':').map((v: string) => parseInt(v, 10));
+      if (startH > endH) {
+        shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, endH, endM, 0, 0);
+      }
+    }
+
+    return now > shiftEnd;
+  })();
+
   const isCompleted = Boolean(todayStatus?.isDailyLimitReached && !isClockedIn);
-  const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isCompleted);
+  const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isCompleted && !isShiftEndedWithoutClockIn);
 
   const initials = staffInfo?.name
     ? staffInfo.name.trim().split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
@@ -605,36 +625,36 @@ export default function StaffDashboardPage() {
         <div className={styles.mainLayout}>
           
           {/* PANEL 1: LIVE DIGITAL CLOCK & HERO ACTION HUB */}
-          <div className={styles.heroClockCard}>
-            <div style={{ width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <div className={styles.clockHeaderLabel}>
-                  Live Workspace System Time
-                </div>
-                <button
-                  type="button"
-                  onClick={handleManualRefresh}
-                  disabled={checking}
-                  title="Re-verify Security & GPS Location"
-                  aria-label="Re-verify Security & GPS Location"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    borderRadius: '8px',
-                    padding: '4px 10px',
-                    color: '#818cf8',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '11.5px',
-                    fontWeight: 600,
-                    cursor: checking ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <RefreshCw size={13} className={checking ? 'animate-spin' : ''} />
-                  <span>{checking ? 'Refreshing...' : 'Re-verify'}</span>
-                </button>
+          <div className={styles.heroClockCard} style={{ position: 'relative' }}>
+            {/* Re-verify Icon Only on Top-Right Edge (No text, no container background) */}
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={checking}
+              title="Re-verify Security & GPS Location"
+              aria-label="Re-verify Security & GPS Location"
+              style={{
+                position: 'absolute',
+                top: '18px',
+                right: '18px',
+                background: 'transparent',
+                border: 'none',
+                padding: '4px',
+                color: checking ? '#818cf8' : '#94a3b8',
+                cursor: checking ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 5,
+                transition: 'color 0.15s ease',
+              }}
+            >
+              <RefreshCw size={18} className={checking ? 'animate-spin' : ''} />
+            </button>
+
+            <div style={{ width: '100%', textAlign: 'center' }}>
+              <div className={styles.clockHeaderLabel} style={{ textAlign: 'center', width: '100%' }}>
+                Live Workspace System Time
               </div>
               <div className={styles.liveClockDisplay}>{currentTime || '12:00:00 PM'}</div>
               <div className={styles.currentDateText}>
@@ -686,17 +706,26 @@ export default function StaffDashboardPage() {
                   {/* Punch Button */}
                   <button
                     onClick={handleClockButtonClick}
-                    disabled={!hasSchedule || isCompleted || clocking || checking}
+                    disabled={!hasSchedule || isCompleted || isShiftEndedWithoutClockIn || clocking || checking}
                     className={`${styles.clockButton} ${styles.punchButtonCircle} ${
                       isClockedIn
                         ? styles.clockButtonOut
+                        : isShiftEndedWithoutClockIn
+                        ? styles.clockButtonDisabled
                         : styles.clockButtonIn
                     }`}
                   >
                     {clocking ? (
                       <>
                         <Loader2 size={24} className="animate-spin" />
-                        <span style={{ fontSize: '12px' }}>Verifying...</span>
+                        <span style={{ fontSize: '14px', fontWeight: 800 }}>
+                          {isClockedIn ? 'Clocking Out...' : 'Clocking In...'}
+                        </span>
+                      </>
+                    ) : isShiftEndedWithoutClockIn ? (
+                      <>
+                        <XCircle size={24} color="#f87171" />
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#f87171' }}>Shift Ended</span>
                       </>
                     ) : isClockedIn ? (
                       <>
@@ -710,6 +739,12 @@ export default function StaffDashboardPage() {
                       </>
                     )}
                   </button>
+
+                  {isShiftEndedWithoutClockIn && (
+                    <div style={{ fontSize: '12px', color: '#fb7185', marginTop: '10px', fontWeight: 600 }}>
+                      ⚠️ Shift end time has passed. Clock-in is closed for today.
+                    </div>
+                  )}
 
                   {/* 3-Box Horizontal Precheck Status Grid */}
                   <div className={styles.precheckThreeGrid}>
