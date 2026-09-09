@@ -953,7 +953,10 @@ export default function StaffDashboardPage() {
       <ConfirmationModal
         isOpen={showEarlyClockOutModal}
         onClose={() => setShowEarlyClockOutModal(false)}
-        onConfirm={() => executeClockAction('CLOCK_OUT')}
+        onConfirm={() => {
+          setShowEarlyClockOutModal(false);
+          startClockFlow('CLOCK_OUT');
+        }}
         title="Your shift has not ended yet"
         message={`Your scheduled shift end time is ${todayStatus?.schedule?.endTime || '5:00 PM'}. You still have ${earlyClockOutMinutes} minutes remaining. Are you sure you want to clock out early now?`}
         confirmText="Clock Out Early"
