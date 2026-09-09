@@ -817,7 +817,7 @@ export default function AdminAttendanceCorrectionsPage() {
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
             >
               <CheckCircle2 size={15} />
-              <span>Approve Selected ({selectedIds.length})</span>
+              <span>Approve</span>
             </button>
 
             <button
@@ -828,7 +828,7 @@ export default function AdminAttendanceCorrectionsPage() {
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
             >
               <XCircle size={15} />
-              <span>Reject Selected ({selectedIds.length})</span>
+              <span>Reject</span>
             </button>
 
             <button
