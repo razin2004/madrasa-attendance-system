@@ -130,12 +130,12 @@ export function parseIsoDateString(dateStr: string): Date {
 }
 
 export function formatMinutesToDuration(minutes: number): string {
-  if (!minutes || minutes <= 0) return '0 mins';
+  if (!minutes || minutes <= 0) return '0h';
   const hrs = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  if (hrs > 0 && mins > 0) return `${hrs} hr${hrs > 1 ? 's' : ''} ${mins} min${mins > 1 ? 's' : ''}`;
-  if (hrs > 0) return `${hrs} hr${hrs > 1 ? 's' : ''}`;
-  return `${mins} min${mins > 1 ? 's' : ''}`;
+  if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m`;
+  if (hrs > 0) return `${hrs}h`;
+  return `${mins}m`;
 }
 
 /**
@@ -168,7 +168,7 @@ export function calculateAttendanceMetricsForPunches(params: {
       totalBreakFormatted: '—',
       breakDetails: [],
       totalWorkingHoursMinutes: 0,
-      totalWorkingHoursFormatted: '0 hrs',
+      totalWorkingHoursFormatted: '0h',
     };
   }
 

@@ -685,8 +685,8 @@ export default function DailyReportPage() {
                         <th className={styles.th}>Staff Member</th>
                         <th className={styles.th}>Branch</th>
                         <th className={styles.th}>Clock In</th>
-                        <th className={styles.th}>Clock Out</th>
                         <th className={styles.th}>Late In</th>
+                        <th className={styles.th}>Clock Out</th>
                         <th className={styles.th}>Early Out</th>
                         <th className={styles.th}>Break Time</th>
                         <th className={styles.th}>Total Working Hours</th>
@@ -734,15 +734,15 @@ export default function DailyReportPage() {
                             </td>
 
                             <td className={styles.td}>
-                              <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>
-                                {row.displayClockOutTime || row.clockOutTime || '—'}
-                              </strong>
-                            </td>
-
-                            <td className={styles.td}>
                               <span style={{ color: row.lateInMinutes > 0 ? '#f87171' : 'var(--text-muted)', fontWeight: row.lateInMinutes > 0 ? 700 : 400 }}>
                                 {row.lateInFormatted || '—'}
                               </span>
+                            </td>
+
+                            <td className={styles.td}>
+                              <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>
+                                {row.displayClockOutTime || row.clockOutTime || '—'}
+                              </strong>
                             </td>
 
                             <td className={styles.td}>
@@ -757,7 +757,7 @@ export default function DailyReportPage() {
 
                             <td className={styles.td}>
                               <strong style={{ color: '#818cf8', fontWeight: 800 }}>
-                                {row.totalWorkingHoursFormatted || '0 hrs'}
+                                {row.totalWorkingHoursFormatted || '0h'}
                               </strong>
                             </td>
 
@@ -860,7 +860,7 @@ export default function DailyReportPage() {
                           <div>
                             <span className={styles.clockLabel}>Total Working Hours</span>
                             <span className={styles.clockVal} style={{ color: '#818cf8', fontWeight: 800 }}>
-                              {row.totalWorkingHoursFormatted || '0 hrs'}
+                              {row.totalWorkingHoursFormatted || '0h'}
                             </span>
                           </div>
                         </div>

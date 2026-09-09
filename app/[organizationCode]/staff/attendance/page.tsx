@@ -225,7 +225,7 @@ export default function StaffAttendancePage() {
                         <BreakPopover totalBreakMinutes={row.totalBreakMinutes || 0} breaks={breaksList} />
                       </td>
                       <td style={{ fontWeight: 700, color: '#818cf8' }}>
-                        {row.totalWorkingHoursFormatted || '0 hrs'}
+                        {row.totalWorkingHoursFormatted || '0h'}
                       </td>
                       <td>
                         <span
@@ -349,7 +349,7 @@ export default function StaffAttendancePage() {
                       </div>
                       <div>
                         <span style={{ color: 'var(--text-muted)', marginRight: '6px' }}>Working Hours:</span>
-                        <span style={{ fontWeight: 700, color: '#818cf8' }}>{row.totalWorkingHoursFormatted || '0 hrs'}</span>
+                        <span style={{ fontWeight: 700, color: '#818cf8' }}>{row.totalWorkingHoursFormatted || '0h'}</span>
                       </div>
                     </div>
                   </div>
