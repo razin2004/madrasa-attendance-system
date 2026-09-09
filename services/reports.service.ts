@@ -82,7 +82,9 @@ export interface AttendanceReportRow {
     | 'ABSENT'
     | 'NOT YET CLOCKED IN'
     | 'IN PROGRESS'
-    | 'OFF DUTY';
+    | 'OFF DUTY'
+    | 'CLOCK IN PENDING'
+    | 'CLOCK OUT PENDING';
   source: AttendanceSource | '—';
   leaveType: LeaveType | null;
   leaveTypeName: string | null;
@@ -415,6 +417,16 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     },
   });
 
+  // Query Pending AttendanceCorrectionRequests for the target date
+  const pendingRequests = await prisma.attendanceCorrectionRequest.findMany({
+    where: {
+      organizationId: params.organizationId,
+      staffProfileId: { in: profileIds },
+      date: { gte: startOfDay, lte: endOfDay },
+      status: 'PENDING',
+    },
+  });
+
   const rows: AttendanceReportRow[] = [];
 
   const metrics: ReportMetricsSummary = {
@@ -452,6 +464,10 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     const staffRecords = attendanceRecords.filter((r) => r.staffProfileId === profile.id);
     const clockInRecord = staffRecords.find((r) => r.type === 'CLOCK_IN');
     const clockOutRecord = staffRecords.find((r) => r.type === 'CLOCK_OUT');
+    const pendingReq = pendingRequests.find((cr) => cr.staffProfileId === profile.id);
+
+    const hasPendingIn = Boolean(pendingReq && (pendingReq.type === 'MISSING_CLOCK_IN' || pendingReq.requestedClockIn) && !clockInRecord);
+    const hasPendingOut = Boolean(pendingReq && (pendingReq.type === 'MISSING_CLOCK_OUT' || pendingReq.requestedClockOut) && !clockOutRecord);
 
     // 3. Extract approved leave for this profile
     const staffLeave = approvedLeaves.find((l) => l.staffProfileId === profile.id);
@@ -480,6 +496,8 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       source = clockInRecord.source;
     } else if (clockOutRecord?.source) {
       source = clockOutRecord.source;
+    } else if (hasPendingIn || hasPendingOut) {
+      source = 'ADJUSTED';
     }
 
     // 6. Status Determination
@@ -490,7 +508,13 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     const hasClockIn = Boolean(clockInRecord);
     const hasClockOut = Boolean(clockOutRecord);
 
-    if (hasClockIn && hasClockOut) {
+    if (hasPendingIn && hasClockOut) {
+      status = 'CLOCK IN PENDING';
+    } else if (hasClockIn && hasPendingOut) {
+      status = 'CLOCK OUT PENDING';
+    } else if (hasPendingIn && hasPendingOut) {
+      status = 'CLOCK IN PENDING';
+    } else if (hasClockIn && hasClockOut) {
       status = 'PRESENT';
       if (staffLeave) {
         hasConflict = true;
@@ -498,7 +522,6 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       }
     } else if (hasClockIn || hasClockOut) {
       if (isToday) {
-        // Current day ongoing check
         status = 'IN PROGRESS';
       } else {
         status = 'PARTIAL';
@@ -508,6 +531,8 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
         hasConflict = true;
         conflictDetails = `Partial punch recorded alongside approved ${staffLeave.type} Leave.`;
       }
+    } else if (hasPendingIn) {
+      status = 'CLOCK IN PENDING';
     } else if (staffLeave) {
       status = 'APPROVED LEAVE';
     } else if (schedule.isHoliday) {
@@ -515,15 +540,12 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     } else if (!schedule.isScheduled) {
       status = 'OFF DUTY';
     } else {
-      // Scheduled to work, no punches, no leave, not holiday
       const targetDateMidnight = new Date(Date.UTC(targetDateObj.getUTCFullYear(), targetDateObj.getUTCMonth(), targetDateObj.getUTCDate()));
       const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
       if (targetDateMidnight.getTime() > todayMidnight.getTime()) {
-        // Future date: NOT YET CLOCKED IN, never ABSENT
         status = 'NOT YET CLOCKED IN';
       } else if (isToday) {
-        // Current day ongoing check
         const shiftEndHour = schedule.endTime ? parseInt(schedule.endTime.split(':')[0], 10) : 17;
         const nowHour = now.getUTCHours();
         if (nowHour < shiftEndHour) {
@@ -550,7 +572,7 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     let manualReason: string | null = null;
     let creatorName: string | null = null;
     let reviewerName: string | null = null;
-    let adjustmentReason: string | null = null;
+    let adjustmentReason: string | null = pendingReq?.reason || null;
 
     if (clockInRecord?.isManualEntry || clockOutRecord?.isManualEntry) {
       manualReason = clockInRecord?.manualReason || clockOutRecord?.manualReason || null;
@@ -559,14 +581,14 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
 
     if (clockInRecord?.correctionRequest || clockOutRecord?.correctionRequest) {
       const cr = clockInRecord?.correctionRequest || clockOutRecord?.correctionRequest;
-      adjustmentReason = cr?.reason || null;
+      adjustmentReason = cr?.reason || adjustmentReason;
       reviewerName = cr?.reviewerUser?.name || null;
     }
 
     // Metrics aggregation
     metrics.totalCount++;
     if (status === 'PRESENT') metrics.presentCount++;
-    else if (status === 'PARTIAL') metrics.partialCount++;
+    else if (status === 'PARTIAL' || status === 'CLOCK IN PENDING' || status === 'CLOCK OUT PENDING') metrics.partialCount++;
     else if (status === 'HOLIDAY') metrics.holidayCount++;
     else if (status === 'APPROVED LEAVE') {
       metrics.leaveCount++;
@@ -591,6 +613,28 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       timezone: branchTimezone,
     });
 
+    // Special field overrides for pending states
+    let finalDisplayIn = metricsCalc.displayClockInTime;
+    let finalDisplayOut = metricsCalc.displayClockOutTime;
+    let finalLateFormatted = metricsCalc.lateInFormatted;
+    let finalEarlyFormatted = metricsCalc.earlyOutFormatted;
+    let finalBreakFormatted = metricsCalc.totalBreakFormatted;
+    let finalWorkingFormatted = metricsCalc.totalWorkingHoursFormatted;
+
+    if (hasPendingIn && !clockInRecord) {
+      finalDisplayIn = '—';
+      finalLateFormatted = '—';
+      finalBreakFormatted = '—';
+      finalWorkingFormatted = '—';
+    }
+
+    if (hasPendingOut && !clockOutRecord) {
+      finalDisplayOut = '—';
+      finalEarlyFormatted = '—';
+      finalBreakFormatted = '—';
+      finalWorkingFormatted = '—';
+    }
+
     rows.push({
       staffProfileId: profile.id,
       staffId: profile.staffId,
@@ -611,17 +655,17 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       clockOutTime: clockOutRecord ? formatTimeInTimezone(clockOutRecord.timestamp, branchTimezone) : null,
       clockInIso: clockInRecord?.timestamp.toISOString() || null,
       clockOutIso: clockOutRecord?.timestamp.toISOString() || null,
-      displayClockInTime: metricsCalc.displayClockInTime,
-      displayClockOutTime: metricsCalc.displayClockOutTime,
-      lateInMinutes: metricsCalc.lateInMinutes,
-      lateInFormatted: metricsCalc.lateInFormatted,
-      earlyOutMinutes: metricsCalc.earlyOutMinutes,
-      earlyOutFormatted: metricsCalc.earlyOutFormatted,
-      totalBreakMinutes: metricsCalc.totalBreakMinutes,
-      totalBreakFormatted: metricsCalc.totalBreakFormatted,
-      breakDetails: metricsCalc.breakDetails,
-      totalWorkingHoursMinutes: metricsCalc.totalWorkingHoursMinutes,
-      totalWorkingHoursFormatted: metricsCalc.totalWorkingHoursFormatted,
+      displayClockInTime: finalDisplayIn,
+      displayClockOutTime: finalDisplayOut,
+      lateInMinutes: hasPendingIn ? 0 : metricsCalc.lateInMinutes,
+      lateInFormatted: finalLateFormatted,
+      earlyOutMinutes: hasPendingOut ? 0 : metricsCalc.earlyOutMinutes,
+      earlyOutFormatted: finalEarlyFormatted,
+      totalBreakMinutes: (hasPendingIn || hasPendingOut) ? 0 : metricsCalc.totalBreakMinutes,
+      totalBreakFormatted: finalBreakFormatted,
+      breakDetails: (hasPendingIn || hasPendingOut) ? [] : metricsCalc.breakDetails,
+      totalWorkingHoursMinutes: (hasPendingIn || hasPendingOut) ? 0 : metricsCalc.totalWorkingHoursMinutes,
+      totalWorkingHoursFormatted: finalWorkingFormatted,
       status,
       source,
       leaveType: staffLeave?.type || null,

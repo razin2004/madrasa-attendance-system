@@ -40,7 +40,18 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [comment, setComment] = useState('');
+  const [customClockIn, setCustomClockIn] = useState('');
+  const [customClockOut, setCustomClockOut] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const formatIsoToTimeInput = (iso?: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const hours = String(d.getUTCHours()).padStart(2, '0');
+    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
 
   useEffect(() => {
     // Load metadata and request detail
@@ -55,6 +66,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
         if (detailRes.success && detailRes.request) {
           setRequest(detailRes.request);
           setExistingRecords(detailRes.existingRecords || []);
+
+          const reqIn = detailRes.request.requestedClockIn || detailRes.request.originalClockIn;
+          const reqOut = detailRes.request.requestedClockOut || detailRes.request.originalClockOut;
+          if (reqIn) setCustomClockIn(formatIsoToTimeInput(reqIn));
+          if (reqOut) setCustomClockOut(formatIsoToTimeInput(reqOut));
         } else {
           setErrorMsg(detailRes.error || 'Correction request not found.');
         }
@@ -78,7 +94,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comment: comment.trim() || undefined }),
+          body: JSON.stringify({
+            comment: comment.trim() || undefined,
+            customClockInTime: customClockIn.trim() || undefined,
+            customClockOutTime: customClockOut.trim() || undefined,
+          }),
         }
       );
 
@@ -250,6 +270,56 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                     <ShieldCheck size={18} color="#10b981" />
                     <span>Administrator Decision</span>
                   </h3>
+
+                  {/* Custom Clock-In / Clock-Out Override Inputs */}
+                  <div style={{ marginBottom: '20px', padding: '16px', background: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={15} />
+                      <span>Approved Punch Time Override (Admin Custom Time)</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                          Clock-In Time
+                        </label>
+                        <input
+                          type="time"
+                          value={customClockIn}
+                          onChange={(e) => setCustomClockIn(e.target.value)}
+                          style={{
+                            width: '100%',
+                            backgroundColor: '#111827',
+                            border: '1px solid #334155',
+                            borderRadius: '8px',
+                            color: '#ffffff',
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                          Clock-Out Time
+                        </label>
+                        <input
+                          type="time"
+                          value={customClockOut}
+                          onChange={(e) => setCustomClockOut(e.target.value)}
+                          style={{
+                            width: '100%',
+                            backgroundColor: '#111827',
+                            border: '1px solid #334155',
+                            borderRadius: '8px',
+                            color: '#ffffff',
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
                   <label
                     style={{

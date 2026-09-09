@@ -17,7 +17,7 @@ export async function POST(
 
     const { organization, session } = auth;
     const body = await req.json().catch(() => ({}));
-    const { comment } = body;
+    const { comment, customClockInTime, customClockOutTime } = body;
     const originUrl = req.nextUrl.origin;
 
     const approved = await approveAttendanceCorrection({
@@ -26,6 +26,8 @@ export async function POST(
       reviewerUserId: session.user.id,
       reviewerComment: comment,
       originUrl,
+      customClockInTime,
+      customClockOutTime,
     });
 
     return NextResponse.json({

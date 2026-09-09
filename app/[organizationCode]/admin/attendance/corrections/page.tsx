@@ -11,6 +11,11 @@ import {
   Check,
   X,
   ArrowRight,
+  CheckCircle2,
+  XCircle,
+  CheckSquare,
+  Square,
+  Clock,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -41,11 +46,16 @@ export default function AdminAttendanceCorrectionsPage() {
   const toast = useToast();
 
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<CorrectionRequest[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
+  const [bulkRejectionReason, setBulkRejectionReason] = useState('');
   const [orgData, setOrgData] = useState<any>(null);
 
   useEffect(() => {
@@ -77,6 +87,7 @@ export default function AdminAttendanceCorrectionsPage() {
 
   useEffect(() => {
     fetchCorrections();
+    setSelectedIds([]);
   }, [organizationCode, statusFilter]);
 
   const handleAction = async (requestId: string, action: 'approve' | 'reject') => {
@@ -100,11 +111,85 @@ export default function AdminAttendanceCorrectionsPage() {
     }
   };
 
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Are you sure you want to BULK APPROVE ${selectedIds.length} selected request(s)?`)) return;
+
+    setBulkActionLoading(true);
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/attendance/admin/corrections/bulk-approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestIds: selectedIds }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to bulk approve requests.');
+      }
+
+      toast.success(data.message || `Successfully approved ${selectedIds.length} request(s)!`);
+      setSelectedIds([]);
+      fetchCorrections();
+    } catch (err: any) {
+      toast.error(err.message || 'Error during bulk approval.');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkRejectSubmit = async () => {
+    if (!bulkRejectionReason.trim()) {
+      toast.error('Please enter a rejection reason.');
+      return;
+    }
+    if (selectedIds.length === 0) return;
+
+    setBulkActionLoading(true);
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/attendance/admin/corrections/bulk-reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestIds: selectedIds,
+          rejectionReason: bulkRejectionReason.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to bulk reject requests.');
+      }
+
+      toast.info(data.message || `Rejected ${selectedIds.length} request(s).`);
+      setSelectedIds([]);
+      setShowBulkRejectModal(false);
+      setBulkRejectionReason('');
+      fetchCorrections();
+    } catch (err: any) {
+      toast.error(err.message || 'Error during bulk rejection.');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
   const approvedCount = requests.filter((r) => r.status === 'APPROVED').length;
   const rejectedCount = requests.filter((r) => r.status === 'REJECTED').length;
 
   const filteredRequests = requests.filter((r) => {
+    // Problem / Punch Type Filter
+    if (typeFilter === 'UNVERIFIED_IN') {
+      if (r.type !== 'MISSING_CLOCK_IN' && r.type !== 'INCORRECT_CLOCK_IN') return false;
+    } else if (typeFilter === 'UNVERIFIED_OUT') {
+      if (r.type !== 'MISSING_CLOCK_OUT' && r.type !== 'INCORRECT_CLOCK_OUT') return false;
+    } else if (typeFilter === 'MANUAL') {
+      if (r.type !== 'MANUAL_ENTRY') return false;
+    } else if (typeFilter !== 'ALL') {
+      if (r.type !== typeFilter) return false;
+    }
+
+    // Search query filter
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -114,6 +199,58 @@ export default function AdminAttendanceCorrectionsPage() {
       r.type?.toLowerCase().includes(q)
     );
   });
+
+  const pendingFilteredRequests = filteredRequests.filter((r) => r.status === 'PENDING');
+  const isAllSelected =
+    pendingFilteredRequests.length > 0 &&
+    pendingFilteredRequests.every((r) => selectedIds.includes(r.id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(pendingFilteredRequests.map((r) => r.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter((item) => item !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const renderTypeBadge = (type: string) => {
+    if (type === 'MISSING_CLOCK_IN' || type === 'INCORRECT_CLOCK_IN') {
+      return (
+        <span
+          className={styles.badge}
+          style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+        >
+          🔴 Unverified Clock In
+        </span>
+      );
+    }
+    if (type === 'MISSING_CLOCK_OUT' || type === 'INCORRECT_CLOCK_OUT') {
+      return (
+        <span
+          className={styles.badge}
+          style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+        >
+          🟡 Unverified Clock Out
+        </span>
+      );
+    }
+    return (
+      <span
+        className={styles.badge}
+        style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}
+      >
+        🔵 Manual Entry
+      </span>
+    );
+  };
 
   return (
     <div className={styles.container}>
@@ -184,6 +321,19 @@ export default function AdminAttendanceCorrectionsPage() {
               )}
             </div>
 
+            {/* Problem / Unverified Type Filter */}
+            <select
+              className={styles.typeSelect}
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              title="Filter by Punch Issue Type"
+            >
+              <option value="ALL">All Problem Types</option>
+              <option value="UNVERIFIED_IN">🔴 Unverified Clock In</option>
+              <option value="UNVERIFIED_OUT">🟡 Unverified Clock Out</option>
+              <option value="MANUAL">🔵 Manual Entry Request</option>
+            </select>
+
             <button
               type="button"
               className={styles.filterToggleBtn}
@@ -222,7 +372,7 @@ export default function AdminAttendanceCorrectionsPage() {
                   No correction requests found
                 </h3>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-                  No requests match the current search or status filter.
+                  No requests match the current search, status, or problem type filter.
                 </p>
               </div>
             ) : (
@@ -232,11 +382,22 @@ export default function AdminAttendanceCorrectionsPage() {
                   <table className={styles.table}>
                     <thead>
                       <tr>
+                        <th className={styles.th} style={{ width: '40px', textAlign: 'center' }}>
+                          {statusFilter === 'PENDING' || !statusFilter ? (
+                            <input
+                              type="checkbox"
+                              className={styles.checkbox}
+                              checked={isAllSelected}
+                              onChange={toggleSelectAll}
+                              title="Select All Pending Requests"
+                            />
+                          ) : null}
+                        </th>
                         <th className={styles.th}>Staff Member</th>
                         <th className={styles.th}>Affected Date</th>
-                        <th className={styles.th}>Problem Type</th>
+                        <th className={styles.th}>Problem / Punch Type</th>
                         <th className={styles.th}>Requested Time</th>
-                        <th className={styles.th}>Reason</th>
+                        <th className={styles.th}>Outage Reason / Justification</th>
                         <th className={styles.th} style={{ textAlign: 'right' }}>Status / Action</th>
                       </tr>
                     </thead>
@@ -244,9 +405,24 @@ export default function AdminAttendanceCorrectionsPage() {
                       {filteredRequests.map((item) => {
                         const isPending = item.status === 'PENDING';
                         const isProcessing = processingId === item.id;
+                        const isSelected = selectedIds.includes(item.id);
 
                         return (
-                          <tr key={item.id} className={styles.tr}>
+                          <tr
+                            key={item.id}
+                            className={styles.tr}
+                            style={{ background: isSelected ? 'rgba(99, 102, 241, 0.1)' : undefined }}
+                          >
+                            <td className={styles.td} style={{ textAlign: 'center' }}>
+                              {isPending ? (
+                                <input
+                                  type="checkbox"
+                                  className={styles.checkbox}
+                                  checked={isSelected}
+                                  onChange={() => toggleSelect(item.id)}
+                                />
+                              ) : null}
+                            </td>
                             <td
                               className={styles.td}
                               onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
@@ -260,15 +436,13 @@ export default function AdminAttendanceCorrectionsPage() {
                               {item.date}
                             </td>
                             <td className={styles.td}>
-                              <span className={`${styles.badge} ${styles.badgePENDING}`}>
-                                {item.type}
-                              </span>
+                              {renderTypeBadge(item.type)}
                             </td>
                             <td className={styles.td} style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)' }}>
                               In: <span style={{ color: '#34d399', fontWeight: 700 }}>{item.requestedClockIn || '—'}</span> &bull; Out:{' '}
                               <span style={{ color: '#fbbf24', fontWeight: 700 }}>{item.requestedClockOut || '—'}</span>
                             </td>
-                            <td className={styles.td} style={{ fontSize: '12.5px', color: '#94a3b8', fontStyle: 'italic', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <td className={styles.td} style={{ fontSize: '12.5px', color: '#94a3b8', fontStyle: 'italic', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               &ldquo;{item.reason}&rdquo;
                             </td>
                             <td className={styles.td} style={{ textAlign: 'right' }}>
@@ -329,16 +503,31 @@ export default function AdminAttendanceCorrectionsPage() {
                   {filteredRequests.map((item) => {
                     const isPending = item.status === 'PENDING';
                     const isProcessing = processingId === item.id;
+                    const isSelected = selectedIds.includes(item.id);
 
                     return (
-                      <div key={item.id} className={styles.requestCard}>
+                      <div
+                        key={item.id}
+                        className={styles.requestCard}
+                        style={{ borderLeft: isSelected ? '3px solid #6366f1' : undefined }}
+                      >
                         <div className={styles.cardHeader}>
-                          <div
-                            onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div className={styles.staffName} style={{ color: '#818cf8' }}>{item.staff.name}</div>
-                            <div className={styles.staffId}>ID: {item.staff.staffId}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {isPending && (
+                              <input
+                                type="checkbox"
+                                className={styles.checkbox}
+                                checked={isSelected}
+                                onChange={() => toggleSelect(item.id)}
+                              />
+                            )}
+                            <div
+                              onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <div className={styles.staffName} style={{ color: '#818cf8' }}>{item.staff.name}</div>
+                              <div className={styles.staffId}>ID: {item.staff.staffId}</div>
+                            </div>
                           </div>
                           <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
                             {item.status}
@@ -347,9 +536,9 @@ export default function AdminAttendanceCorrectionsPage() {
 
                         <div className={styles.stackedGrid}>
                           <div className={styles.stackedCol}>
-                            <span className={styles.colLabel}>Date &amp; Type</span>
+                            <span className={styles.colLabel}>Date &amp; Problem Type</span>
                             <span className={styles.colVal}>{item.date}</span>
-                            <span className={styles.typeSub}>{item.type}</span>
+                            <div style={{ marginTop: '4px' }}>{renderTypeBadge(item.type)}</div>
                           </div>
                           <div className={styles.stackedCol}>
                             <span className={styles.colLabel}>Requested Time</span>
@@ -406,8 +595,101 @@ export default function AdminAttendanceCorrectionsPage() {
           </div>
         </main>
       </div>
+
+      {/* Floating / Sticky Bulk Actions Toolbar */}
+      {selectedIds.length > 0 && (
+        <div className={styles.bulkActionBar}>
+          <div className={styles.bulkInfo}>
+            <span className={styles.bulkCount}>{selectedIds.length}</span>
+            <span>request(s) selected</span>
+          </div>
+          <div className={styles.bulkButtons}>
+            <button
+              type="button"
+              onClick={handleBulkApprove}
+              disabled={bulkActionLoading}
+              className="btn btn-success btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
+            >
+              {bulkActionLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={15} />}
+              <span>Approve Selected ({selectedIds.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowBulkRejectModal(true)}
+              disabled={bulkActionLoading}
+              className="btn btn-danger btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
+            >
+              {bulkActionLoading ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={15} />}
+              <span>Reject Selected ({selectedIds.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '8px 12px', borderRadius: '8px' }}
+            >
+              Deselect All
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Rejection Modal */}
+      {showBulkRejectModal && (
+        <div className={styles.modalBackdrop}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3>Bulk Reject Requests ({selectedIds.length})</h3>
+              <button type="button" onClick={() => setShowBulkRejectModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.5 }}>
+                Please provide a rejection reason that will be saved in the audit log and sent to all target staff members:
+              </p>
+              <textarea
+                rows={3}
+                value={bulkRejectionReason}
+                onChange={(e) => setBulkRejectionReason(e.target.value)}
+                placeholder="Enter rejection reason for all selected requests..."
+                className="form-control"
+                style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', resize: 'none', marginBottom: '16px' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowBulkRejectModal(false)}
+                  disabled={bulkActionLoading}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkRejectSubmit}
+                  disabled={bulkActionLoading}
+                  className="btn btn-danger btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {bulkActionLoading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <XCircle size={15} />
+                  )}
+                  <span>Reject ({selectedIds.length}) Requests</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <OrgAdminMobileNav organizationCode={organizationCode} />
     </div>
   );
 }
-

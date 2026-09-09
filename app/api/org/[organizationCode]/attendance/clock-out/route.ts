@@ -20,7 +20,7 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { latitude, longitude, locationAccuracy, deviceLabel } = body;
+    const { latitude, longitude, locationAccuracy, deviceLabel, unverifiedReason } = body;
     const deviceSecret =
       body.deviceSecret ||
       request.headers.get('x-shiftguard-device-secret') ||
@@ -54,6 +54,7 @@ export async function POST(
       deviceLabel,
       userAgent,
       submitForApproval: Boolean(body.submitForApproval),
+      unverifiedReason: unverifiedReason || null,
     });
 
     if (!result.success) {

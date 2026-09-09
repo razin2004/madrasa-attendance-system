@@ -424,6 +424,7 @@ export async function recordAttendance(params: {
   deviceLabel?: string | null;
   userAgent?: string | null;
   submitForApproval?: boolean;
+  unverifiedReason?: string | null;
 }): Promise<{
   success: boolean;
   record?: any;
@@ -469,6 +470,13 @@ export async function recordAttendance(params: {
     if (params.submitForApproval) {
       const todayNormalized = normalizeDate(now);
 
+      const userReason = params.unverifiedReason?.trim();
+      const failureMsg = userReason
+        ? `Reason: "${userReason}" (Failures: ${evaluation.failureReasons.join('; ')})`
+        : evaluation.failureReasons.length > 0
+        ? `Unverified punch. Failures: ${evaluation.failureReasons.join('; ')}`
+        : 'Unverified punch submitted for admin approval.';
+
       // Check if there is already a pending request for today
       const existingPending = await prisma.attendanceCorrectionRequest.findFirst({
         where: {
@@ -480,16 +488,52 @@ export async function recordAttendance(params: {
       });
 
       if (existingPending) {
-        return {
-          success: false,
-          error: 'You already have a pending clock-in/out approval request for today.',
-          evaluation,
-        };
-      }
+        if (params.type === 'CLOCK_IN') {
+          return {
+            success: false,
+            error: 'You already have a pending clock-in approval request for today.',
+            evaluation,
+          };
+        } else if (params.type === 'CLOCK_OUT') {
+          if (existingPending.requestedClockOut) {
+            return {
+              success: false,
+              error: 'You already have a pending clock-out approval request for today.',
+              evaluation,
+            };
+          }
+          // Update the pending request to include requestedClockOut
+          const updatedRequest = await prisma.attendanceCorrectionRequest.update({
+            where: { id: existingPending.id },
+            data: {
+              requestedClockOut: now,
+              reason: `${existingPending.reason} | Clock Out: ${failureMsg}`,
+            },
+          });
 
-      const failureMsg = evaluation.failureReasons.length > 0
-        ? `Unverified punch. Failures: ${evaluation.failureReasons.join('; ')}`
-        : 'Unverified punch submitted for admin approval.';
+          await recordAuditLog({
+            organizationId: params.organizationId,
+            actorUserId: params.userId,
+            action: 'ATTENDANCE_CORRECTION_REQUESTED',
+            entityType: 'AttendanceCorrectionRequest',
+            entityId: updatedRequest.id,
+            metadata: {
+              staffProfileId: params.staffProfileId,
+              type: 'CLOCK_OUT',
+              unverifiedSubmission: true,
+              userReason: params.unverifiedReason,
+              failureReasons: evaluation.failureReasons,
+            },
+          });
+
+          return {
+            success: true,
+            pendingApproval: true,
+            pendingCorrectionRequest: updatedRequest,
+            evaluation,
+          };
+        }
+      }
 
       const correctionRequest = await prisma.attendanceCorrectionRequest.create({
         data: {
@@ -516,6 +560,7 @@ export async function recordAttendance(params: {
           staffProfileId: params.staffProfileId,
           type: params.type,
           unverifiedSubmission: true,
+          userReason: params.unverifiedReason,
           failureReasons: evaluation.failureReasons,
         },
       });
@@ -563,7 +608,20 @@ export async function recordAttendance(params: {
   const completedCyclesCount = verifiedTodayRecords.filter((r) => r.type === 'CLOCK_OUT').length;
   const lastVerifiedRecord =
     verifiedTodayRecords.length > 0 ? verifiedTodayRecords[verifiedTodayRecords.length - 1] : null;
-  let isCurrentlyClockedIn = lastVerifiedRecord?.type === 'CLOCK_IN';
+
+  const todayNormalized = normalizeDate(now);
+  const pendingClockInToday = await prisma.attendanceCorrectionRequest.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      staffProfileId: params.staffProfileId,
+      date: todayNormalized,
+      type: 'MISSING_CLOCK_IN',
+      status: 'PENDING',
+    },
+  });
+
+  const hasPendingClockIn = Boolean(pendingClockInToday && !pendingClockInToday.requestedClockOut);
+  let isCurrentlyClockedIn = lastVerifiedRecord?.type === 'CLOCK_IN' || hasPendingClockIn;
 
   // If clocked in, but shift ended without clocking out and shift is NOT overnight -> shift expired without clocking out
   if (isCurrentlyClockedIn && !daySchedule.isOvernight && daySchedule.endTime) {
@@ -707,7 +765,18 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
   const completedCyclesCount = verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').length;
   const lastVerified = verifiedRecords.length > 0 ? verifiedRecords[verifiedRecords.length - 1] : null;
 
-  let isClockedIn = lastVerified?.type === 'CLOCK_IN';
+  const todayNormalized = normalizeDate(now);
+  const pendingClockInToday = await prisma.attendanceCorrectionRequest.findFirst({
+    where: {
+      staffProfileId,
+      date: todayNormalized,
+      type: 'MISSING_CLOCK_IN',
+      status: 'PENDING',
+    },
+  });
+
+  const hasPendingClockIn = Boolean(pendingClockInToday && !pendingClockInToday.requestedClockOut);
+  let isClockedIn = lastVerified?.type === 'CLOCK_IN' || hasPendingClockIn;
 
   // If clocked in, but non-overnight shift end time has passed -> shift expired without clocking out
   if (isClockedIn && !daySchedule.isOvernight && daySchedule.endTime) {
@@ -721,17 +790,26 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
   const lastClockOut = verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').pop();
   const isDailyLimitReached = completedCyclesCount >= MAX_DAILY_ATTENDANCE_CYCLES;
 
+  let displayClockInTime: string | null = lastClockIn?.timestamp
+    ? new Date(lastClockIn.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  if (!displayClockInTime && hasPendingClockIn && pendingClockInToday?.requestedClockIn) {
+    displayClockInTime = new Date(pendingClockInToday.requestedClockIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ' (Pending)';
+  }
+
   return {
     isClockedIn,
+    hasPendingClockIn,
     completedCycles: completedCyclesCount,
     maxCycles: MAX_DAILY_ATTENDANCE_CYCLES,
     isDailyLimitReached,
     hasSchedule: Boolean(daySchedule.isScheduled && !daySchedule.isHoliday),
     schedule: daySchedule,
-    lastClockInTime: lastClockIn?.timestamp || null,
+    lastClockInTime: displayClockInTime,
     attendanceStartTime: lastClockIn?.attendanceStartTime || lastClockIn?.timestamp || null,
     lateMinutes: lastClockIn?.lateMinutes || 0,
-    lastClockOutTime: lastClockOut?.timestamp || null,
+    lastClockOutTime: lastClockOut?.timestamp ? new Date(lastClockOut.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
     earlyDepartureMinutes: lastClockOut?.earlyDepartureMinutes || 0,
     currentBranch: lastVerified?.branch || null,
     todayRecords,
@@ -998,6 +1076,8 @@ export async function approveAttendanceCorrection(params: {
   reviewerUserId: string;
   reviewerComment?: string;
   originUrl?: string;
+  customClockInTime?: Date | string | null;
+  customClockOutTime?: Date | string | null;
 }) {
   return await prisma.$transaction(
     async (tx) => {
@@ -1029,6 +1109,17 @@ export async function approveAttendanceCorrection(params: {
       const startOfDay = new Date(targetDate.getTime());
       const endOfDay = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000 - 1);
 
+      // Determine final Clock-In and Clock-Out times (Custom Override > Requested Time)
+      let finalClockIn: Date | null = request.requestedClockIn;
+      if (params.customClockInTime !== undefined && params.customClockInTime !== null && params.customClockInTime !== '') {
+        finalClockIn = parseTimeToDate(targetDate, params.customClockInTime);
+      }
+
+      let finalClockOut: Date | null = request.requestedClockOut;
+      if (params.customClockOutTime !== undefined && params.customClockOutTime !== null && params.customClockOutTime !== '') {
+        finalClockOut = parseTimeToDate(targetDate, params.customClockOutTime);
+      }
+
       // 2. Find existing attendance records for the date
       const existingRecords = await tx.attendanceRecord.findMany({
         where: {
@@ -1044,13 +1135,13 @@ export async function approveAttendanceCorrection(params: {
 
       let targetRecordId = existingClockIn?.id || existingClockOut?.id || null;
 
-      // 3. Apply Clock In Correction if requested
-      if (request.requestedClockIn) {
+      // 3. Apply Clock In Correction if requested or overridden
+      if (finalClockIn) {
         if (existingClockIn) {
           await tx.attendanceRecord.update({
             where: { id: existingClockIn.id },
             data: {
-              timestamp: request.requestedClockIn,
+              timestamp: finalClockIn,
               source: 'ADJUSTED',
               correctionRequestId: request.id,
             },
@@ -1071,20 +1162,20 @@ export async function approveAttendanceCorrection(params: {
               ipAddress: '127.0.0.1',
               ipMatched: true,
               geofenceMatched: true,
-              timestamp: request.requestedClockIn,
+              timestamp: finalClockIn,
             },
           });
           targetRecordId = newClockIn.id;
         }
       }
 
-      // 4. Apply Clock Out Correction if requested
-      if (request.requestedClockOut) {
+      // 4. Apply Clock Out Correction if requested or overridden
+      if (finalClockOut) {
         if (existingClockOut) {
           await tx.attendanceRecord.update({
             where: { id: existingClockOut.id },
             data: {
-              timestamp: request.requestedClockOut,
+              timestamp: finalClockOut,
               source: 'ADJUSTED',
               correctionRequestId: request.id,
             },
@@ -1104,7 +1195,7 @@ export async function approveAttendanceCorrection(params: {
               ipAddress: '127.0.0.1',
               ipMatched: true,
               geofenceMatched: true,
-              timestamp: request.requestedClockOut,
+              timestamp: finalClockOut,
             },
           });
         }
@@ -1119,8 +1210,8 @@ export async function approveAttendanceCorrection(params: {
           requestId: request.id,
           previousClockIn: request.originalClockIn,
           previousClockOut: request.originalClockOut,
-          newClockIn: request.requestedClockIn,
-          newClockOut: request.requestedClockOut,
+          newClockIn: finalClockIn,
+          newClockOut: finalClockOut,
           reason: request.reason,
           requesterUserId: request.createdById,
           reviewerUserId: params.reviewerUserId,
@@ -1152,6 +1243,8 @@ export async function approveAttendanceCorrection(params: {
           metadata: {
             staffProfileId: request.staffProfileId,
             date: formatUtcDateString(request.date),
+            approvedClockIn: finalClockIn?.toISOString() || null,
+            approvedClockOut: finalClockOut?.toISOString() || null,
             requestedClockIn: request.requestedClockIn?.toISOString() || null,
             requestedClockOut: request.requestedClockOut?.toISOString() || null,
             reviewerComment: params.reviewerComment || null,
@@ -1169,7 +1262,7 @@ export async function approveAttendanceCorrection(params: {
               staffName: request.staffProfile.name,
               date: formatUtcDateString(request.date),
               type: request.type.replace(/_/g, ' '),
-              approvedTime: `${request.requestedClockIn ? request.requestedClockIn.toISOString().slice(11, 16) : '—'} to ${request.requestedClockOut ? request.requestedClockOut.toISOString().slice(11, 16) : '—'}`,
+              approvedTime: `${finalClockIn ? finalClockIn.toISOString().slice(11, 16) : '—'} to ${finalClockOut ? finalClockOut.toISOString().slice(11, 16) : '—'}`,
               reviewerComment: params.reviewerComment || null,
               loginUrl,
             });
@@ -1775,4 +1868,71 @@ export async function getCorrectionRequestDetail(requestId: string, organization
     existingRecords,
   };
 }
+
+/**
+ * Bulk Approve Attendance Correction Requests
+ */
+export async function bulkApproveAttendanceCorrections(params: {
+  organizationId: string;
+  requestIds: string[];
+  reviewerUserId: string;
+  reviewerComment?: string;
+  originUrl?: string;
+}) {
+  let successCount = 0;
+  let failedCount = 0;
+  const errors: string[] = [];
+
+  for (const requestId of params.requestIds) {
+    try {
+      await approveAttendanceCorrection({
+        organizationId: params.organizationId,
+        requestId,
+        reviewerUserId: params.reviewerUserId,
+        reviewerComment: params.reviewerComment,
+        originUrl: params.originUrl,
+      });
+      successCount++;
+    } catch (err: any) {
+      failedCount++;
+      errors.push(`Request ${requestId}: ${err.message || 'Approval failed'}`);
+    }
+  }
+
+  return { successCount, failedCount, errors };
+}
+
+/**
+ * Bulk Reject Attendance Correction Requests
+ */
+export async function bulkRejectAttendanceCorrections(params: {
+  organizationId: string;
+  requestIds: string[];
+  reviewerUserId: string;
+  rejectionReason: string;
+  originUrl?: string;
+}) {
+  let successCount = 0;
+  let failedCount = 0;
+  const errors: string[] = [];
+
+  for (const requestId of params.requestIds) {
+    try {
+      await rejectAttendanceCorrection({
+        organizationId: params.organizationId,
+        requestId,
+        reviewerUserId: params.reviewerUserId,
+        rejectionReason: params.rejectionReason,
+        originUrl: params.originUrl,
+      });
+      successCount++;
+    } catch (err: any) {
+      failedCount++;
+      errors.push(`Request ${requestId}: ${err.message || 'Rejection failed'}`);
+    }
+  }
+
+  return { successCount, failedCount, errors };
+}
+
 

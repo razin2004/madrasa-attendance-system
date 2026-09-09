@@ -1,12 +1,10 @@
-'use client';
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, X, ShieldAlert, Loader2, Send } from 'lucide-react';
 
 interface AttendanceWarningModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (reason: string) => void;
   actionType: 'CLOCK_IN' | 'CLOCK_OUT';
   submitting?: boolean;
   evaluation?: {
@@ -25,6 +23,14 @@ export function AttendanceWarningModal({
   submitting = false,
   evaluation,
 }: AttendanceWarningModalProps) {
+  const [reasonText, setReasonText] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setReasonText('');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const actionText = actionType === 'CLOCK_IN' ? 'Clock In' : 'Clock Out';
@@ -52,6 +58,8 @@ export function AttendanceWarningModal({
   if (failureList.length === 0) {
     failureList.push('Security criteria verification incomplete or unverified');
   }
+
+  const isProceedDisabled = submitting || !reasonText.trim();
 
   return (
     <div
@@ -160,15 +168,46 @@ export function AttendanceWarningModal({
             border: '1px solid rgba(245, 158, 11, 0.25)',
             borderRadius: '12px',
             padding: '14px 16px',
-            marginBottom: '20px',
+            marginBottom: '16px',
           }}
         >
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
             <AlertTriangle size={18} color="#fbbf24" style={{ flexShrink: 0, marginTop: '2px' }} />
             <p style={{ fontSize: '13px', color: '#fef3c7', margin: 0, lineHeight: '1.5', fontWeight: 500 }}>
-              You are not meeting the required verification criteria. If you proceed to clock in/out, this request will be sent to the Admin panel. Clock-in/out will only take effect once approved by the Admin.
+              You are not meeting the required verification criteria. If you proceed to clock in/out, this request will be sent to the Admin panel for approval.
             </p>
           </div>
+        </div>
+
+        {/* Mandatory Reason Text Area */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>
+            Reason for Unverified {actionText} <span style={{ color: '#f43f5e' }}>*</span>
+          </label>
+          <textarea
+            value={reasonText}
+            onChange={(e) => setReasonText(e.target.value)}
+            placeholder="Enter reason for unverified punch (e.g., Working off-site / Device GPS accuracy issue / Network mismatch)..."
+            rows={3}
+            disabled={submitting}
+            style={{
+              width: '100%',
+              backgroundColor: 'rgba(15, 23, 42, 0.8)',
+              border: `1px solid ${!reasonText.trim() ? 'rgba(244, 63, 94, 0.5)' : 'rgba(255, 255, 255, 0.15)'}`,
+              borderRadius: '10px',
+              padding: '10px 12px',
+              color: '#ffffff',
+              fontSize: '13px',
+              resize: 'vertical',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          {!reasonText.trim() && (
+            <div style={{ fontSize: '11.5px', color: '#fb7185', marginTop: '4px', fontWeight: 600 }}>
+              ⚠️ Reason is mandatory to proceed and submit request for admin approval.
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
@@ -192,21 +231,21 @@ export function AttendanceWarningModal({
           </button>
           <button
             type="button"
-            onClick={onConfirm}
-            disabled={submitting}
+            onClick={() => onConfirm(reasonText.trim())}
+            disabled={isProceedDisabled}
             style={{
               padding: '10px 20px',
               borderRadius: '10px',
               fontSize: '13.5px',
               fontWeight: 700,
-              backgroundColor: '#e11d48',
+              backgroundColor: isProceedDisabled ? 'rgba(225, 29, 72, 0.35)' : '#e11d48',
               border: 'none',
-              color: '#ffffff',
-              cursor: 'pointer',
+              color: isProceedDisabled ? 'rgba(255, 255, 255, 0.5)' : '#ffffff',
+              cursor: isProceedDisabled ? 'not-allowed' : 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 12px rgba(225, 29, 72, 0.35)',
+              boxShadow: isProceedDisabled ? 'none' : '0 4px 12px rgba(225, 29, 72, 0.35)',
             }}
           >
             {submitting ? (
