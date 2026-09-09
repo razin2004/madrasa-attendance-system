@@ -799,6 +799,12 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
   const lastClockOut = verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').pop();
   const isDailyLimitReached = completedCyclesCount >= MAX_DAILY_ATTENDANCE_CYCLES;
 
+  const rawClockInIso = lastClockIn?.timestamp
+    ? lastClockIn.timestamp.toISOString()
+    : (hasPendingClockIn && pendingClockInToday?.requestedClockIn ? pendingClockInToday.requestedClockIn.toISOString() : null);
+
+  const rawClockOutIso = lastClockOut?.timestamp ? lastClockOut.timestamp.toISOString() : null;
+
   let displayClockInTime: string | null = lastClockIn?.timestamp
     ? new Date(lastClockIn.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     : null;
@@ -816,9 +822,11 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
     hasSchedule: Boolean(daySchedule.isScheduled && !daySchedule.isHoliday),
     schedule: daySchedule,
     lastClockInTime: displayClockInTime,
+    lastClockInIso: rawClockInIso,
     attendanceStartTime: lastClockIn?.attendanceStartTime || lastClockIn?.timestamp || null,
     lateMinutes: lastClockIn?.lateMinutes || 0,
     lastClockOutTime: lastClockOut?.timestamp ? new Date(lastClockOut.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
+    lastClockOutIso: rawClockOutIso,
     earlyDepartureMinutes: lastClockOut?.earlyDepartureMinutes || 0,
     currentBranch: lastVerified?.branch || null,
     todayRecords,

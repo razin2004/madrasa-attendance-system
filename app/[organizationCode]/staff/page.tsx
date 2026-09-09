@@ -90,9 +90,11 @@ interface TodayAttendanceStatus {
     shiftPatternName?: string;
   } | null;
   lastClockInTime: string | null;
+  lastClockInIso?: string | null;
   attendanceStartTime?: string | null;
   lateMinutes?: number;
   lastClockOutTime: string | null;
+  lastClockOutIso?: string | null;
   earlyDepartureMinutes?: number;
   currentBranch?: { id: string; name: string } | null;
   todayRecords: Array<{
@@ -155,6 +157,28 @@ export default function StaffDashboardPage() {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const formatPunchTimeLocal = (isoString?: string | null, fallbackText?: string | null) => {
+    if (isoString) {
+      try {
+        const d = new Date(isoString);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+      } catch {}
+    }
+    if (fallbackText) {
+      try {
+        const clean = fallbackText.replace(/\s*\(Pending\)$/i, '').trim();
+        const d = new Date(clean);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+      } catch {}
+      return fallbackText.replace(/\s*\(Pending\)$/i, '').trim();
+    }
+    return '—';
+  };
 
   // Monitor Browser Geolocation Permissions
   useEffect(() => {
@@ -692,11 +716,13 @@ export default function StaffDashboardPage() {
                       {todayStatus?.hasPendingClockIn ? (
                         <span style={{ color: '#fbbf24', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                           <span>⚠️ Requested Clock In:</span>
-                          <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{todayStatus?.lastClockInTime || 'Pending'}</strong>
+                          <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                            {formatPunchTimeLocal(todayStatus?.lastClockInIso, todayStatus?.lastClockInTime)} (Pending)
+                          </strong>
                         </span>
                       ) : (
                         <>
-                          Clocked in at <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{todayStatus?.lastClockInTime}</strong>
+                          Clocked in at <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{formatPunchTimeLocal(todayStatus?.lastClockInIso, todayStatus?.lastClockInTime)}</strong>
                           {todayStatus?.lateMinutes ? (
                             <span style={{ color: '#fbbf24', marginLeft: '8px', fontSize: '12px', fontWeight: 700 }}>
                               (Late by {todayStatus.lateMinutes} mins)
