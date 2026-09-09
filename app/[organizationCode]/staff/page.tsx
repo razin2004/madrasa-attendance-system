@@ -437,7 +437,11 @@ export default function StaffDashboardPage() {
     }
   };
 
-  const executeClockAction = async (actionType: 'CLOCK_IN' | 'CLOCK_OUT', submitForApproval: boolean = false) => {
+  const executeClockAction = async (
+    actionType: 'CLOCK_IN' | 'CLOCK_OUT',
+    submitForApproval: boolean = false,
+    unverifiedReason?: string
+  ) => {
     setClocking(true);
     if (submitForApproval) setSubmittingUnverified(true);
 
@@ -464,6 +468,7 @@ export default function StaffDashboardPage() {
         deviceSecret,
         branchId: precheck?.candidateBranch?.id,
         submitForApproval,
+        unverifiedReason: unverifiedReason?.trim() || undefined,
       };
 
       if (coords) {

@@ -46,6 +46,8 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
   const [comment, setComment] = useState('');
   const [customClockIn, setCustomClockIn] = useState('');
   const [customClockOut, setCustomClockOut] = useState('');
+  const [approveClockIn, setApproveClockIn] = useState<boolean>(true);
+  const [approveClockOut, setApproveClockOut] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Modals for detail page
@@ -72,7 +74,8 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     let staffReason: string | null = null;
     let securityFailures: string[] = [];
 
-    const reasonMatch = text.match(/Reason:\s*["']?([^"(|)]+)["']?/i);
+    // Extract staffReason if present as Reason: "..." or Reason: ...
+    const reasonMatch = text.match(/Reason:\s*["']([^"']+)["']/i) || text.match(/Reason:\s*([^(\n]+)/i);
     if (reasonMatch && reasonMatch[1]) {
       const matched = reasonMatch[1].trim();
       if (matched && !matched.toLowerCase().startsWith('failures:')) {
@@ -80,11 +83,15 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
       }
     }
 
-    const failureMatch = text.match(/Failures:\s*([^)]+)/i);
-    if (failureMatch && failureMatch[1]) {
-      const rawFailuresStr = failureMatch[1].trim();
+    // Extract failures portion
+    const failuresIdx = text.indexOf('Failures:');
+    if (failuresIdx !== -1) {
+      let rawFailuresStr = text.slice(failuresIdx + 'Failures:'.length).trim();
+      if (rawFailuresStr.endsWith(')')) {
+        rawFailuresStr = rawFailuresStr.slice(0, -1).trim();
+      }
       securityFailures = rawFailuresStr
-        .split(';')
+        .split(/;\s*(?![^()]*\))/g)
         .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
         .filter(Boolean);
     }
@@ -92,11 +99,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     if (!staffReason) {
       if (text.includes('Failures:')) {
         const parts = text.split(/Failures:/i);
-        const before = parts[0].replace(/Unverified punch\.?/i, '').replace(/Reason:\s*/i, '').trim();
-        if (before && before !== 'Unverified punch') {
+        const before = parts[0].replace(/Unverified punch\.?/i, '').replace(/Reason:\s*/i, '').replace(/[()]/g, '').trim();
+        if (before && before.toLowerCase() !== 'unverified punch') {
           staffReason = before;
         }
-      } else {
+      } else if (!text.toLowerCase().startsWith('unverified punch')) {
         staffReason = text;
       }
     }
@@ -221,6 +228,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
   );
 
   const handleApproveSubmit = async () => {
+    if (allowClockInEdit && allowClockOutEdit && !approveClockIn && !approveClockOut) {
+      toast.error('Please select at least one punch (Clock-In or Clock-Out) to approve.');
+      return;
+    }
+
     setActionLoading(true);
     try {
       const res = await fetch(
@@ -230,8 +242,10 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             comment: comment.trim() || undefined,
-            customClockInTime: allowClockInEdit && customClockIn.trim() ? customClockIn.trim() : undefined,
-            customClockOutTime: allowClockOutEdit && customClockOut.trim() ? customClockOut.trim() : undefined,
+            customClockInTime: allowClockInEdit && approveClockIn && customClockIn.trim() ? customClockIn.trim() : undefined,
+            customClockOutTime: allowClockOutEdit && approveClockOut && customClockOut.trim() ? customClockOut.trim() : undefined,
+            approveClockIn: allowClockInEdit ? approveClockIn : false,
+            approveClockOut: allowClockOutEdit ? approveClockOut : false,
           }),
         }
       );
@@ -451,9 +465,9 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                       <div style={{ padding: '18px 20px', borderRadius: '14px', backgroundColor: 'rgba(244, 63, 94, 0.06)', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           {parsed.securityFailures.map((failure, idx) => (
-                            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', fontSize: '13.5px', color: '#f8fafc' }}>
-                              <span style={{ padding: '3px 10px', borderRadius: '6px', backgroundColor: 'rgba(244, 63, 94, 0.2)', color: '#fb7185', fontWeight: 800, fontSize: '11px', flexShrink: 0, marginTop: '1px' }}>
-                                Point {idx + 1}
+                            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13.5px', color: '#f8fafc' }}>
+                              <span style={{ color: '#fb7185', fontWeight: 800, fontSize: '18px', lineHeight: '1', flexShrink: 0, marginTop: '2px' }}>
+                                •
                               </span>
                               <span style={{ lineHeight: '1.5', fontWeight: 500 }}>{failure}</span>
                             </div>
@@ -474,54 +488,83 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
 
                     {/* Custom Clock-In / Clock-Out Override Inputs */}
                     <div style={{ marginBottom: '20px', padding: '16px', background: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b' }}>
+                      {allowClockInEdit && allowClockOutEdit && (
+                        <div style={{ marginBottom: '14px', padding: '12px 14px', background: 'rgba(99, 102, 241, 0.12)', borderRadius: '10px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                          <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#818cf8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <ShieldCheck size={15} />
+                            <span>Select Punches to Approve (Both checked by default):</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#ffffff', fontWeight: 600 }}>
+                              <input
+                                type="checkbox"
+                                checked={approveClockIn}
+                                onChange={(e) => setApproveClockIn(e.target.checked)}
+                                style={{ width: '16px', height: '16px', accentColor: '#6366f1', cursor: 'pointer' }}
+                              />
+                              <span>Approve Clock-In ({formatTime(request.requestedClockIn)})</span>
+                            </label>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#ffffff', fontWeight: 600 }}>
+                              <input
+                                type="checkbox"
+                                checked={approveClockOut}
+                                onChange={(e) => setApproveClockOut(e.target.checked)}
+                                style={{ width: '16px', height: '16px', accentColor: '#6366f1', cursor: 'pointer' }}
+                              />
+                              <span>Approve Clock-Out ({formatTime(request.requestedClockOut)})</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
                       <div style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Clock size={15} />
                         <span>Approved Punch Times (Defaulted to Requested Punch - Modify below if required)</span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <div>
-                          <label style={{ fontSize: '12px', color: allowClockInEdit ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
-                            Approved Clock-In Time {allowClockInEdit ? '' : '(Not Applicable)'}
+                          <label style={{ fontSize: '12px', color: allowClockInEdit && approveClockIn ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                            Approved Clock-In Time {!allowClockInEdit ? '(Not Applicable)' : !approveClockIn ? '(Excluded)' : ''}
                           </label>
                           <input
                             type="time"
-                            disabled={!allowClockInEdit}
-                            value={allowClockInEdit ? customClockIn : ''}
+                            disabled={!allowClockInEdit || !approveClockIn}
+                            value={allowClockInEdit && approveClockIn ? customClockIn : ''}
                             onChange={(e) => setCustomClockIn(e.target.value)}
                             style={{
                               width: '100%',
-                              backgroundColor: allowClockInEdit ? '#111827' : '#090d16',
-                              border: allowClockInEdit ? '1px solid #334155' : '1px solid #1e293b',
+                              backgroundColor: allowClockInEdit && approveClockIn ? '#111827' : '#090d16',
+                              border: allowClockInEdit && approveClockIn ? '1px solid #334155' : '1px solid #1e293b',
                               borderRadius: '8px',
-                              color: allowClockInEdit ? '#ffffff' : '#64748b',
+                              color: allowClockInEdit && approveClockIn ? '#ffffff' : '#64748b',
                               padding: '8px 12px',
                               fontSize: '14px',
                               boxSizing: 'border-box',
-                              opacity: allowClockInEdit ? 1 : 0.4,
-                              cursor: allowClockInEdit ? 'text' : 'not-allowed',
+                              opacity: allowClockInEdit && approveClockIn ? 1 : 0.4,
+                              cursor: allowClockInEdit && approveClockIn ? 'text' : 'not-allowed',
                             }}
                           />
                         </div>
                         <div>
-                          <label style={{ fontSize: '12px', color: allowClockOutEdit ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
-                            Approved Clock-Out Time {allowClockOutEdit ? '' : '(Not Applicable)'}
+                          <label style={{ fontSize: '12px', color: allowClockOutEdit && approveClockOut ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                            Approved Clock-Out Time {!allowClockOutEdit ? '(Not Applicable)' : !approveClockOut ? '(Excluded)' : ''}
                           </label>
                           <input
                             type="time"
-                            disabled={!allowClockOutEdit}
-                            value={allowClockOutEdit ? customClockOut : ''}
+                            disabled={!allowClockOutEdit || !approveClockOut}
+                            value={allowClockOutEdit && approveClockOut ? customClockOut : ''}
                             onChange={(e) => setCustomClockOut(e.target.value)}
                             style={{
                               width: '100%',
-                              backgroundColor: allowClockOutEdit ? '#111827' : '#090d16',
-                              border: allowClockOutEdit ? '1px solid #334155' : '1px solid #1e293b',
+                              backgroundColor: allowClockOutEdit && approveClockOut ? '#111827' : '#090d16',
+                              border: allowClockOutEdit && approveClockOut ? '1px solid #334155' : '1px solid #1e293b',
                               borderRadius: '8px',
-                              color: allowClockOutEdit ? '#ffffff' : '#64748b',
+                              color: allowClockOutEdit && approveClockOut ? '#ffffff' : '#64748b',
                               padding: '8px 12px',
                               fontSize: '14px',
                               boxSizing: 'border-box',
-                              opacity: allowClockOutEdit ? 1 : 0.4,
-                              cursor: allowClockOutEdit ? 'text' : 'not-allowed',
+                              opacity: allowClockOutEdit && approveClockOut ? 1 : 0.4,
+                              cursor: allowClockOutEdit && approveClockOut ? 'text' : 'not-allowed',
                             }}
                           />
                         </div>

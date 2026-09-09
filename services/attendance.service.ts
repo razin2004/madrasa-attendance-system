@@ -1096,6 +1096,8 @@ export async function approveAttendanceCorrection(params: {
   originUrl?: string;
   customClockInTime?: Date | string | null;
   customClockOutTime?: Date | string | null;
+  approveClockIn?: boolean;
+  approveClockOut?: boolean;
 }) {
   return await prisma.$transaction(
     async (tx) => {
@@ -1127,14 +1129,21 @@ export async function approveAttendanceCorrection(params: {
       const startOfDay = new Date(targetDate.getTime());
       const endOfDay = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000 - 1);
 
+      const shouldApproveIn = params.approveClockIn !== false;
+      const shouldApproveOut = params.approveClockOut !== false;
+
+      if (!shouldApproveIn && !shouldApproveOut) {
+        throw new Error('At least one punch (Clock In or Clock Out) must be selected for approval.');
+      }
+
       // Determine final Clock-In and Clock-Out times (Custom Override > Requested Time)
-      let finalClockIn: Date | null = request.requestedClockIn;
-      if (params.customClockInTime !== undefined && params.customClockInTime !== null && params.customClockInTime !== '') {
+      let finalClockIn: Date | null = shouldApproveIn ? request.requestedClockIn : null;
+      if (shouldApproveIn && params.customClockInTime !== undefined && params.customClockInTime !== null && params.customClockInTime !== '') {
         finalClockIn = parseTimeToDate(targetDate, params.customClockInTime);
       }
 
-      let finalClockOut: Date | null = request.requestedClockOut;
-      if (params.customClockOutTime !== undefined && params.customClockOutTime !== null && params.customClockOutTime !== '') {
+      let finalClockOut: Date | null = shouldApproveOut ? request.requestedClockOut : null;
+      if (shouldApproveOut && params.customClockOutTime !== undefined && params.customClockOutTime !== null && params.customClockOutTime !== '') {
         finalClockOut = parseTimeToDate(targetDate, params.customClockOutTime);
       }
 

@@ -70,7 +70,10 @@ export default function AdminAttendanceCorrectionsPage() {
     isOpen: boolean;
     requestIds: string[];
     staffName?: string;
-  }>({ isOpen: false, requestIds: [] });
+    item?: CorrectionRequest | null;
+    approveClockIn: boolean;
+    approveClockOut: boolean;
+  }>({ isOpen: false, requestIds: [], approveClockIn: true, approveClockOut: true });
 
   // Rejection Modal State
   const [rejectModal, setRejectModal] = useState<{
@@ -123,7 +126,8 @@ export default function AdminAttendanceCorrectionsPage() {
     let staffReason: string | null = null;
     let securityFailures: string[] = [];
 
-    const reasonMatch = text.match(/Reason:\s*["']?([^"(|)]+)["']?/i);
+    // Extract staffReason if present as Reason: "..." or Reason: ...
+    const reasonMatch = text.match(/Reason:\s*["']([^"']+)["']/i) || text.match(/Reason:\s*([^(\n]+)/i);
     if (reasonMatch && reasonMatch[1]) {
       const matched = reasonMatch[1].trim();
       if (matched && !matched.toLowerCase().startsWith('failures:')) {
@@ -131,11 +135,15 @@ export default function AdminAttendanceCorrectionsPage() {
       }
     }
 
-    const failureMatch = text.match(/Failures:\s*([^)]+)/i);
-    if (failureMatch && failureMatch[1]) {
-      const rawFailuresStr = failureMatch[1].trim();
+    // Extract failures portion
+    const failuresIdx = text.indexOf('Failures:');
+    if (failuresIdx !== -1) {
+      let rawFailuresStr = text.slice(failuresIdx + 'Failures:'.length).trim();
+      if (rawFailuresStr.endsWith(')')) {
+        rawFailuresStr = rawFailuresStr.slice(0, -1).trim();
+      }
       securityFailures = rawFailuresStr
-        .split(';')
+        .split(/;\s*(?![^()]*\))/g)
         .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
         .filter(Boolean);
     }
@@ -143,11 +151,11 @@ export default function AdminAttendanceCorrectionsPage() {
     if (!staffReason) {
       if (text.includes('Failures:')) {
         const parts = text.split(/Failures:/i);
-        const before = parts[0].replace(/Unverified punch\.?/i, '').replace(/Reason:\s*/i, '').trim();
-        if (before && before !== 'Unverified punch') {
+        const before = parts[0].replace(/Unverified punch\.?/i, '').replace(/Reason:\s*/i, '').replace(/[()]/g, '').trim();
+        if (before && before.toLowerCase() !== 'unverified punch') {
           staffReason = before;
         }
-      } else {
+      } else if (!text.toLowerCase().startsWith('unverified punch')) {
         staffReason = text;
       }
     }
@@ -196,6 +204,9 @@ export default function AdminAttendanceCorrectionsPage() {
       isOpen: true,
       requestIds: [item.id],
       staffName: getStaffName(item),
+      item,
+      approveClockIn: true,
+      approveClockOut: true,
     });
   };
 
@@ -206,11 +217,26 @@ export default function AdminAttendanceCorrectionsPage() {
       isOpen: true,
       requestIds: selectedIds,
       staffName: singleItem ? getStaffName(singleItem) : undefined,
+      item: singleItem || null,
+      approveClockIn: true,
+      approveClockOut: true,
     });
   };
 
   const confirmApproval = async () => {
     if (approveModal.requestIds.length === 0) return;
+
+    if (
+      approveModal.requestIds.length === 1 &&
+      approveModal.item?.requestedClockIn &&
+      approveModal.item?.requestedClockOut &&
+      !approveModal.approveClockIn &&
+      !approveModal.approveClockOut
+    ) {
+      toast.error('Please select at least one punch (Clock-In or Clock-Out) to approve.');
+      return;
+    }
+
     setModalActionLoading(true);
 
     try {
@@ -218,7 +244,14 @@ export default function AdminAttendanceCorrectionsPage() {
         const requestId = approveModal.requestIds[0];
         const res = await fetch(
           `/api/org/${organizationCode}/attendance/admin/corrections/${requestId}/approve`,
-          { method: 'POST' }
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              approveClockIn: approveModal.approveClockIn,
+              approveClockOut: approveModal.approveClockOut,
+            }),
+          }
         );
         const data = await res.json();
         if (!res.ok || !data.success) {
@@ -242,7 +275,7 @@ export default function AdminAttendanceCorrectionsPage() {
         setSelectedIds([]);
       }
 
-      setApproveModal({ isOpen: false, requestIds: [] });
+      setApproveModal({ isOpen: false, requestIds: [], approveClockIn: true, approveClockOut: true });
       fetchCorrections();
     } catch (err: any) {
       toast.error(err.message || 'Error executing approval.');
@@ -605,31 +638,34 @@ export default function AdminAttendanceCorrectionsPage() {
                               In: <span style={{ color: '#34d399', fontWeight: 700 }}>{formatPunchTime(item.requestedClockIn)}</span> &bull; Out:{' '}
                               <span style={{ color: '#fbbf24', fontWeight: 700 }}>{formatPunchTime(item.requestedClockOut)}</span>
                             </td>
-                             <td className={styles.td} style={{ fontSize: '12px', maxWidth: '300px' }}>
-                               {(() => {
-                                 const parsed = parseReasonAndFailures(item.reason);
-                                 return (
-                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                     {parsed.staffReason ? (
-                                       <div style={{ fontWeight: 700, color: '#818cf8', fontSize: '12.5px' }}>
-                                         💬 &ldquo;{parsed.staffReason}&rdquo;
-                                       </div>
-                                     ) : null}
-                                     {parsed.securityFailures.length > 0 ? (
-                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '11px', color: '#fb7185' }}>
-                                         {parsed.securityFailures.map((f, i) => (
-                                           <div key={i} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                             • Point {i + 1}: {f}
-                                           </div>
-                                         ))}
-                                       </div>
-                                     ) : !parsed.staffReason ? (
-                                       <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>&ldquo;{item.reason}&rdquo;</span>
-                                     ) : null}
-                                   </div>
-                                 );
-                               })()}
-                             </td>
+                            <td className={styles.td} style={{ fontSize: '12px', maxWidth: '300px' }}>
+                              {(() => {
+                                const parsed = parseReasonAndFailures(item.reason);
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    {parsed.staffReason ? (
+                                      <div style={{ fontWeight: 700, color: '#818cf8', fontSize: '12.5px' }}>
+                                        💬 &ldquo;{parsed.staffReason}&rdquo;
+                                      </div>
+                                    ) : (
+                                      <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '11.5px' }}>
+                                        No custom reason entered
+                                      </div>
+                                    )}
+                                    {parsed.securityFailures.length > 0 && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '11px', color: '#fb7185', marginTop: '2px' }}>
+                                        {parsed.securityFailures.map((f, i) => (
+                                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', lineHeight: '1.3' }}>
+                                            <span style={{ color: '#fb7185', fontWeight: 'bold' }}>•</span>
+                                            <span>{f}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </td>
                             <td className={styles.td} style={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
                               {isPending ? (
                                 <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -741,17 +777,22 @@ export default function AdminAttendanceCorrectionsPage() {
                             <div className={styles.reasonQuote} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               {parsed.staffReason ? (
                                 <div style={{ fontWeight: 700, color: '#818cf8', fontSize: '13px' }}>
-                                  💬 Justification: &ldquo;{parsed.staffReason}&rdquo;
+                                  💬 Reason: &ldquo;{parsed.staffReason}&rdquo;
                                 </div>
-                              ) : null}
+                              ) : (
+                                <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                  No custom justification entered by staff.
+                                </div>
+                              )}
                               {parsed.securityFailures.length > 0 && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
                                   <div style={{ fontSize: '11px', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase' }}>
-                                    Security Failure Points ({parsed.securityFailures.length}):
+                                    Security Failure Details ({parsed.securityFailures.length}):
                                   </div>
                                   {parsed.securityFailures.map((f, i) => (
-                                    <div key={i} style={{ fontSize: '11.5px', color: '#f8fafc', paddingLeft: '6px', borderLeft: '2px solid rgba(244, 63, 94, 0.4)' }}>
-                                      <strong>Point {i + 1}:</strong> {f}
+                                    <div key={i} style={{ fontSize: '11.5px', color: '#f8fafc', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                      <span style={{ color: '#fb7185', fontWeight: 'bold' }}>•</span>
+                                      <span style={{ lineHeight: '1.4' }}>{f}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -863,7 +904,7 @@ export default function AdminAttendanceCorrectionsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setApproveModal({ isOpen: false, requestIds: [] })}
+                onClick={() => setApproveModal({ isOpen: false, requestIds: [], approveClockIn: true, approveClockOut: true })}
                 disabled={modalActionLoading}
                 className={styles.modalCloseBtn}
               >
@@ -878,10 +919,38 @@ export default function AdminAttendanceCorrectionsPage() {
                   : `Are you sure you want to BULK APPROVE ${approveModal.requestIds.length} selected attendance correction request(s)?`}
               </p>
 
+              {approveModal.item && approveModal.item.requestedClockIn && approveModal.item.requestedClockOut && (
+                <div style={{ marginTop: '12px', marginBottom: '14px', padding: '12px 14px', background: 'rgba(99, 102, 241, 0.12)', borderRadius: '10px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#818cf8', marginBottom: '8px' }}>
+                    Select Punches to Approve (Both checked by default):
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
+                      <input
+                        type="checkbox"
+                        checked={approveModal.approveClockIn}
+                        onChange={(e) => setApproveModal((prev) => ({ ...prev, approveClockIn: e.target.checked }))}
+                        style={{ width: '15px', height: '15px', accentColor: '#6366f1', cursor: 'pointer' }}
+                      />
+                      <span>Approve Clock-In ({formatPunchTime(approveModal.item.requestedClockIn)})</span>
+                    </label>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
+                      <input
+                        type="checkbox"
+                        checked={approveModal.approveClockOut}
+                        onChange={(e) => setApproveModal((prev) => ({ ...prev, approveClockOut: e.target.checked }))}
+                        style={{ width: '15px', height: '15px', accentColor: '#6366f1', cursor: 'pointer' }}
+                      />
+                      <span>Approve Clock-Out ({formatPunchTime(approveModal.item.requestedClockOut)})</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div className={styles.approveModalFooter}>
                 <button
                   type="button"
-                  onClick={() => setApproveModal({ isOpen: false, requestIds: [] })}
+                  onClick={() => setApproveModal({ isOpen: false, requestIds: [], approveClockIn: true, approveClockOut: true })}
                   disabled={modalActionLoading}
                   className="btn btn-secondary btn-sm"
                   style={{ padding: '9px 16px', borderRadius: '10px', fontSize: '13px' }}
