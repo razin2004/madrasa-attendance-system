@@ -48,6 +48,8 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
   const [customClockOut, setCustomClockOut] = useState('');
   const [approveClockIn, setApproveClockIn] = useState<boolean>(true);
   const [approveClockOut, setApproveClockOut] = useState<boolean>(true);
+  const [rejectClockIn, setRejectClockIn] = useState<boolean>(true);
+  const [rejectClockOut, setRejectClockOut] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Modals for detail page
@@ -337,7 +339,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
         throw new Error(data.error || 'Failed to approve correction request.');
       }
 
-      toast.success('Attendance correction approved. Records updated with source: ADJUSTED.');
+      if (data.correctionRequest?.status === 'PENDING') {
+        toast.info('Selected punch approved. Remaining punch remains pending in correction request queue.');
+      } else {
+        toast.success('Attendance correction approved. Records updated with source: ADJUSTED.');
+      }
       setShowApproveConfirm(false);
       router.push(`/${organizationCode}/admin/attendance/corrections`);
     } catch (err: any) {
@@ -354,6 +360,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
       return;
     }
 
+    if (allowClockInEdit && allowClockOutEdit && !rejectClockIn && !rejectClockOut) {
+      toast.error('Please select at least one punch (Clock-In or Clock-Out) to reject.');
+      return;
+    }
+
     setActionLoading(true);
     try {
       const res = await fetch(
@@ -361,7 +372,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rejectionReason: cleanReason }),
+          body: JSON.stringify({
+            rejectionReason: cleanReason,
+            rejectClockIn: allowClockInEdit ? rejectClockIn : false,
+            rejectClockOut: allowClockOutEdit ? rejectClockOut : false,
+          }),
         }
       );
 
@@ -370,7 +385,11 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
         throw new Error(data.error || 'Failed to reject correction request.');
       }
 
-      toast.info('Attendance correction request rejected.');
+      if (data.correctionRequest?.status === 'PENDING') {
+        toast.info('Selected punch rejected. Remaining punch remains pending in correction request queue.');
+      } else {
+        toast.info('Attendance correction request rejected.');
+      }
       setShowRejectConfirm(false);
       router.push(`/${organizationCode}/admin/attendance/corrections`);
     } catch (err: any) {
@@ -843,6 +862,34 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                   boxSizing: 'border-box',
                 }}
               />
+
+              {allowClockInEdit && allowClockOutEdit && (
+                <div style={{ marginTop: '12px', marginBottom: '14px', padding: '12px 14px', background: 'rgba(244, 63, 94, 0.12)', borderRadius: '10px', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#f43f5e', marginBottom: '8px' }}>
+                    Select Punches to Reject (Both checked by default):
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
+                      <input
+                        type="checkbox"
+                        checked={rejectClockIn}
+                        onChange={(e) => setRejectClockIn(e.target.checked)}
+                        style={{ width: '15px', height: '15px', accentColor: '#f43f5e', cursor: 'pointer' }}
+                      />
+                      <span>Reject Clock-In ({formatIsoToTimeInput(request.requestedClockIn)})</span>
+                    </label>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
+                      <input
+                        type="checkbox"
+                        checked={rejectClockOut}
+                        onChange={(e) => setRejectClockOut(e.target.checked)}
+                        style={{ width: '15px', height: '15px', accentColor: '#f43f5e', cursor: 'pointer' }}
+                      />
+                      <span>Reject Clock-Out ({formatIsoToTimeInput(request.requestedClockOut)})</span>
+                    </label>
+                  </div>
+                </div>
+              )}
               
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, marginTop: '8px', marginBottom: '24px' }}>
                 <div>

@@ -17,7 +17,7 @@ export async function POST(
 
     const { organization, session } = auth;
     const body = await req.json().catch(() => ({}));
-    const { rejectionReason } = body;
+    const { rejectionReason, rejectClockIn, rejectClockOut } = body;
 
     if (!rejectionReason || !rejectionReason.trim()) {
       return NextResponse.json(
@@ -34,6 +34,8 @@ export async function POST(
       reviewerUserId: session.user.id,
       rejectionReason: rejectionReason.trim(),
       originUrl,
+      rejectClockIn,
+      rejectClockOut,
     });
 
     return NextResponse.json({

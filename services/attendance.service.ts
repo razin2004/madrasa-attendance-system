@@ -1129,8 +1129,11 @@ export async function approveAttendanceCorrection(params: {
       const startOfDay = new Date(targetDate.getTime());
       const endOfDay = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-      const shouldApproveIn = params.approveClockIn !== false;
-      const shouldApproveOut = params.approveClockOut !== false;
+      const hasClockIn = Boolean(request.requestedClockIn);
+      const hasClockOut = Boolean(request.requestedClockOut);
+
+      const shouldApproveIn = hasClockIn && params.approveClockIn !== false;
+      const shouldApproveOut = hasClockOut && params.approveClockOut !== false;
 
       if (!shouldApproveIn && !shouldApproveOut) {
         throw new Error('At least one punch (Clock In or Clock Out) must be selected for approval.');
@@ -1228,6 +1231,20 @@ export async function approveAttendanceCorrection(params: {
         }
       }
 
+      // Determine remaining requested punches
+      const remainingClockIn = shouldApproveIn ? null : request.requestedClockIn;
+      const remainingClockOut = shouldApproveOut ? null : request.requestedClockOut;
+      const isFullyApproved = !remainingClockIn && !remainingClockOut;
+
+      let updatedType = request.type;
+      if (!isFullyApproved) {
+        if (remainingClockIn && !remainingClockOut) {
+          updatedType = 'MISSING_CLOCK_IN';
+        } else if (remainingClockOut && !remainingClockIn) {
+          updatedType = 'MISSING_CLOCK_OUT';
+        }
+      }
+
       // 5. Section 13: Create AttendanceAdjustmentAudit entry
       await tx.attendanceAdjustmentAudit.create({
         data: {
@@ -1244,7 +1261,7 @@ export async function approveAttendanceCorrection(params: {
           reviewerUserId: params.reviewerUserId,
           requestedAt: request.createdAt,
           reviewedAt: new Date(),
-          action: 'CORRECTION_APPROVED',
+          action: isFullyApproved ? 'CORRECTION_APPROVED' : 'PARTIAL_CORRECTION_APPROVED',
         },
       });
 
@@ -1252,7 +1269,10 @@ export async function approveAttendanceCorrection(params: {
       const updated = await tx.attendanceCorrectionRequest.update({
         where: { id: request.id },
         data: {
-          status: 'APPROVED',
+          status: isFullyApproved ? 'APPROVED' : 'PENDING',
+          requestedClockIn: remainingClockIn,
+          requestedClockOut: remainingClockOut,
+          type: updatedType,
           reviewerUserId: params.reviewerUserId,
           reviewedAt: new Date(),
           reviewerComment: params.reviewerComment?.trim() || null,
@@ -1323,6 +1343,8 @@ export async function rejectAttendanceCorrection(params: {
   reviewerUserId: string;
   rejectionReason: string;
   originUrl?: string;
+  rejectClockIn?: boolean;
+  rejectClockOut?: boolean;
 }) {
   const cleanReason = params.rejectionReason?.trim();
   if (!cleanReason) {
@@ -1349,10 +1371,36 @@ export async function rejectAttendanceCorrection(params: {
     throw new Error('This request has already been processed.');
   }
 
+  const hasClockIn = Boolean(request.requestedClockIn);
+  const hasClockOut = Boolean(request.requestedClockOut);
+
+  const shouldRejectIn = hasClockIn && params.rejectClockIn !== false;
+  const shouldRejectOut = hasClockOut && params.rejectClockOut !== false;
+
+  if (!shouldRejectIn && !shouldRejectOut) {
+    throw new Error('At least one punch (Clock In or Clock Out) must be selected for rejection.');
+  }
+
+  const remainingClockIn = shouldRejectIn ? null : request.requestedClockIn;
+  const remainingClockOut = shouldRejectOut ? null : request.requestedClockOut;
+  const isFullyRejected = !remainingClockIn && !remainingClockOut;
+
+  let updatedType = request.type;
+  if (!isFullyRejected) {
+    if (remainingClockIn && !remainingClockOut) {
+      updatedType = 'MISSING_CLOCK_IN';
+    } else if (remainingClockOut && !remainingClockIn) {
+      updatedType = 'MISSING_CLOCK_OUT';
+    }
+  }
+
   const updated = await prisma.attendanceCorrectionRequest.update({
     where: { id: request.id },
     data: {
-      status: 'REJECTED',
+      status: isFullyRejected ? 'REJECTED' : 'PENDING',
+      requestedClockIn: remainingClockIn,
+      requestedClockOut: remainingClockOut,
+      type: updatedType,
       reviewerUserId: params.reviewerUserId,
       reviewedAt: new Date(),
       reviewerComment: cleanReason,
@@ -1372,7 +1420,7 @@ export async function rejectAttendanceCorrection(params: {
       reviewerUserId: params.reviewerUserId,
       requestedAt: request.createdAt,
       reviewedAt: new Date(),
-      action: 'CORRECTION_REJECTED',
+      action: isFullyRejected ? 'CORRECTION_REJECTED' : 'PARTIAL_CORRECTION_REJECTED',
     },
   });
 

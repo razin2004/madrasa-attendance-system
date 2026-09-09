@@ -81,12 +81,54 @@ export default function AdminAttendanceCorrectionsPage() {
     requestIds: string[];
     reason: string;
     staffName?: string;
-  }>({ isOpen: false, requestIds: [], reason: '' });
+    item?: CorrectionRequest | null;
+    rejectClockIn: boolean;
+    rejectClockOut: boolean;
+  }>({ isOpen: false, requestIds: [], reason: '', item: null, rejectClockIn: true, rejectClockOut: true });
 
   const [modalActionLoading, setModalActionLoading] = useState(false);
 
+  const closeRejectModal = () =>
+    setRejectModal({
+      isOpen: false,
+      requestIds: [],
+      reason: '',
+      item: null,
+      rejectClockIn: true,
+      rejectClockOut: true,
+    });
+
   const getStaffName = (item: CorrectionRequest) =>
     item.staffProfile?.name || item.staff?.name || 'Staff Member';
+
+  const formatDateStr = (dateInput?: string | Date | null) => {
+    if (!dateInput) return '—';
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    return d.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatCorrectionType = (type?: string) => {
+    if (!type) return 'Correction';
+    switch (type) {
+      case 'MISSING_CLOCK_IN':
+        return 'Missing Clock-In';
+      case 'MISSING_CLOCK_OUT':
+        return 'Missing Clock-Out';
+      case 'INCORRECT_TIME':
+        return 'Time Adjustment';
+      case 'UNVERIFIED_PUNCH':
+        return 'Unverified Punch';
+      case 'MANUAL_ENTRY':
+        return 'Manual Record Entry';
+      default:
+        return type.replace(/_/g, ' ');
+    }
+  };
 
   const getStaffId = (item: CorrectionRequest) =>
     item.staffProfile?.staffId || item.staff?.staffId || '—';
@@ -356,6 +398,9 @@ export default function AdminAttendanceCorrectionsPage() {
       requestIds: [item.id],
       reason: '',
       staffName: getStaffName(item),
+      item,
+      rejectClockIn: true,
+      rejectClockOut: true,
     });
   };
 
@@ -367,6 +412,9 @@ export default function AdminAttendanceCorrectionsPage() {
       requestIds: selectedIds,
       reason: '',
       staffName: singleItem ? getStaffName(singleItem) : undefined,
+      item: singleItem || null,
+      rejectClockIn: true,
+      rejectClockOut: true,
     });
   };
 
@@ -415,7 +463,7 @@ export default function AdminAttendanceCorrectionsPage() {
         setSelectedIds([]);
       }
 
-      setRejectModal({ isOpen: false, requestIds: [], reason: '' });
+      closeRejectModal();
       fetchCorrections();
     } catch (err: any) {
       toast.error(err.message || 'Error executing rejection.');
@@ -1081,7 +1129,7 @@ export default function AdminAttendanceCorrectionsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setRejectModal({ isOpen: false, requestIds: [], reason: '' })}
+                onClick={closeRejectModal}
                 disabled={modalActionLoading}
                 className={styles.modalCloseBtn}
               >
@@ -1134,6 +1182,34 @@ export default function AdminAttendanceCorrectionsPage() {
                 />
               </div>
 
+              {rejectModal.item && rejectModal.item.requestedClockIn && rejectModal.item.requestedClockOut && (
+                <div style={{ marginTop: '12px', marginBottom: '14px', padding: '12px 14px', background: 'rgba(244, 63, 94, 0.12)', borderRadius: '10px', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#f43f5e', marginBottom: '8px' }}>
+                    Select Punches to Reject (Both checked by default):
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
+                      <input
+                        type="checkbox"
+                        checked={rejectModal.rejectClockIn}
+                        onChange={(e) => setRejectModal((prev) => ({ ...prev, rejectClockIn: e.target.checked }))}
+                        style={{ width: '15px', height: '15px', accentColor: '#f43f5e', cursor: 'pointer' }}
+                      />
+                      <span>Reject Clock-In ({formatPunchTime(rejectModal.item.requestedClockIn)})</span>
+                    </label>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
+                      <input
+                        type="checkbox"
+                        checked={rejectModal.rejectClockOut}
+                        onChange={(e) => setRejectModal((prev) => ({ ...prev, rejectClockOut: e.target.checked }))}
+                        style={{ width: '15px', height: '15px', accentColor: '#f43f5e', cursor: 'pointer' }}
+                      />
+                      <span>Reject Clock-Out ({formatPunchTime(rejectModal.item.requestedClockOut)})</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div className={styles.validationRow}>
                 <div>
                   {rejectModal.reason.trim().length === 0 ? (
@@ -1152,7 +1228,7 @@ export default function AdminAttendanceCorrectionsPage() {
               <div className={styles.rejectModalFooter}>
                 <button
                   type="button"
-                  onClick={() => setRejectModal({ isOpen: false, requestIds: [], reason: '' })}
+                  onClick={closeRejectModal}
                   disabled={modalActionLoading}
                   className="btn btn-secondary btn-sm"
                   style={{ padding: '9px 16px', borderRadius: '10px', fontSize: '13px' }}
