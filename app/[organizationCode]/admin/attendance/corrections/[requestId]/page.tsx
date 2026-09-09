@@ -90,10 +90,14 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
       if (rawFailuresStr.endsWith(')')) {
         rawFailuresStr = rawFailuresStr.slice(0, -1).trim();
       }
-      securityFailures = rawFailuresStr
-        .split(/;\s*(?![^()]*\))/g)
-        .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
-        .filter(Boolean);
+      securityFailures = Array.from(
+        new Set(
+          rawFailuresStr
+            .split(/;\s*(?![^()]*\))/g)
+            .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
+            .filter(Boolean)
+        )
+      );
     }
 
     if (!staffReason) {
@@ -460,7 +464,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                     <div className={styles.card} style={{ marginTop: '20px' }}>
                       <h3 className={styles.cardTitle} style={{ color: '#fb7185' }}>
                         <ShieldAlert size={18} color="#fb7185" />
-                        <span>Security Verification Failures ({parsed.securityFailures.length} {parsed.securityFailures.length === 1 ? 'Layer' : 'Layers'} Failed)</span>
+                        <span>Security Verification Failures ({parsed.securityFailures.length} of 3 Security Layers Failed)</span>
                       </h3>
                       <div style={{ padding: '18px 20px', borderRadius: '14px', backgroundColor: 'rgba(244, 63, 94, 0.06)', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

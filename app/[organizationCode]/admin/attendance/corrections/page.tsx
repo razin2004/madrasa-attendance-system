@@ -142,10 +142,14 @@ export default function AdminAttendanceCorrectionsPage() {
       if (rawFailuresStr.endsWith(')')) {
         rawFailuresStr = rawFailuresStr.slice(0, -1).trim();
       }
-      securityFailures = rawFailuresStr
-        .split(/;\s*(?![^()]*\))/g)
-        .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
-        .filter(Boolean);
+      securityFailures = Array.from(
+        new Set(
+          rawFailuresStr
+            .split(/;\s*(?![^()]*\))/g)
+            .map((s) => s.trim().replace(/^\./, '').replace(/\.$/, ''))
+            .filter(Boolean)
+        )
+      );
     }
 
     if (!staffReason) {
@@ -787,7 +791,7 @@ export default function AdminAttendanceCorrectionsPage() {
                               {parsed.securityFailures.length > 0 && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
                                   <div style={{ fontSize: '11px', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase' }}>
-                                    Security Failure Details ({parsed.securityFailures.length}):
+                                    Security Failure Details ({parsed.securityFailures.length} of 3 Layers):
                                   </div>
                                   {parsed.securityFailures.map((f, i) => (
                                     <div key={i} style={{ fontSize: '11.5px', color: '#f8fafc', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
