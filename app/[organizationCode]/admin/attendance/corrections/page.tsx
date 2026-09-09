@@ -13,9 +13,6 @@ import {
   ArrowRight,
   CheckCircle2,
   XCircle,
-  CheckSquare,
-  Square,
-  Clock,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -32,7 +29,13 @@ interface CorrectionRequest {
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
-  staff: {
+  staffProfileId?: string;
+  staffProfile?: {
+    id: string;
+    name: string;
+    staffId: string;
+  };
+  staff?: {
     id: string;
     name: string;
     staffId: string;
@@ -58,7 +61,40 @@ export default function AdminAttendanceCorrectionsPage() {
   const [bulkRejectionReason, setBulkRejectionReason] = useState('');
   const [orgData, setOrgData] = useState<any>(null);
 
+  const getStaffName = (item: CorrectionRequest) =>
+    item.staffProfile?.name || item.staff?.name || 'Staff Member';
+
+  const getStaffId = (item: CorrectionRequest) =>
+    item.staffProfile?.staffId || item.staff?.staffId || '—';
+
+  const getStaffProfileId = (item: CorrectionRequest) =>
+    item.staffProfile?.id || item.staff?.id || item.staffProfileId || '';
+
+  const formatDateString = (rawDate?: string | null) => {
+    if (!rawDate) return '—';
+    if (typeof rawDate === 'string' && rawDate.length >= 10) {
+      return rawDate.slice(0, 10);
+    }
+    try {
+      return new Date(rawDate).toISOString().slice(0, 10);
+    } catch {
+      return String(rawDate);
+    }
+  };
+
+  const formatPunchTime = (iso?: string | null) => {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return iso;
+    }
+  };
+
   useEffect(() => {
+    if (!organizationCode) return;
     fetch(`/api/org/${organizationCode}/branding`)
       .then((r) => r.json())
       .then((data) => {
@@ -68,6 +104,7 @@ export default function AdminAttendanceCorrectionsPage() {
   }, [organizationCode]);
 
   const fetchCorrections = async () => {
+    if (!organizationCode) return;
     setLoading(true);
     try {
       let url = `/api/org/${organizationCode}/attendance/admin/corrections?status=${statusFilter}`;
@@ -86,6 +123,7 @@ export default function AdminAttendanceCorrectionsPage() {
   };
 
   useEffect(() => {
+    if (!organizationCode) return;
     fetchCorrections();
     setSelectedIds([]);
   }, [organizationCode, statusFilter]);
@@ -192,9 +230,11 @@ export default function AdminAttendanceCorrectionsPage() {
     // Search query filter
     if (!search.trim()) return true;
     const q = search.toLowerCase();
+    const sName = getStaffName(r).toLowerCase();
+    const sId = getStaffId(r).toLowerCase();
     return (
-      r.staff.name.toLowerCase().includes(q) ||
-      r.staff.staffId.toLowerCase().includes(q) ||
+      sName.includes(q) ||
+      sId.includes(q) ||
       r.reason?.toLowerCase().includes(q) ||
       r.type?.toLowerCase().includes(q)
     );
@@ -406,6 +446,7 @@ export default function AdminAttendanceCorrectionsPage() {
                         const isPending = item.status === 'PENDING';
                         const isProcessing = processingId === item.id;
                         const isSelected = selectedIds.includes(item.id);
+                        const profileId = getStaffProfileId(item);
 
                         return (
                           <tr
@@ -425,22 +466,26 @@ export default function AdminAttendanceCorrectionsPage() {
                             </td>
                             <td
                               className={styles.td}
-                              onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
+                              onClick={() => {
+                                if (profileId) router.push(`/${organizationCode}/admin/staff/${profileId}`);
+                              }}
                               style={{ cursor: 'pointer' }}
                               title="View Staff Profile"
                             >
-                              <div className={styles.staffName} style={{ color: '#818cf8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>{item.staff.name}</div>
-                              <div className={styles.staffId}>ID: {item.staff.staffId}</div>
+                              <div className={styles.staffName} style={{ color: '#818cf8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                                {getStaffName(item)}
+                              </div>
+                              <div className={styles.staffId}>ID: {getStaffId(item)}</div>
                             </td>
                             <td className={styles.td} style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                              {item.date}
+                              {formatDateString(item.date)}
                             </td>
                             <td className={styles.td}>
                               {renderTypeBadge(item.type)}
                             </td>
                             <td className={styles.td} style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)' }}>
-                              In: <span style={{ color: '#34d399', fontWeight: 700 }}>{item.requestedClockIn || '—'}</span> &bull; Out:{' '}
-                              <span style={{ color: '#fbbf24', fontWeight: 700 }}>{item.requestedClockOut || '—'}</span>
+                              In: <span style={{ color: '#34d399', fontWeight: 700 }}>{formatPunchTime(item.requestedClockIn)}</span> &bull; Out:{' '}
+                              <span style={{ color: '#fbbf24', fontWeight: 700 }}>{formatPunchTime(item.requestedClockOut)}</span>
                             </td>
                             <td className={styles.td} style={{ fontSize: '12.5px', color: '#94a3b8', fontStyle: 'italic', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               &ldquo;{item.reason}&rdquo;
@@ -504,6 +549,7 @@ export default function AdminAttendanceCorrectionsPage() {
                     const isPending = item.status === 'PENDING';
                     const isProcessing = processingId === item.id;
                     const isSelected = selectedIds.includes(item.id);
+                    const profileId = getStaffProfileId(item);
 
                     return (
                       <div
@@ -522,11 +568,13 @@ export default function AdminAttendanceCorrectionsPage() {
                               />
                             )}
                             <div
-                              onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
+                              onClick={() => {
+                                if (profileId) router.push(`/${organizationCode}/admin/staff/${profileId}`);
+                              }}
                               style={{ cursor: 'pointer' }}
                             >
-                              <div className={styles.staffName} style={{ color: '#818cf8' }}>{item.staff.name}</div>
-                              <div className={styles.staffId}>ID: {item.staff.staffId}</div>
+                              <div className={styles.staffName} style={{ color: '#818cf8' }}>{getStaffName(item)}</div>
+                              <div className={styles.staffId}>ID: {getStaffId(item)}</div>
                             </div>
                           </div>
                           <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
@@ -537,13 +585,13 @@ export default function AdminAttendanceCorrectionsPage() {
                         <div className={styles.stackedGrid}>
                           <div className={styles.stackedCol}>
                             <span className={styles.colLabel}>Date &amp; Problem Type</span>
-                            <span className={styles.colVal}>{item.date}</span>
+                            <span className={styles.colVal}>{formatDateString(item.date)}</span>
                             <div style={{ marginTop: '4px' }}>{renderTypeBadge(item.type)}</div>
                           </div>
                           <div className={styles.stackedCol}>
                             <span className={styles.colLabel}>Requested Time</span>
-                            <span className={styles.colValTime}>In: <strong style={{ color: '#34d399' }}>{item.requestedClockIn || '—'}</strong></span>
-                            <span className={styles.colValTime}>Out: <strong style={{ color: '#fbbf24' }}>{item.requestedClockOut || '—'}</strong></span>
+                            <span className={styles.colValTime}>In: <strong style={{ color: '#34d399' }}>{formatPunchTime(item.requestedClockIn)}</strong></span>
+                            <span className={styles.colValTime}>Out: <strong style={{ color: '#fbbf24' }}>{formatPunchTime(item.requestedClockOut)}</strong></span>
                           </div>
                         </div>
 
