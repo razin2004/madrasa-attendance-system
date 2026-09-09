@@ -54,12 +54,25 @@ export default function AdminAttendanceCorrectionsPage() {
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<CorrectionRequest[]>([]);
-  const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulkActionLoading, setBulkActionLoading] = useState(false);
-  const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
-  const [bulkRejectionReason, setBulkRejectionReason] = useState('');
   const [orgData, setOrgData] = useState<any>(null);
+
+  // Approval Modal State
+  const [approveModal, setApproveModal] = useState<{
+    isOpen: boolean;
+    requestIds: string[];
+    staffName?: string;
+  }>({ isOpen: false, requestIds: [] });
+
+  // Rejection Modal State
+  const [rejectModal, setRejectModal] = useState<{
+    isOpen: boolean;
+    requestIds: string[];
+    reason: string;
+    staffName?: string;
+  }>({ isOpen: false, requestIds: [], reason: '' });
+
+  const [modalActionLoading, setModalActionLoading] = useState(false);
 
   const getStaffName = (item: CorrectionRequest) =>
     item.staffProfile?.name || item.staff?.name || 'Staff Member';
@@ -128,86 +141,135 @@ export default function AdminAttendanceCorrectionsPage() {
     setSelectedIds([]);
   }, [organizationCode, statusFilter]);
 
-  const handleAction = async (requestId: string, action: 'approve' | 'reject') => {
-    setProcessingId(requestId);
-    try {
-      const res = await fetch(
-        `/api/org/${organizationCode}/attendance/admin/corrections/${requestId}/${action}`,
-        { method: 'POST' }
-      );
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success(`Correction request ${action}d successfully.`);
-        fetchCorrections();
-      } else {
-        toast.error(data.error || `Failed to ${action} correction.`);
-      }
-    } catch {
-      toast.error(`Network error during ${action}.`);
-    } finally {
-      setProcessingId(null);
-    }
+  // Open Approval Confirmation Modal
+  const openSingleApprove = (item: CorrectionRequest) => {
+    setApproveModal({
+      isOpen: true,
+      requestIds: [item.id],
+      staffName: getStaffName(item),
+    });
   };
 
-  const handleBulkApprove = async () => {
+  const openBulkApprove = () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Are you sure you want to BULK APPROVE ${selectedIds.length} selected request(s)?`)) return;
+    setApproveModal({
+      isOpen: true,
+      requestIds: selectedIds,
+    });
+  };
 
-    setBulkActionLoading(true);
+  const confirmApproval = async () => {
+    if (approveModal.requestIds.length === 0) return;
+    setModalActionLoading(true);
+
     try {
-      const res = await fetch(`/api/org/${organizationCode}/attendance/admin/corrections/bulk-approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestIds: selectedIds }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to bulk approve requests.');
+      if (approveModal.requestIds.length === 1) {
+        const requestId = approveModal.requestIds[0];
+        const res = await fetch(
+          `/api/org/${organizationCode}/attendance/admin/corrections/${requestId}/approve`,
+          { method: 'POST' }
+        );
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to approve correction request.');
+        }
+        toast.success('Attendance correction approved.');
+      } else {
+        const res = await fetch(
+          `/api/org/${organizationCode}/attendance/admin/corrections/bulk-approve`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requestIds: approveModal.requestIds }),
+          }
+        );
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to bulk approve requests.');
+        }
+        toast.success(data.message || `Successfully approved ${approveModal.requestIds.length} request(s)!`);
+        setSelectedIds([]);
       }
 
-      toast.success(data.message || `Successfully approved ${selectedIds.length} request(s)!`);
-      setSelectedIds([]);
+      setApproveModal({ isOpen: false, requestIds: [] });
       fetchCorrections();
     } catch (err: any) {
-      toast.error(err.message || 'Error during bulk approval.');
+      toast.error(err.message || 'Error executing approval.');
     } finally {
-      setBulkActionLoading(false);
+      setModalActionLoading(false);
     }
   };
 
-  const handleBulkRejectSubmit = async () => {
-    if (!bulkRejectionReason.trim()) {
-      toast.error('Please enter a rejection reason.');
+  // Open Rejection Confirmation Modal
+  const openSingleReject = (item: CorrectionRequest) => {
+    setRejectModal({
+      isOpen: true,
+      requestIds: [item.id],
+      reason: '',
+      staffName: getStaffName(item),
+    });
+  };
+
+  const openBulkReject = () => {
+    if (selectedIds.length === 0) return;
+    setRejectModal({
+      isOpen: true,
+      requestIds: selectedIds,
+      reason: '',
+    });
+  };
+
+  const confirmRejection = async () => {
+    const cleanReason = rejectModal.reason.trim();
+    if (cleanReason.length < 2) {
+      toast.error('Rejection reason must be at least 2 characters long.');
       return;
     }
-    if (selectedIds.length === 0) return;
+    if (rejectModal.requestIds.length === 0) return;
 
-    setBulkActionLoading(true);
+    setModalActionLoading(true);
     try {
-      const res = await fetch(`/api/org/${organizationCode}/attendance/admin/corrections/bulk-reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestIds: selectedIds,
-          rejectionReason: bulkRejectionReason.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to bulk reject requests.');
+      if (rejectModal.requestIds.length === 1) {
+        const requestId = rejectModal.requestIds[0];
+        const res = await fetch(
+          `/api/org/${organizationCode}/attendance/admin/corrections/${requestId}/reject`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rejectionReason: cleanReason }),
+          }
+        );
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to reject correction request.');
+        }
+        toast.info('Attendance correction request rejected.');
+      } else {
+        const res = await fetch(
+          `/api/org/${organizationCode}/attendance/admin/corrections/bulk-reject`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requestIds: rejectModal.requestIds,
+              rejectionReason: cleanReason,
+            }),
+          }
+        );
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to bulk reject requests.');
+        }
+        toast.info(data.message || `Rejected ${rejectModal.requestIds.length} request(s).`);
+        setSelectedIds([]);
       }
 
-      toast.info(data.message || `Rejected ${selectedIds.length} request(s).`);
-      setSelectedIds([]);
-      setShowBulkRejectModal(false);
-      setBulkRejectionReason('');
+      setRejectModal({ isOpen: false, requestIds: [], reason: '' });
       fetchCorrections();
     } catch (err: any) {
-      toast.error(err.message || 'Error during bulk rejection.');
+      toast.error(err.message || 'Error executing rejection.');
     } finally {
-      setBulkActionLoading(false);
+      setModalActionLoading(false);
     }
   };
 
@@ -291,6 +353,8 @@ export default function AdminAttendanceCorrectionsPage() {
       </span>
     );
   };
+
+  const isRejectButtonEnabled = rejectModal.reason.trim().length >= 2;
 
   return (
     <div className={styles.container}>
@@ -444,7 +508,6 @@ export default function AdminAttendanceCorrectionsPage() {
                     <tbody>
                       {filteredRequests.map((item) => {
                         const isPending = item.status === 'PENDING';
-                        const isProcessing = processingId === item.id;
                         const isSelected = selectedIds.includes(item.id);
                         const profileId = getStaffProfileId(item);
 
@@ -502,21 +565,19 @@ export default function AdminAttendanceCorrectionsPage() {
                                     <span>Review</span>
                                   </Link>
                                   <button
-                                    onClick={() => handleAction(item.id, 'approve')}
-                                    disabled={isProcessing}
+                                    onClick={() => openSingleApprove(item)}
                                     className="btn btn-success btn-sm"
                                     style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 12px', fontSize: '12px', borderRadius: '8px' }}
                                   >
-                                    {isProcessing ? <Loader2 size={12} className="animate-spin" /> : <Check size={14} />}
+                                    <Check size={14} />
                                     <span>Approve</span>
                                   </button>
                                   <button
-                                    onClick={() => handleAction(item.id, 'reject')}
-                                    disabled={isProcessing}
+                                    onClick={() => openSingleReject(item)}
                                     className="btn btn-danger btn-sm"
                                     style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 12px', fontSize: '12px', borderRadius: '8px' }}
                                   >
-                                    {isProcessing ? <Loader2 size={12} className="animate-spin" /> : <X size={14} />}
+                                    <X size={14} />
                                     <span>Reject</span>
                                   </button>
                                 </div>
@@ -547,7 +608,6 @@ export default function AdminAttendanceCorrectionsPage() {
                 <div className={styles.mobileCardFeed}>
                   {filteredRequests.map((item) => {
                     const isPending = item.status === 'PENDING';
-                    const isProcessing = processingId === item.id;
                     const isSelected = selectedIds.includes(item.id);
                     const profileId = getStaffProfileId(item);
 
@@ -614,21 +674,19 @@ export default function AdminAttendanceCorrectionsPage() {
                           {isPending && (
                             <div style={{ display: 'inline-flex', gap: '6px', marginLeft: 'auto' }}>
                               <button
-                                onClick={() => handleAction(item.id, 'approve')}
-                                disabled={isProcessing}
+                                onClick={() => openSingleApprove(item)}
                                 className="btn btn-success btn-sm"
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '12px', borderRadius: '8px' }}
                               >
-                                {isProcessing ? <Loader2 size={12} className="animate-spin" /> : <Check size={14} />}
+                                <Check size={14} />
                                 <span>Approve</span>
                               </button>
                               <button
-                                onClick={() => handleAction(item.id, 'reject')}
-                                disabled={isProcessing}
+                                onClick={() => openSingleReject(item)}
                                 className="btn btn-danger btn-sm"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '12px', borderRadius: '8px' }}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', fontSize: '12px', borderRadius: '8px' }}
                               >
-                                {isProcessing ? <Loader2 size={12} className="animate-spin" /> : <X size={14} />}
+                                <X size={14} />
                                 <span>Reject</span>
                               </button>
                             </div>
@@ -654,23 +712,23 @@ export default function AdminAttendanceCorrectionsPage() {
           <div className={styles.bulkButtons}>
             <button
               type="button"
-              onClick={handleBulkApprove}
-              disabled={bulkActionLoading}
+              onClick={openBulkApprove}
+              disabled={modalActionLoading}
               className="btn btn-success btn-sm"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
             >
-              {bulkActionLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={15} />}
+              <CheckCircle2 size={15} />
               <span>Approve Selected ({selectedIds.length})</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setShowBulkRejectModal(true)}
-              disabled={bulkActionLoading}
+              onClick={openBulkReject}
+              disabled={modalActionLoading}
               className="btn btn-danger btn-sm"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}
             >
-              {bulkActionLoading ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={15} />}
+              <XCircle size={15} />
               <span>Reject Selected ({selectedIds.length})</span>
             </button>
 
@@ -686,50 +744,150 @@ export default function AdminAttendanceCorrectionsPage() {
         </div>
       )}
 
-      {/* Bulk Rejection Modal */}
-      {showBulkRejectModal && (
+      {/* Approval Confirmation Modal */}
+      {approveModal.isOpen && (
         <div className={styles.modalBackdrop}>
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
-              <h3>Bulk Reject Requests ({selectedIds.length})</h3>
-              <button type="button" onClick={() => setShowBulkRejectModal(false)}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399' }}>
+                <CheckCircle2 size={20} />
+                <span>Confirm Attendance Approval</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setApproveModal({ isOpen: false, requestIds: [] })}
+                disabled={modalActionLoading}
+              >
                 <X size={18} />
               </button>
             </div>
             <div style={{ padding: '20px' }}>
-              <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.5 }}>
-                Please provide a rejection reason that will be saved in the audit log and sent to all target staff members:
+              <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: '20px', lineHeight: 1.5 }}>
+                {approveModal.requestIds.length === 1
+                  ? `Are you sure you want to approve the attendance correction request for ${approveModal.staffName}?`
+                  : `Are you sure you want to BULK APPROVE ${approveModal.requestIds.length} selected attendance correction request(s)?`}
               </p>
-              <textarea
-                rows={3}
-                value={bulkRejectionReason}
-                onChange={(e) => setBulkRejectionReason(e.target.value)}
-                placeholder="Enter rejection reason for all selected requests..."
-                className="form-control"
-                style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', resize: 'none', marginBottom: '16px' }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button
                   type="button"
-                  onClick={() => setShowBulkRejectModal(false)}
-                  disabled={bulkActionLoading}
+                  onClick={() => setApproveModal({ isOpen: false, requestIds: [] })}
+                  disabled={modalActionLoading}
                   className="btn btn-secondary btn-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={handleBulkRejectSubmit}
-                  disabled={bulkActionLoading}
-                  className="btn btn-danger btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  onClick={confirmApproval}
+                  disabled={modalActionLoading}
+                  className="btn btn-success btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', fontWeight: 600 }}
                 >
-                  {bulkActionLoading ? (
-                    <Loader2 size={14} className="animate-spin" />
+                  {modalActionLoading ? (
+                    <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <XCircle size={15} />
+                    <CheckCircle2 size={16} />
                   )}
-                  <span>Reject ({selectedIds.length}) Requests</span>
+                  <span>
+                    {modalActionLoading
+                      ? 'Approving...'
+                      : approveModal.requestIds.length === 1
+                      ? 'Confirm Approval'
+                      : `Approve (${approveModal.requestIds.length}) Requests`}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Confirmation Modal (Mandatory Reason >= 2 characters) */}
+      {rejectModal.isOpen && (
+        <div className={styles.modalBackdrop}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171' }}>
+                <XCircle size={20} />
+                <span>Confirm Attendance Rejection</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setRejectModal({ isOpen: false, requestIds: [], reason: '' })}
+                disabled={modalActionLoading}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <p style={{ fontSize: '13.5px', color: '#cbd5e1', marginBottom: '12px', lineHeight: 1.5 }}>
+                {rejectModal.requestIds.length === 1
+                  ? `Please enter a rejection reason for ${rejectModal.staffName}'s request (minimum 2 characters):`
+                  : `Please enter a rejection reason for ${rejectModal.requestIds.length} selected request(s) (minimum 2 characters):`}
+              </p>
+
+              <textarea
+                rows={3}
+                value={rejectModal.reason}
+                onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
+                placeholder="Enter rejection reason (at least 2 characters)..."
+                className="form-control"
+                style={{
+                  width: '100%',
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  resize: 'none',
+                  marginBottom: '8px',
+                  borderColor: isRejectButtonEnabled ? '#10b981' : '#334155',
+                }}
+              />
+
+              <div style={{ fontSize: '11.5px', marginBottom: '20px', fontWeight: 600 }}>
+                {rejectModal.reason.trim().length === 0 ? (
+                  <span style={{ color: '#ef4444' }}>⚠️ Rejection reason is required.</span>
+                ) : rejectModal.reason.trim().length === 1 ? (
+                  <span style={{ color: '#fbbf24' }}>⚠️ Minimum 2 letters required (1/2).</span>
+                ) : (
+                  <span style={{ color: '#34d399' }}>✓ Valid rejection reason.</span>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setRejectModal({ isOpen: false, requestIds: [], reason: '' })}
+                  disabled={modalActionLoading}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmRejection}
+                  disabled={!isRejectButtonEnabled || modalActionLoading}
+                  className="btn btn-danger btn-sm"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 18px',
+                    fontWeight: 600,
+                    opacity: !isRejectButtonEnabled || modalActionLoading ? 0.5 : 1,
+                    cursor: !isRejectButtonEnabled || modalActionLoading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {modalActionLoading ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <XCircle size={16} />
+                  )}
+                  <span>
+                    {modalActionLoading
+                      ? 'Rejecting...'
+                      : rejectModal.requestIds.length === 1
+                      ? 'Confirm Rejection'
+                      : `Reject (${rejectModal.requestIds.length}) Requests`}
+                  </span>
                 </button>
               </div>
             </div>
