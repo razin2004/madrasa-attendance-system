@@ -18,6 +18,8 @@ import {
   Loader2,
   X,
   Menu,
+  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../components/layout/org-admin-mobile-nav';
@@ -66,6 +68,8 @@ export default function AdminAttendancePage() {
     adjustedCount: 0,
   });
 
+  const [pendingCorrectionsCount, setPendingCorrectionsCount] = useState<number>(0);
+
   const [orgData, setOrgData] = useState<any>(null);
 
   useEffect(() => {
@@ -75,6 +79,17 @@ export default function AdminAttendancePage() {
         if (data.organization) setOrgData(data.organization);
       })
       .catch(() => {});
+
+    if (organizationCode) {
+      fetch(`/api/org/${organizationCode}/attendance/admin/corrections?status=PENDING`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.requests)) {
+            setPendingCorrectionsCount(data.requests.length);
+          }
+        })
+        .catch(() => {});
+    }
   }, [organizationCode]);
 
   const fetchData = async () => {
@@ -246,6 +261,52 @@ export default function AdminAttendancePage() {
 
         {/* Main Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
+          {/* Minimal Warning Notification Bar */}
+          {pendingCorrectionsCount > 0 && (
+            <div
+              style={{
+                marginBottom: '20px',
+                padding: '12px 18px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                boxShadow: '0 4px 15px -3px rgba(245, 158, 11, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#f8fafc' }}>
+                <div style={{ padding: '6px', borderRadius: '8px', backgroundColor: 'rgba(245, 158, 11, 0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={16} color="#fbbf24" />
+                </div>
+                <span>
+                  <strong>{pendingCorrectionsCount}</strong> {pendingCorrectionsCount === 1 ? 'attendance correction request is' : 'attendance correction requests are'} pending administrator review.
+                </span>
+              </div>
+              <Link
+                href={`/${organizationCode}/admin/attendance/corrections`}
+                className="btn btn-warning btn-xs"
+                style={{
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  padding: '5px 12px',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontWeight: 700,
+                }}
+              >
+                <span>Review Corrections ({pendingCorrectionsCount})</span>
+                <ArrowRight size={12} />
+              </Link>
+            </div>
+          )}
+
           {/* Top Metrics Cards */}
           <div className={styles.metricsGrid} style={{ margin: '0 0 20px 0' }}>
             <div className={styles.metricCard} style={{ borderLeft: '3px solid #3b82f6' }}>

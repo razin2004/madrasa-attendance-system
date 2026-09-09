@@ -263,8 +263,88 @@ export default function OrgAdminLandingPage() {
 
           {!isLoading && !hasError && (
             <>
-              {/* IMPORTANT SETUP ALERTS */}
+              {/* IMPORTANT SETUP & PENDING ALERTS */}
               <div className={styles.alertsSection}>
+                {pendingCorrectionsCount > 0 && (
+                  <div
+                    className={styles.alertCard}
+                    style={{
+                      backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      boxShadow: '0 8px 25px -5px rgba(245, 158, 11, 0.15)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          padding: '10px',
+                          borderRadius: '12px',
+                          backgroundColor: 'rgba(245, 158, 11, 0.18)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          position: 'relative',
+                        }}
+                      >
+                        <AlertTriangle size={20} color="#fbbf24" />
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '-2px',
+                            right: '-2px',
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: '#f59e0b',
+                            boxShadow: '0 0 8px #f59e0b',
+                          }}
+                        />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span>Pending Attendance Corrections</span>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              padding: '2px 8px',
+                              borderRadius: '20px',
+                              backgroundColor: '#f59e0b',
+                              color: '#0f172a',
+                              letterSpacing: '0.2px',
+                            }}
+                          >
+                            {pendingCorrectionsCount} {pendingCorrectionsCount === 1 ? 'Pending' : 'Pending'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {pendingCorrectionsCount === 1
+                            ? '1 unverified clock-in/out request requires administrator review.'
+                            : `${pendingCorrectionsCount} unverified clock-in/out requests require administrator review.`}
+                        </div>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/${orgCode}/admin/attendance/corrections`}
+                      className="btn btn-warning btn-sm"
+                      style={{
+                        borderRadius: '10px',
+                        flexShrink: 0,
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <span>Review Corrections ({pendingCorrectionsCount})</span>
+                      <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                )}
+
                 {branchSummary.total === 0 && (
                   <div
                     className={styles.alertCard}
@@ -528,8 +608,13 @@ export default function OrgAdminLandingPage() {
                       <Clock size={18} color="#818cf8" />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                        Pending Attendance Correction Requests
+                      <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span>Pending Attendance Correction Requests</span>
+                        {pendingCorrectionsCount > 0 && (
+                          <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+                            {pendingCorrectionsCount} Action Required
+                          </span>
+                        )}
                       </h3>
                       <p style={{ fontSize: '11.5px', color: '#94a3b8', margin: '2px 0 0 0' }}>
                         Staff-submitted punch adjustments requiring administrator approval

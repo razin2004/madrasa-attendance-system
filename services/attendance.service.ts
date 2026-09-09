@@ -609,22 +609,22 @@ export async function recordAttendance(params: {
   const lastVerifiedRecord =
     verifiedTodayRecords.length > 0 ? verifiedTodayRecords[verifiedTodayRecords.length - 1] : null;
 
-  const todayNormalized = normalizeDate(now);
   const pendingClockInToday = await prisma.attendanceCorrectionRequest.findFirst({
     where: {
       organizationId: params.organizationId,
       staffProfileId: params.staffProfileId,
-      date: todayNormalized,
-      type: 'MISSING_CLOCK_IN',
       status: 'PENDING',
+      requestedClockIn: { not: null },
+      requestedClockOut: null,
     },
+    orderBy: { createdAt: 'desc' },
   });
 
-  const hasPendingClockIn = Boolean(pendingClockInToday && !pendingClockInToday.requestedClockOut);
+  const hasPendingClockIn = Boolean(pendingClockInToday);
   let isCurrentlyClockedIn = lastVerifiedRecord?.type === 'CLOCK_IN' || hasPendingClockIn;
 
-  // If clocked in, but shift ended without clocking out and shift is NOT overnight -> shift expired without clocking out
-  if (isCurrentlyClockedIn && !daySchedule.isOvernight && daySchedule.endTime) {
+  // If clocked in via verified punch, but shift ended -> shift expired without clocking out (does NOT expire if pending clock in approval)
+  if (isCurrentlyClockedIn && !hasPendingClockIn && !daySchedule.isOvernight && daySchedule.endTime) {
     const [endH, endM] = daySchedule.endTime.split(':').map((s) => parseInt(s, 10));
     const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
     if (now > shiftEnd) {
@@ -657,6 +657,15 @@ export async function recordAttendance(params: {
         error: 'You are not currently clocked in.',
         evaluation,
       };
+    }
+    if (pendingClockInToday) {
+      await prisma.attendanceCorrectionRequest.update({
+        where: { id: pendingClockInToday.id },
+        data: {
+          requestedClockOut: now,
+          originalClockOut: now,
+        },
+      }).catch(() => {});
     }
   }
 
@@ -765,21 +774,21 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
   const completedCyclesCount = verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').length;
   const lastVerified = verifiedRecords.length > 0 ? verifiedRecords[verifiedRecords.length - 1] : null;
 
-  const todayNormalized = normalizeDate(now);
   const pendingClockInToday = await prisma.attendanceCorrectionRequest.findFirst({
     where: {
       staffProfileId,
-      date: todayNormalized,
-      type: 'MISSING_CLOCK_IN',
       status: 'PENDING',
+      requestedClockIn: { not: null },
+      requestedClockOut: null,
     },
+    orderBy: { createdAt: 'desc' },
   });
 
-  const hasPendingClockIn = Boolean(pendingClockInToday && !pendingClockInToday.requestedClockOut);
+  const hasPendingClockIn = Boolean(pendingClockInToday);
   let isClockedIn = lastVerified?.type === 'CLOCK_IN' || hasPendingClockIn;
 
-  // If clocked in, but non-overnight shift end time has passed -> shift expired without clocking out
-  if (isClockedIn && !daySchedule.isOvernight && daySchedule.endTime) {
+  // If clocked in via verified punch, but non-overnight shift end time has passed -> shift expired without clocking out (does NOT expire if pending clock in approval)
+  if (isClockedIn && !hasPendingClockIn && !daySchedule.isOvernight && daySchedule.endTime) {
     const [endH, endM] = daySchedule.endTime.split(':').map((s) => parseInt(s, 10));
     const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
     if (now > shiftEnd) {
@@ -888,9 +897,10 @@ export function parseTimeToDate(baseDate: Date, timeInput?: Date | string | null
   const minutes = parseInt(parts[1], 10);
   if (isNaN(hours) || isNaN(minutes)) return null;
 
-  const result = new Date(baseDate.getTime());
-  result.setUTCHours(hours, minutes, 0, 0);
-  return result;
+  const y = baseDate.getFullYear();
+  const m = baseDate.getMonth();
+  const d = baseDate.getDate();
+  return new Date(y, m, d, hours, minutes, 0, 0);
 }
 
 /**

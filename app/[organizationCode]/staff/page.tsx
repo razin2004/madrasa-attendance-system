@@ -74,6 +74,7 @@ interface PrecheckData {
 
 interface TodayAttendanceStatus {
   isClockedIn: boolean;
+  hasPendingClockIn?: boolean;
   completedCycles?: number;
   maxCycles?: number;
   isDailyLimitReached?: boolean;
@@ -521,9 +522,9 @@ export default function StaffDashboardPage() {
   };
 
   const hasSchedule = Boolean(todayStatus?.hasSchedule);
-  let isClockedIn = Boolean(todayStatus?.isClockedIn);
+  let isClockedIn = Boolean(todayStatus?.isClockedIn || todayStatus?.hasPendingClockIn);
 
-  if (isClockedIn && todayStatus?.schedule?.endTime && !todayStatus?.schedule?.isOvernight) {
+  if (isClockedIn && !todayStatus?.hasPendingClockIn && todayStatus?.schedule?.endTime && !todayStatus?.schedule?.isOvernight) {
     const now = new Date();
     const [hStr, mStr] = todayStatus.schedule.endTime.split(':');
     const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
@@ -534,7 +535,7 @@ export default function StaffDashboardPage() {
   }
 
   const isShiftEndedWithoutClockIn = (() => {
-    if (!todayStatus || todayStatus.isClockedIn) return false;
+    if (!todayStatus || todayStatus.isClockedIn || todayStatus.hasPendingClockIn) return false;
     if (!todayStatus.schedule || !todayStatus.schedule.endTime || !todayStatus.schedule.isScheduled) return false;
 
     const now = new Date();
@@ -686,19 +687,24 @@ export default function StaffDashboardPage() {
                 </div>
               ) : (
                 <div style={{ width: '100%' }}>
-                  <div className={`${styles.statusPill} ${isClockedIn ? styles.statusPillIn : styles.statusPillReady}`}>
-                    {staffInfo?.name || 'Staff User'}
-                  </div>
-
                   {isClockedIn && (
                     <div className={styles.clockedInInfo}>
-                      Clocked in at <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{todayStatus?.lastClockInTime}</strong>
-                      {todayStatus?.lateMinutes ? (
-                        <span style={{ color: '#fbbf24', marginLeft: '8px', fontSize: '12px', fontWeight: 700 }}>
-                          (Late by {todayStatus.lateMinutes} mins)
+                      {todayStatus?.hasPendingClockIn ? (
+                        <span style={{ color: '#fbbf24', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <span>⚠️ Requested Clock In:</span>
+                          <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{todayStatus?.lastClockInTime || 'Pending'}</strong>
                         </span>
                       ) : (
-                        <span style={{ color: '#34d399', marginLeft: '8px', fontSize: '12px', fontWeight: 700 }}>(On Time)</span>
+                        <>
+                          Clocked in at <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{todayStatus?.lastClockInTime}</strong>
+                          {todayStatus?.lateMinutes ? (
+                            <span style={{ color: '#fbbf24', marginLeft: '8px', fontSize: '12px', fontWeight: 700 }}>
+                              (Late by {todayStatus.lateMinutes} mins)
+                            </span>
+                          ) : (
+                            <span style={{ color: '#34d399', marginLeft: '8px', fontSize: '12px', fontWeight: 700 }}>(On Time)</span>
+                          )}
+                        </>
                       )}
                     </div>
                   )}

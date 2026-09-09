@@ -56,8 +56,8 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     if (typeof iso === 'string' && /^\d{2}:\d{2}$/.test(iso)) return iso;
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    const hours = String(d.getUTCHours()).padStart(2, '0');
-    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
   };
 
@@ -163,6 +163,20 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
       });
   }, [organizationCode, requestId]);
 
+  const allowClockInEdit = Boolean(
+    request?.requestedClockIn ||
+    request?.type === 'MISSING_CLOCK_IN' ||
+    request?.type === 'INCORRECT_CLOCK_IN' ||
+    request?.type === 'MANUAL_ENTRY'
+  );
+
+  const allowClockOutEdit = Boolean(
+    request?.requestedClockOut ||
+    request?.type === 'MISSING_CLOCK_OUT' ||
+    request?.type === 'INCORRECT_CLOCK_OUT' ||
+    (request?.type === 'MANUAL_ENTRY' && request?.requestedClockOut)
+  );
+
   const handleApproveSubmit = async () => {
     setActionLoading(true);
     try {
@@ -173,8 +187,8 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             comment: comment.trim() || undefined,
-            customClockInTime: customClockIn.trim() || undefined,
-            customClockOutTime: customClockOut.trim() || undefined,
+            customClockInTime: allowClockInEdit && customClockIn.trim() ? customClockIn.trim() : undefined,
+            customClockOutTime: allowClockOutEdit && customClockOut.trim() ? customClockOut.trim() : undefined,
           }),
         }
       );
@@ -379,42 +393,48 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <div>
-                          <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
-                            Approved Clock-In Time
+                          <label style={{ fontSize: '12px', color: allowClockInEdit ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                            Approved Clock-In Time {allowClockInEdit ? '' : '(Not Applicable)'}
                           </label>
                           <input
                             type="time"
-                            value={customClockIn}
+                            disabled={!allowClockInEdit}
+                            value={allowClockInEdit ? customClockIn : ''}
                             onChange={(e) => setCustomClockIn(e.target.value)}
                             style={{
                               width: '100%',
-                              backgroundColor: '#111827',
-                              border: '1px solid #334155',
+                              backgroundColor: allowClockInEdit ? '#111827' : '#090d16',
+                              border: allowClockInEdit ? '1px solid #334155' : '1px solid #1e293b',
                               borderRadius: '8px',
-                              color: '#ffffff',
+                              color: allowClockInEdit ? '#ffffff' : '#64748b',
                               padding: '8px 12px',
                               fontSize: '14px',
                               boxSizing: 'border-box',
+                              opacity: allowClockInEdit ? 1 : 0.4,
+                              cursor: allowClockInEdit ? 'text' : 'not-allowed',
                             }}
                           />
                         </div>
                         <div>
-                          <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
-                            Approved Clock-Out Time
+                          <label style={{ fontSize: '12px', color: allowClockOutEdit ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                            Approved Clock-Out Time {allowClockOutEdit ? '' : '(Not Applicable)'}
                           </label>
                           <input
                             type="time"
-                            value={customClockOut}
+                            disabled={!allowClockOutEdit}
+                            value={allowClockOutEdit ? customClockOut : ''}
                             onChange={(e) => setCustomClockOut(e.target.value)}
                             style={{
                               width: '100%',
-                              backgroundColor: '#111827',
-                              border: '1px solid #334155',
+                              backgroundColor: allowClockOutEdit ? '#111827' : '#090d16',
+                              border: allowClockOutEdit ? '1px solid #334155' : '1px solid #1e293b',
                               borderRadius: '8px',
-                              color: '#ffffff',
+                              color: allowClockOutEdit ? '#ffffff' : '#64748b',
                               padding: '8px 12px',
                               fontSize: '14px',
                               boxSizing: 'border-box',
+                              opacity: allowClockOutEdit ? 1 : 0.4,
+                              cursor: allowClockOutEdit ? 'text' : 'not-allowed',
                             }}
                           />
                         </div>
