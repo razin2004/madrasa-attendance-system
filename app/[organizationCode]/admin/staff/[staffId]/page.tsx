@@ -33,6 +33,7 @@ import {
   Shield,
   Layers,
 } from 'lucide-react';
+import { formatDateIST, formatDateTimeIST } from '@/lib/timezone';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
@@ -712,7 +713,7 @@ export default function StaffProfilePage() {
                   {isActive ? 'Active Eligible' : isPending ? 'Pending Setup' : 'Deactivated'}
                 </span>
                 <span className={styles.statSubtext}>
-                  {staff.user.lastLoginAt ? `Active ${new Date(staff.user.lastLoginAt).toLocaleDateString()}` : 'No login recorded yet'}
+                  {staff.user.lastLoginAt ? `Active ${formatDateIST(staff.user.lastLoginAt)}` : 'No login recorded yet'}
                 </span>
               </div>
             </div>
@@ -957,7 +958,7 @@ export default function StaffProfilePage() {
                     <span>Member Since:</span>
                   </div>
                   <strong style={{ color: '#ffffff' }}>
-                    {new Date(staff.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    {formatDateIST(staff.createdAt, { year: 'numeric', month: 'long', day: 'numeric' })}
                   </strong>
                 </div>
               </div>
@@ -1019,7 +1020,7 @@ export default function StaffProfilePage() {
                   <div className={styles.shiftDetailsRow}>
                     <span>Working Hours: <strong style={{ color: '#ffffff' }}>{shiftTimesLabel}</strong></span>
                     <span>&bull;</span>
-                    <span>Effective From: <strong style={{ color: '#ffffff' }}>{new Date(activeShiftAssignment.effectiveFrom).toLocaleDateString()}</strong></span>
+                    <span>Effective From: <strong style={{ color: '#ffffff' }}>{formatDateIST(activeShiftAssignment.effectiveFrom)}</strong></span>
                   </div>
                 </div>
               ) : (
@@ -1144,14 +1145,14 @@ export default function StaffProfilePage() {
                             <div>
                               <span className={styles.infoLabel}>Registered Timestamp</span>
                               <div className={styles.infoValue} style={{ fontSize: '13px' }}>
-                                {d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}
+                                {d.registeredAt ? formatDateTimeIST(d.registeredAt) : 'N/A'}
                               </div>
                             </div>
                             {d.lastUsedAt && (
                               <div>
                                 <span className={styles.infoLabel}>Last Attendance Check-in</span>
                                 <div className={styles.infoValue} style={{ fontSize: '13px' }}>
-                                  {new Date(d.lastUsedAt).toLocaleString()}
+                                  {formatDateTimeIST(d.lastUsedAt)}
                                 </div>
                               </div>
                             )}

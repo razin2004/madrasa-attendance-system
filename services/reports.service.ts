@@ -156,13 +156,13 @@ export function calculateAttendanceMetricsForPunches(params: {
   const clockInRecords = sortedRecords.filter((r) => r.type === 'CLOCK_IN');
   const clockOutRecords = sortedRecords.filter((r) => r.type === 'CLOCK_OUT');
 
-  // FIRST CLOCK IN of the day
+  // FIRST CLOCK IN of the day (locked to initial clock-in)
   const firstClockIn = clockInRecords[0];
 
-  // LAST CLOCK OUT of the day (only valid if current status is not an active clock-in session)
+  // LATEST CLOCK OUT of the day (updates with subsequent clock-outs)
   const lastPunch = sortedRecords[sortedRecords.length - 1];
   const isCurrentlyClockedIn = lastPunch?.type === 'CLOCK_IN';
-  const lastClockOut = isCurrentlyClockedIn ? null : clockOutRecords[clockOutRecords.length - 1];
+  const lastClockOut = clockOutRecords.length > 0 ? clockOutRecords[clockOutRecords.length - 1] : null;
 
   if (!firstClockIn) {
     return {

@@ -17,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
+import { formatDateIST } from '@/lib/timezone';
 import styles from './StaffAttendanceHistory.module.css';
 
 import { BreakPopover } from '@/components/attendance/break-popover';
@@ -83,7 +84,7 @@ export default function StaffAttendancePage() {
               const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
               const yVal = d.getUTCFullYear();
               const mVal = d.getUTCMonth() + 1;
-              const label = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+              const label = formatDateIST(d, { month: 'long', year: 'numeric' });
               return (
                 <option key={`${yVal}-${mVal}`} value={`${yVal}-${mVal}`}>
                   {label}
@@ -274,7 +275,7 @@ export default function StaffAttendancePage() {
                 try {
                   const d = new Date(row.date);
                   if (!isNaN(d.getTime())) {
-                    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                    return formatDateIST(row.date, { month: 'short', day: 'numeric', year: 'numeric' });
                   }
                 } catch {}
                 return row.date;

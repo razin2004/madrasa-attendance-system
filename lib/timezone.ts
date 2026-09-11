@@ -113,6 +113,84 @@ export function formatDateTimeInTimezone(
 }
 
 /**
+ * Dedicated IST Date Formatter
+ */
+export function formatDateIST(
+  date: Date | string | null | undefined,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (!date) return '—';
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '—';
+    const opts: Intl.DateTimeFormatOptions = options || {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    };
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: DEFAULT_TIMEZONE,
+      ...opts,
+    }).format(d);
+  } catch {
+    return '—';
+  }
+}
+
+/**
+ * Dedicated IST Time Formatter
+ */
+export function formatTimeIST(
+  date: Date | string | null | undefined,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (!date) return '—';
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '—';
+    const opts: Intl.DateTimeFormatOptions = options || {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    };
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: DEFAULT_TIMEZONE,
+      ...opts,
+    }).format(d);
+  } catch {
+    return '—';
+  }
+}
+
+/**
+ * Dedicated IST DateTime Formatter
+ */
+export function formatDateTimeIST(
+  date: Date | string | null | undefined,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (!date) return '—';
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '—';
+    const opts: Intl.DateTimeFormatOptions = options || {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    };
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: DEFAULT_TIMEZONE,
+      ...opts,
+    }).format(d);
+  } catch {
+    return '—';
+  }
+}
+
+/**
  * Format a Date object into 24-hour "HH:MM" format in the specified time zone (defaults to Asia/Kolkata - IST)
  */
 export function formatTimeToHHMM(
