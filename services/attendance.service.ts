@@ -796,12 +796,20 @@ export async function recordAttendance(params: {
 /**
  * Retrieve staff's current attendance state for today
  */
-export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
-  const now = new Date();
+export async function getStaffTodayAttendanceStatus(
+  staffProfileId: string,
+  clientTimezoneOffset?: number
+) {
+  let now = new Date();
+  if (typeof clientTimezoneOffset === 'number' && !isNaN(clientTimezoneOffset)) {
+    const serverOffset = now.getTimezoneOffset();
+    const diffMs = (serverOffset - clientTimezoneOffset) * 60 * 1000;
+    now = new Date(now.getTime() + diffMs);
+  }
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
   const staffAssignments = await prisma.shiftAssignment.findMany({
-    where: { staffProfileId },
+    where: { staffProfileId, shiftPattern: { isActive: true } },
     include: { shiftPattern: { include: { weeklyDays: true } } },
   });
   const staffOverrides = await prisma.staffShiftOverride.findMany({

@@ -297,14 +297,20 @@ export default function StaffDashboardPage() {
           // Fallback gracefully to server header extraction
         }
 
-        const bodyData: any = { deviceSecret };
+        const bodyData: any = {
+          deviceSecret,
+          clientTimezoneOffset: new Date().getTimezoneOffset(),
+        };
         if (coords) {
           bodyData.latitude = coords.latitude;
           bodyData.longitude = coords.longitude;
           if (coords.accuracy !== undefined) bodyData.accuracy = coords.accuracy;
         }
 
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'x-client-timezone-offset': String(new Date().getTimezoneOffset()),
+        };
         if (clientIp) headers['x-client-public-ip'] = clientIp;
 
         const res = await fetch(`/api/org/${orgCode}/attendance/precheck`, {
@@ -720,10 +726,12 @@ export default function StaffDashboardPage() {
                 <span className={styles.shiftBadge}>
                   <Calendar size={14} color="#818cf8" />
                   <span>
-                    {todayStatus?.schedule?.activeShift?.name
+                    {todayStatus?.schedule?.activeShift?.name && todayStatus.schedule.activeShift.startTime
                       ? `Active Shift: ${todayStatus.schedule.activeShift.name} (${todayStatus.schedule.activeShift.startTime} – ${todayStatus.schedule.activeShift.endTime})`
-                      : todayStatus?.schedule?.shiftPatternName
+                      : todayStatus?.schedule?.shiftPatternName && todayStatus.schedule.startTime
                       ? `${todayStatus.schedule.shiftPatternName} (${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime})`
+                      : todayStatus?.schedule?.shiftPatternName
+                      ? `${todayStatus.schedule.shiftPatternName} (Off Duty)`
                       : 'Assigned Shift Schedule'}
                   </span>
                 </span>

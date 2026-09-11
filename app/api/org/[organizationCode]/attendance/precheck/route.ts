@@ -27,6 +27,8 @@ async function handlePrecheck(
     let accuracy: number | undefined = undefined;
     let deviceSecret: string | null = null;
 
+    let clientTimezoneOffset: number | undefined = undefined;
+
     if (request.method === 'POST') {
       try {
         const rawText = await request.text();
@@ -38,6 +40,9 @@ async function handlePrecheck(
             if (body.accuracy !== undefined) accuracy = parseFloat(body.accuracy);
           }
           if (body.deviceSecret) deviceSecret = body.deviceSecret;
+          if (body.clientTimezoneOffset !== undefined) {
+            clientTimezoneOffset = parseInt(body.clientTimezoneOffset, 10);
+          }
         }
       } catch {
         // Ignore unparseable or empty POST body gracefully
@@ -53,6 +58,9 @@ async function handlePrecheck(
         request.headers.get('x-shiftguard-device-secret') ||
         searchParams.get('deviceSecret') ||
         null;
+    }
+    if (clientTimezoneOffset === undefined && request.headers.get('x-client-timezone-offset')) {
+      clientTimezoneOffset = parseInt(request.headers.get('x-client-timezone-offset')!, 10);
     }
 
     const coordinates =
@@ -71,8 +79,8 @@ async function handlePrecheck(
       coordinates
     );
 
-    // Get today's attendance state
-    const todayStatus = await getStaffTodayAttendanceStatus(auth.staffProfile.id);
+    // Get today's attendance state with client timezone offset
+    const todayStatus = await getStaffTodayAttendanceStatus(auth.staffProfile.id, clientTimezoneOffset);
 
     return NextResponse.json(
       {
