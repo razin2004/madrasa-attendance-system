@@ -817,18 +817,19 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
       isClockedIn = false;
     }
   }
+  const firstClockIn = verifiedRecords.filter((r) => r.type === 'CLOCK_IN')[0];
   const lastClockIn = verifiedRecords.filter((r) => r.type === 'CLOCK_IN').pop();
-  const lastClockOut = verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').pop();
+  const lastClockOut = isClockedIn ? null : verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').pop();
   const isDailyLimitReached = completedCyclesCount >= MAX_DAILY_ATTENDANCE_CYCLES;
 
-  const rawClockInIso = lastClockIn?.timestamp
-    ? lastClockIn.timestamp.toISOString()
+  const rawClockInIso = firstClockIn?.timestamp
+    ? firstClockIn.timestamp.toISOString()
     : (hasPendingClockIn && pendingClockInToday?.requestedClockIn ? pendingClockInToday.requestedClockIn.toISOString() : null);
 
   const rawClockOutIso = lastClockOut?.timestamp ? lastClockOut.timestamp.toISOString() : null;
 
-  let displayClockInTime: string | null = lastClockIn?.timestamp
-    ? new Date(lastClockIn.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  let displayClockInTime: string | null = firstClockIn?.timestamp
+    ? new Date(firstClockIn.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     : null;
 
   if (!displayClockInTime && hasPendingClockIn && pendingClockInToday?.requestedClockIn) {
@@ -845,8 +846,8 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
     schedule: daySchedule,
     lastClockInTime: displayClockInTime,
     lastClockInIso: rawClockInIso,
-    attendanceStartTime: lastClockIn?.attendanceStartTime || lastClockIn?.timestamp || null,
-    lateMinutes: lastClockIn?.lateMinutes || 0,
+    attendanceStartTime: firstClockIn?.attendanceStartTime || firstClockIn?.timestamp || null,
+    lateMinutes: firstClockIn?.lateMinutes || 0,
     lastClockOutTime: lastClockOut?.timestamp ? new Date(lastClockOut.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
     lastClockOutIso: rawClockOutIso,
     earlyDepartureMinutes: lastClockOut?.earlyDepartureMinutes || 0,
@@ -1919,16 +1920,28 @@ export async function getAdminDailyAttendance(params: {
         isManualEntry: r.isManualEntry,
         manualReason: r.manualReason,
         creator: r.creatorUser,
+        records: [],
       });
     }
 
     const item = staffAttendanceMap.get(r.staffProfileId);
-    if (r.type === 'CLOCK_IN' && !item.clockIn) {
-      item.clockIn = r.timestamp;
-      item.source = r.source;
-    } else if (r.type === 'CLOCK_OUT') {
-      item.clockOut = r.timestamp;
+    item.records.push(r);
+  }
+
+  for (const item of staffAttendanceMap.values()) {
+    const sorted = item.records.sort((a: any, b: any) => a.timestamp.getTime() - b.timestamp.getTime());
+    const firstIn = sorted.find((r: any) => r.type === 'CLOCK_IN');
+    const lastPunch = sorted[sorted.length - 1];
+    const lastOut = lastPunch?.type === 'CLOCK_OUT' ? lastPunch : null;
+
+    if (firstIn) {
+      item.clockIn = firstIn.timestamp;
+      item.source = firstIn.source;
     }
+    if (lastOut) {
+      item.clockOut = lastOut.timestamp;
+    }
+    delete item.records;
   }
 
   const dailyList = Array.from(staffAttendanceMap.values());

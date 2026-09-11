@@ -155,8 +155,13 @@ export function calculateAttendanceMetricsForPunches(params: {
   const clockInRecords = sortedRecords.filter((r) => r.type === 'CLOCK_IN');
   const clockOutRecords = sortedRecords.filter((r) => r.type === 'CLOCK_OUT');
 
+  // FIRST CLOCK IN of the day
   const firstClockIn = clockInRecords[0];
-  const lastClockOut = clockOutRecords[clockOutRecords.length - 1];
+
+  // LAST CLOCK OUT of the day (only valid if current status is not an active clock-in session)
+  const lastPunch = sortedRecords[sortedRecords.length - 1];
+  const isCurrentlyClockedIn = lastPunch?.type === 'CLOCK_IN';
+  const lastClockOut = isCurrentlyClockedIn ? null : clockOutRecords[clockOutRecords.length - 1];
 
   if (!firstClockIn) {
     return {
@@ -462,8 +467,9 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
 
     // 2. Extract attendance records for this profile
     const staffRecords = attendanceRecords.filter((r) => r.staffProfileId === profile.id);
-    const clockInRecord = staffRecords.find((r) => r.type === 'CLOCK_IN');
-    const clockOutRecord = staffRecords.find((r) => r.type === 'CLOCK_OUT');
+    const clockInRecord = staffRecords.filter((r) => r.type === 'CLOCK_IN')[0];
+    const lastStaffPunch = staffRecords[staffRecords.length - 1];
+    const clockOutRecord = lastStaffPunch?.type === 'CLOCK_OUT' ? lastStaffPunch : null;
     const pendingReq = pendingRequests.find((cr) => cr.staffProfileId === profile.id);
 
     const hasPendingIn = Boolean(pendingReq && (pendingReq.type === 'MISSING_CLOCK_IN' || pendingReq.requestedClockIn) && !clockInRecord);
@@ -814,8 +820,9 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
     const dayRecords = monthAttendanceRecords.filter(
       (r) => r.timestamp >= dayStart && r.timestamp <= dayEnd
     );
-    const clockInRecord = dayRecords.find((r) => r.type === 'CLOCK_IN');
-    const clockOutRecord = dayRecords.find((r) => r.type === 'CLOCK_OUT');
+    const clockInRecord = dayRecords.filter((r) => r.type === 'CLOCK_IN')[0];
+    const lastDayPunch = dayRecords[dayRecords.length - 1];
+    const clockOutRecord = lastDayPunch?.type === 'CLOCK_OUT' ? lastDayPunch : null;
 
     // 3. Approved leave for day
     const dayLeave = monthApprovedLeaves.find(
@@ -972,8 +979,9 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
     for (const addShift of dayAddShifts) {
       // Additional shift attendance records (records tagged with isAdditionalShift: true or matching shift window)
       const addRecords = dayRecords.filter((r) => r.isAdditionalShift || r.additionalShiftId === addShift.id);
-      const addClockInRecord = addRecords.find((r) => r.type === 'CLOCK_IN');
-      const addClockOutRecord = addRecords.find((r) => r.type === 'CLOCK_OUT');
+      const addClockInRecord = addRecords.filter((r) => r.type === 'CLOCK_IN')[0];
+      const lastAddPunch = addRecords[addRecords.length - 1];
+      const addClockOutRecord = lastAddPunch?.type === 'CLOCK_OUT' ? lastAddPunch : null;
 
       let addStatus: AttendanceReportRow['status'] = 'NOT YET CLOCKED IN';
       if (addClockInRecord && addClockOutRecord) {
