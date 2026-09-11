@@ -1056,7 +1056,7 @@ export async function submitAttendanceCorrectionRequest(params: {
   });
 
   const originalClockIn = existingRecords.find((r) => r.type === 'CLOCK_IN')?.timestamp || null;
-  const originalClockOut = existingRecords.find((r) => r.type === 'CLOCK_OUT')?.timestamp || null;
+  const originalClockOut = existingRecords.filter((r) => r.type === 'CLOCK_OUT').pop()?.timestamp || null;
   const targetRecordId = existingRecords[0]?.id || null;
 
   // Create correction request
@@ -1210,7 +1210,7 @@ export async function approveAttendanceCorrection(params: {
       });
 
       const existingClockIn = existingRecords.find((r) => r.type === 'CLOCK_IN');
-      const existingClockOut = existingRecords.find((r) => r.type === 'CLOCK_OUT');
+      const existingClockOut = existingRecords.filter((r) => r.type === 'CLOCK_OUT').pop();
 
       let targetRecordId = existingClockIn?.id || existingClockOut?.id || null;
 
