@@ -412,19 +412,20 @@ export function calculateStaffDaySchedule(
   const allHolidays = activeShifts.length > 0 && activeShifts.every((s) => s.isHoliday);
 
   if (workShifts.length === 0) {
+    const holidayNames = activeShifts.map((a) => a.name).join(', ');
     return {
       date: dateIso,
       weekday,
-      isScheduled: activeShifts.length > 0,
+      isScheduled: false,
       isHoliday: allHolidays,
       startTime: null,
       endTime: null,
       isOvernight: false,
       shiftPatternId: effectiveAssignments[0]?.shiftPattern.id,
-      shiftPatternName: effectiveAssignments.map((a) => a.shiftPattern.name).join(', '),
+      shiftPatternName: holidayNames || effectiveAssignments[0]?.shiftPattern.name,
       minimumStaffingThreshold: effectiveAssignments[0]?.shiftPattern.minimumStaffingThreshold,
       hasOverride: false,
-      shifts: activeShifts,
+      shifts: [],
     };
   }
 
@@ -445,11 +446,11 @@ export function calculateStaffDaySchedule(
     startTime: earliestStart,
     endTime: latestEnd,
     isOvernight: isAnyOvernight,
-    shiftPatternId: effectiveAssignments[0]?.shiftPattern.id,
-    shiftPatternName: effectiveAssignments.map((a) => a.shiftPattern.name).join(', '),
+    shiftPatternId: workShifts[0]?.id || effectiveAssignments[0]?.shiftPattern.id,
+    shiftPatternName: workShifts.map((s) => s.name).filter(Boolean).join(', '),
     minimumStaffingThreshold: effectiveAssignments[0]?.shiftPattern.minimumStaffingThreshold,
     hasOverride: false,
-    shifts: activeShifts,
+    shifts: workShifts,
   };
 }
 
