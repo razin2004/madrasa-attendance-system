@@ -96,7 +96,7 @@ export async function PATCH(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { name, description, minimumStaffingThreshold, days } = body;
+    const { name, description, minimumStaffingThreshold, days, effectiveFrom } = body;
 
     const updateData: any = {};
 
@@ -153,16 +153,91 @@ export async function PATCH(
       validatedDays = scheduleValidation.validatedDays;
     }
 
+    // Check if effectiveFrom is provided for future transition
+    let transitionStartDate: Date | null = null;
+    if (effectiveFrom && typeof effectiveFrom === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(effectiveFrom)) {
+      const parsed = new Date(`${effectiveFrom}T00:00:00.000Z`);
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      if (parsed.getTime() > today.getTime()) {
+        transitionStartDate = parsed;
+      }
+    }
+
     // Execute update transaction
     const updatedPattern = await prisma.$transaction(
       async (tx) => {
+        // If transitionStartDate is in the future, version the pattern and transition active staff assignments starting on transitionStartDate
+        if (transitionStartDate && validatedDays) {
+          const dayBefore = new Date(transitionStartDate);
+          dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+          dayBefore.setUTCHours(23, 59, 59, 999);
+
+          // Find active staff assigned to existing pattern
+          const activeAssignments = await tx.shiftAssignment.findMany({
+            where: {
+              shiftPatternId: existingPattern.id,
+              OR: [{ effectiveTo: null }, { effectiveTo: { gte: transitionStartDate } }],
+            },
+          });
+
+          // Update existing pattern info if name/desc changed
+          const pattern = await tx.shiftPattern.update({
+            where: { id: existingPattern.id },
+            data: updateData,
+          });
+
+          // Create new version pattern for the new schedule
+          const newPatternName = updateData.name || existingPattern.name;
+          const newVersionPattern = await tx.shiftPattern.create({
+            data: {
+              organizationId: existingPattern.organizationId,
+              name: `${newPatternName} (Effective ${effectiveFrom})`,
+              description: updateData.description !== undefined ? updateData.description : existingPattern.description,
+              minimumStaffingThreshold: updateData.minimumStaffingThreshold || existingPattern.minimumStaffingThreshold,
+              isActive: true,
+            },
+          });
+
+          await tx.weeklyShiftDay.createMany({
+            data: validatedDays.map((d) => ({
+              shiftPatternId: newVersionPattern.id,
+              weekday: d.weekday,
+              isHoliday: d.isHoliday,
+              startTime: d.startTime,
+              endTime: d.endTime,
+              isOvernight: d.isOvernight,
+            })),
+          });
+
+          // Cap old assignments and create new assignments starting on transitionStartDate
+          for (const assignment of activeAssignments) {
+            await tx.shiftAssignment.update({
+              where: { id: assignment.id },
+              data: { effectiveTo: dayBefore },
+            });
+
+            await tx.shiftAssignment.create({
+              data: {
+                staffProfileId: assignment.staffProfileId,
+                shiftPatternId: newVersionPattern.id,
+                effectiveFrom: transitionStartDate,
+                effectiveTo: null,
+                assignedBy: auth.session!.user.id,
+              },
+            });
+          }
+
+          return newVersionPattern;
+        }
+
+        // Direct update if effectiveFrom is today or not specified
         const pattern = await tx.shiftPattern.update({
           where: { id: existingPattern.id },
           data: updateData,
         });
 
         if (validatedDays) {
-          // Delete old days and re-create
           await tx.weeklyShiftDay.deleteMany({
             where: { shiftPatternId: pattern.id },
           });

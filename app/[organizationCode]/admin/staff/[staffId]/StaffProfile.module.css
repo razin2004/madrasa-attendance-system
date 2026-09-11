@@ -734,3 +734,33 @@
     font-size: 12.5px;
   }
 }
+
+/* Touch-optimized smooth tab scrolling without scrollbars */
+.tabsBar {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabsBar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .cardSection {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+  .branchCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .branchBadge {
+    align-self: flex-start;
+  }
+  .actionDropdownMenu {
+    max-width: calc(100vw - 32px);
+    right: 0;
+  }
+}
