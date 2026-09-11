@@ -42,6 +42,7 @@ import { BreakPopover } from '@/components/attendance/break-popover';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 
 import { getTodayInTimezone } from '@/lib/timezone';
+import { cleanStaffJustification } from '@/lib/reason-parser';
 
 export default function DailyReportPage() {
   const params = useParams();
@@ -762,14 +763,14 @@ export default function DailyReportPage() {
                                   {row.leaveTypeName}
                                 </div>
                               )}
-                              {row.manualReason && (
+                              {cleanStaffJustification(row.manualReason) && (
                                 <div style={{ color: '#fbbf24', fontStyle: 'italic' }}>
-                                  &ldquo;{row.manualReason}&rdquo;
+                                  &ldquo;{cleanStaffJustification(row.manualReason)}&rdquo;
                                 </div>
                               )}
-                              {row.adjustmentReason && (
+                              {cleanStaffJustification(row.adjustmentReason) && (
                                 <div style={{ color: '#38bdf8', fontStyle: 'italic' }}>
-                                  &ldquo;{row.adjustmentReason}&rdquo;
+                                  &ldquo;{cleanStaffJustification(row.adjustmentReason)}&rdquo;
                                 </div>
                               )}
                             </td>

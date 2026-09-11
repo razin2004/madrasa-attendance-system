@@ -4,6 +4,7 @@ import { AttendanceSource, LeaveType, Weekday } from '@prisma/client';
 import { formatUtcDateString, normalizeDate } from './attendance.service';
 
 import { formatTimeInTimezone } from '@/lib/timezone';
+import { cleanStaffJustification } from '@/lib/reason-parser';
 
 export interface DailyReportFilterParams {
   organizationId: string;
@@ -578,16 +579,16 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     let manualReason: string | null = null;
     let creatorName: string | null = null;
     let reviewerName: string | null = null;
-    let adjustmentReason: string | null = pendingReq?.reason || null;
+    let adjustmentReason: string | null = cleanStaffJustification(pendingReq?.reason);
 
     if (clockInRecord?.isManualEntry || clockOutRecord?.isManualEntry) {
-      manualReason = clockInRecord?.manualReason || clockOutRecord?.manualReason || null;
+      manualReason = cleanStaffJustification(clockInRecord?.manualReason || clockOutRecord?.manualReason);
       creatorName = clockInRecord?.creatorUser?.name || clockOutRecord?.creatorUser?.name || null;
     }
 
     if (clockInRecord?.correctionRequest || clockOutRecord?.correctionRequest) {
       const cr = clockInRecord?.correctionRequest || clockOutRecord?.correctionRequest;
-      adjustmentReason = cr?.reason || adjustmentReason;
+      adjustmentReason = cleanStaffJustification(cr?.reason) || adjustmentReason;
       reviewerName = cr?.reviewerUser?.name || null;
     }
 
@@ -906,13 +907,13 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
     let adjustmentReason: string | null = null;
 
     if (clockInRecord?.isManualEntry || clockOutRecord?.isManualEntry) {
-      manualReason = clockInRecord?.manualReason || clockOutRecord?.manualReason || null;
+      manualReason = cleanStaffJustification(clockInRecord?.manualReason || clockOutRecord?.manualReason);
       creatorName = clockInRecord?.creatorUser?.name || clockOutRecord?.creatorUser?.name || null;
     }
 
     if (clockInRecord?.correctionRequest || clockOutRecord?.correctionRequest) {
       const cr = clockInRecord?.correctionRequest || clockOutRecord?.correctionRequest;
-      adjustmentReason = cr?.reason || null;
+      adjustmentReason = cleanStaffJustification(cr?.reason);
       reviewerName = cr?.reviewerUser?.name || null;
     }
 

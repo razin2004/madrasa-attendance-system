@@ -1,4 +1,5 @@
 import { AttendanceReportRow } from './reports.service';
+import { cleanStaffJustification } from '@/lib/reason-parser';
 
 /**
  * Escapes a single string field for CSV format (RFC 4180 compliance)
@@ -57,7 +58,7 @@ export function generateAttendanceReportCsv(params: {
       row.status,
       row.source,
       row.leaveTypeName || '—',
-      row.leaveReason || row.manualReason || row.adjustmentReason || row.conflictDetails || '—',
+      row.leaveReason || cleanStaffJustification(row.manualReason) || cleanStaffJustification(row.adjustmentReason) || row.conflictDetails || '—',
     ];
 
     csvLines.push(line.map(escapeCsvField).join(','));

@@ -37,6 +37,7 @@ interface BranchOption {
 }
 
 import { getTodayInTimezone, formatDateInTimezone } from '@/lib/timezone';
+import { cleanStaffJustification } from '@/lib/reason-parser';
 
 export default function DateRangeReportPage() {
   const params = useParams();
@@ -846,9 +847,9 @@ export default function DateRangeReportPage() {
                                   {row.leaveTypeName}
                                 </div>
                               )}
-                              {row.manualReason && (
+                              {cleanStaffJustification(row.manualReason) && (
                                 <div style={{ color: '#fbbf24', fontStyle: 'italic' }}>
-                                  &ldquo;{row.manualReason}&rdquo;
+                                  &ldquo;{cleanStaffJustification(row.manualReason)}&rdquo;
                                 </div>
                               )}
                             </td>
@@ -935,7 +936,7 @@ export default function DateRangeReportPage() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed rgba(255, 255, 255, 0.08)', fontSize: '11px' }}>
                             <div>
                               {row.leaveTypeName && <span style={{ color: '#38bdf8', fontWeight: 600 }}>{row.leaveTypeName}</span>}
-                              {row.manualReason && <span style={{ color: '#fbbf24', fontStyle: 'italic', marginLeft: '4px' }}>&ldquo;{row.manualReason}&rdquo;</span>}
+                              {cleanStaffJustification(row.manualReason) && <span style={{ color: '#fbbf24', fontStyle: 'italic', marginLeft: '4px' }}>&ldquo;{cleanStaffJustification(row.manualReason)}&rdquo;</span>}
                             </div>
                             {row.source !== '—' && (
                               <span className={`${styles.sourceBadge} ${styles[`source${row.source}`]}`}>

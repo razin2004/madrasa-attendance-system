@@ -25,6 +25,7 @@ import { OrgAdminSidebar } from '../../../../components/layout/org-admin-sidebar
 import { OrgAdminMobileNav } from '../../../../components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { formatTimeInTimezone, getTodayInTimezone } from '@/lib/timezone';
+import { cleanStaffJustification } from '@/lib/reason-parser';
 import { useToast } from '../../../../components/feedback/toast-provider';
 import styles from './AdminAttendance.module.css';
 
@@ -732,9 +733,9 @@ export default function AdminAttendancePage() {
                           <div>
                             <span style={{ color: '#fbbf24' }}>Manual Entry by Admin</span>
                             {item.creator && <span> ({item.creator.name})</span>}
-                            {item.manualReason && (
+                            {cleanStaffJustification(item.manualReason) && (
                               <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
-                                &ldquo;{item.manualReason}&rdquo;
+                                &ldquo;{cleanStaffJustification(item.manualReason)}&rdquo;
                               </div>
                             )}
                           </div>

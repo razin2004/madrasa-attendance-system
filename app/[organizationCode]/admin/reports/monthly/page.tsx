@@ -39,6 +39,7 @@ interface BranchOption {
 import { BreakPopover } from '@/components/attendance/break-popover';
 
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+import { cleanStaffJustification } from '@/lib/reason-parser';
 
 export default function MonthlyReportPage() {
   const params = useParams();
@@ -805,14 +806,14 @@ export default function MonthlyReportPage() {
                                   {row.leaveTypeName}
                                 </span>
                               )}
-                              {row.manualReason && (
+                              {cleanStaffJustification(row.manualReason) && (
                                 <span style={{ color: '#fbbf24', fontStyle: 'italic', marginLeft: '6px' }}>
-                                  &ldquo;{row.manualReason}&rdquo;
+                                  &ldquo;{cleanStaffJustification(row.manualReason)}&rdquo;
                                 </span>
                               )}
-                              {row.adjustmentReason && (
+                              {cleanStaffJustification(row.adjustmentReason) && (
                                 <span style={{ color: '#38bdf8', fontStyle: 'italic', marginLeft: '6px' }}>
-                                  &ldquo;{row.adjustmentReason}&rdquo;
+                                  &ldquo;{cleanStaffJustification(row.adjustmentReason)}&rdquo;
                                 </span>
                               )}
                             </td>
@@ -886,12 +887,12 @@ export default function MonthlyReportPage() {
                           </div>
                         </div>
 
-                        {(row.leaveTypeName || row.manualReason || row.adjustmentReason) && (
+                        {(row.leaveTypeName || cleanStaffJustification(row.manualReason) || cleanStaffJustification(row.adjustmentReason)) && (
                           <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', paddingTop: '4px', marginTop: '6px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                             {row.leaveTypeName && <span style={{ color: '#38bdf8', fontWeight: 600, marginRight: '6px' }}>{row.leaveTypeName}</span>}
-                            {(row.manualReason || row.adjustmentReason) && (
+                            {(cleanStaffJustification(row.manualReason) || cleanStaffJustification(row.adjustmentReason)) && (
                               <span style={{ fontStyle: 'italic', color: '#fbbf24' }}>
-                                &ldquo;{row.manualReason || row.adjustmentReason}&rdquo;
+                                &ldquo;{cleanStaffJustification(row.manualReason) || cleanStaffJustification(row.adjustmentReason)}&rdquo;
                               </span>
                             )}
                           </div>
