@@ -484,11 +484,15 @@ export default function StaffDashboardPage() {
 
       const coords = locationCoords || (await requestGeolocation().catch(() => null));
 
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-client-timezone-offset': String(new Date().getTimezoneOffset()),
+      };
       if (clientIp) headers['x-client-public-ip'] = clientIp;
 
       const payload: any = {
         deviceSecret,
+        clientTimezoneOffset: new Date().getTimezoneOffset(),
         branchId: precheck?.candidateBranch?.id,
         submitForApproval,
         unverifiedReason: unverifiedReason?.trim() || undefined,

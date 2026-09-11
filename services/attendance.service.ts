@@ -426,6 +426,7 @@ export async function recordAttendance(params: {
   userAgent?: string | null;
   submitForApproval?: boolean;
   unverifiedReason?: string | null;
+  clientTimezoneOffset?: number;
 }): Promise<{
   success: boolean;
   record?: any;
@@ -434,7 +435,12 @@ export async function recordAttendance(params: {
   error?: string;
   evaluation: ThreeLayerEvaluationResult;
 }> {
-  const now = new Date();
+  let now = new Date();
+  if (typeof params.clientTimezoneOffset === 'number' && !isNaN(params.clientTimezoneOffset)) {
+    const serverOffset = now.getTimezoneOffset();
+    const diffMs = (serverOffset - params.clientTimezoneOffset) * 60 * 1000;
+    now = new Date(now.getTime() + diffMs);
+  }
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
   // 1. Fresh Server-side Three-Layer Evaluation
@@ -448,7 +454,7 @@ export async function recordAttendance(params: {
 
   // 2. Resolve Scheduled Shift for Today (Section 14, 15, 29)
   const staffAssignments = await prisma.shiftAssignment.findMany({
-    where: { staffProfileId: params.staffProfileId },
+    where: { staffProfileId: params.staffProfileId, shiftPattern: { isActive: true } },
     include: { shiftPattern: { include: { weeklyDays: true } } },
   });
   const staffOverrides = await prisma.staffShiftOverride.findMany({

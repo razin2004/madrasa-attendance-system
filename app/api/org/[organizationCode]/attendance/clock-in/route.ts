@@ -39,6 +39,14 @@ export async function POST(
     const requestIp = extractClientPublicIp(request);
     const userAgent = request.headers.get('user-agent');
 
+    const clientTimezoneOffsetHeader = request.headers.get('x-client-timezone-offset');
+    const clientTimezoneOffset =
+      body.clientTimezoneOffset !== undefined
+        ? parseInt(body.clientTimezoneOffset, 10)
+        : clientTimezoneOffsetHeader
+        ? parseInt(clientTimezoneOffsetHeader, 10)
+        : undefined;
+
     const result = await recordAttendance({
       organizationId: auth.organization.id,
       staffProfileId: auth.staffProfile.id,
@@ -55,6 +63,7 @@ export async function POST(
       userAgent,
       submitForApproval: Boolean(body.submitForApproval),
       unverifiedReason: unverifiedReason || null,
+      clientTimezoneOffset,
     });
 
     if (!result.success) {
