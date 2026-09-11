@@ -30,7 +30,11 @@ import {
   Share2,
   Trash2,
   Upload,
-  Menu,
+  ExternalLink,
+  MessageSquare,
+  Shield,
+  Activity,
+  Layers,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -134,6 +138,7 @@ export default function StaffProfilePage() {
   const [resettingDevice, setResettingDevice] = useState(false);
   const [deviceToRemove, setDeviceToRemove] = useState<any>(null);
   const [removingDevice, setRemovingDevice] = useState(false);
+
   // Status Toggle Confirmation Modal
   const [statusModalOpen, setStatusModalOpen] = useState(false);
 
@@ -210,7 +215,16 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 1. Update Profile Metadata & Documents
+  // Smart Back Handler
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(`/${organizationCode}/admin/staff`);
+    }
+  };
+
+  // Save Profile Metadata
   const handleSaveMetadata = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error('Full name is required.');
@@ -245,7 +259,7 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 1b. Delete Staff Account
+  // Delete Staff Account
   const handleDeleteStaff = async () => {
     try {
       setDeletingStaff(true);
@@ -267,7 +281,7 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 2. Save Branch Assignments
+  // Save Branch Assignments
   const handleSaveBranchAssignments = async () => {
     try {
       setSavingBranches(true);
@@ -292,7 +306,7 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 3. Reset Device
+  // Reset Device
   const handleResetDevice = async () => {
     try {
       setResettingDevice(true);
@@ -315,7 +329,7 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 3c. Remove Individual Device / Slot
+  // Remove Device Slot
   const handleRemoveDevice = async () => {
     if (!deviceToRemove) return;
     try {
@@ -339,7 +353,7 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 4. Toggle Account Status
+  // Toggle Account Status
   const handleToggleStatus = async () => {
     try {
       const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/toggle-status`, {
@@ -363,7 +377,7 @@ export default function StaffProfilePage() {
     }
   };
 
-  // 5. Save Shift Assignment
+  // Save Shift Assignment
   const handleSaveShiftAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShiftPatternId) {
@@ -394,39 +408,6 @@ export default function StaffProfilePage() {
       setSavingShift(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <OrgAdminSidebar organizationCode={organizationCode} organizationName={branding?.name || 'Organization'} />
-        <div className={styles.mainContent} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8' }} />
-        </div>
-      </div>
-    );
-  }
-
-  if (!staff) {
-    return (
-      <div className={styles.container}>
-        <OrgAdminSidebar organizationCode={organizationCode} organizationName={branding?.name || 'Organization'} />
-        <div className={styles.mainContent} style={{ padding: '32px', textAlign: 'center' }}>
-          <AlertTriangle size={36} color="var(--danger-text)" style={{ margin: '0 auto 12px auto' }} />
-          <h2>Staff member not found</h2>
-          <Link href={`/${organizationCode}/admin/staff`} className="btn btn-primary" style={{ marginTop: '16px' }}>
-            Back to Staff Directory
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const isPending = staff.user.status === 'PENDING';
-  const isActive = staff.user.status === 'ACTIVE';
-  const allDevices = staff.devices || [];
-  const registeredCount = allDevices.filter((d: any) => d.status === 'REGISTERED').length;
-  const hasPendingSlot = allDevices.some((d: any) => d.status === 'NOT_REGISTERED');
-  const canAuthorizeMore = !hasPendingSlot && registeredCount < 2;
 
   const handleResendInvite = async () => {
     try {
@@ -484,6 +465,46 @@ export default function StaffProfilePage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <OrgAdminSidebar organizationCode={organizationCode} organizationName={branding?.name || 'Organization'} />
+        <div className={styles.mainContent} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Loader2 size={36} className="animate-spin" style={{ color: '#818cf8' }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!staff) {
+    return (
+      <div className={styles.container}>
+        <OrgAdminSidebar organizationCode={organizationCode} organizationName={branding?.name || 'Organization'} />
+        <div className={styles.mainContent} style={{ padding: '32px', textAlign: 'center' }}>
+          <AlertTriangle size={36} color="var(--danger-text)" style={{ margin: '0 auto 12px auto' }} />
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#ffffff' }}>Staff Member Not Found</h2>
+          <button onClick={handleBack} className="btn btn-primary" style={{ marginTop: '16px' }}>
+            Back to Last Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isPending = staff.user.status === 'PENDING';
+  const isActive = staff.user.status === 'ACTIVE';
+  const allDevices = staff.devices || [];
+  const registeredCount = allDevices.filter((d: any) => d.status === 'REGISTERED').length;
+
+  const initials = staff.name
+    ? staff.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : 'ST';
+
   return (
     <div className={styles.container}>
       <OrgAdminSidebar
@@ -493,13 +514,13 @@ export default function StaffProfilePage() {
       />
 
       <div className={styles.mainContent}>
-        {/* Header Bar */}
+        {/* Header Bar with Smart Back Handler */}
         <OrgAdminHeader
           organizationCode={organizationCode}
           logoUrl={branding?.logoUrl}
           panelTitle={staff.name}
           panelSubtitle={`Staff ID: ${staff.staffId} • ${staff.user.email}`}
-          backHref={`/${organizationCode}/admin/staff`}
+          onBack={handleBack}
           headerMenuOpen={menuOpen}
           onToggleHeaderMenu={() => setMenuOpen(!menuOpen)}
         >
@@ -574,38 +595,199 @@ export default function StaffProfilePage() {
         </OrgAdminHeader>
 
         {/* Content Body */}
-        <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
-          {/* Navigation Tabs */}
-          <div className={styles.tabsBar}>
+        <main className={styles.pageContainer}>
+          {/* Hero Profile Banner */}
+          <div className={styles.heroCard}>
+            <div className={styles.heroGlow} />
+            <div className={styles.heroTopRow}>
+              <div className={styles.heroIdentityGroup}>
+                <div className={styles.avatarRing}>
+                  {initials}
+                  <span
+                    className={`${styles.avatarStatusDot} ${
+                      isActive
+                        ? styles.statusDotActive
+                        : isPending
+                        ? styles.statusDotPending
+                        : styles.statusDotInactive
+                    }`}
+                  />
+                </div>
+                <div className={styles.staffTitleCol}>
+                  <h1 className={styles.staffName}>
+                    {staff.name}
+                  </h1>
+                  <div className={styles.staffMetaPills}>
+                    <span className={styles.staffIdPill}>ID: {staff.staffId}</span>
+                    {isActive && (
+                      <span className={styles.badgeActive}>
+                        <CheckCircle2 size={12} /> Active Account
+                      </span>
+                    )}
+                    {isPending && (
+                      <span className={styles.badgePending}>
+                        <Clock size={12} /> Pending Invite Setup
+                      </span>
+                    )}
+                    {!isActive && !isPending && (
+                      <span className={styles.badgeInactive}>
+                        <AlertTriangle size={12} /> Account Deactivated
+                      </span>
+                    )}
+                    <span style={{ fontSize: '11px', color: '#94a3b8', background: 'rgba(255,255,255,0.06)', padding: '3px 8px', borderRadius: '6px' }}>
+                      {staff.user.role === 'ORG_ADMIN' ? 'Org Administrator' : 'Staff Member'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Strip */}
+              <div className={styles.heroQuickActions}>
+                {isPending && (
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppInvite}
+                    disabled={whatsappLoading}
+                    className={`${styles.pillBtn} ${styles.pillBtnWhatsapp}`}
+                  >
+                    {whatsappLoading ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                    <span>WhatsApp Invite</span>
+                  </button>
+                )}
+                {isPending && (
+                  <button
+                    type="button"
+                    onClick={handleResendInvite}
+                    disabled={resendingInvite}
+                    className={`${styles.pillBtn} ${styles.pillBtnPrimary}`}
+                  >
+                    {resendingInvite ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+                    <span>Resend Email</span>
+                  </button>
+                )}
+                {isActive && (
+                  <button
+                    type="button"
+                    onClick={() => setPasswordModalOpen(true)}
+                    className={`${styles.pillBtn} ${styles.pillBtnPurple}`}
+                  >
+                    <Key size={14} />
+                    <span>Update Password</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(!isEditing)}
+                  className={`${styles.pillBtn} ${styles.pillBtnSecondary}`}
+                >
+                  <Edit2 size={14} />
+                  <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className={styles.statsGrid}>
+            {/* Metric 1 */}
+            <div className={styles.statCard}>
+              <div className={styles.statIconBox} style={{ backgroundColor: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}>
+                <Activity size={22} />
+              </div>
+              <div className={styles.statContent}>
+                <span className={styles.statLabel}>Account Status</span>
+                <span className={styles.statVal} style={{ color: isActive ? '#34d399' : isPending ? '#fbbf24' : '#f87171' }}>
+                  {isActive ? 'Active Eligible' : isPending ? 'Pending Login' : 'Deactivated'}
+                </span>
+                <span className={styles.statSubtext}>
+                  {staff.user.lastLoginAt ? `Last active ${new Date(staff.user.lastLoginAt).toLocaleDateString()}` : 'No login recorded yet'}
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 2 */}
+            <div className={styles.statCard}>
+              <div className={styles.statIconBox} style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', color: '#c084fc' }}>
+                <Clock size={22} />
+              </div>
+              <div className={styles.statContent}>
+                <span className={styles.statLabel}>Shift Schedule</span>
+                <span className={styles.statVal}>
+                  {activeShiftAssignment?.shiftPattern?.name || 'No Shift Assigned'}
+                </span>
+                <span className={styles.statSubtext}>
+                  {activeShiftAssignment?.shiftPattern ? `${activeShiftAssignment.shiftPattern.startTime} – ${activeShiftAssignment.shiftPattern.endTime}` : 'Assign shift pattern below'}
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 3 */}
+            <div className={styles.statCard}>
+              <div className={styles.statIconBox} style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                <Building size={22} />
+              </div>
+              <div className={styles.statContent}>
+                <span className={styles.statLabel}>Workplace Branches</span>
+                <span className={styles.statVal}>
+                  {staff.branchAssignments.length} {staff.branchAssignments.length === 1 ? 'Branch' : 'Branches'}
+                </span>
+                <span className={styles.statSubtext}>
+                  {staff.branchAssignments.length > 0 ? staff.branchAssignments[0].branch.name : 'Unassigned'}
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 4 */}
+            <div className={styles.statCard}>
+              <div className={styles.statIconBox} style={{ backgroundColor: 'rgba(129, 140, 248, 0.15)', color: '#818cf8' }}>
+                <ShieldCheck size={22} />
+              </div>
+              <div className={styles.statContent}>
+                <span className={styles.statLabel}>Registered Devices</span>
+                <span className={styles.statVal}>
+                  {registeredCount} / 2 Active
+                </span>
+                <span className={styles.statSubtext}>Layer 3 Hardware Binding</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Tabs Bar */}
+          <div className={styles.tabsContainer}>
             <button
               onClick={() => setActiveTab('PROFILE')}
-              className={`${styles.tabItem} ${activeTab === 'PROFILE' ? styles.tabItemActive : ''}`}
+              className={`${styles.tabBtn} ${activeTab === 'PROFILE' ? styles.tabBtnActive : ''}`}
             >
               <UserIcon size={16} />
-              <span>Profile &amp; Account</span>
+              <span>Profile &amp; Contact Info</span>
             </button>
             <button
               onClick={() => setActiveTab('SHIFT')}
-              className={`${styles.tabItem} ${activeTab === 'SHIFT' ? styles.tabItemActive : ''}`}
+              className={`${styles.tabBtn} ${activeTab === 'SHIFT' ? styles.tabBtnActive : ''}`}
             >
               <Clock size={16} />
-              <span>Shift Schedule</span>
+              <span>Shift &amp; Roster Schedule</span>
             </button>
             <button
               onClick={() => setActiveTab('DEVICE')}
-              className={`${styles.tabItem} ${activeTab === 'DEVICE' ? styles.tabItemActive : ''}`}
+              className={`${styles.tabBtn} ${activeTab === 'DEVICE' ? styles.tabBtnActive : ''}`}
             >
               <Smartphone size={16} />
-              <span>Layer 3 Security Devices ({allDevices.length})</span>
+              <span>Security Devices ({allDevices.length})</span>
             </button>
           </div>
 
-          {/* EDIT METADATA & DOCUMENT FORM */}
+          {/* EDIT PROFILE DRAWER / CARD */}
           {isEditing && (
-            <div className="glass-card" style={{ padding: '24px', marginBottom: '28px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff' }}>Edit Staff Information &amp; Documents</h3>
-                <button type="button" onClick={() => setIsEditing(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={18} /></button>
+            <div className={styles.cardSection} style={{ border: '1px solid rgba(99, 102, 241, 0.4)' }}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>
+                  <Edit2 size={18} color="#818cf8" />
+                  Edit Staff Profile &amp; Documents
+                </h3>
+                <button type="button" onClick={() => setIsEditing(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                  <X size={18} />
+                </button>
               </div>
 
               <form onSubmit={handleSaveMetadata} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
@@ -642,19 +824,19 @@ export default function StaffProfilePage() {
                   <input type="text" maxLength={4} value={idDocLast4} onChange={(e) => setIdDocLast4(e.target.value.replace(/\D/g, ''))} placeholder="e.g. 5482" className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
 
-                {/* Document Upload Field */}
+                {/* Attachment Upload Field */}
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Upload Staff Document (ID Proof / Contract / Certificate)</label>
-                  <div style={{ marginTop: '6px', border: '2px dashed rgba(99, 102, 241, 0.35)', borderRadius: '12px', padding: '16px', backgroundColor: 'rgba(99, 102, 241, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Upload Identity Document / Attachment (Optional)</label>
+                  <div style={{ marginTop: '6px', border: '2px dashed rgba(99, 102, 241, 0.35)', borderRadius: '14px', padding: '16px', backgroundColor: 'rgba(99, 102, 241, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
                         <FileText size={22} />
                       </div>
                       <div>
                         <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff' }}>
-                          {selectedDocFile ? selectedDocFile.name : 'Upload Staff Identity Document / Attachment'}
+                          {selectedDocFile ? selectedDocFile.name : 'Attach Identity Card / Contract File'}
                         </div>
-                        <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '11.5px', color: '#94a3b8' }}>
                           {selectedDocFile ? `${(selectedDocFile.size / 1024).toFixed(1)} KB • Ready to attach` : 'Supported formats: PDF, PNG, JPG (Max 10MB)'}
                         </div>
                       </div>
@@ -679,110 +861,186 @@ export default function StaffProfilePage() {
 
                 <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
                   <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary btn-sm">Cancel</button>
-                  <button type="submit" disabled={savingMetadata} className="btn btn-primary btn-sm">{savingMetadata ? 'Saving...' : 'Save Profile & Documents'}</button>
+                  <button type="submit" disabled={savingMetadata} className="btn btn-primary btn-sm">
+                    {savingMetadata ? 'Saving Changes...' : 'Save Profile & Documents'}
+                  </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* TAB 1: PROFILE & ACCOUNT */}
+          {/* TAB 1: PROFILE & CONTACT INFO */}
           {activeTab === 'PROFILE' && (
             <div className={styles.gridTwoCol}>
-              {/* Panel 1: Personal Info */}
-              <div className={styles.panelCard}>
-                <div className={styles.panelHeader}>
-                  <h3 className={styles.panelTitle}>
+              {/* Personal & Contact Information Card */}
+              <div className={styles.cardSection}>
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.cardTitle}>
                     <UserIcon size={18} color="#818cf8" />
-                    Personal &amp; Account Information
+                    Personal &amp; Contact Details
                   </h3>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13.5px' }}>
-                  <div><span style={{ color: 'var(--text-muted)' }}>Staff Name: </span><strong style={{ color: '#ffffff' }}>{staff.name}</strong></div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>Staff ID: </span><strong className={styles.techValue} style={{ color: '#818cf8', fontFamily: 'var(--font-mono)' }}>{staff.staffId}</strong></div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>Account Email: </span><strong className={styles.techValue} style={{ color: '#ffffff' }}>{staff.user.email}</strong></div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>Phone Number: </span><strong style={{ color: '#ffffff' }}>{staff.phone || 'None (Optional)'}</strong></div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>Residential Address: </span><strong style={{ color: '#ffffff' }}>{staff.address || 'Not specified'}</strong></div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>ID Document Type: </span><strong style={{ color: '#ffffff' }}>{idDocTypeLabels[staff.idDocType] || staff.idDocType}</strong></div>
-                  <div>
-                    <span style={{ color: 'var(--text-muted)' }}>ID Document Number: </span>
-                    <strong className={styles.techValue} style={{ color: '#ffffff' }}>{staff.idDocLast4 ? `Ending in ****${staff.idDocLast4}` : 'Not specified'}</strong>
+                <div className={styles.infoGrid}>
+                  <div className={styles.infoItem}>
+                    <span className={styles.infoLabel}>Full Name</span>
+                    <span className={styles.infoValue}>{staff.name}</span>
                   </div>
+
+                  <div className={styles.infoItem}>
+                    <span className={styles.infoLabel}>Staff Identifier</span>
+                    <span className={`${styles.infoValue} ${styles.techValue}`} style={{ color: '#818cf8' }}>
+                      {staff.staffId}
+                    </span>
+                  </div>
+
+                  <div className={styles.infoItem}>
+                    <span className={styles.infoLabel}>Account Email</span>
+                    <span className={`${styles.infoValue} ${styles.techValue}`}>{staff.user.email}</span>
+                  </div>
+
+                  <div className={styles.infoItem}>
+                    <span className={styles.infoLabel}>Phone Contact</span>
+                    {staff.phone ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <a href={`tel:${staff.phone}`} style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 700 }}>
+                          {staff.phone}
+                        </a>
+                      </div>
+                    ) : (
+                      <span className={styles.infoValue} style={{ color: '#64748b' }}>Not specified</span>
+                    )}
+                  </div>
+
+                  <div className={styles.infoItem} style={{ gridColumn: '1 / -1' }}>
+                    <span className={styles.infoLabel}>Residential Address</span>
+                    <span className={styles.infoValue}>{staff.address || 'Not specified'}</span>
+                  </div>
+                </div>
+
+                {/* Identity Document Subcard */}
+                <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#818cf8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FileText size={15} />
+                    <span>Government Identity Verification</span>
+                  </div>
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Document Type</span>
+                      <span className={styles.infoValue}>{idDocTypeLabels[staff.idDocType] || staff.idDocType}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Last 4 Digits</span>
+                      <span className={`${styles.infoValue} ${styles.techValue}`}>
+                        {staff.idDocLast4 ? `****${staff.idDocLast4}` : 'Not provided'}
+                      </span>
+                    </div>
+                  </div>
+
                   {selectedDocFile && (
-                    <div style={{ marginTop: '4px', padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#818cf8' }}>
-                      <FileText size={14} />
+                    <div style={{ marginTop: '12px', padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12.5px', color: '#818cf8' }}>
+                      <FileText size={16} />
                       <span>Document Attached: {selectedDocFile.name}</span>
                     </div>
                   )}
+                </div>
 
-                  {/* Joined Date at very bottom of card */}
-                  <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Calendar size={14} color="#818cf8" />
-                      <span>Joined Organization:</span>
-                    </div>
-                    <strong style={{ color: '#ffffff', fontWeight: 600 }}>
-                      {new Date(staff.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </strong>
+                {/* Joined Date Footer */}
+                <div style={{ marginTop: '20px', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Calendar size={14} color="#818cf8" />
+                    <span>Member Since:</span>
                   </div>
+                  <strong style={{ color: '#ffffff' }}>
+                    {new Date(staff.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </strong>
                 </div>
               </div>
 
-              {/* Panel 2: Branch Assignments */}
-              <div className={styles.panelCard}>
-                <div className={styles.panelHeader}>
-                  <h3 className={styles.panelTitle}>
+              {/* Assigned Workplace Branches Card */}
+              <div className={styles.cardSection}>
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.cardTitle}>
                     <Building size={18} color="#38bdf8" />
-                    Assigned Workplace Branches
+                    Workplace Branch Assignments
                   </h3>
-                  <button onClick={() => setBranchModalOpen(true)} className="btn btn-secondary btn-sm" style={{ padding: '4px 10px', fontSize: '12px' }}>Edit</button>
+                  <button onClick={() => setBranchModalOpen(true)} className="btn btn-secondary btn-sm" style={{ padding: '4px 12px', fontSize: '12px' }}>
+                    Manage Branches
+                  </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {staff.branchAssignments.length > 0 ? (
                     staff.branchAssignments.map((a) => (
-                      <div key={a.id} style={{ padding: '12px 14px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <MapPin size={16} color="#38bdf8" />
-                          <span style={{ fontWeight: 600, color: '#ffffff', fontSize: '13.5px' }}>{a.branch.name}</span>
+                      <div
+                        key={a.id}
+                        style={{
+                          padding: '14px 16px',
+                          borderRadius: '12px',
+                          backgroundColor: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justify-content: 'space-between',
+                          gap: '12px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(56, 189, 248, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+                            <MapPin size={18} />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '14px' }}>{a.branch.name}</div>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{a.branch.address}</div>
+                          </div>
                         </div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{a.branch.address}</span>
+                        <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(52, 211, 153, 0.12)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', textTransform: 'uppercase' }}>
+                          Geofenced
+                        </span>
                       </div>
                     ))
                   ) : (
-                    <div style={{ fontSize: '13px', color: 'var(--warning-text)' }}>No branch assigned to this staff member yet.</div>
+                    <div style={{ padding: '20px', borderRadius: '12px', backgroundColor: 'rgba(251, 191, 36, 0.05)', border: '1px solid rgba(251, 191, 36, 0.2)', fontSize: '13px', color: '#fbbf24', textAlign: 'center' }}>
+                      No workplace branch assigned yet. Click &quot;Manage Branches&quot; above to assign branches.
+                    </div>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 2: SHIFT SCHEDULE */}
+          {/* TAB 2: SHIFT & ROSTER SCHEDULE */}
           {activeTab === 'SHIFT' && (
-            <div className="glass-card" style={{ padding: '28px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                <Clock size={20} color="#c084fc" />
-                <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Shift Pattern Assignment</h3>
+            <div className={styles.cardSection}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>
+                  <Clock size={18} color="#c084fc" />
+                  Staff Shift Schedule Pattern
+                </h3>
               </div>
 
               {activeShiftAssignment ? (
-                <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.25)', marginBottom: '24px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#c084fc', textTransform: 'uppercase' }}>Active Assigned Shift</div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>{activeShiftAssignment.shiftPattern?.name || 'Shift Pattern'}</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Hours: {activeShiftAssignment.shiftPattern?.startTime} – {activeShiftAssignment.shiftPattern?.endTime} &bull; Effective from {new Date(activeShiftAssignment.effectiveFrom).toLocaleDateString()}
+                <div style={{ padding: '20px', borderRadius: '16px', backgroundColor: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.25)', marginBottom: '24px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Assigned Shift Pattern</div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
+                    {activeShiftAssignment.shiftPattern?.name || 'Assigned Shift'}
+                  </div>
+                  <div style={{ fontSize: '13.5px', color: '#e2e8f0', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span>Hours: <strong>{activeShiftAssignment.shiftPattern?.startTime} – {activeShiftAssignment.shiftPattern?.endTime}</strong></span>
+                    <span>&bull;</span>
+                    <span>Effective From: <strong>{new Date(activeShiftAssignment.effectiveFrom).toLocaleDateString()}</strong></span>
                   </div>
                 </div>
               ) : (
-                <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', marginBottom: '24px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  No active shift pattern assigned.
+                <div style={{ padding: '20px', borderRadius: '14px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '24px', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
+                  No active shift schedule assigned yet. Select a shift pattern below to assign work hours.
                 </div>
               )}
 
               {/* Assign Shift Form */}
               <form onSubmit={handleSaveShiftAssignment} className={styles.shiftAssignForm}>
                 <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Select Shift Pattern</label>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Select Shift Pattern *</label>
                   <select
                     value={selectedShiftPatternId}
                     onChange={(e) => setSelectedShiftPatternId(e.target.value)}
@@ -790,12 +1048,10 @@ export default function StaffProfilePage() {
                     style={{
                       width: '100%',
                       marginTop: '4px',
-                      height: '38px',
-                      fontSize: '12.5px',
+                      height: '42px',
+                      fontSize: '13px',
                       backgroundColor: '#0d121f',
                       color: '#ffffff',
-                      textOverflow: 'ellipsis',
-                      paddingRight: '28px',
                       boxSizing: 'border-box',
                     }}
                   >
@@ -809,90 +1065,104 @@ export default function StaffProfilePage() {
                     })}
                   </select>
                 </div>
-                <div style={{ flex: '1 1 140px', maxWidth: '100%', minWidth: 0, width: '100%' }}>
-                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Effective Date</label>
+
+                <div style={{ flex: '1 1 180px', maxWidth: '100%', minWidth: 0, width: '100%' }}>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Effective Date *</label>
                   <input
                     type="date"
                     value={shiftEffectiveFrom}
                     onChange={(e) => setShiftEffectiveFrom(e.target.value)}
                     className="form-input"
-                    style={{ width: '100%', maxWidth: '100%', marginTop: '4px', height: '38px', fontSize: '12.5px', boxSizing: 'border-box', padding: '6px 10px' }}
+                    style={{ width: '100%', marginTop: '4px', height: '42px', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
+
                 <div style={{ flex: '0 0 auto', width: '100%' }}>
-                  <button type="submit" disabled={savingShift} className="btn btn-primary btn-sm" style={{ height: '38px', padding: '0 18px', width: '100%', justifyContent: 'center', fontWeight: 700 }}>{savingShift ? 'Saving...' : 'Assign Shift'}</button>
+                  <button type="submit" disabled={savingShift} className="btn btn-primary" style={{ height: '42px', padding: '0 24px', fontWeight: 700, width: '100%', justifyContent: 'center' }}>
+                    {savingShift ? 'Saving Schedule...' : 'Assign Shift Pattern'}
+                  </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* TAB 3: LAYER 3 SECURITY DEVICE */}
+          {/* TAB 3: LAYER 3 SECURITY DEVICES */}
           {activeTab === 'DEVICE' && (
-            <div className="glass-card" style={{ padding: '28px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div className={styles.cardSection}>
+              <div className={styles.cardHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Smartphone size={20} color="#34d399" />
-                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Registered Security Device</h3>
+                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Layer 3 Authorized Security Devices</h3>
                 </div>
+                {allDevices.length > 0 && (
+                  <button
+                    onClick={() => setDeviceResetModalOpen(true)}
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <RefreshCw size={14} />
+                    <span>Reset All Devices</span>
+                  </button>
+                )}
               </div>
 
               {allDevices.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {allDevices.map((d: any) => {
                     const isRegistered = d.status === 'REGISTERED';
                     return (
                       <div key={d.id} className={styles.deviceCard}>
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                             <span
                               style={{
                                 fontSize: '10.5px',
                                 fontWeight: 800,
-                                padding: '2px 7px',
-                                borderRadius: '5px',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
                                 backgroundColor: 'rgba(56, 189, 248, 0.15)',
                                 color: '#38bdf8',
                                 border: '1px solid rgba(56, 189, 248, 0.3)',
                                 textTransform: 'uppercase',
                               }}
                             >
-                              Authorized Device
+                              Hardware Binding
                             </span>
-                            <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#ffffff' }}>
-                              {isRegistered ? d.label || 'Staff Primary Registered Device' : 'Device Slot (Awaiting Login)'}
+                            <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
+                              {isRegistered ? d.label || 'Staff Primary Registered Device' : 'Device Slot (Awaiting Registration)'}
                             </span>
                             <span
                               style={{
                                 fontSize: '11px',
                                 fontWeight: 800,
-                                padding: '2px 8px',
+                                padding: '2px 9px',
                                 borderRadius: '12px',
                                 backgroundColor: isRegistered ? 'rgba(52, 211, 153, 0.15)' : 'rgba(251, 191, 36, 0.15)',
                                 color: isRegistered ? '#34d399' : '#fbbf24',
                                 border: `1px solid ${isRegistered ? 'rgba(52, 211, 153, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
                               }}
                             >
-                              {isRegistered ? '✓ Active' : 'Awaiting Login'}
+                              {isRegistered ? '✓ Active & Bound' : 'Awaiting First Login'}
                             </span>
                           </div>
 
-                          <div className={styles.techValue} style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
+                          <div style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {isRegistered ? (
                               <>
-                                <div>Registered: {d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}{d.lastUsedAt && ` • Last Used: ${new Date(d.lastUsedAt).toLocaleString()}`}</div>
+                                <div>Registered: <strong>{d.registeredAt ? new Date(d.registeredAt).toLocaleString() : 'N/A'}</strong>{d.lastUsedAt && ` • Last Used: ${new Date(d.lastUsedAt).toLocaleString()}`}</div>
                                 {d.hardwareId && (
-                                  <div className={styles.techValue} style={{ marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
-                                    Hardware ID: {d.hardwareId}
+                                  <div className={styles.techValue} style={{ color: '#cbd5e1' }}>
+                                    Hardware ID: <code>{d.hardwareId}</code>
                                   </div>
                                 )}
                                 {d.deviceFingerprint && (
-                                  <div className={styles.techValue} style={{ marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
-                                    Fingerprint: {d.deviceFingerprint}
+                                  <div className={styles.techValue} style={{ color: '#818cf8' }}>
+                                    Fingerprint: <code>{d.deviceFingerprint}</code>
                                   </div>
                                 )}
                               </>
                             ) : (
-                              <>Pending device authorization on next staff login.</>
+                              <div>Pending hardware authorization on staff login.</div>
                             )}
                           </div>
                         </div>
@@ -901,7 +1171,7 @@ export default function StaffProfilePage() {
                           <button
                             onClick={() => setDeviceToRemove(d)}
                             className="btn btn-danger btn-sm"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                           >
                             <X size={14} />
                             <span>Unbind Device</span>
@@ -913,7 +1183,7 @@ export default function StaffProfilePage() {
                 </div>
               ) : (
                 <div style={{ padding: '24px', borderRadius: '14px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
-                  No registered device found for this staff member. When {staff.name} logs in on their phone or computer and approves device registration, their device will be registered here.
+                  No registered device found for this staff member. When {staff.name} logs in from their smartphone or browser, their device hardware signature will automatically bind here.
                 </div>
               )}
             </div>
@@ -922,7 +1192,6 @@ export default function StaffProfilePage() {
       </div>
 
       {/* CONFIRMATION MODALS */}
-      {/* 1. Device Reset Confirmation */}
       <ConfirmationModal
         isOpen={deviceResetModalOpen}
         onClose={() => setDeviceResetModalOpen(false)}
@@ -933,7 +1202,6 @@ export default function StaffProfilePage() {
         variant="warning"
       />
 
-      {/* 2. Individual Device Removal Confirmation */}
       <ConfirmationModal
         isOpen={!!deviceToRemove}
         onClose={() => setDeviceToRemove(null)}
@@ -944,8 +1212,6 @@ export default function StaffProfilePage() {
         variant="danger"
       />
 
-
-      {/* 4. Account Status Toggle Confirmation */}
       <ConfirmationModal
         isOpen={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
@@ -960,7 +1226,6 @@ export default function StaffProfilePage() {
         variant={isActive ? 'danger' : 'primary'}
       />
 
-      {/* 4b. Permanent Staff Account Deletion Confirmation */}
       <ConfirmationModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
@@ -971,13 +1236,13 @@ export default function StaffProfilePage() {
         variant="danger"
       />
 
-      {/* 5. Branch Assignment Modal */}
+      {/* Branch Assignment Modal */}
       {branchModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(3, 7, 18, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff' }}>Assign Workplace Branches</h3>
-              <button onClick={() => setBranchModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+              <button onClick={() => setBranchModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={18} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '280px', overflowY: 'auto', marginBottom: '20px' }}>
               {allOrgBranches.map((b) => {
@@ -989,14 +1254,14 @@ export default function StaffProfilePage() {
                       if (isSel) setSelectedBranchIds(selectedBranchIds.filter((id) => id !== b.id));
                       else setSelectedBranchIds([...selectedBranchIds, b.id]);
                     }}
-                    style={{ padding: '12px 14px', borderRadius: 'var(--radius-md)', backgroundColor: isSel ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)', border: `1px solid ${isSel ? 'rgba(99, 102, 241, 0.5)' : 'var(--border-subtle)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                    style={{ padding: '12px 14px', borderRadius: '10px', backgroundColor: isSel ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)', border: `1px solid ${isSel ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
                   >
-                    <div style={{ width: '18px', height: '18px', borderRadius: '4px', backgroundColor: isSel ? '#4f46e5' : 'transparent', border: `1px solid ${isSel ? '#4f46e5' : 'var(--border-medium)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                    <div style={{ width: '18px', height: '18px', borderRadius: '4px', backgroundColor: isSel ? '#4f46e5' : 'transparent', border: `1px solid ${isSel ? '#4f46e5' : 'rgba(255, 255, 255, 0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
                       {isSel && <Check size={12} />}
                     </div>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>{b.name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{b.address}</div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>{b.address}</div>
                     </div>
                   </div>
                 );
@@ -1004,7 +1269,9 @@ export default function StaffProfilePage() {
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button type="button" onClick={() => setBranchModalOpen(false)} className="btn btn-secondary btn-sm">Cancel</button>
-              <button type="button" onClick={handleSaveBranchAssignments} disabled={savingBranches} className="btn btn-primary btn-sm">{savingBranches ? 'Saving...' : 'Save Assignments'}</button>
+              <button type="button" onClick={handleSaveBranchAssignments} disabled={savingBranches} className="btn btn-primary btn-sm">
+                {savingBranches ? 'Saving...' : 'Save Assignments'}
+              </button>
             </div>
           </div>
         </div>

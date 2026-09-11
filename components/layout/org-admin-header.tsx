@@ -14,6 +14,7 @@ interface OrgAdminHeaderProps {
   panelTitle: string;
   panelSubtitle?: string;
   backHref?: string;
+  onBack?: () => void;
   hideMobileOrgBranding?: boolean;
   headerMenuOpen?: boolean;
   onToggleHeaderMenu?: () => void;
@@ -29,24 +30,46 @@ export function OrgAdminHeader({
   panelTitle,
   panelSubtitle,
   backHref,
+  onBack,
   hideMobileOrgBranding,
   headerMenuOpen = false,
   onToggleHeaderMenu,
   actions,
   children,
 }: OrgAdminHeaderProps) {
-  const shouldHideBranding = hideMobileOrgBranding ?? !!backHref;
+  const hasBack = !!onBack || !!backHref;
+  const shouldHideBranding = hideMobileOrgBranding ?? hasBack;
+
+  const renderBackBtn = () => {
+    if (onBack) {
+      return (
+        <button
+          type="button"
+          onClick={onBack}
+          className={styles.backBtn}
+          aria-label="Go Back"
+          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          <ArrowLeft size={16} />
+        </button>
+      );
+    }
+    if (backHref) {
+      return (
+        <Link href={backHref} className={styles.backBtn} aria-label="Go Back">
+          <ArrowLeft size={16} />
+        </Link>
+      );
+    }
+    return null;
+  };
 
   return (
     <header className={styles.headerBar}>
       {/* Desktop Header Left (Hidden on mobile) */}
       <div className={styles.desktopHeaderLeft}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {backHref && (
-            <Link href={backHref} className={styles.backBtn} aria-label="Go Back">
-              <ArrowLeft size={16} />
-            </Link>
-          )}
+          {renderBackBtn()}
           <div>
             <h1 className={styles.desktopTitle}>{panelTitle}</h1>
             {panelSubtitle && <p className={styles.desktopSubtitle}>{panelSubtitle}</p>}
@@ -56,11 +79,7 @@ export function OrgAdminHeader({
 
       {/* Mobile Header Left (Hidden on desktop) */}
       <div className={styles.mobileHeaderLeft}>
-        {backHref && (
-          <Link href={backHref} className={styles.backBtn} aria-label="Go Back">
-            <ArrowLeft size={16} />
-          </Link>
-        )}
+        {renderBackBtn()}
         {!shouldHideBranding && (
           <div className={styles.logoBox}>
             <OrgLogo logoUrl={logoUrl} name={organizationName || organizationCode} size={20} />
