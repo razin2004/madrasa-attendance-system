@@ -89,6 +89,22 @@ interface TodayAttendanceStatus {
     endTime: string | null;
     isOvernight?: boolean;
     shiftPatternName?: string;
+    activeShift?: {
+      id?: string;
+      name?: string;
+      startTime: string | null;
+      endTime: string | null;
+      isHoliday?: boolean;
+      isOvernight?: boolean;
+    } | null;
+    allShifts?: Array<{
+      id?: string;
+      name?: string;
+      startTime: string | null;
+      endTime: string | null;
+      isHoliday?: boolean;
+      isOvernight?: boolean;
+    }>;
   } | null;
   lastClockInTime: string | null;
   lastClockInIso?: string | null;
@@ -566,20 +582,26 @@ export default function StaffDashboardPage() {
 
   const isShiftEndedWithoutClockIn = (() => {
     if (!todayStatus || todayStatus.isClockedIn || todayStatus.hasPendingClockIn) return false;
-    if (!todayStatus.schedule || !todayStatus.schedule.endTime || !todayStatus.schedule.isScheduled) return false;
+    if (!todayStatus.schedule || !todayStatus.schedule.isScheduled) return false;
+
+    const currentShift = todayStatus.schedule.activeShift || todayStatus.schedule;
+    if (!currentShift || !currentShift.endTime) return false;
+
+    const shiftsToCheck = todayStatus.schedule.allShifts && todayStatus.schedule.allShifts.length > 0
+      ? todayStatus.schedule.allShifts
+      : [currentShift];
 
     const now = new Date();
-    const [endH, endM] = todayStatus.schedule.endTime.split(':').map((v: string) => parseInt(v, 10));
-    let shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+    const nowMins = now.getHours() * 60 + now.getMinutes();
 
-    if (todayStatus.schedule.isOvernight && todayStatus.schedule.startTime) {
-      const [startH] = todayStatus.schedule.startTime.split(':').map((v: string) => parseInt(v, 10));
-      if (startH > endH) {
-        shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, endH, endM, 0, 0);
-      }
-    }
+    const hasUpcomingOrActiveShift = shiftsToCheck.some((s: any) => {
+      if (!s.endTime) return false;
+      const [endH, endM] = s.endTime.split(':').map(Number);
+      const endMins = endH * 60 + endM;
+      return nowMins <= endMins || s.isOvernight;
+    });
 
-    return now > shiftEnd;
+    return !hasUpcomingOrActiveShift;
   })();
 
   const isCompleted = Boolean(todayStatus?.isDailyLimitReached && !isClockedIn);
@@ -696,12 +718,38 @@ export default function StaffDashboardPage() {
                 <span className={styles.shiftBadge}>
                   <Calendar size={14} color="#818cf8" />
                   <span>
-                    {todayStatus?.schedule?.shiftPatternName
+                    {todayStatus?.schedule?.activeShift?.name
+                      ? `Active Shift: ${todayStatus.schedule.activeShift.name} (${todayStatus.schedule.activeShift.startTime} – ${todayStatus.schedule.activeShift.endTime})`
+                      : todayStatus?.schedule?.shiftPatternName
                       ? `${todayStatus.schedule.shiftPatternName} (${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime})`
                       : 'Assigned Shift Schedule'}
                   </span>
                 </span>
               </div>
+
+              {todayStatus?.schedule?.allShifts && todayStatus.schedule.allShifts.length > 1 && (
+                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
+                  {todayStatus.schedule.allShifts.map((s: any, idx: number) => {
+                    const isActive = s.name === todayStatus.schedule?.activeShift?.name;
+                    return (
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '3px 9px',
+                          borderRadius: '12px',
+                          border: isActive ? '1px solid #818cf8' : '1px solid rgba(255,255,255,0.15)',
+                          backgroundColor: isActive ? 'rgba(129, 140, 248, 0.2)' : 'rgba(255,255,255,0.05)',
+                          color: isActive ? '#818cf8' : '#94a3b8',
+                        }}
+                      >
+                        {s.name}: {s.startTime} – {s.endTime} {isActive ? '★ Active' : ''}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className={styles.punchContainer}>

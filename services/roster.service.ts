@@ -27,6 +27,22 @@ export interface ScheduledDayResult {
   hasOverride: boolean;
   overrideId?: string;
   overrideReason?: string | null;
+  activeShift?: {
+    id?: string;
+    name?: string;
+    startTime: string | null;
+    endTime: string | null;
+    isHoliday?: boolean;
+    isOvernight?: boolean;
+  } | null;
+  allShifts?: Array<{
+    id?: string;
+    name?: string;
+    startTime: string | null;
+    endTime: string | null;
+    isHoliday?: boolean;
+    isOvernight?: boolean;
+  }>;
   shifts?: Array<{
     id?: string;
     name?: string;

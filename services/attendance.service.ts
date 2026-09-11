@@ -836,18 +836,93 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
   const hasPendingClockIn = Boolean(pendingClockInToday);
   let isClockedIn = lastVerified?.type === 'CLOCK_IN' || hasPendingClockIn;
 
-  // If clocked in via verified punch, but non-overnight shift end time has passed -> shift expired without clocking out (does NOT expire if pending clock in approval)
-  if (isClockedIn && !hasPendingClockIn && !daySchedule.isOvernight && daySchedule.endTime) {
-    const [endH, endM] = daySchedule.endTime.split(':').map((s) => parseInt(s, 10));
+  const shiftsList = (
+    daySchedule.shifts && daySchedule.shifts.length > 0
+      ? daySchedule.shifts.filter((s) => !s.isHoliday && s.startTime && s.endTime)
+      : daySchedule.startTime && daySchedule.endTime
+      ? [
+          {
+            id: daySchedule.shiftPatternId,
+            name: daySchedule.shiftPatternName,
+            startTime: daySchedule.startTime,
+            endTime: daySchedule.endTime,
+            isHoliday: false,
+            isOvernight: daySchedule.isOvernight,
+          },
+        ]
+      : []
+  ) as Array<{
+    id?: string;
+    name?: string;
+    startTime: string;
+    endTime: string;
+    isHoliday?: boolean;
+    isOvernight?: boolean;
+  }>;
+
+  let activeShift: {
+    id?: string;
+    name?: string;
+    startTime: string;
+    endTime: string;
+    isHoliday?: boolean;
+    isOvernight?: boolean;
+  } | null = shiftsList[0] || null;
+
+  if (shiftsList.length > 1) {
+    if (lastVerified?.type === 'CLOCK_IN') {
+      if (lastVerified.scheduledShiftName) {
+        const match = shiftsList.find((s) => s.name === lastVerified.scheduledShiftName);
+        if (match) activeShift = match;
+      } else {
+        const punchMins = lastVerified.timestamp.getHours() * 60 + lastVerified.timestamp.getMinutes();
+        let minDiff = Infinity;
+        for (const s of shiftsList) {
+          const [sh, sm] = s.startTime.split(':').map(Number);
+          const diff = Math.abs(punchMins - (sh * 60 + sm));
+          if (diff < minDiff) {
+            minDiff = diff;
+            activeShift = s;
+          }
+        }
+      }
+    } else {
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      let bestShift = shiftsList[0];
+      let foundUpcoming = false;
+
+      for (const s of shiftsList) {
+        const [eh, em] = s.endTime.split(':').map(Number);
+        const endMins = eh * 60 + em;
+        if (nowMins <= endMins) {
+          bestShift = s;
+          foundUpcoming = true;
+          break;
+        }
+      }
+      if (!foundUpcoming && completedCyclesCount < shiftsList.length) {
+        bestShift = shiftsList[completedCyclesCount] || shiftsList[shiftsList.length - 1];
+      }
+      activeShift = bestShift;
+    }
+  }
+
+  // If clocked in via verified punch, but non-overnight active shift end time has passed -> shift expired without clocking out
+  const evalShiftEnd = activeShift?.endTime || daySchedule.endTime;
+  const evalIsOvernight = activeShift?.isOvernight ?? daySchedule.isOvernight;
+  if (isClockedIn && !hasPendingClockIn && !evalIsOvernight && evalShiftEnd) {
+    const [endH, endM] = evalShiftEnd.split(':').map((s) => parseInt(s, 10));
     const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
     if (now > shiftEnd) {
       isClockedIn = false;
     }
   }
+
   const firstClockIn = verifiedRecords.filter((r) => r.type === 'CLOCK_IN')[0];
   const lastClockIn = verifiedRecords.filter((r) => r.type === 'CLOCK_IN').pop();
   const lastClockOut = isClockedIn ? null : verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').pop();
-  const isDailyLimitReached = completedCyclesCount >= MAX_DAILY_ATTENDANCE_CYCLES;
+  const maxAllowedCycles = Math.max(MAX_DAILY_ATTENDANCE_CYCLES, shiftsList.length);
+  const isDailyLimitReached = completedCyclesCount >= maxAllowedCycles;
 
   const rawClockInIso = firstClockIn?.timestamp
     ? firstClockIn.timestamp.toISOString()
@@ -867,10 +942,19 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
     isClockedIn,
     hasPendingClockIn,
     completedCycles: completedCyclesCount,
-    maxCycles: MAX_DAILY_ATTENDANCE_CYCLES,
+    maxCycles: maxAllowedCycles,
     isDailyLimitReached,
     hasSchedule: Boolean(daySchedule.isScheduled && !daySchedule.isHoliday),
-    schedule: daySchedule,
+    schedule: {
+      ...daySchedule,
+      activeShift: activeShift
+        ? {
+            ...activeShift,
+            shiftPatternName: activeShift.name || daySchedule.shiftPatternName,
+          }
+        : null,
+      allShifts: shiftsList,
+    },
     lastClockInTime: displayClockInTime,
     lastClockInIso: rawClockInIso,
     attendanceStartTime: firstClockIn?.attendanceStartTime || firstClockIn?.timestamp || null,
