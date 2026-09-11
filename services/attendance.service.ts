@@ -850,8 +850,18 @@ export async function getStaffTodayAttendanceStatus(
     orderBy: { createdAt: 'desc' },
   });
 
+  const pendingClockOutToday = await prisma.attendanceCorrectionRequest.findFirst({
+    where: {
+      staffProfileId,
+      status: 'PENDING',
+      requestedClockOut: { not: null },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
   const hasPendingClockIn = Boolean(pendingClockInToday);
-  let isClockedIn = lastVerified?.type === 'CLOCK_IN' || hasPendingClockIn;
+  const hasPendingClockOut = Boolean(pendingClockOutToday);
+  let isClockedIn = (lastVerified?.type === 'CLOCK_IN' || hasPendingClockIn) && !hasPendingClockOut;
 
   const shiftsList = (
     daySchedule.shifts && daySchedule.shifts.length > 0
@@ -945,7 +955,9 @@ export async function getStaffTodayAttendanceStatus(
     ? firstClockIn.timestamp.toISOString()
     : (hasPendingClockIn && pendingClockInToday?.requestedClockIn ? pendingClockInToday.requestedClockIn.toISOString() : null);
 
-  const rawClockOutIso = lastClockOut?.timestamp ? lastClockOut.timestamp.toISOString() : null;
+  const rawClockOutIso = lastClockOut?.timestamp
+    ? lastClockOut.timestamp.toISOString()
+    : (hasPendingClockOut && pendingClockOutToday?.requestedClockOut ? pendingClockOutToday.requestedClockOut.toISOString() : null);
 
   let displayClockInTime: string | null = firstClockIn?.timestamp
     ? formatTimeInTimezone(firstClockIn.timestamp)
@@ -955,9 +967,18 @@ export async function getStaffTodayAttendanceStatus(
     displayClockInTime = formatTimeInTimezone(pendingClockInToday.requestedClockIn) + ' (Pending)';
   }
 
+  let displayClockOutTime: string | null = lastClockOut?.timestamp
+    ? formatTimeInTimezone(lastClockOut.timestamp)
+    : null;
+
+  if (!displayClockOutTime && hasPendingClockOut && pendingClockOutToday?.requestedClockOut) {
+    displayClockOutTime = formatTimeInTimezone(pendingClockOutToday.requestedClockOut) + ' (Pending)';
+  }
+
   return {
     isClockedIn,
     hasPendingClockIn,
+    hasPendingClockOut,
     completedCycles: completedCyclesCount,
     maxCycles: maxAllowedCycles,
     isDailyLimitReached,
@@ -976,7 +997,7 @@ export async function getStaffTodayAttendanceStatus(
     lastClockInIso: rawClockInIso,
     attendanceStartTime: firstClockIn?.attendanceStartTime || firstClockIn?.timestamp || null,
     lateMinutes: firstClockIn?.lateMinutes || 0,
-    lastClockOutTime: lastClockOut?.timestamp ? formatTimeInTimezone(lastClockOut.timestamp) : null,
+    lastClockOutTime: displayClockOutTime,
     lastClockOutIso: rawClockOutIso,
     earlyDepartureMinutes: lastClockOut?.earlyDepartureMinutes || 0,
     currentBranch: lastVerified?.branch || null,

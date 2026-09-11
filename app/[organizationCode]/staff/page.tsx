@@ -76,6 +76,7 @@ interface PrecheckData {
 interface TodayAttendanceStatus {
   isClockedIn: boolean;
   hasPendingClockIn?: boolean;
+  hasPendingClockOut?: boolean;
   completedCycles?: number;
   maxCycles?: number;
   isDailyLimitReached?: boolean;
@@ -803,14 +804,27 @@ export default function StaffDashboardPage() {
                     </div>
                   )}
 
+                  {!isClockedIn && todayStatus?.hasPendingClockOut && (
+                    <div className={styles.clockedInInfo}>
+                      <span style={{ color: '#fbbf24', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>⚠️ Requested Clock Out:</span>
+                        <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                          {formatPunchTimeLocal(todayStatus?.lastClockOutIso, todayStatus?.lastClockOutTime)} (Pending Approval)
+                        </strong>
+                      </span>
+                    </div>
+                  )}
+
                   {/* Punch Button */}
                   <button
                     onClick={handleClockButtonClick}
-                    disabled={!hasSchedule || isCompleted || isShiftEndedWithoutClockIn || clocking || checking}
+                    disabled={!hasSchedule || isCompleted || isShiftEndedWithoutClockIn || Boolean(todayStatus?.hasPendingClockOut) || clocking || checking}
                     className={`${styles.clockButton} ${styles.punchButtonCircle} ${
                       isClockedIn
                         ? styles.clockButtonOut
                         : isShiftEndedWithoutClockIn
+                        ? styles.clockButtonDisabled
+                        : todayStatus?.hasPendingClockOut
                         ? styles.clockButtonDisabled
                         : styles.clockButtonIn
                     }`}
@@ -827,6 +841,11 @@ export default function StaffDashboardPage() {
                         <XCircle size={24} color="#f87171" />
                         <span style={{ fontSize: '14px', fontWeight: 800, color: '#f87171' }}>Shift Ended</span>
                       </>
+                    ) : todayStatus?.hasPendingClockOut ? (
+                      <>
+                        <CheckCircle2 size={24} color="#fbbf24" />
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#fbbf24' }}>Clock Out Pending</span>
+                      </>
                     ) : isClockedIn ? (
                       <>
                         <Clock size={24} />
@@ -840,7 +859,13 @@ export default function StaffDashboardPage() {
                     )}
                   </button>
 
-                  {isShiftEndedWithoutClockIn && (
+                  {todayStatus?.hasPendingClockOut && (
+                    <div style={{ fontSize: '12px', color: '#fbbf24', marginTop: '10px', fontWeight: 600 }}>
+                      ⚠️ Your clock-out request has been submitted to the Admin panel for approval.
+                    </div>
+                  )}
+
+                  {isShiftEndedWithoutClockIn && !todayStatus?.hasPendingClockOut && (
                     <div style={{ fontSize: '12px', color: '#fb7185', marginTop: '10px', fontWeight: 600 }}>
                       ⚠️ Shift end time has passed. Clock-in is closed for today.
                     </div>
