@@ -334,9 +334,14 @@ export function calculateStaffDaySchedule(
 
   // 2. Find ALL active shift assignments for this target date
   const effectiveAssignments = assignments.filter((a) => {
-    const start = new Date(a.effectiveFrom).setHours(0, 0, 0, 0);
-    const end = a.effectiveTo ? new Date(a.effectiveTo).setHours(23, 59, 59, 999) : Infinity;
-    return targetTime >= start && targetTime <= end;
+    if (a.shiftPattern && (a.shiftPattern as any).isActive === false) return false;
+    const startIso = formatDateToIsoDay(new Date(a.effectiveFrom));
+    const endIso = a.effectiveTo ? formatDateToIsoDay(new Date(a.effectiveTo)) : null;
+
+    const startsOk = dateIso >= startIso;
+    const endsOk = !endIso || dateIso <= endIso;
+
+    return startsOk && endsOk;
   });
 
   if (effectiveAssignments.length === 0 && !override) {

@@ -548,7 +548,8 @@ export default function StaffDashboardPage() {
       setClocking(true);
       startClockFlow('CLOCK_IN');
     } else {
-      const schedEndStr = todayStatus.schedule?.endTime;
+      const activeShiftObj = todayStatus.schedule?.activeShift || todayStatus.schedule;
+      const schedEndStr = activeShiftObj?.endTime;
       if (schedEndStr) {
         const now = new Date();
         const [hStr, mStr] = schedEndStr.split(':');
@@ -570,9 +571,10 @@ export default function StaffDashboardPage() {
   const hasSchedule = Boolean(todayStatus?.hasSchedule);
   let isClockedIn = Boolean(todayStatus?.isClockedIn || todayStatus?.hasPendingClockIn);
 
-  if (isClockedIn && !todayStatus?.hasPendingClockIn && todayStatus?.schedule?.endTime && !todayStatus?.schedule?.isOvernight) {
+  const activeShiftObj = todayStatus?.schedule?.activeShift || todayStatus?.schedule;
+  if (isClockedIn && !todayStatus?.hasPendingClockIn && activeShiftObj?.endTime && !activeShiftObj?.isOvernight) {
     const now = new Date();
-    const [hStr, mStr] = todayStatus.schedule.endTime.split(':');
+    const [hStr, mStr] = activeShiftObj.endTime.split(':');
     const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
 
     if (now > shiftEnd) {
