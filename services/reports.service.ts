@@ -403,20 +403,23 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
   const dayOfWeek = weekdaysMap[targetDateObj.getUTCDay()];
 
   for (const profile of filteredProfiles) {
-    // 1. Calculate roster schedule for date
-    const schedule = calculateStaffDaySchedule(
-      targetDateObj,
-      profile.shiftAssignments,
-      profile.shiftOverrides
-    );
-
-    // 2. Extract attendance records for this profile
     const staffRecords = attendanceRecords.filter((r) => r.staffProfileId === profile.id);
     const clockInRecord = staffRecords.filter((r) => r.type === 'CLOCK_IN')[0];
     const lastStaffPunch = staffRecords[staffRecords.length - 1];
     const clockOutRecord = lastStaffPunch?.type === 'CLOCK_OUT' ? lastStaffPunch : null;
-    const pendingReq = pendingRequests.find((cr) => cr.staffProfileId === profile.id);
 
+    const recordedBranch = clockInRecord?.branch || clockOutRecord?.branch || staffRecords.find((r) => r.branch)?.branch;
+    const branchTimezone = recordedBranch?.timezone || profile.branchAssignments[0]?.branch.timezone || 'Asia/Kolkata';
+
+    // 1. Calculate roster schedule for date using dateStr & branchTimezone
+    const schedule = calculateStaffDaySchedule(
+      dateStr,
+      profile.shiftAssignments,
+      profile.shiftOverrides,
+      branchTimezone
+    );
+
+    const pendingReq = pendingRequests.find((cr) => cr.staffProfileId === profile.id);
     const hasPendingIn = Boolean(pendingReq && (pendingReq.type === 'MISSING_CLOCK_IN' || pendingReq.requestedClockIn) && !clockInRecord);
     const hasPendingOut = Boolean(pendingReq && (pendingReq.type === 'MISSING_CLOCK_OUT' || pendingReq.requestedClockOut) && !clockOutRecord);
 
@@ -427,7 +430,6 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     let branchId = params.branchId || null;
     let branchName = 'Unassigned';
 
-    const recordedBranch = clockInRecord?.branch || clockOutRecord?.branch;
     if (recordedBranch) {
       branchId = recordedBranch.id;
       branchName = recordedBranch.name;
@@ -550,12 +552,6 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     } else if (status === 'ABSENT') metrics.absentCount++;
     else if (status === 'NOT YET CLOCKED IN') metrics.notYetClockedInCount++;
     else if (status === 'IN PROGRESS') metrics.inProgressCount++;
-
-    if (source === 'NORMAL') metrics.sourceMetrics.normalCount++;
-    else if (source === 'MANUAL') metrics.sourceMetrics.manualCount++;
-    else if (source === 'ADJUSTED') metrics.sourceMetrics.adjustedCount++;
-
-    const branchTimezone = recordedBranch?.timezone || profile.branchAssignments[0]?.branch.timezone || 'UTC';
 
     const metricsCalc = calculateAttendanceMetricsForPunches({
       records: staffRecords,
@@ -755,16 +751,18 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
       now.getUTCMonth() === targetDateObj.getUTCMonth() &&
       now.getUTCDate() === targetDateObj.getUTCDate();
 
-    // 1. Roster schedule for day
-    const schedule = calculateStaffDaySchedule(
-      targetDateObj,
-      staffFull.shiftAssignments,
-      staffFull.shiftOverrides
-    );
-
-    // 2. Attendance records for day
     const dayRecords = monthAttendanceRecords.filter(
       (r) => r.timestamp >= dayStart && r.timestamp <= dayEnd
+    );
+    const recordedBranch = dayRecords.find((r) => r.branch)?.branch;
+    const branchTimezone = recordedBranch?.timezone || staffFull.branchAssignments[0]?.branch.timezone || 'Asia/Kolkata';
+
+    // 1. Roster schedule for day using dayStr & branchTimezone
+    const schedule = calculateStaffDaySchedule(
+      dayStr,
+      staffFull.shiftAssignments,
+      staffFull.shiftOverrides,
+      branchTimezone
     );
     const clockInRecord = dayRecords.filter((r) => r.type === 'CLOCK_IN')[0];
     const lastDayPunch = dayRecords[dayRecords.length - 1];
@@ -778,7 +776,6 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
     // 4. Branch
     let rowBranchId = branchId || null;
     let rowBranchName = 'Unassigned';
-    const recordedBranch = clockInRecord?.branch || clockOutRecord?.branch;
     if (recordedBranch) {
       rowBranchId = recordedBranch.id;
       rowBranchName = recordedBranch.name;

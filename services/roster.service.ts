@@ -294,7 +294,7 @@ export async function checkShiftAssignmentConflict(
  * Calculate scheduled shift for a specific staff member on a specific date (Section 15, 17)
  */
 export function calculateStaffDaySchedule(
-  date: Date,
+  date: Date | string,
   assignments: Array<{
     shiftPatternId: string;
     effectiveFrom: Date;
@@ -320,11 +320,11 @@ export function calculateStaffDaySchedule(
     endTime: string | null;
     isOvernight: boolean;
     reason: string | null;
-  }>
+  }>,
+  timezone: string = 'Asia/Kolkata'
 ): ScheduledDayResult {
-  const dateIso = formatDateToIsoDay(date);
-  const targetTime = date.getTime();
-  const weekday = getWeekdayFromDate(date);
+  const dateIso = formatDateToIsoDay(date, timezone);
+  const weekday = getWeekdayFromDate(date, timezone);
 
   // 1. Check for staff-specific day override first (Section 17)
   const override = overrides.find((o) => {

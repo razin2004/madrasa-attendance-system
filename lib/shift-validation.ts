@@ -55,38 +55,58 @@ export function isOvernightShift(startTime: string, endTime: string): boolean {
 }
 
 /**
- * Convert JavaScript Date.getDay() (0=Sun, 1=Mon, ..., 6=Sat) to Weekday enum
+ * Convert JavaScript Date or ISO string to Weekday enum in target timezone
  */
-export function getWeekdayFromDate(date: Date): Weekday {
-  const day = date.getDay(); // 0 is Sunday, 1 is Monday...
-  switch (day) {
-    case 0:
-      return 'SUNDAY';
-    case 1:
-      return 'MONDAY';
-    case 2:
-      return 'TUESDAY';
-    case 3:
-      return 'WEDNESDAY';
-    case 4:
-      return 'THURSDAY';
-    case 5:
-      return 'FRIDAY';
-    case 6:
-      return 'SATURDAY';
-    default:
-      return 'MONDAY';
+export function getWeekdayFromDate(date: Date | string, timezone: string = 'Asia/Kolkata'): Weekday {
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    const [y, m, d] = date.trim().split('-').map(Number);
+    const utcDate = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+    const dayStr = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(utcDate);
+    const daysMap: Record<string, Weekday> = {
+      Sun: 'SUNDAY',
+      Mon: 'MONDAY',
+      Tue: 'TUESDAY',
+      Wed: 'WEDNESDAY',
+      Thu: 'THURSDAY',
+      Fri: 'FRIDAY',
+      Sat: 'SATURDAY',
+    };
+    return daysMap[dayStr] || 'MONDAY';
   }
+
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const dayStr = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: timezone }).format(d);
+  const daysMap: Record<string, Weekday> = {
+    Sun: 'SUNDAY',
+    Mon: 'MONDAY',
+    Tue: 'TUESDAY',
+    Wed: 'WEDNESDAY',
+    Thu: 'THURSDAY',
+    Fri: 'FRIDAY',
+    Sat: 'SATURDAY',
+  };
+  return daysMap[dayStr] || 'MONDAY';
 }
 
 /**
- * Format a Date to YYYY-MM-DD string in UTC/standard format
+ * Format a Date to YYYY-MM-DD string in target timezone
  */
-export function formatDateToIsoDay(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+export function formatDateToIsoDay(date: Date | string, timezone: string = 'Asia/Kolkata'): string {
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    return date.trim();
+  }
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: timezone,
+  }).formatToParts(d);
+
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
 }
 
 /**
