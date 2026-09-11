@@ -27,6 +27,14 @@ export interface ScheduledDayResult {
   hasOverride: boolean;
   overrideId?: string;
   overrideReason?: string | null;
+  shifts?: Array<{
+    id?: string;
+    name?: string;
+    startTime: string | null;
+    endTime: string | null;
+    isHoliday: boolean;
+    isOvernight?: boolean;
+  }>;
 }
 
 export interface StaffRosterRow {
@@ -50,14 +58,97 @@ export interface WeeklyRosterResult {
   };
 }
 
+export function parseHHMMToMinutes(timeStr: string | null | undefined): number | null {
+  if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) return null;
+  const [h, m] = timeStr.split(':').map((v) => parseInt(v, 10));
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+export interface DayTimeInterval {
+  weekday: Weekday;
+  startMin: number;
+  endMin: number;
+  shiftPatternName: string;
+  shiftPatternId: string;
+}
+
+export function getPatternTimeIntervals(pattern: {
+  id: string;
+  name: string;
+  weeklyDays: Array<{
+    weekday: Weekday;
+    isHoliday: boolean;
+    startTime: string | null;
+    endTime: string | null;
+    isOvernight: boolean;
+  }>;
+}): DayTimeInterval[] {
+  const WEEKDAYS_ORDER: Weekday[] = [
+    'MONDAY',
+    'TUESDAY',
+    'WEDNESDAY',
+    'THURSDAY',
+    'FRIDAY',
+    'SATURDAY',
+    'SUNDAY',
+  ];
+
+  const intervals: DayTimeInterval[] = [];
+
+  for (let i = 0; i < WEEKDAYS_ORDER.length; i++) {
+    const weekday = WEEKDAYS_ORDER[i];
+    const nextWeekday = WEEKDAYS_ORDER[(i + 1) % WEEKDAYS_ORDER.length];
+
+    const dayConfig = pattern.weeklyDays.find((d) => d.weekday === weekday);
+    if (!dayConfig || dayConfig.isHoliday) continue;
+
+    const startMin = parseHHMMToMinutes(dayConfig.startTime);
+    const endMin = parseHHMMToMinutes(dayConfig.endTime);
+
+    if (startMin === null || endMin === null) continue;
+
+    if (dayConfig.isOvernight || endMin <= startMin) {
+      intervals.push({
+        weekday,
+        startMin,
+        endMin: 1440,
+        shiftPatternName: pattern.name,
+        shiftPatternId: pattern.id,
+      });
+
+      if (endMin > 0) {
+        intervals.push({
+          weekday: nextWeekday,
+          startMin: 0,
+          endMin,
+          shiftPatternName: pattern.name,
+          shiftPatternId: pattern.id,
+        });
+      }
+    } else {
+      intervals.push({
+        weekday,
+        startMin,
+        endMin,
+        shiftPatternName: pattern.name,
+        shiftPatternId: pattern.id,
+      });
+    }
+  }
+
+  return intervals;
+}
+
 /**
- * Check if a proposed shift assignment conflicts with existing assignments for a staff member (Section 14)
+ * Check if a proposed shift assignment conflicts in working hours with existing assignments for a staff member
  */
 export async function checkShiftAssignmentConflict(
   staffProfileId: string,
   effectiveFrom: Date,
   effectiveTo: Date | null,
-  excludeAssignmentId?: string
+  excludeAssignmentId?: string,
+  proposedShiftPatternId?: string
 ): Promise<ShiftConflictResult> {
   const existingAssignments = await prisma.shiftAssignment.findMany({
     where: {
@@ -66,8 +157,8 @@ export async function checkShiftAssignmentConflict(
     },
     include: {
       shiftPattern: {
-        select: {
-          name: true,
+        include: {
+          weeklyDays: true,
         },
       },
     },
@@ -76,26 +167,107 @@ export async function checkShiftAssignmentConflict(
   const newStart = new Date(effectiveFrom).getTime();
   const newEnd = effectiveTo ? new Date(effectiveTo).getTime() : Infinity;
 
-  for (const existing of existingAssignments) {
+  const overlappingDateAssignments = existingAssignments.filter((existing) => {
     const existingStart = new Date(existing.effectiveFrom).getTime();
     const existingEnd = existing.effectiveTo ? new Date(existing.effectiveTo).getTime() : Infinity;
+    return existingStart <= newEnd && existingEnd >= newStart;
+  });
 
-    // Overlap condition: startA <= endB && endA >= startB
-    const overlaps = existingStart <= newEnd && existingEnd >= newStart;
+  if (overlappingDateAssignments.length === 0) {
+    return { hasConflict: false };
+  }
 
-    if (overlaps) {
-      const fromStr = existing.effectiveFrom.toISOString().slice(0, 10);
-      const toStr = existing.effectiveTo ? existing.effectiveTo.toISOString().slice(0, 10) : 'indefinite';
-      return {
-        hasConflict: true,
-        message: `Shift assignment conflicts with an existing assignment for "${existing.shiftPattern.name}" (${fromStr} to ${toStr}).`,
-        conflictingAssignment: {
-          id: existing.id,
-          shiftPatternName: existing.shiftPattern.name,
-          effectiveFrom: existing.effectiveFrom,
-          effectiveTo: existing.effectiveTo,
-        },
-      };
+  if (proposedShiftPatternId) {
+    const proposedPattern = await prisma.shiftPattern.findUnique({
+      where: { id: proposedShiftPatternId },
+      include: { weeklyDays: true },
+    });
+
+    if (!proposedPattern) {
+      return { hasConflict: true, message: 'Proposed shift pattern not found.' };
+    }
+
+    const proposedIntervals = getPatternTimeIntervals(proposedPattern);
+
+    for (const existing of overlappingDateAssignments) {
+      if (existing.shiftPatternId === proposedShiftPatternId) {
+        return {
+          hasConflict: true,
+          message: `Shift pattern "${proposedPattern.name}" is already assigned to this staff member.`,
+          conflictingAssignment: {
+            id: existing.id,
+            shiftPatternName: existing.shiftPattern.name,
+            effectiveFrom: existing.effectiveFrom,
+            effectiveTo: existing.effectiveTo,
+          },
+        };
+      }
+
+      const existingIntervals = getPatternTimeIntervals(existing.shiftPattern);
+
+      for (const pInt of proposedIntervals) {
+        for (const eInt of existingIntervals) {
+          if (pInt.weekday === eInt.weekday) {
+            const timeOverlaps = pInt.startMin < eInt.endMin && pInt.endMin > eInt.startMin;
+            if (timeOverlaps) {
+              const formatTimeFromMin = (m: number) => {
+                const h = Math.floor(m / 60) % 24;
+                const min = m % 60;
+                return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+              };
+
+              const propTimeStr = `${formatTimeFromMin(pInt.startMin)}–${formatTimeFromMin(pInt.endMin)}`;
+              const existTimeStr = `${formatTimeFromMin(eInt.startMin)}–${formatTimeFromMin(eInt.endMin)}`;
+
+              return {
+                hasConflict: true,
+                message: `Time conflict on ${pInt.weekday}: Proposed shift "${proposedPattern.name}" (${propTimeStr}) overlaps with assigned shift "${existing.shiftPattern.name}" (${existTimeStr}).`,
+                conflictingAssignment: {
+                  id: existing.id,
+                  shiftPatternName: existing.shiftPattern.name,
+                  effectiveFrom: existing.effectiveFrom,
+                  effectiveTo: existing.effectiveTo,
+                },
+              };
+            }
+          }
+        }
+      }
+    }
+  } else {
+    const targetAssignment = excludeAssignmentId
+      ? await prisma.shiftAssignment.findUnique({
+          where: { id: excludeAssignmentId },
+          include: { shiftPattern: { include: { weeklyDays: true } } },
+        })
+      : null;
+
+    if (targetAssignment) {
+      const targetIntervals = getPatternTimeIntervals(targetAssignment.shiftPattern);
+      for (const existing of overlappingDateAssignments) {
+        if (existing.id === targetAssignment.id) continue;
+        const existingIntervals = getPatternTimeIntervals(existing.shiftPattern);
+
+        for (const tInt of targetIntervals) {
+          for (const eInt of existingIntervals) {
+            if (tInt.weekday === eInt.weekday) {
+              const timeOverlaps = tInt.startMin < eInt.endMin && tInt.endMin > tInt.startMin;
+              if (timeOverlaps) {
+                return {
+                  hasConflict: true,
+                  message: `Time conflict on ${tInt.weekday}: Shift "${targetAssignment.shiftPattern.name}" overlaps with assigned shift "${existing.shiftPattern.name}".`,
+                  conflictingAssignment: {
+                    id: existing.id,
+                    shiftPatternName: existing.shiftPattern.name,
+                    effectiveFrom: existing.effectiveFrom,
+                    effectiveTo: existing.effectiveTo,
+                  },
+                };
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -144,14 +316,14 @@ export function calculateStaffDaySchedule(
     return overrideIso === dateIso;
   });
 
-  // 2. Find active shift assignment for this target date (Historical Preservation - Section 11, 15)
-  const effectiveAssignment = assignments.find((a) => {
+  // 2. Find ALL active shift assignments for this target date
+  const effectiveAssignments = assignments.filter((a) => {
     const start = new Date(a.effectiveFrom).setHours(0, 0, 0, 0);
     const end = a.effectiveTo ? new Date(a.effectiveTo).setHours(23, 59, 59, 999) : Infinity;
     return targetTime >= start && targetTime <= end;
   });
 
-  if (!effectiveAssignment && !override) {
+  if (effectiveAssignments.length === 0 && !override) {
     return {
       date: dateIso,
       weekday,
@@ -161,28 +333,11 @@ export function calculateStaffDaySchedule(
       endTime: null,
       isOvernight: false,
       hasOverride: false,
+      shifts: [],
     };
   }
 
-  // Base schedule from weekly pattern
-  let baseHoliday = false;
-  let baseStart: string | null = null;
-  let baseEnd: string | null = null;
-  let baseOvernight = false;
-
-  if (effectiveAssignment) {
-    const dayConfig = effectiveAssignment.shiftPattern.weeklyDays.find(
-      (d) => d.weekday === weekday
-    );
-    if (dayConfig) {
-      baseHoliday = dayConfig.isHoliday;
-      baseStart = dayConfig.startTime;
-      baseEnd = dayConfig.endTime;
-      baseOvernight = dayConfig.isOvernight;
-    }
-  }
-
-  // Apply override if present (override supersedes pattern without modifying base pattern)
+  // Apply override if present (override supersedes patterns)
   if (override) {
     return {
       date: dateIso,
@@ -192,27 +347,93 @@ export function calculateStaffDaySchedule(
       startTime: override.isHoliday ? null : override.startTime,
       endTime: override.isHoliday ? null : override.endTime,
       isOvernight: override.isOvernight,
-      shiftPatternId: effectiveAssignment?.shiftPattern.id,
-      shiftPatternName: effectiveAssignment?.shiftPattern.name,
-      minimumStaffingThreshold: effectiveAssignment?.shiftPattern.minimumStaffingThreshold,
+      shiftPatternId: effectiveAssignments[0]?.shiftPattern.id,
+      shiftPatternName: effectiveAssignments[0]?.shiftPattern.name,
+      minimumStaffingThreshold: effectiveAssignments[0]?.shiftPattern.minimumStaffingThreshold,
       hasOverride: true,
       overrideId: override.id,
       overrideReason: override.reason,
+      shifts: override.isHoliday
+        ? []
+        : [
+            {
+              id: effectiveAssignments[0]?.shiftPattern.id,
+              name: override.reason || 'Override',
+              startTime: override.startTime,
+              endTime: override.endTime,
+              isHoliday: override.isHoliday,
+              isOvernight: override.isOvernight,
+            },
+          ],
     };
   }
+
+  // Collect active day configs for all effective assignments
+  const activeShifts: Array<{
+    id?: string;
+    name?: string;
+    startTime: string | null;
+    endTime: string | null;
+    isHoliday: boolean;
+    isOvernight: boolean;
+  }> = [];
+
+  for (const assign of effectiveAssignments) {
+    const dayConfig = assign.shiftPattern.weeklyDays.find((d) => d.weekday === weekday);
+    if (dayConfig) {
+      activeShifts.push({
+        id: assign.shiftPattern.id,
+        name: assign.shiftPattern.name,
+        startTime: dayConfig.startTime,
+        endTime: dayConfig.endTime,
+        isHoliday: dayConfig.isHoliday,
+        isOvernight: dayConfig.isOvernight,
+      });
+    }
+  }
+
+  const workShifts = activeShifts.filter((s) => !s.isHoliday && s.startTime && s.endTime);
+  const allHolidays = activeShifts.length > 0 && activeShifts.every((s) => s.isHoliday);
+
+  if (workShifts.length === 0) {
+    return {
+      date: dateIso,
+      weekday,
+      isScheduled: activeShifts.length > 0,
+      isHoliday: allHolidays,
+      startTime: null,
+      endTime: null,
+      isOvernight: false,
+      shiftPatternId: effectiveAssignments[0]?.shiftPattern.id,
+      shiftPatternName: effectiveAssignments.map((a) => a.shiftPattern.name).join(', '),
+      minimumStaffingThreshold: effectiveAssignments[0]?.shiftPattern.minimumStaffingThreshold,
+      hasOverride: false,
+      shifts: activeShifts,
+    };
+  }
+
+  // Sort work shifts by startTime to determine overall range
+  workShifts.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  const earliestStart = workShifts[0].startTime;
+  const latestEnd = workShifts.reduce((max, s) => {
+    if (!max || (s.endTime && s.endTime.localeCompare(max) > 0)) return s.endTime;
+    return max;
+  }, workShifts[0].endTime);
+  const isAnyOvernight = workShifts.some((s) => s.isOvernight);
 
   return {
     date: dateIso,
     weekday,
     isScheduled: true,
-    isHoliday: baseHoliday,
-    startTime: baseStart,
-    endTime: baseEnd,
-    isOvernight: baseOvernight,
-    shiftPatternId: effectiveAssignment?.shiftPattern.id,
-    shiftPatternName: effectiveAssignment?.shiftPattern.name,
-    minimumStaffingThreshold: effectiveAssignment?.shiftPattern.minimumStaffingThreshold,
+    isHoliday: false,
+    startTime: earliestStart,
+    endTime: latestEnd,
+    isOvernight: isAnyOvernight,
+    shiftPatternId: effectiveAssignments[0]?.shiftPattern.id,
+    shiftPatternName: effectiveAssignments.map((a) => a.shiftPattern.name).join(', '),
+    minimumStaffingThreshold: effectiveAssignments[0]?.shiftPattern.minimumStaffingThreshold,
     hasOverride: false,
+    shifts: activeShifts,
   };
 }
 
@@ -428,53 +649,35 @@ export async function assignOrUpdateStaffShift(params: {
   // Day before effectiveFrom for closing previous active assignment
   const dayBefore = new Date(startDate);
   dayBefore.setDate(dayBefore.getDate() - 1);
-  dayBefore.setHours(23, 59, 59, 999);
+  // 1. Check time conflict with existing active shifts
+  const conflictCheck = await checkShiftAssignmentConflict(
+    staffProfileId,
+    startDate,
+    null,
+    undefined,
+    shiftPatternId
+  );
 
-  return await prisma.$transaction(async (tx) => {
-    // 1. Find any currently active assignment (effectiveTo is null or >= startDate)
-    const existingActive = await tx.shiftAssignment.findMany({
-      where: {
-        staffProfileId,
-        OR: [
-          { effectiveTo: null },
-          { effectiveTo: { gte: startDate } },
-        ],
-      },
-      orderBy: { effectiveFrom: 'desc' },
-    });
+  if (conflictCheck.hasConflict) {
+    throw new Error(conflictCheck.message || 'Shift assignment time conflict detected.');
+  }
 
-    for (const assignment of existingActive) {
-      if (assignment.effectiveFrom >= startDate) {
-        // Future assignment starting on or after new startDate -> replace/remove
-        await tx.shiftAssignment.delete({ where: { id: assignment.id } });
-      } else {
-        // Active assignment starting before new startDate -> cap effectiveTo to dayBefore
-        await tx.shiftAssignment.update({
-          where: { id: assignment.id },
-          data: { effectiveTo: dayBefore },
-        });
-      }
-    }
-
-    // 2. Create the new ShiftAssignment starting at effectiveFrom with no end date
-    const newAssignment = await tx.shiftAssignment.create({
-      data: {
-        staffProfileId,
-        shiftPatternId,
-        effectiveFrom: startDate,
-        effectiveTo: null,
-        assignedBy: assignedBy || null,
-      },
-      include: {
-        shiftPattern: {
-          include: {
-            weeklyDays: true,
-          },
+  // 2. Create the new ShiftAssignment alongside existing active non-conflicting shifts
+  return await prisma.shiftAssignment.create({
+    data: {
+      staffProfileId,
+      shiftPatternId,
+      effectiveFrom: startDate,
+      effectiveTo: null,
+      assignedBy: assignedBy || null,
+    },
+    include: {
+      shiftPattern: {
+        include: {
+          weeklyDays: true,
         },
       },
-    });
-
-    return newAssignment;
+    },
   });
 }
 

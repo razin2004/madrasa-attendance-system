@@ -80,14 +80,15 @@ export async function GET(
     }
 
     const history = await getStaffShiftAssignmentHistory(staffProfile.id);
-    const activeAssignment = history.find(
+    const activeAssignments = history.filter(
       (h) => !h.effectiveTo || new Date(h.effectiveTo) >= new Date()
     );
 
     return NextResponse.json({
       success: true,
-      currentAssignment: activeAssignment || null,
-      activeAssignment: activeAssignment || null,
+      currentAssignment: activeAssignments[0] || null,
+      activeAssignment: activeAssignments[0] || null,
+      activeAssignments: activeAssignments || [],
       history,
     });
   } catch (error: any) {
@@ -165,13 +166,21 @@ export async function POST(
       );
     }
 
-    // Assign or update shift assignment
-    const assignment = await assignOrUpdateStaffShift({
-      staffProfileId: staffProfile.id,
-      shiftPatternId: shiftPattern.id,
-      effectiveFrom: startDate,
-      assignedBy: auth.session.user.name || auth.session.user.email,
-    });
+    // Assign shift assignment (will throw error if time conflict exists)
+    let assignment;
+    try {
+      assignment = await assignOrUpdateStaffShift({
+        staffProfileId: staffProfile.id,
+        shiftPatternId: shiftPattern.id,
+        effectiveFrom: startDate,
+        assignedBy: auth.session.user.name || auth.session.user.email,
+      });
+    } catch (err: any) {
+      return NextResponse.json(
+        { success: false, error: err.message || 'Time conflict detected with an existing shift assignment.' },
+        { status: 409 }
+      );
+    }
 
     // Check staffing availability shortage for this shift pattern on effective date
     const shortageInfo = await calculateShiftStaffingShortage(

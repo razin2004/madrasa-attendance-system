@@ -144,9 +144,11 @@ export default function StaffProfilePage() {
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SHIFT' | 'DEVICE' | 'SETTINGS'>('OVERVIEW');
   const [shiftPatterns, setShiftPatterns] = useState<any[]>([]);
   const [activeShiftAssignment, setActiveShiftAssignment] = useState<any>(null);
+  const [activeShiftAssignments, setActiveShiftAssignments] = useState<any[]>([]);
   const [selectedShiftPatternId, setSelectedShiftPatternId] = useState('');
   const [shiftEffectiveFrom, setShiftEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
   const [savingShift, setSavingShift] = useState(false);
+  const [removingShiftId, setRemovingShiftId] = useState<string | null>(null);
 
   // Invite & Password Modal States
   const [resendingInvite, setResendingInvite] = useState(false);
@@ -202,9 +204,13 @@ export default function StaffProfilePage() {
       const shiftHistoryData = await shiftHistoryRes.json();
       if (shiftHistoryData.success) {
         setActiveShiftAssignment(shiftHistoryData.activeAssignment || null);
-        if (shiftHistoryData.activeAssignment) {
-          setSelectedShiftPatternId(shiftHistoryData.activeAssignment.shiftPatternId);
-        }
+        setActiveShiftAssignments(
+          shiftHistoryData.activeAssignments && shiftHistoryData.activeAssignments.length > 0
+            ? shiftHistoryData.activeAssignments
+            : shiftHistoryData.activeAssignment
+            ? [shiftHistoryData.activeAssignment]
+            : []
+        );
       }
     } catch {
       toast.error('Network error loading staff profile.');
@@ -404,6 +410,27 @@ export default function StaffProfilePage() {
       toast.error('Network error assigning shift pattern.');
     } finally {
       setSavingShift(false);
+    }
+  };
+
+  // Remove / Unassign Shift Assignment
+  const handleRemoveShiftAssignment = async (assignmentId: string) => {
+    try {
+      setRemovingShiftId(assignmentId);
+      const res = await fetch(`/api/org/${organizationCode}/shift-assignments/${assignmentId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Shift assignment removed successfully.');
+        fetchData();
+      } else {
+        toast.error(data.error || 'Failed to remove shift assignment.');
+      }
+    } catch {
+      toast.error('Network error removing shift assignment.');
+    } finally {
+      setRemovingShiftId(null);
     }
   };
 
@@ -1011,23 +1038,52 @@ export default function StaffProfilePage() {
                 </h3>
               </div>
 
-              {activeShiftAssignment ? (
-                <div className={styles.shiftBanner}>
-                  <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Active Assigned Shift Pattern</div>
-                  <div className={styles.shiftTitle}>
-                    {activeShiftAssignment.shiftPattern?.name || 'Assigned Shift'}
+              {activeShiftAssignments.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Active Assigned Shifts ({activeShiftAssignments.length})
                   </div>
-                  <div className={styles.shiftDetailsRow}>
-                    <span>Working Hours: <strong style={{ color: '#ffffff' }}>{shiftTimesLabel}</strong></span>
-                    <span>&bull;</span>
-                    <span>Effective From: <strong style={{ color: '#ffffff' }}>{formatDateIST(activeShiftAssignment.effectiveFrom)}</strong></span>
-                  </div>
+                  {activeShiftAssignments.map((assignment) => {
+                    const workDay = assignment.shiftPattern?.weeklyDays?.find((w: any) => !w.isHoliday && w.startTime && w.endTime);
+                    const hoursText = workDay ? `${workDay.startTime} – ${workDay.endTime}` : 'Scheduled Pattern';
+                    const isDeleting = removingShiftId === assignment.id;
+
+                    return (
+                      <div key={assignment.id} className={styles.shiftBanner} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                        <div>
+                          <div className={styles.shiftTitle}>
+                            {assignment.shiftPattern?.name || 'Assigned Shift'}
+                          </div>
+                          <div className={styles.shiftDetailsRow}>
+                            <span>Working Hours: <strong style={{ color: '#ffffff' }}>{hoursText}</strong></span>
+                            <span>&bull;</span>
+                            <span>Effective From: <strong style={{ color: '#ffffff' }}>{formatDateIST(assignment.effectiveFrom)}</strong></span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          onClick={() => handleRemoveShiftAssignment(assignment.id)}
+                          className="btn btn-danger btn-sm"
+                          style={{ fontSize: '12px', padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          {isDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                          <span>{isDeleting ? 'Removing...' : 'Unassign Shift'}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <div style={{ padding: '24px', borderRadius: '16px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13.5px', color: '#94a3b8', textAlign: 'center' }}>
-                  No active shift schedule assigned yet. Choose a shift pattern below to assign working hours.
+                <div style={{ padding: '24px', borderRadius: '16px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13.5px', color: '#94a3b8', textAlign: 'center', marginBottom: '20px' }}>
+                  No active shift schedule assigned yet. Assign a shift pattern below.
                 </div>
               )}
+
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', marginBottom: '12px' }}>
+                Assign Shift Pattern (Non-Overlapping Times)
+              </div>
 
               <form onSubmit={handleSaveShiftAssignment} className={styles.shiftForm}>
                 <div className={styles.shiftInputsRow}>

@@ -693,12 +693,38 @@ export async function recordAttendance(params: {
   }
 
   // 5. Calculate Time Metrics & Create Verified Attendance Record
+  let chosenShift = {
+    startTime: daySchedule.startTime,
+    endTime: daySchedule.endTime,
+    name: daySchedule.shiftPatternName,
+  };
+
+  if (daySchedule.shifts && daySchedule.shifts.length > 1) {
+    const punchMins = now.getHours() * 60 + now.getMinutes();
+    let minDiff = Infinity;
+
+    for (const s of daySchedule.shifts) {
+      if (!s.startTime || !s.endTime || s.isHoliday) continue;
+      const [sh, sm] = s.startTime.split(':').map(Number);
+      const sMins = sh * 60 + sm;
+      const diff = Math.abs(punchMins - sMins);
+      if (diff < minDiff) {
+        minDiff = diff;
+        chosenShift = {
+          startTime: s.startTime,
+          endTime: s.endTime,
+          name: s.name,
+        };
+      }
+    }
+  }
+
   const metrics = calculateAttendanceTimeMetrics({
     type: params.type,
     punchTime: now,
-    scheduledStartTimeStr: daySchedule.startTime,
-    scheduledEndTimeStr: daySchedule.endTime,
-    shiftName: daySchedule.shiftPatternName,
+    scheduledStartTimeStr: chosenShift.startTime,
+    scheduledEndTimeStr: chosenShift.endTime,
+    shiftName: chosenShift.name,
   });
 
   const record = await prisma.attendanceRecord.create({
