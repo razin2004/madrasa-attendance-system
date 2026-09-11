@@ -28,8 +28,8 @@ export default function StaffAttendancePage() {
   const toast = useToast();
 
   const now = new Date();
-  const [year, setYear] = useState<number>(now.getUTCFullYear());
-  const [month, setMonth] = useState<number>(now.getUTCMonth() + 1);
+  const [year, setYear] = useState<number>(now.getFullYear());
+  const [month, setMonth] = useState<number>(now.getMonth() + 1);
 
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -37,8 +37,9 @@ export default function StaffAttendancePage() {
   const fetchAttendanceHistory = useCallback(async () => {
     setLoading(true);
     try {
+      const tzOffset = new Date().getTimezoneOffset();
       const res = await fetch(
-        `/api/org/${orgCode}/reports/monthly?year=${year}&month=${month}`
+        `/api/org/${orgCode}/reports/monthly?year=${year}&month=${month}&clientTimezoneOffset=${tzOffset}`
       );
       if (res.ok) {
         const data = await res.json();

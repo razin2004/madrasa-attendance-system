@@ -383,7 +383,8 @@ export default function StaffDashboardPage() {
     await runPrecheck(coords, false);
 
     try {
-      const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=5`);
+      const tzOffset = new Date().getTimezoneOffset();
+      const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=5&clientTimezoneOffset=${tzOffset}`);
       const histData = await histRes.json();
       if (histData.success) {
         setRecentRecords(histData.records || []);

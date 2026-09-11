@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { calculateStaffDaySchedule } from './roster.service';
 import { AttendanceSource, LeaveType, Weekday } from '@prisma/client';
-import { formatUtcDateString, normalizeDate } from './attendance.service';
+import { formatUtcDateString, getLocalDayUtcRange, normalizeDate } from './attendance.service';
 
 import { formatTimeInTimezone } from '@/lib/timezone';
 import { cleanStaffJustification } from '@/lib/reason-parser';
@@ -311,10 +311,8 @@ export function calculateAttendanceMetricsForPunches(params: {
  * 1. Calculate Daily Attendance Report (Section 6 - 20, 28 - 35)
  */
 export async function getDailyAttendanceReport(params: DailyReportFilterParams) {
-  const targetDateObj = parseIsoDateString(params.date);
-  const startOfDay = new Date(targetDateObj.getTime());
-  const endOfDay = new Date(targetDateObj.getTime() + 24 * 60 * 60 * 1000 - 1);
-  const dateStr = params.date;
+  const { startOfDay, endOfDay, dateStr } = getLocalDayUtcRange(params.date, -330);
+  const targetDateObj = new Date(startOfDay.getTime());
   const now = new Date();
 
   const isToday =
@@ -704,10 +702,12 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
     throw new Error('Staff profile not found.');
   }
 
-  // Calculate start & end of selected month in UTC
+  // Calculate start & end of selected month in local timezone range
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const startOfMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-  const endOfMonth = new Date(Date.UTC(year, month - 1, daysInMonth, 23, 59, 59, 999));
+  const firstDayStr = `${year}-${String(month).padStart(2, '0')}-01`;
+  const lastDayStr = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+  const { startOfDay: startOfMonth } = getLocalDayUtcRange(firstDayStr, -330);
+  const { endOfDay: endOfMonth } = getLocalDayUtcRange(lastDayStr, -330);
 
   // Query staff shift assignments and overrides for schedule calculation
   const staffFull = await prisma.staffProfile.findFirst({
@@ -777,10 +777,9 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
   const now = new Date();
 
   for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-    const targetDateObj = new Date(Date.UTC(year, month - 1, dayNum, 0, 0, 0, 0));
-    const dayStart = new Date(targetDateObj.getTime());
-    const dayEnd = new Date(targetDateObj.getTime() + 24 * 60 * 60 * 1000 - 1);
     const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    const { startOfDay: dayStart, endOfDay: dayEnd } = getLocalDayUtcRange(dayStr, -330);
+    const targetDateObj = new Date(dayStart.getTime());
     const dayOfWeek = weekdaysMap[targetDateObj.getUTCDay()];
 
     const isToday =

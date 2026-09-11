@@ -951,28 +951,26 @@ export async function getStaffTodayAttendanceStatus(
   const maxAllowedCycles = Math.max(MAX_DAILY_ATTENDANCE_CYCLES, shiftsList.length);
   const isDailyLimitReached = completedCyclesCount >= maxAllowedCycles;
 
-  const rawClockInIso = firstClockIn?.timestamp
-    ? firstClockIn.timestamp.toISOString()
-    : (hasPendingClockIn && pendingClockInToday?.requestedClockIn ? pendingClockInToday.requestedClockIn.toISOString() : null);
+  let rawClockInIso: string | null = null;
+  let displayClockInTime: string | null = null;
 
-  const rawClockOutIso = lastClockOut?.timestamp
-    ? lastClockOut.timestamp.toISOString()
-    : (hasPendingClockOut && pendingClockOutToday?.requestedClockOut ? pendingClockOutToday.requestedClockOut.toISOString() : null);
-
-  let displayClockInTime: string | null = firstClockIn?.timestamp
-    ? formatTimeInTimezone(firstClockIn.timestamp)
-    : null;
-
-  if (!displayClockInTime && hasPendingClockIn && pendingClockInToday?.requestedClockIn) {
+  if (hasPendingClockIn && pendingClockInToday?.requestedClockIn) {
+    rawClockInIso = pendingClockInToday.requestedClockIn.toISOString();
     displayClockInTime = formatTimeInTimezone(pendingClockInToday.requestedClockIn) + ' (Pending)';
+  } else if (firstClockIn?.timestamp) {
+    rawClockInIso = firstClockIn.timestamp.toISOString();
+    displayClockInTime = formatTimeInTimezone(firstClockIn.timestamp);
   }
 
-  let displayClockOutTime: string | null = lastClockOut?.timestamp
-    ? formatTimeInTimezone(lastClockOut.timestamp)
-    : null;
+  let rawClockOutIso: string | null = null;
+  let displayClockOutTime: string | null = null;
 
-  if (!displayClockOutTime && hasPendingClockOut && pendingClockOutToday?.requestedClockOut) {
-    displayClockOutTime = formatTimeInTimezone(pendingClockOutToday.requestedClockOut) + ' (Pending)';
+  if (hasPendingClockOut && pendingClockOutToday?.requestedClockOut) {
+    rawClockOutIso = pendingClockOutToday.requestedClockOut.toISOString();
+    displayClockOutTime = formatTimeInTimezone(pendingClockOutToday.requestedClockOut) + ' (Pending Approval)';
+  } else if (lastClockOut?.timestamp) {
+    rawClockOutIso = lastClockOut.timestamp.toISOString();
+    displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp);
   }
 
   return {
@@ -1050,9 +1048,49 @@ export async function getStaffMonthlyAttendanceSummary(
 // PHASE 7: MANUAL ATTENDANCE & ATTENDANCE CORRECTIONS
 // =============================================================================
 
-export function normalizeDate(dateInput: Date | string): Date {
-  const d = typeof dateInput === 'string' ? new Date(dateInput) : new Date(dateInput.getTime());
+export function normalizeDate(dateInput: Date | string, clientTimezoneOffset?: number): Date {
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
+    const [y, m, day] = dateInput.trim().split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, day, 0, 0, 0, 0));
+  }
+
+  let d = typeof dateInput === 'string' ? new Date(dateInput) : new Date(dateInput.getTime());
+
+  if (typeof clientTimezoneOffset === 'number' && !isNaN(clientTimezoneOffset)) {
+    const serverOffset = d.getTimezoneOffset();
+    const diffMs = (serverOffset - clientTimezoneOffset) * 60 * 1000;
+    d = new Date(d.getTime() + diffMs);
+  }
+
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
+}
+
+/**
+ * Returns UTC startOfDay and endOfDay matching a target local date YYYY-MM-DD in a given timezone offset.
+ * Default offset = -330 (UTC+5:30 IST).
+ */
+export function getLocalDayUtcRange(dateInput: Date | string, offsetMinutes: number = -330) {
+  let y: number, m: number, d: number;
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
+    const parts = dateInput.trim().split('-').map(Number);
+    y = parts[0];
+    m = parts[1] - 1;
+    d = parts[2];
+  } else {
+    const dateObj = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    const localMs = dateObj.getTime() - (offsetMinutes * 60 * 1000);
+    const localDate = new Date(localMs);
+    y = localDate.getUTCFullYear();
+    m = localDate.getUTCMonth();
+    d = localDate.getUTCDate();
+  }
+
+  const localMidnightUtcMs = Date.UTC(y, m, d, 0, 0, 0, 0) + (offsetMinutes * 60 * 1000);
+  const startOfDay = new Date(localMidnightUtcMs);
+  const endOfDay = new Date(localMidnightUtcMs + 24 * 60 * 60 * 1000 - 1);
+  const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+  return { startOfDay, endOfDay, dateStr, year: y, month: m + 1, day: d };
 }
 
 export function formatUtcDateString(date: Date): string {
@@ -2018,10 +2056,9 @@ export async function getAdminDailyAttendance(params: {
   branchId?: string;
   source?: AttendanceSource;
   search?: string;
+  clientTimezoneOffset?: number;
 }) {
-  const targetDate = normalizeDate(params.date);
-  const startOfDay = new Date(targetDate.getTime());
-  const endOfDay = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000 - 1);
+  const { startOfDay, endOfDay, dateStr } = getLocalDayUtcRange(params.date, params.clientTimezoneOffset ?? -330);
 
   const where: any = {
     organizationId: params.organizationId,
@@ -2099,7 +2136,7 @@ export async function getAdminDailyAttendance(params: {
   const adjustedCount = dailyList.filter((d) => d.source === 'ADJUSTED').length;
 
   return {
-    date: formatUtcDateString(targetDate),
+    date: dateStr,
     dailyList,
     metrics: {
       totalPresent: dailyList.length,

@@ -24,12 +24,21 @@ export async function GET(
     const source = (searchParams.get('source') as AttendanceSource) || undefined;
     const search = searchParams.get('search') || undefined;
 
+    const tzOffsetHeader = req.headers.get('x-client-timezone-offset');
+    const tzOffsetParam = searchParams.get('clientTimezoneOffset');
+    const clientTimezoneOffset = tzOffsetParam
+      ? parseInt(tzOffsetParam, 10)
+      : tzOffsetHeader
+      ? parseInt(tzOffsetHeader, 10)
+      : undefined;
+
     const data = await getAdminDailyAttendance({
       organizationId: auth.organization.id,
       date,
       branchId,
       source,
       search,
+      clientTimezoneOffset,
     });
 
     return NextResponse.json({
