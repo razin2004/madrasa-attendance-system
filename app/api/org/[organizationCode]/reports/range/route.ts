@@ -19,8 +19,8 @@ export async function GET(
     }
 
     const { searchParams } = req.nextUrl;
-    const todayStr = getTodayInTimezone('Asia/Kolkata');
-    const sevenDaysAgoStr = formatDateInTimezone(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'Asia/Kolkata');
+    const todayStr = getTodayInTimezone();
+    const sevenDaysAgoStr = formatDateInTimezone(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
 
     const startDate = searchParams.get('startDate') || sevenDaysAgoStr;
     const endDate = searchParams.get('endDate') || todayStr;

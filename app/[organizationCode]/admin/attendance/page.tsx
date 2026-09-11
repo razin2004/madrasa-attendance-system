@@ -54,7 +54,7 @@ export default function AdminAttendancePage() {
   const router = useRouter();
   const toast = useToast();
 
-  const todayStr = getTodayInTimezone('Asia/Kolkata');
+  const todayStr = getTodayInTimezone();
   const [date, setDate] = useState(todayStr);
   const [source, setSource] = useState<string>('');
   const [search, setSearch] = useState<string>('');
@@ -128,7 +128,7 @@ export default function AdminAttendancePage() {
 
   const formatTime = (iso?: string | null) => {
     if (!iso) return '—';
-    return formatTimeInTimezone(iso, 'Asia/Kolkata');
+    return formatTimeInTimezone(iso);
   };
 
   return (

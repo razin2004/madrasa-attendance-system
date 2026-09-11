@@ -19,7 +19,7 @@ export async function GET(
     }
 
     const { searchParams } = req.nextUrl;
-    const date = searchParams.get('date') || getTodayInTimezone('Asia/Kolkata');
+    const date = searchParams.get('date') || getTodayInTimezone();
     const branchId = searchParams.get('branchId') || undefined;
     const source = (searchParams.get('source') as AttendanceSource) || undefined;
     const search = searchParams.get('search') || undefined;

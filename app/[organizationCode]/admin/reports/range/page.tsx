@@ -46,8 +46,8 @@ export default function DateRangeReportPage() {
   const toast = useToast();
   const headerMenuRef = useRef<HTMLDivElement>(null);
 
-  const todayStr = getTodayInTimezone('Asia/Kolkata');
-  const sevenDaysAgoStr = formatDateInTimezone(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'Asia/Kolkata');
+  const todayStr = getTodayInTimezone();
+  const sevenDaysAgoStr = formatDateInTimezone(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
 
   const [startDate, setStartDate] = useState(sevenDaysAgoStr);
   const [endDate, setEndDate] = useState(todayStr);

@@ -49,7 +49,7 @@ export function LiveAttendanceFeed({ organizationCode }: LiveAttendanceFeedProps
       const data = await res.json();
       if (res.ok && data.success) {
         setRecords(Array.isArray(data.records) ? data.records : []);
-        setLastRefreshed(formatTimeInTimezone(new Date(), 'Asia/Kolkata'));
+        setLastRefreshed(formatTimeInTimezone(new Date()));
       }
     } catch (err) {
       console.error('Error fetching live attendance feed:', err);

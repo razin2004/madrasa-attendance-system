@@ -830,11 +830,11 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
   const rawClockOutIso = lastClockOut?.timestamp ? lastClockOut.timestamp.toISOString() : null;
 
   let displayClockInTime: string | null = firstClockIn?.timestamp
-    ? formatTimeInTimezone(firstClockIn.timestamp, 'Asia/Kolkata')
+    ? formatTimeInTimezone(firstClockIn.timestamp)
     : null;
 
   if (!displayClockInTime && hasPendingClockIn && pendingClockInToday?.requestedClockIn) {
-    displayClockInTime = formatTimeInTimezone(pendingClockInToday.requestedClockIn, 'Asia/Kolkata') + ' (Pending)';
+    displayClockInTime = formatTimeInTimezone(pendingClockInToday.requestedClockIn) + ' (Pending)';
   }
 
   return {
@@ -849,7 +849,7 @@ export async function getStaffTodayAttendanceStatus(staffProfileId: string) {
     lastClockInIso: rawClockInIso,
     attendanceStartTime: firstClockIn?.attendanceStartTime || firstClockIn?.timestamp || null,
     lateMinutes: firstClockIn?.lateMinutes || 0,
-    lastClockOutTime: lastClockOut?.timestamp ? formatTimeInTimezone(lastClockOut.timestamp, 'Asia/Kolkata') : null,
+    lastClockOutTime: lastClockOut?.timestamp ? formatTimeInTimezone(lastClockOut.timestamp) : null,
     lastClockOutIso: rawClockOutIso,
     earlyDepartureMinutes: lastClockOut?.earlyDepartureMinutes || 0,
     currentBranch: lastVerified?.branch || null,

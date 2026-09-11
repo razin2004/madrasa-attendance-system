@@ -151,8 +151,8 @@ export default function StaffDashboardPage() {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-      setCurrentDateStr(now.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }));
+      setCurrentTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setCurrentDateStr(now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -164,7 +164,7 @@ export default function StaffDashboardPage() {
       try {
         const d = new Date(isoString);
         if (!isNaN(d.getTime())) {
-          return formatTimeInTimezone(d, 'Asia/Kolkata');
+          return formatTimeInTimezone(d);
         }
       } catch {}
     }
@@ -173,7 +173,7 @@ export default function StaffDashboardPage() {
         const clean = fallbackText.replace(/\s*\(Pending\)$/i, '').trim();
         const d = new Date(clean);
         if (!isNaN(d.getTime())) {
-          return formatTimeInTimezone(d, 'Asia/Kolkata');
+          return formatTimeInTimezone(d);
         }
       } catch {}
       return fallbackText.replace(/\s*\(Pending\)$/i, '').trim();
@@ -927,7 +927,7 @@ export default function StaffDashboardPage() {
                           {r.branch?.name || 'Main Branch'}
                         </td>
                         <td className={styles.tableTd} style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
-                          {formatDateTimeInTimezone(r.timestamp, 'Asia/Kolkata')}
+                          {formatDateTimeInTimezone(r.timestamp)}
                         </td>
                         <td className={styles.tableTd}>
                           <span

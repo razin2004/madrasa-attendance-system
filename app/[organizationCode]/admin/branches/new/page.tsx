@@ -31,8 +31,6 @@ interface OrgBranding {
   organizationCode: string;
 }
 
-import { SUPPORTED_TIMEZONES } from '../../../../../lib/timezone';
-
 export default function RegisterBranchPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -44,7 +42,6 @@ export default function RegisterBranchPage() {
   // Form State
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
-  const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [geofenceRadius, setGeofenceRadius] = useState('150');
 
   // Network State
@@ -218,7 +215,6 @@ export default function RegisterBranchPage() {
         body: JSON.stringify({
           name: name.trim(),
           address: address.trim(),
-          timezone,
           latitude,
           longitude,
           locationAccuracyMeters: accuracy,
@@ -261,7 +257,7 @@ export default function RegisterBranchPage() {
           organizationCode={organizationCode}
           logoUrl={branding?.logoUrl}
           panelTitle="Register Branch"
-          panelSubtitle="Register this branch's network, location, and local time zone for accurate attendance verification."
+          panelSubtitle="Register this branch's network and location parameters for accurate attendance verification."
           backHref={`/${organizationCode}/admin/branches`}
         />
 
@@ -274,7 +270,7 @@ export default function RegisterBranchPage() {
               <div className={styles.sectionCard}>
                 <div className={styles.sectionHeader}>
                   <Building size={18} color="#818cf8" />
-                  <h3 className={styles.sectionTitle}>Branch Information &amp; Time Zone</h3>
+                  <h3 className={styles.sectionTitle}>Branch Information</h3>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -293,27 +289,6 @@ export default function RegisterBranchPage() {
                     />
                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                       Use a recognizable name such as Head Office, Dubai Office, or Calicut Branch.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
-                      Branch Time Zone <span style={{ color: 'var(--danger-text)' }}>*</span>
-                    </label>
-                    <select
-                      value={timezone}
-                      onChange={(e) => setTimezone(e.target.value)}
-                      className="form-input"
-                      style={{ width: '100%' }}
-                    >
-                      {SUPPORTED_TIMEZONES.map((tz) => (
-                        <option key={tz.value} value={tz.value} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
-                          {tz.label}
-                        </option>
-                      ))}
-                    </select>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                      Shift timings and punches for staff at this branch will adhere to this local time zone.
                     </p>
                   </div>
 

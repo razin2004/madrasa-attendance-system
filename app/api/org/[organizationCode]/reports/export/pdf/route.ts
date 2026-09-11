@@ -26,7 +26,7 @@ export async function GET(
     const { searchParams } = req.nextUrl;
     const rawReportType = searchParams.get('reportType');
     const reportType = rawReportType === 'RANGE' ? 'RANGE' : rawReportType === 'MONTHLY' ? 'MONTHLY' : 'DAILY';
-    const date = searchParams.get('date') || getTodayInTimezone('Asia/Kolkata');
+    const date = searchParams.get('date') || getTodayInTimezone();
     const startDate = searchParams.get('startDate') || date;
     const endDate = searchParams.get('endDate') || date;
 
@@ -94,7 +94,7 @@ export async function GET(
       logoUrl: auth.organization.logoUrl,
       reportTitle,
       filterSummaryStr,
-      generatedAt: formatDateTimeInTimezone(new Date(), 'Asia/Kolkata'),
+      generatedAt: formatDateTimeInTimezone(new Date()),
       rows,
     });
 

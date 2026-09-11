@@ -18,7 +18,7 @@ export async function GET(
 
     const { searchParams } = req.nextUrl;
     const limit = parseInt(searchParams.get('limit') || '20', 10);
-    const dateStr = searchParams.get('date') || getTodayInTimezone('Asia/Kolkata');
+    const dateStr = searchParams.get('date') || getTodayInTimezone();
 
     const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
     const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
@@ -56,7 +56,7 @@ export async function GET(
       type: r.type,
       source: r.source,
       timestamp: r.timestamp.toISOString(),
-      timeFormatted: formatTimeInTimezone(r.timestamp, 'Asia/Kolkata'),
+      timeFormatted: formatTimeInTimezone(r.timestamp),
       ipMatched: r.ipMatched,
       geofenceMatched: r.geofenceMatched,
       deviceMatched: r.deviceMatched,

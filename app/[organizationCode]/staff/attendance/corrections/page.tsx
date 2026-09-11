@@ -42,12 +42,12 @@ export default function StaffCorrectionHistoryPage() {
 
   const formatTimeStr = (isoStr?: string | null) => {
     if (!isoStr) return '—';
-    return formatTimeInTimezone(isoStr, 'Asia/Kolkata');
+    return formatTimeInTimezone(isoStr);
   };
 
   const formatDateStr = (isoStr?: string | null) => {
     if (!isoStr) return '—';
-    return formatDateInTimezone(isoStr, 'Asia/Kolkata');
+    return formatDateInTimezone(isoStr);
   };
 
   const formatCorrectionType = (t: string) => {
@@ -167,7 +167,7 @@ export default function StaffCorrectionHistoryPage() {
                       </span>
                     </td>
                     <td style={{ fontSize: '12.5px', color: '#94a3b8' }}>
-                      {formatDateInTimezone(item.createdAt, 'Asia/Kolkata')}
+                      {formatDateInTimezone(item.createdAt)}
                     </td>
                   </tr>
                 ))}
@@ -197,7 +197,7 @@ export default function StaffCorrectionHistoryPage() {
                 <div className={styles.cardCategoryRow}>
                   <span className={styles.typeBadge}>{formatCorrectionType(item.type)}</span>
                   <span className={styles.submittedDate}>
-                    Submitted: {formatDateInTimezone(item.createdAt, 'Asia/Kolkata')}
+                    Submitted: {formatDateInTimezone(item.createdAt)}
                   </span>
                 </div>
 

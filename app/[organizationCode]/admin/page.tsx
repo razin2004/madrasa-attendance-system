@@ -180,14 +180,13 @@ export default function OrgAdminLandingPage() {
 
   // Greeting Generator
   const greeting = (() => {
-    const hour = getNowInTimezone('Asia/Kolkata').hours;
+    const hour = getNowInTimezone().hours;
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   })();
 
-  const formattedDate = new Date().toLocaleDateString('en-US', {
-    timeZone: 'Asia/Kolkata',
+  const formattedDate = new Date().toLocaleDateString([], {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

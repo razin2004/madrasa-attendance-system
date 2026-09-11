@@ -19,7 +19,7 @@ export async function GET(
     }
 
     const { searchParams } = req.nextUrl;
-    const date = searchParams.get('date') || getTodayInTimezone('Asia/Kolkata');
+    const date = searchParams.get('date') || getTodayInTimezone();
     const branchId = searchParams.get('branchId') || undefined;
     const staffId = searchParams.get('staffId') || undefined;
     const status = searchParams.get('status') || undefined;

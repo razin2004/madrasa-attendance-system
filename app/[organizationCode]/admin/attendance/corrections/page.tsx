@@ -105,7 +105,7 @@ export default function AdminAttendanceCorrectionsPage() {
 
   const formatDisplayDate = (dateInput?: string | Date | null) => {
     if (!dateInput) return '—';
-    return formatDateInTimezone(dateInput, 'Asia/Kolkata');
+    return formatDateInTimezone(dateInput);
   };
 
   const formatCorrectionType = (type?: string) => {
@@ -134,12 +134,12 @@ export default function AdminAttendanceCorrectionsPage() {
 
   const formatDateString = (rawDate?: string | null) => {
     if (!rawDate) return '—';
-    return formatDateInTimezone(rawDate, 'Asia/Kolkata');
+    return formatDateInTimezone(rawDate);
   };
 
   const formatPunchTime = (iso?: string | null) => {
     if (!iso) return '—';
-    return formatTimeInTimezone(iso, 'Asia/Kolkata');
+    return formatTimeInTimezone(iso);
   };
 
   const getShortFailureLabel = (failure: string): string => {

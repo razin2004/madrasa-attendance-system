@@ -112,7 +112,7 @@ export async function POST(
         organizationId: auth.organization.id,
         name: name.trim(),
         address: address.trim(),
-        timezone: (typeof timezone === 'string' && timezone.trim()) ? timezone.trim() : 'Asia/Kolkata',
+        timezone: (typeof timezone === 'string' && timezone.trim()) ? timezone.trim() : 'UTC',
         latitude: numLat,
         longitude: numLng,
         locationAccuracyMeters: locationAccuracyMeters ? parseFloat(locationAccuracyMeters) : null,

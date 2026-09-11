@@ -50,7 +50,7 @@ export default function DailyReportPage() {
   const router = useRouter();
   const toast = useToast();
 
-  const todayStr = getTodayInTimezone('Asia/Kolkata');
+  const todayStr = getTodayInTimezone();
   const [date, setDate] = useState(todayStr);
   const [branchId, setBranchId] = useState('');
   const [staffId, setStaffId] = useState('');

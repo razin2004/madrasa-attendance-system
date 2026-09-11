@@ -220,20 +220,9 @@ export function calculateAttendanceMetricsForPunches(params: {
     }
   }
 
-  // 3. Extract actual Clock-In time in branch timezone
-  const inBranchParts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-  }).formatToParts(firstClockIn.timestamp);
-
-  let actualInHour = 0;
-  let actualInMin = 0;
-  for (const part of inBranchParts) {
-    if (part.type === 'hour') actualInHour = parseInt(part.value, 10) % 24;
-    if (part.type === 'minute') actualInMin = parseInt(part.value, 10);
-  }
+  // 3. Extract actual Clock-In time
+  const actualInHour = firstClockIn.timestamp.getHours();
+  const actualInMin = firstClockIn.timestamp.getMinutes();
   const actualInMins = actualInHour * 60 + actualInMin;
 
   // Clock-In Rounding & Late In calculation
@@ -257,24 +246,13 @@ export function calculateAttendanceMetricsForPunches(params: {
     }
   }
 
-  // 4. Extract actual Clock-Out time in branch timezone & Early Out calculation
+  // 4. Extract actual Clock-Out time & Early Out calculation
   let displayClockOutTime: string | null = null;
   let earlyOutMinutes = 0;
 
   if (lastClockOut) {
-    const outBranchParts = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: false,
-    }).formatToParts(lastClockOut.timestamp);
-
-    let actualOutHour = 0;
-    let actualOutMin = 0;
-    for (const part of outBranchParts) {
-      if (part.type === 'hour') actualOutHour = parseInt(part.value, 10) % 24;
-      if (part.type === 'minute') actualOutMin = parseInt(part.value, 10);
-    }
+    const actualOutHour = lastClockOut.timestamp.getHours();
+    const actualOutMin = lastClockOut.timestamp.getMinutes();
     let actualOutMins = actualOutHour * 60 + actualOutMin;
     if (schedStartMins !== null && actualOutMins < schedStartMins) {
       actualOutMins += 24 * 60; // Overnight clock out handle
@@ -611,7 +589,7 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     else if (source === 'MANUAL') metrics.sourceMetrics.manualCount++;
     else if (source === 'ADJUSTED') metrics.sourceMetrics.adjustedCount++;
 
-    const branchTimezone = recordedBranch?.timezone || profile.branchAssignments[0]?.branch.timezone || 'Asia/Kolkata';
+    const branchTimezone = recordedBranch?.timezone || profile.branchAssignments[0]?.branch.timezone || 'UTC';
 
     const metricsCalc = calculateAttendanceMetricsForPunches({
       records: staffRecords,
@@ -917,7 +895,7 @@ export async function getMonthlyEmployeeAttendanceReport(params: MonthlyReportFi
       reviewerName = cr?.reviewerUser?.name || null;
     }
 
-    const rowTimezone = recordedBranch?.timezone || staffFull.branchAssignments[0]?.branch.timezone || 'Asia/Kolkata';
+    const rowTimezone = recordedBranch?.timezone || staffFull.branchAssignments[0]?.branch.timezone || 'UTC';
 
     const dayMetricsCalc = calculateAttendanceMetricsForPunches({
       records: dayRecords.filter((r) => !r.isAdditionalShift && !r.additionalShiftId),

@@ -62,7 +62,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
   const formatIsoToTimeInput = (iso?: string | Date | null) => {
     if (!iso) return '';
     if (typeof iso === 'string' && /^\d{2}:\d{2}$/.test(iso)) return iso;
-    return formatTimeToHHMM(iso, 'Asia/Kolkata');
+    return formatTimeToHHMM(iso);
   };
 
   const getShortFailureLabel = (failure: string): string => {
@@ -128,12 +128,12 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
 
   const formatTime = (iso?: string | null) => {
     if (!iso) return 'None';
-    return formatTimeInTimezone(iso, 'Asia/Kolkata');
+    return formatTimeInTimezone(iso);
   };
 
   const formatDate = (iso?: string | null) => {
     if (!iso) return '—';
-    return formatDateInTimezone(iso, 'Asia/Kolkata');
+    return formatDateInTimezone(iso);
   };
 
   const formatTypeName = (req?: any) => {
@@ -680,7 +680,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                       <div className={styles.detailItem}>
                         <span className={styles.detailLabel}>Reviewed Date</span>
                         <span className={styles.detailVal}>
-                          {request.reviewedAt ? formatDateTimeInTimezone(request.reviewedAt, 'Asia/Kolkata') : '—'}
+                          {request.reviewedAt ? formatDateTimeInTimezone(request.reviewedAt) : '—'}
                         </span>
                       </div>
                       {request.reviewerComment && (
