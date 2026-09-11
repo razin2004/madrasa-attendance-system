@@ -1243,7 +1243,7 @@ export async function submitAttendanceCorrectionRequest(params: {
 
   const originalClockIn = existingRecords.find((r) => r.type === 'CLOCK_IN')?.timestamp || null;
   const originalClockOut = existingRecords.filter((r) => r.type === 'CLOCK_OUT').pop()?.timestamp || null;
-  const targetRecordId = existingRecords[0]?.id || null;
+  const targetRecordId = (params as any).attendanceRecordId || null;
 
   // Create correction request
   const correctionRequest = await prisma.attendanceCorrectionRequest.create({
@@ -1395,23 +1395,24 @@ export async function approveAttendanceCorrection(params: {
         orderBy: { timestamp: 'asc' },
       });
 
-      const existingClockIn = existingRecords.find((r) => r.type === 'CLOCK_IN');
-      const existingClockOut = existingRecords.filter((r) => r.type === 'CLOCK_OUT').pop();
+      const targetRecordToUpdate = request.attendanceRecordId
+        ? existingRecords.find((r) => r.id === request.attendanceRecordId)
+        : null;
 
-      let targetRecordId = existingClockIn?.id || existingClockOut?.id || null;
+      let targetRecordId = targetRecordToUpdate?.id || null;
 
       // 3. Apply Clock In Correction if requested or overridden
       if (finalClockIn) {
-        if (existingClockIn) {
+        if (targetRecordToUpdate && targetRecordToUpdate.type === 'CLOCK_IN') {
           await tx.attendanceRecord.update({
-            where: { id: existingClockIn.id },
+            where: { id: targetRecordToUpdate.id },
             data: {
               timestamp: finalClockIn,
               source: 'ADJUSTED',
               correctionRequestId: request.id,
             },
           });
-          targetRecordId = existingClockIn.id;
+          targetRecordId = targetRecordToUpdate.id;
         } else {
           const newClockIn = await tx.attendanceRecord.create({
             data: {
@@ -1436,9 +1437,9 @@ export async function approveAttendanceCorrection(params: {
 
       // 4. Apply Clock Out Correction if requested or overridden
       if (finalClockOut) {
-        if (existingClockOut) {
+        if (targetRecordToUpdate && targetRecordToUpdate.type === 'CLOCK_OUT') {
           await tx.attendanceRecord.update({
-            where: { id: existingClockOut.id },
+            where: { id: targetRecordToUpdate.id },
             data: {
               timestamp: finalClockOut,
               source: 'ADJUSTED',
