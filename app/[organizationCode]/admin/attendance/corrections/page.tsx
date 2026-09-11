@@ -19,6 +19,7 @@ import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { formatTimeInTimezone, formatDateInTimezone } from '@/lib/timezone';
 import { useToast } from '@/components/feedback/toast-provider';
+import { cleanStaffJustification } from '@/lib/reason-parser';
 import styles from './Corrections.module.css';
 
 interface CorrectionRequest {
@@ -162,40 +163,8 @@ export default function AdminAttendanceCorrectionsPage() {
     }
 
     let text = rawReason.trim();
-    let staffReason: string | null = null;
+    let staffReason: string | null = cleanStaffJustification(rawReason);
     let rawFailures: string[] = [];
-
-    // Split by "| Clock Out:" or "Clock Out:" to parse both Clock In & Clock Out parts
-    const parts = text.split(/\|\s*Clock Out:/i);
-    const inPart = parts[0] || '';
-    const outPart = parts[1] || '';
-
-    // Extract In Reason
-    let inReason: string | null = null;
-    const inMatch = inPart.match(/Reason:\s*["']([^"']+)["']/i) || inPart.match(/Reason:\s*([^(|\n]+)/i);
-    if (inMatch && inMatch[1]) {
-      const m = inMatch[1].trim();
-      if (m && !m.toLowerCase().startsWith('failures:')) inReason = m;
-    }
-
-    // Extract Out Reason
-    let outReason: string | null = null;
-    if (outPart) {
-      const outMatch = outPart.match(/Reason:\s*["']([^"']+)["']/i) || outPart.match(/Reason:\s*([^(|\n]+)/i);
-      if (outMatch && outMatch[1]) {
-        const m = outMatch[1].trim();
-        if (m && !m.toLowerCase().startsWith('failures:')) outReason = m;
-      }
-    }
-
-    // Construct staffReason
-    if (inReason && outReason) {
-      staffReason = inReason === outReason ? inReason : `${inReason} • ${outReason}`;
-    } else if (inReason) {
-      staffReason = inReason;
-    } else if (outReason) {
-      staffReason = outReason;
-    }
 
     // Clean up "Clock Out: Unverified punch" markers
     const cleanFailuresText = text
@@ -230,22 +199,6 @@ export default function AdminAttendanceCorrectionsPage() {
     const securityFailures = Array.from(
       new Set(rawFailures.map((f) => getShortFailureLabel(f)))
     );
-
-    if (!staffReason) {
-      if (text.includes('Failures:')) {
-        const segments = text.split(/Failures:/i);
-        const before = segments[0]
-          .replace(/Unverified punch\.?/gi, '')
-          .replace(/Reason:\s*/gi, '')
-          .replace(/[()]/gi, '')
-          .trim();
-        if (before && before.toLowerCase() !== 'unverified punch') {
-          staffReason = before;
-        }
-      } else if (!text.toLowerCase().startsWith('unverified punch')) {
-        staffReason = text;
-      }
-    }
 
     return { staffReason, securityFailures };
   };

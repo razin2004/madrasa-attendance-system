@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { formatTimeInTimezone, formatDateInTimezone } from '@/lib/timezone';
+import { cleanStaffJustification } from '@/lib/reason-parser';
 import styles from './CorrectionHistory.module.css';
 
 export default function StaffCorrectionHistoryPage() {
@@ -158,7 +159,7 @@ export default function StaffCorrectionHistoryPage() {
                       <span style={{ color: '#fbbf24', fontWeight: 700 }}>{formatTimeStr(item.requestedClockOut)}</span>
                     </td>
                     <td style={{ color: '#94a3b8', fontStyle: 'italic', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      &ldquo;{item.reason}&rdquo;
+                      {cleanStaffJustification(item.reason) ? `“${cleanStaffJustification(item.reason)}”` : '—'}
                     </td>
                     <td>
                       <span className={`badge ${item.status === 'APPROVED' ? 'badge-success' : item.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}>
@@ -212,7 +213,9 @@ export default function StaffCorrectionHistoryPage() {
                 </div>
 
                 <div className={styles.reasonQuoteBox}>
-                  <span className={styles.reasonQuoteText}>&ldquo;{item.reason}&rdquo;</span>
+                  <span className={styles.reasonQuoteText}>
+                    {cleanStaffJustification(item.reason) ? `“${cleanStaffJustification(item.reason)}”` : '—'}
+                  </span>
                 </div>
               </div>
             ))}

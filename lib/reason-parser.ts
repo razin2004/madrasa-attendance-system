@@ -17,53 +17,72 @@ export function cleanStaffJustification(rawReason?: string | null): string | nul
     return null;
   }
 
-  // Split by "| Clock Out:" or "Clock Out:" to parse both Clock In & Clock Out parts
-  const parts = text.split(/\|\s*Clock Out:/i);
-  const inPart = parts[0] || '';
-  const outPart = parts[1] || '';
+  // Helper to clean individual reason value (removes quotes, prefixes, failures)
+  const cleanSingleVal = (val: string): string | null => {
+    let s = val
+      .replace(/\(Failures:[^)]*\)/gi, '')
+      .replace(/Failures:[^|]*/gi, '')
+      .replace(/Unverified punch\.?/gi, '')
+      .replace(/(?:Clock[- ]?In|Clock[- ]?Out|Reason):\s*/gi, '')
+      .replace(/["']/g, '')
+      .replace(/^[|;\s•]+|[|;\s•]+$/g, '')
+      .trim();
 
-  // Extract In Reason
-  let inReason: string | null = null;
-  const inMatch = inPart.match(/Reason:\s*["']([^"']+)["']/i) || inPart.match(/Reason:\s*([^(|\n]+)/i);
-  if (inMatch && inMatch[1]) {
-    const m = inMatch[1].trim();
-    if (m && !m.toLowerCase().startsWith('failures:')) inReason = m;
-  }
-
-  // Extract Out Reason
-  let outReason: string | null = null;
-  if (outPart) {
-    const outMatch = outPart.match(/Reason:\s*["']([^"']+)["']/i) || outPart.match(/Reason:\s*([^(|\n]+)/i);
-    if (outMatch && outMatch[1]) {
-      const m = outMatch[1].trim();
-      if (m && !m.toLowerCase().startsWith('failures:')) outReason = m;
+    if (!s || s.toLowerCase() === 'unverified punch' || s.toLowerCase().startsWith('failures:')) {
+      return null;
     }
+    return s;
+  };
+
+  // 1. Try splitting by "|" or "•" to parse both In & Out parts
+  const parts = text.split(/\||\s*•\s*/i);
+  let inReason: string | null = null;
+  let outReason: string | null = null;
+
+  if (parts.length > 1) {
+    for (const part of parts) {
+      const isOut = /clock[- ]?out/i.test(part);
+      const match =
+        part.match(/Reason:\s*["']([^"']+)["']/i) ||
+        part.match(/(?:Clock[- ]?In|Clock[- ]?Out):\s*["']?([^"'•\n]+)["']?/i) ||
+        part.match(/Reason:\s*([^(|\n]+)/i);
+
+      let extracted: string | null = null;
+      if (match && match[1]) {
+        extracted = cleanSingleVal(match[1]);
+      } else {
+        extracted = cleanSingleVal(part);
+      }
+
+      if (extracted) {
+        if (isOut && !outReason) {
+          outReason = extracted;
+        } else if (!inReason) {
+          inReason = extracted;
+        } else if (!outReason) {
+          outReason = extracted;
+        }
+      }
+    }
+
+    if (inReason && outReason) {
+      if (inReason === outReason) return inReason;
+      return `${inReason} • ${outReason}`;
+    }
+    if (inReason) return inReason;
+    if (outReason) return outReason;
   }
 
-  if (inReason && outReason) {
-    if (inReason === outReason) return inReason;
-    return `${inReason} • ${outReason}`;
-  }
-  if (inReason) {
-    return inReason;
-  }
-  if (outReason) {
-    return outReason;
+  // Single string parsing
+  const singleMatch =
+    text.match(/Reason:\s*["']([^"']+)["']/i) ||
+    text.match(/(?:Clock[- ]?In|Clock[- ]?Out):\s*["']?([^"'•\n]+)["']?/i) ||
+    text.match(/Reason:\s*([^(|\n]+)/i);
+
+  if (singleMatch && singleMatch[1]) {
+    const cleaned = cleanSingleVal(singleMatch[1]);
+    if (cleaned) return cleaned;
   }
 
-  // Fallback: strip (Failures: ...) and prefix markers from string
-  const clean = text
-    .replace(/\(Failures:[^)]*\)/gi, '')
-    .replace(/Failures:[^|]*/gi, '')
-    .replace(/Unverified punch\.?/gi, '')
-    .replace(/Clock-In:\s*["']?/gi, '')
-    .replace(/Clock-Out:\s*["']?/gi, '')
-    .replace(/Reason:\s*["']?/gi, '')
-    .replace(/\|\s*Clock Out:\s*/gi, ' • ')
-    .replace(/["']/g, '')
-    .replace(/^[|;\s•]+|[|;\s•]+$/g, '')
-    .trim();
-
-  if (!clean || clean.toLowerCase() === 'unverified punch') return null;
-  return clean;
+  return cleanSingleVal(text);
 }
