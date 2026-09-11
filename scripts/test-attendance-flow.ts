@@ -1,4 +1,4 @@
-import { getLocalDayUtcRange, normalizeDate } from '../services/attendance.service';
+import { getLocalDayUtcRange } from '../services/attendance.service';
 import { calculateAttendanceMetricsForPunches } from '../services/reports.service';
 
 async function testAttendanceFlow() {
@@ -17,7 +17,7 @@ async function testAttendanceFlow() {
 
   if (!matchesSept12) throw new Error('Test 1 Failed: Punch at 1:00 AM IST Sept 12 did not match Sept 12 range!');
 
-  // Test 2: Multi-Punch Break Calculation
+  // Test 2: Multi-Punch Break & Working Time Calculation
   console.log('Test 2: Multi-Punch Break & Working Time Calculation');
   const session1In = new Date('2026-09-12T02:30:00.000Z');  // 8:00 AM IST
   const session1Out = new Date('2026-09-12T06:30:00.000Z'); // 12:00 PM IST (4 hours)
@@ -45,6 +45,28 @@ async function testAttendanceFlow() {
   console.log('  Total Work Mins:  ', metrics.totalWorkingHoursMinutes, 'mins (' + metrics.totalWorkingHoursFormatted + ')\n');
 
   if (metrics.totalBreakMinutes !== 60) throw new Error('Test 2 Failed: Break time should be exactly 60 minutes!');
+
+  // Test 3: Late In & Early Out calculation
+  console.log('Test 3: Late In & Early Out calculation');
+  const lateClockIn = new Date('2026-09-12T03:45:00.000Z');  // 09:15 AM IST (15 mins late for 09:00 AM shift)
+  const earlyClockOut = new Date('2026-09-12T11:00:00.000Z'); // 04:30 PM IST (30 mins early out for 05:00 PM shift)
+
+  const lateEarlyMetrics = calculateAttendanceMetricsForPunches({
+    records: [
+      { type: 'CLOCK_IN', timestamp: lateClockIn },
+      { type: 'CLOCK_OUT', timestamp: earlyClockOut },
+    ],
+    scheduledStart: '09:00',
+    scheduledEnd: '17:00',
+    timezone: 'Asia/Kolkata',
+  });
+
+  console.log('  Late In:         ', lateEarlyMetrics.lateInMinutes, 'mins (' + lateEarlyMetrics.lateInFormatted + ')');
+  console.log('  Early Out:       ', lateEarlyMetrics.earlyOutMinutes, 'mins (' + lateEarlyMetrics.earlyOutFormatted + ')');
+  console.log('  Total Work Mins: ', lateEarlyMetrics.totalWorkingHoursMinutes, 'mins (' + lateEarlyMetrics.totalWorkingHoursFormatted + ')\n');
+
+  if (lateEarlyMetrics.lateInMinutes !== 15) throw new Error(`Test 3 Failed: Late In should be 15 mins, got ${lateEarlyMetrics.lateInMinutes}`);
+  if (lateEarlyMetrics.earlyOutMinutes !== 30) throw new Error(`Test 3 Failed: Early Out should be 30 mins, got ${lateEarlyMetrics.earlyOutMinutes}`);
 
   console.log('=== ALL ATTENDANCE VERIFICATION TESTS PASSED SUCCESSFULLY! ===');
 }

@@ -3,7 +3,7 @@ import { calculateStaffDaySchedule } from './roster.service';
 import { AttendanceSource, LeaveType, Weekday } from '@prisma/client';
 import { formatUtcDateString, getLocalDayUtcRange, normalizeDate } from './attendance.service';
 
-import { formatTimeInTimezone } from '@/lib/timezone';
+import { formatTimeInTimezone, formatTimeToHHMM } from '@/lib/timezone';
 import { cleanStaffJustification } from '@/lib/reason-parser';
 
 export interface DailyReportFilterParams {
@@ -220,10 +220,10 @@ export function calculateAttendanceMetricsForPunches(params: {
     }
   }
 
-  // 3. Extract actual Clock-In time
-  const actualInHour = firstClockIn.timestamp.getHours();
-  const actualInMin = firstClockIn.timestamp.getMinutes();
-  const actualInMins = actualInHour * 60 + actualInMin;
+  // 3. Extract actual Clock-In time in target timezone
+  const inHhmm = formatTimeToHHMM(firstClockIn.timestamp, timezone);
+  const [inH, inM] = inHhmm.split(':').map(Number);
+  const actualInMins = inH * 60 + inM;
 
   // Clock-In Rounding & Late In calculation
   const displayClockInTime = formatTimeInTimezone(firstClockIn.timestamp, timezone);
@@ -241,11 +241,11 @@ export function calculateAttendanceMetricsForPunches(params: {
 
   if (lastClockOut) {
     displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp, timezone);
-    const actualOutHour = lastClockOut.timestamp.getHours();
-    const actualOutMin = lastClockOut.timestamp.getMinutes();
-    let actualOutMins = actualOutHour * 60 + actualOutMin;
+    const outHhmm = formatTimeToHHMM(lastClockOut.timestamp, timezone);
+    const [outH, outM] = outHhmm.split(':').map(Number);
+    let actualOutMins = outH * 60 + outM;
     if (schedStartMins !== null && actualOutMins < schedStartMins) {
-      actualOutMins += 24 * 60; // Overnight clock out handle
+      actualOutMins += 24 * 60; // Overnight shift handle
     }
 
     if (schedEndMins !== null && actualOutMins < schedEndMins) {
@@ -253,15 +253,9 @@ export function calculateAttendanceMetricsForPunches(params: {
     }
   }
 
-  // 5. Total Working Hours Calculation Formula:
-  // Total Working Hours = Total Shift Time - (Total Break Time + Late In Duration + Early Out Duration)
+  // 5. Total Working Hours = Net elapsed working time minus total breaks
   let totalWorkingHoursMinutes = 0;
-
-  if (schedStartMins !== null && schedEndMins !== null && lastClockOut) {
-    const totalShiftTime = schedEndMins - schedStartMins;
-    totalWorkingHoursMinutes = Math.max(0, totalShiftTime - (totalBreakMinutes + lateInMinutes + earlyOutMinutes));
-  } else if (lastClockOut) {
-    // Unscheduled shift: elapsed time minus breaks
+  if (lastClockOut) {
     const elapsedMinutes = Math.floor((lastClockOut.timestamp.getTime() - firstClockIn.timestamp.getTime()) / (1000 * 60));
     totalWorkingHoursMinutes = Math.max(0, elapsedMinutes - totalBreakMinutes);
   }
