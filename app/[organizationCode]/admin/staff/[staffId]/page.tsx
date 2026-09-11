@@ -30,11 +30,7 @@ import {
   Share2,
   Trash2,
   Upload,
-  ExternalLink,
-  MessageSquare,
-  Shield,
   Activity,
-  Layers,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -187,7 +183,7 @@ export default function StaffProfilePage() {
         setAddress(staffData.staff.address || '');
         setIdDocType(staffData.staff.idDocType || 'AADHAAR');
         setIdDocLast4(staffData.staff.idDocLast4 || '');
-        setSelectedBranchIds(staffData.staff.branchAssignments.map((a: BranchAssignment) => a.branchId));
+        setSelectedBranchIds(staffData.staff.branchAssignments?.map((a: BranchAssignment) => a.branchId) || []);
       } else {
         toast.error(staffData.error || 'Failed to load staff details.');
       }
@@ -495,6 +491,7 @@ export default function StaffProfilePage() {
   const isActive = staff.user.status === 'ACTIVE';
   const allDevices = staff.devices || [];
   const registeredCount = allDevices.filter((d: any) => d.status === 'REGISTERED').length;
+  const branchAssignments = staff.branchAssignments || [];
 
   const initials = staff.name
     ? staff.name
@@ -689,7 +686,6 @@ export default function StaffProfilePage() {
 
           {/* Quick Metrics Bar */}
           <div className={styles.statsGrid}>
-            {/* Metric 1 */}
             <div className={styles.statCard}>
               <div className={styles.statIconBox} style={{ backgroundColor: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}>
                 <Activity size={22} />
@@ -705,7 +701,6 @@ export default function StaffProfilePage() {
               </div>
             </div>
 
-            {/* Metric 2 */}
             <div className={styles.statCard}>
               <div className={styles.statIconBox} style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', color: '#c084fc' }}>
                 <Clock size={22} />
@@ -721,7 +716,6 @@ export default function StaffProfilePage() {
               </div>
             </div>
 
-            {/* Metric 3 */}
             <div className={styles.statCard}>
               <div className={styles.statIconBox} style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
                 <Building size={22} />
@@ -729,15 +723,14 @@ export default function StaffProfilePage() {
               <div className={styles.statContent}>
                 <span className={styles.statLabel}>Workplace Branches</span>
                 <span className={styles.statVal}>
-                  {staff.branchAssignments.length} {staff.branchAssignments.length === 1 ? 'Branch' : 'Branches'}
+                  {branchAssignments.length} {branchAssignments.length === 1 ? 'Branch' : 'Branches'}
                 </span>
                 <span className={styles.statSubtext}>
-                  {staff.branchAssignments.length > 0 ? staff.branchAssignments[0].branch.name : 'Unassigned'}
+                  {branchAssignments.length > 0 && branchAssignments[0]?.branch ? branchAssignments[0].branch.name : 'Unassigned'}
                 </span>
               </div>
             </div>
 
-            {/* Metric 4 */}
             <div className={styles.statCard}>
               <div className={styles.statIconBox} style={{ backgroundColor: 'rgba(129, 140, 248, 0.15)', color: '#818cf8' }}>
                 <ShieldCheck size={22} />
@@ -824,7 +817,6 @@ export default function StaffProfilePage() {
                   <input type="text" maxLength={4} value={idDocLast4} onChange={(e) => setIdDocLast4(e.target.value.replace(/\D/g, ''))} placeholder="e.g. 5482" className="form-input" style={{ width: '100%', marginTop: '4px' }} />
                 </div>
 
-                {/* Attachment Upload Field */}
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Upload Identity Document / Attachment (Optional)</label>
                   <div style={{ marginTop: '6px', border: '2px dashed rgba(99, 102, 241, 0.35)', borderRadius: '14px', padding: '16px', backgroundColor: 'rgba(99, 102, 241, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
@@ -872,7 +864,6 @@ export default function StaffProfilePage() {
           {/* TAB 1: PROFILE & CONTACT INFO */}
           {activeTab === 'PROFILE' && (
             <div className={styles.gridTwoCol}>
-              {/* Personal & Contact Information Card */}
               <div className={styles.cardSection}>
                 <div className={styles.cardHeader}>
                   <h3 className={styles.cardTitle}>
@@ -918,7 +909,6 @@ export default function StaffProfilePage() {
                   </div>
                 </div>
 
-                {/* Identity Document Subcard */}
                 <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#818cf8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <FileText size={15} />
@@ -945,7 +935,6 @@ export default function StaffProfilePage() {
                   )}
                 </div>
 
-                {/* Joined Date Footer */}
                 <div style={{ marginTop: '20px', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px', color: '#94a3b8' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Calendar size={14} color="#818cf8" />
@@ -970,8 +959,8 @@ export default function StaffProfilePage() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {staff.branchAssignments.length > 0 ? (
-                    staff.branchAssignments.map((a) => (
+                  {branchAssignments.length > 0 ? (
+                    branchAssignments.map((a) => (
                       <div
                         key={a.id}
                         style={{
@@ -981,7 +970,7 @@ export default function StaffProfilePage() {
                           border: '1px solid rgba(255,255,255,0.08)',
                           display: 'flex',
                           alignItems: 'center',
-                          justify-content: 'space-between',
+                          justifyContent: 'space-between',
                           gap: '12px',
                         }}
                       >
@@ -990,8 +979,8 @@ export default function StaffProfilePage() {
                             <MapPin size={18} />
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '14px' }}>{a.branch.name}</div>
-                            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{a.branch.address}</div>
+                            <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '14px' }}>{a.branch?.name || 'Workplace Branch'}</div>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{a.branch?.address || 'Branch location address'}</div>
                           </div>
                         </div>
                         <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(52, 211, 153, 0.12)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', textTransform: 'uppercase' }}>
@@ -1037,7 +1026,6 @@ export default function StaffProfilePage() {
                 </div>
               )}
 
-              {/* Assign Shift Form */}
               <form onSubmit={handleSaveShiftAssignment} className={styles.shiftAssignForm}>
                 <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
                   <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Select Shift Pattern *</label>
