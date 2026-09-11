@@ -3,6 +3,8 @@ import { requireOrgAdmin } from '@/lib/tenant-auth';
 import { getDateRangeAttendanceReport } from '@/services/reports.service';
 import { AttendanceSource } from '@prisma/client';
 
+import { getTodayInTimezone, formatDateInTimezone } from '@/lib/timezone';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { organizationCode: string } }
@@ -17,8 +19,8 @@ export async function GET(
     }
 
     const { searchParams } = req.nextUrl;
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const sevenDaysAgoStr = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const todayStr = getTodayInTimezone('Asia/Kolkata');
+    const sevenDaysAgoStr = formatDateInTimezone(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'Asia/Kolkata');
 
     const startDate = searchParams.get('startDate') || sevenDaysAgoStr;
     const endDate = searchParams.get('endDate') || todayStr;

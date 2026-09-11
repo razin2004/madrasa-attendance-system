@@ -36,6 +36,8 @@ interface BranchOption {
   name: string;
 }
 
+import { getTodayInTimezone, formatDateInTimezone } from '@/lib/timezone';
+
 export default function DateRangeReportPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -43,8 +45,8 @@ export default function DateRangeReportPage() {
   const toast = useToast();
   const headerMenuRef = useRef<HTMLDivElement>(null);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const sevenDaysAgoStr = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const todayStr = getTodayInTimezone('Asia/Kolkata');
+  const sevenDaysAgoStr = formatDateInTimezone(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'Asia/Kolkata');
 
   const [startDate, setStartDate] = useState(sevenDaysAgoStr);
   const [endDate, setEndDate] = useState(todayStr);

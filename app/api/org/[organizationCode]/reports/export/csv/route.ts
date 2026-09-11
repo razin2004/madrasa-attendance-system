@@ -8,6 +8,8 @@ import {
 import { generateAttendanceReportCsv } from '@/services/export-csv.service';
 import { AttendanceSource } from '@prisma/client';
 
+import { getTodayInTimezone } from '@/lib/timezone';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { organizationCode: string } }
@@ -24,7 +26,7 @@ export async function GET(
     const { searchParams } = req.nextUrl;
     const rawReportType = searchParams.get('reportType');
     const reportType = rawReportType === 'RANGE' ? 'RANGE' : rawReportType === 'MONTHLY' ? 'MONTHLY' : 'DAILY';
-    const date = searchParams.get('date') || new Date().toISOString().slice(0, 10);
+    const date = searchParams.get('date') || getTodayInTimezone('Asia/Kolkata');
     const startDate = searchParams.get('startDate') || date;
     const endDate = searchParams.get('endDate') || date;
 

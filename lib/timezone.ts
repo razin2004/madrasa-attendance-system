@@ -1,7 +1,4 @@
-/**
- * Time Zone Utility for ShiftGuard
- * Converts UTC Date objects into formatted strings in the target branch's IANA time zone (e.g. "Asia/Dubai", "America/New_York", "Asia/Kolkata").
- */
+export const DEFAULT_TIMEZONE = 'Asia/Kolkata';
 
 export const SUPPORTED_TIMEZONES = [
   { value: 'Asia/Kolkata', label: 'India (IST - UTC+5:30)' },
@@ -17,64 +14,153 @@ export const SUPPORTED_TIMEZONES = [
 ];
 
 /**
- * Format a Date object into "hh:mm A" string in the specified IANA time zone
+ * Format a Date object into "hh:mm A" string in the specified IANA time zone (defaults to Asia/Kolkata - IST)
  */
 export function formatTimeInTimezone(
   date: Date | string | null | undefined,
-  timezone: string = 'Asia/Kolkata'
+  timezone: string = DEFAULT_TIMEZONE
 ): string {
   if (!date) return '—';
+  const tz = timezone || DEFAULT_TIMEZONE;
   try {
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d.getTime())) return '—';
 
     return new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
+      timeZone: tz,
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
     }).format(d);
   } catch (err) {
-    // Fallback if invalid timezone string passed
     const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (isNaN(d.getTime())) return '—';
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: DEFAULT_TIMEZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }).format(d);
+    } catch {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
   }
 }
 
 /**
- * Format a Date object into "YYYY-MM-DD" string in the specified IANA time zone
+ * Format a Date object into "YYYY-MM-DD" string in the specified IANA time zone (defaults to Asia/Kolkata - IST)
  */
 export function formatDateInTimezone(
   date: Date | string | null | undefined,
-  timezone: string = 'Asia/Kolkata'
+  timezone: string = DEFAULT_TIMEZONE
 ): string {
   if (!date) return '';
+  const tz = timezone || DEFAULT_TIMEZONE;
   try {
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d.getTime())) return '';
 
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(d); // Returns YYYY-MM-DD format
-
-    return parts;
+    }).format(d);
   } catch (err) {
     const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toISOString().slice(0, 10);
+    if (isNaN(d.getTime())) return '';
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: DEFAULT_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(d);
+    } catch {
+      return d.toISOString().slice(0, 10);
+    }
   }
 }
 
 /**
- * Get current hour/minute in specified time zone
+ * Format a Date object into "MMM DD, YYYY, hh:mm A" string in the specified IANA time zone (defaults to Asia/Kolkata - IST)
  */
-export function getNowInTimezone(timezone: string = 'Asia/Kolkata'): { hours: number; minutes: number; dayOfWeek: number } {
+export function formatDateTimeInTimezone(
+  date: Date | string | null | undefined,
+  timezone: string = DEFAULT_TIMEZONE
+): string {
+  if (!date) return '—';
+  const tz = timezone || DEFAULT_TIMEZONE;
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }).format(d);
+  } catch (err) {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString();
+  }
+}
+
+/**
+ * Format a Date object into 24-hour "HH:MM" format in the specified time zone (defaults to Asia/Kolkata - IST)
+ */
+export function formatTimeToHHMM(
+  date: Date | string | null | undefined,
+  timezone: string = DEFAULT_TIMEZONE
+): string {
+  if (!date) return '';
+  const tz = timezone || DEFAULT_TIMEZONE;
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '';
+
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+
+    let hours = '00';
+    let minutes = '00';
+    for (const part of parts) {
+      if (part.type === 'hour') hours = part.value.padStart(2, '0');
+      if (part.type === 'minute') minutes = part.value.padStart(2, '0');
+    }
+    if (hours === '24') hours = '00';
+    return `${hours}:${minutes}`;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Get current date string (YYYY-MM-DD) in specified time zone (defaults to Asia/Kolkata - IST)
+ */
+export function getTodayInTimezone(timezone: string = DEFAULT_TIMEZONE): string {
+  return formatDateInTimezone(new Date(), timezone || DEFAULT_TIMEZONE);
+}
+
+/**
+ * Get current hour/minute in specified time zone (defaults to Asia/Kolkata - IST)
+ */
+export function getNowInTimezone(timezone: string = DEFAULT_TIMEZONE): { hours: number; minutes: number; dayOfWeek: number } {
+  const tz = timezone || DEFAULT_TIMEZONE;
   try {
     const now = new Date();
     const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
+      timeZone: tz,
       hour: 'numeric',
       minute: 'numeric',
       weekday: 'narrow',

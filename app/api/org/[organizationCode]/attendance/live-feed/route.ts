@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOrgAdmin } from '@/lib/tenant-auth';
 import { prisma } from '@/lib/prisma';
+import { formatTimeInTimezone, getTodayInTimezone } from '@/lib/timezone';
 
 export async function GET(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function GET(
 
     const { searchParams } = req.nextUrl;
     const limit = parseInt(searchParams.get('limit') || '20', 10);
-    const dateStr = searchParams.get('date') || new Date().toISOString().slice(0, 10);
+    const dateStr = searchParams.get('date') || getTodayInTimezone('Asia/Kolkata');
 
     const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
     const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
@@ -55,7 +56,7 @@ export async function GET(
       type: r.type,
       source: r.source,
       timestamp: r.timestamp.toISOString(),
-      timeFormatted: r.timestamp.toISOString().slice(11, 16),
+      timeFormatted: formatTimeInTimezone(r.timestamp, 'Asia/Kolkata'),
       ipMatched: r.ipMatched,
       geofenceMatched: r.geofenceMatched,
       deviceMatched: r.deviceMatched,

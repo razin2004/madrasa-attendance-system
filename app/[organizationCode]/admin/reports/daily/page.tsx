@@ -41,13 +41,15 @@ import { BreakPopover } from '@/components/attendance/break-popover';
 
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 
+import { getTodayInTimezone } from '@/lib/timezone';
+
 export default function DailyReportPage() {
   const params = useParams();
   const organizationCode = (params.organizationCode as string)?.toUpperCase() || '';
   const router = useRouter();
   const toast = useToast();
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getTodayInTimezone('Asia/Kolkata');
   const [date, setDate] = useState(todayStr);
   const [branchId, setBranchId] = useState('');
   const [staffId, setStaffId] = useState('');

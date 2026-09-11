@@ -22,6 +22,7 @@ import {
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+import { formatTimeInTimezone, formatDateInTimezone, formatDateTimeInTimezone, formatTimeToHHMM } from '@/lib/timezone';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from './CorrectionReview.module.css';
 
@@ -60,11 +61,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
   const formatIsoToTimeInput = (iso?: string | Date | null) => {
     if (!iso) return '';
     if (typeof iso === 'string' && /^\d{2}:\d{2}$/.test(iso)) return iso;
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
+    return formatTimeToHHMM(iso, 'Asia/Kolkata');
   };
 
   const getShortFailureLabel = (failure: string): string => {
@@ -180,24 +177,12 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
 
   const formatTime = (iso?: string | null) => {
     if (!iso) return 'None';
-    try {
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return iso;
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return iso;
-    }
+    return formatTimeInTimezone(iso, 'Asia/Kolkata');
   };
 
   const formatDate = (iso?: string | null) => {
     if (!iso) return '—';
-    try {
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return iso;
-      return d.toISOString().slice(0, 10);
-    } catch {
-      return String(iso);
-    }
+    return formatDateInTimezone(iso, 'Asia/Kolkata');
   };
 
   const formatTypeName = (req?: any) => {
@@ -744,7 +729,7 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                       <div className={styles.detailItem}>
                         <span className={styles.detailLabel}>Reviewed Date</span>
                         <span className={styles.detailVal}>
-                          {request.reviewedAt ? new Date(request.reviewedAt).toLocaleString() : '—'}
+                          {request.reviewedAt ? formatDateTimeInTimezone(request.reviewedAt, 'Asia/Kolkata') : '—'}
                         </span>
                       </div>
                       {request.reviewerComment && (

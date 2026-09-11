@@ -3,6 +3,8 @@ import { requireOrgAdmin } from '@/lib/tenant-auth';
 import { getDailyAttendanceReport } from '@/services/reports.service';
 import { AttendanceSource } from '@prisma/client';
 
+import { getTodayInTimezone } from '@/lib/timezone';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { organizationCode: string } }
@@ -17,7 +19,7 @@ export async function GET(
     }
 
     const { searchParams } = req.nextUrl;
-    const date = searchParams.get('date') || new Date().toISOString().slice(0, 10);
+    const date = searchParams.get('date') || getTodayInTimezone('Asia/Kolkata');
     const branchId = searchParams.get('branchId') || undefined;
     const staffId = searchParams.get('staffId') || undefined;
     const status = searchParams.get('status') || undefined;

@@ -14,6 +14,8 @@ import {
   ArrowDownLeft,
 } from 'lucide-react';
 
+import { formatTimeInTimezone } from '@/lib/timezone';
+
 interface FeedRecord {
   id: string;
   staffId: string;
@@ -47,7 +49,7 @@ export function LiveAttendanceFeed({ organizationCode }: LiveAttendanceFeedProps
       const data = await res.json();
       if (res.ok && data.success) {
         setRecords(Array.isArray(data.records) ? data.records : []);
-        setLastRefreshed(new Date().toLocaleTimeString());
+        setLastRefreshed(formatTimeInTimezone(new Date(), 'Asia/Kolkata'));
       }
     } catch (err) {
       console.error('Error fetching live attendance feed:', err);

@@ -16,6 +16,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
+import { formatTimeInTimezone, formatDateInTimezone } from '@/lib/timezone';
 import styles from './CorrectionHistory.module.css';
 
 export default function StaffCorrectionHistoryPage() {
@@ -40,24 +41,12 @@ export default function StaffCorrectionHistoryPage() {
 
   const formatTimeStr = (isoStr?: string | null) => {
     if (!isoStr) return '—';
-    try {
-      const d = new Date(isoStr);
-      if (isNaN(d.getTime())) return isoStr;
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return isoStr;
-    }
+    return formatTimeInTimezone(isoStr, 'Asia/Kolkata');
   };
 
   const formatDateStr = (isoStr?: string | null) => {
     if (!isoStr) return '—';
-    try {
-      const d = new Date(isoStr);
-      if (isNaN(d.getTime())) return isoStr;
-      return d.toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return isoStr;
-    }
+    return formatDateInTimezone(isoStr, 'Asia/Kolkata');
   };
 
   const formatCorrectionType = (t: string) => {
@@ -177,7 +166,7 @@ export default function StaffCorrectionHistoryPage() {
                       </span>
                     </td>
                     <td style={{ fontSize: '12.5px', color: '#94a3b8' }}>
-                      {new Date(item.createdAt).toLocaleDateString()}
+                      {formatDateInTimezone(item.createdAt, 'Asia/Kolkata')}
                     </td>
                   </tr>
                 ))}
@@ -207,7 +196,7 @@ export default function StaffCorrectionHistoryPage() {
                 <div className={styles.cardCategoryRow}>
                   <span className={styles.typeBadge}>{formatCorrectionType(item.type)}</span>
                   <span className={styles.submittedDate}>
-                    Submitted: {new Date(item.createdAt).toLocaleDateString()}
+                    Submitted: {formatDateInTimezone(item.createdAt, 'Asia/Kolkata')}
                   </span>
                 </div>
 

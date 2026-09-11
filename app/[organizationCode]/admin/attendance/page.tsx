@@ -24,6 +24,7 @@ import {
 import { OrgAdminSidebar } from '../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+import { formatTimeInTimezone, getTodayInTimezone } from '@/lib/timezone';
 import { useToast } from '../../../../components/feedback/toast-provider';
 import styles from './AdminAttendance.module.css';
 
@@ -52,7 +53,7 @@ export default function AdminAttendancePage() {
   const router = useRouter();
   const toast = useToast();
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getTodayInTimezone('Asia/Kolkata');
   const [date, setDate] = useState(todayStr);
   const [source, setSource] = useState<string>('');
   const [search, setSearch] = useState<string>('');
@@ -126,7 +127,7 @@ export default function AdminAttendancePage() {
 
   const formatTime = (iso?: string | null) => {
     if (!iso) return '—';
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return formatTimeInTimezone(iso, 'Asia/Kolkata');
   };
 
   return (

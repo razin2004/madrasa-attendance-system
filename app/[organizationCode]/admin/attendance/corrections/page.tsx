@@ -17,6 +17,7 @@ import {
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+import { formatTimeInTimezone, formatDateInTimezone } from '@/lib/timezone';
 import { useToast } from '@/components/feedback/toast-provider';
 import styles from './Corrections.module.css';
 
@@ -101,15 +102,9 @@ export default function AdminAttendanceCorrectionsPage() {
   const getStaffName = (item: CorrectionRequest) =>
     item.staffProfile?.name || item.staff?.name || 'Staff Member';
 
-  const formatDateStr = (dateInput?: string | Date | null) => {
+  const formatDisplayDate = (dateInput?: string | Date | null) => {
     if (!dateInput) return '—';
-    const d = new Date(dateInput);
-    if (isNaN(d.getTime())) return String(dateInput);
-    return d.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    return formatDateInTimezone(dateInput, 'Asia/Kolkata');
   };
 
   const formatCorrectionType = (type?: string) => {
@@ -138,25 +133,12 @@ export default function AdminAttendanceCorrectionsPage() {
 
   const formatDateString = (rawDate?: string | null) => {
     if (!rawDate) return '—';
-    if (typeof rawDate === 'string' && rawDate.length >= 10) {
-      return rawDate.slice(0, 10);
-    }
-    try {
-      return new Date(rawDate).toISOString().slice(0, 10);
-    } catch {
-      return String(rawDate);
-    }
+    return formatDateInTimezone(rawDate, 'Asia/Kolkata');
   };
 
   const formatPunchTime = (iso?: string | null) => {
     if (!iso) return '—';
-    try {
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return iso;
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return iso;
-    }
+    return formatTimeInTimezone(iso, 'Asia/Kolkata');
   };
 
   const getShortFailureLabel = (failure: string): string => {

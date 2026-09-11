@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/feedback/toast-provider';
+import { getNowInTimezone } from '@/lib/timezone';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
@@ -179,13 +180,14 @@ export default function OrgAdminLandingPage() {
 
   // Greeting Generator
   const greeting = (() => {
-    const hour = new Date().getHours();
+    const hour = getNowInTimezone('Asia/Kolkata').hours;
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   })();
 
   const formattedDate = new Date().toLocaleDateString('en-US', {
+    timeZone: 'Asia/Kolkata',
     weekday: 'long',
     day: 'numeric',
     month: 'long',
