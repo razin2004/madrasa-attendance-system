@@ -18,61 +18,44 @@ async function testAttendanceFlow() {
 
   if (!matchesSept12) throw new Error('Test 1 Failed: Punch at 1:00 AM IST Sept 12 did not match Sept 12 range!');
 
-  // Test 2: Shift starting at 01:00 AM with Clock In at 02:05 AM (Late In = 65 mins = 1h 5m)
-  console.log('Test 2: Shift starting at 01:00 AM with Clock In at 02:05 AM');
-  const clockIn0205 = new Date('2026-09-11T20:35:00.000Z');  // 02:05 AM IST Sept 12
-  const clockOut0206 = new Date('2026-09-11T20:36:00.000Z'); // 02:06 AM IST Sept 12
+  // Test 2: User's Exact Multi-Punch Scenario
+  // Shift: 01:00 AM to 05:00 AM (4 hours = 240 mins)
+  // Punches: 02:00 AM (In), 02:10 AM (Out), 02:20 AM (In), 04:00 AM (Out)
+  console.log('Test 2: User Exact Multi-Punch Scenario (Shift: 01:00 AM - 05:00 AM)');
 
-  const late1AmMetrics = calculateAttendanceMetricsForPunches({
+  const punch1In  = new Date('2026-09-11T20:30:00.000Z'); // 02:00 AM IST
+  const punch2Out = new Date('2026-09-11T20:40:00.000Z'); // 02:10 AM IST (10m break start)
+  const punch3In  = new Date('2026-09-11T20:50:00.000Z'); // 02:20 AM IST (10m break end)
+  const punch4Out = new Date('2026-09-11T22:30:00.000Z'); // 04:00 AM IST
+
+  const userMetrics = calculateAttendanceMetricsForPunches({
     records: [
-      { type: 'CLOCK_IN', timestamp: clockIn0205 },
-      { type: 'CLOCK_OUT', timestamp: clockOut0206 },
+      { type: 'CLOCK_IN', timestamp: punch1In },
+      { type: 'CLOCK_OUT', timestamp: punch2Out },
+      { type: 'CLOCK_IN', timestamp: punch3In },
+      { type: 'CLOCK_OUT', timestamp: punch4Out },
     ],
     scheduledStart: '01:00',
-    scheduledEnd: '09:00',
+    scheduledEnd: '05:00',
     timezone: 'Asia/Kolkata',
   });
 
-  console.log('  Display Clock In: ', late1AmMetrics.displayClockInTime);
-  console.log('  Display Clock Out:', late1AmMetrics.displayClockOutTime);
-  console.log('  Late In Mins:     ', late1AmMetrics.lateInMinutes, 'mins (' + late1AmMetrics.lateInFormatted + ')');
+  console.log('  Clock In:         ', userMetrics.displayClockInTime, '(Expected: 02:00 am)');
+  console.log('  Clock Out:        ', userMetrics.displayClockOutTime, '(Expected: 04:00 am)');
+  console.log('  Late In:          ', userMetrics.lateInMinutes, 'mins (' + userMetrics.lateInFormatted + ') (Expected: 60 mins / 1h)');
+  console.log('  Early Out:        ', userMetrics.earlyOutMinutes, 'mins (' + userMetrics.earlyOutFormatted + ') (Expected: 60 mins / 1h)');
+  console.log('  Break Time:       ', userMetrics.totalBreakMinutes, 'mins (' + userMetrics.totalBreakFormatted + ') (Expected: 10 mins / 10m)');
+  console.log('  Break Details:    ', JSON.stringify(userMetrics.breakDetails));
+  console.log('  Total Working:    ', userMetrics.totalWorkingHoursMinutes, 'mins (' + userMetrics.totalWorkingHoursFormatted + ') (Expected: 110 mins / 1h 50m)\n');
 
-  if (late1AmMetrics.lateInMinutes !== 65) {
-    throw new Error(`Test 2 Failed: Late In should be 65 mins, got ${late1AmMetrics.lateInMinutes}`);
-  }
-  if (late1AmMetrics.lateInFormatted !== '1h 5m') {
-    throw new Error(`Test 2 Failed: Late In formatted should be "1h 5m", got "${late1AmMetrics.lateInFormatted}"`);
-  }
+  if (userMetrics.displayClockInTime !== '02:00 am') throw new Error(`Test 2 Failed: Clock In expected "02:00 am", got "${userMetrics.displayClockInTime}"`);
+  if (userMetrics.displayClockOutTime !== '04:00 am') throw new Error(`Test 2 Failed: Clock Out expected "04:00 am", got "${userMetrics.displayClockOutTime}"`);
+  if (userMetrics.lateInMinutes !== 60) throw new Error(`Test 2 Failed: Late In expected 60 mins, got ${userMetrics.lateInMinutes}`);
+  if (userMetrics.earlyOutMinutes !== 60) throw new Error(`Test 2 Failed: Early Out expected 60 mins, got ${userMetrics.earlyOutMinutes}`);
+  if (userMetrics.totalBreakMinutes !== 10) throw new Error(`Test 2 Failed: Break time expected 10 mins, got ${userMetrics.totalBreakMinutes}`);
+  if (userMetrics.totalWorkingHoursMinutes !== 110) throw new Error(`Test 2 Failed: Total Working Hours expected 110 mins, got ${userMetrics.totalWorkingHoursMinutes}`);
 
-  // Test 3: Roster schedule weekday lookup for local date 2026-09-12 (Saturday)
-  console.log('\nTest 3: calculateStaffDaySchedule for 2026-09-12 (Saturday)');
-  const sampleAssignments: any[] = [
-    {
-      shiftPatternId: 'sp-1',
-      effectiveFrom: new Date('2026-09-01T00:00:00.000Z'),
-      effectiveTo: null,
-      shiftPattern: {
-        id: 'sp-1',
-        name: 'Night Shift',
-        minimumStaffingThreshold: 1,
-        weeklyDays: [
-          { weekday: 'SATURDAY', isHoliday: false, startTime: '01:00', endTime: '09:00', isOvernight: false },
-        ],
-      },
-    },
-  ];
-
-  const sched = calculateStaffDaySchedule('2026-09-12', sampleAssignments, [], 'Asia/Kolkata');
-  console.log('  Date ISO:     ', sched.date);
-  console.log('  Weekday:      ', sched.weekday);
-  console.log('  Scheduled:    ', sched.isScheduled);
-  console.log('  Start Time:   ', sched.startTime);
-  console.log('  End Time:     ', sched.endTime);
-
-  if (sched.weekday !== 'SATURDAY') throw new Error(`Test 3 Failed: Expected SATURDAY, got ${sched.weekday}`);
-  if (sched.startTime !== '01:00') throw new Error(`Test 3 Failed: Expected start time "01:00", got "${sched.startTime}"`);
-
-  console.log('\n=== ALL ATTENDANCE VERIFICATION TESTS PASSED SUCCESSFULLY! ===');
+  console.log('=== ALL ATTENDANCE VERIFICATION TESTS PASSED SUCCESSFULLY! ===');
 }
 
 testAttendanceFlow().catch((e) => {

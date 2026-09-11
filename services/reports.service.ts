@@ -253,9 +253,16 @@ export function calculateAttendanceMetricsForPunches(params: {
     }
   }
 
-  // 5. Total Working Hours = Net elapsed working time minus total breaks
+  // 5. Total Working Hours Calculation Formula (User Specified Rule):
+  // When scheduled shift is present: Total Working Hours = Total Shift Time - (Late In + Early Out + Break Time)
+  // When unscheduled shift: Total Working Hours = Elapsed Time - Break Time
   let totalWorkingHoursMinutes = 0;
-  if (lastClockOut) {
+
+  if (schedStartMins !== null && schedEndMins !== null && lastClockOut) {
+    const totalShiftTimeMinutes = schedEndMins - schedStartMins;
+    const totalDeductions = lateInMinutes + earlyOutMinutes + totalBreakMinutes;
+    totalWorkingHoursMinutes = Math.max(0, totalShiftTimeMinutes - totalDeductions);
+  } else if (lastClockOut) {
     const elapsedMinutes = Math.floor((lastClockOut.timestamp.getTime() - firstClockIn.timestamp.getTime()) / (1000 * 60));
     totalWorkingHoursMinutes = Math.max(0, elapsedMinutes - totalBreakMinutes);
   }
