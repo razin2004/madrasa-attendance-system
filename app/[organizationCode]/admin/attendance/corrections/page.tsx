@@ -190,13 +190,11 @@ export default function AdminAttendanceCorrectionsPage() {
 
     // Construct staffReason
     if (inReason && outReason) {
-      staffReason = `Clock-In: "${inReason}" • Clock-Out: "${outReason}"`;
-    } else if (inReason && outPart) {
-      staffReason = `Clock-In: "${inReason}"`;
+      staffReason = inReason === outReason ? inReason : `${inReason} • ${outReason}`;
     } else if (inReason) {
       staffReason = inReason;
     } else if (outReason) {
-      staffReason = `Clock-Out: "${outReason}"`;
+      staffReason = outReason;
     }
 
     // Clean up "Clock Out: Unverified punch" markers

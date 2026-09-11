@@ -41,26 +41,27 @@ export function cleanStaffJustification(rawReason?: string | null): string | nul
   }
 
   if (inReason && outReason) {
-    return `Clock-In: "${inReason}" • Clock-Out: "${outReason}"`;
-  }
-  if (inReason && outPart) {
-    return `Clock-In: "${inReason}"`;
+    if (inReason === outReason) return inReason;
+    return `${inReason} • ${outReason}`;
   }
   if (inReason) {
     return inReason;
   }
   if (outReason) {
-    return `Clock-Out: "${outReason}"`;
+    return outReason;
   }
 
-  // Fallback: strip (Failures: ...) from string
+  // Fallback: strip (Failures: ...) and prefix markers from string
   const clean = text
     .replace(/\(Failures:[^)]*\)/gi, '')
     .replace(/Failures:[^|]*/gi, '')
     .replace(/Unverified punch\.?/gi, '')
-    .replace(/Reason:\s*/gi, '')
-    .replace(/\|\s*Clock Out:\s*/gi, '')
-    .replace(/^[|;\s]+|[|;\s]+$/g, '')
+    .replace(/Clock-In:\s*["']?/gi, '')
+    .replace(/Clock-Out:\s*["']?/gi, '')
+    .replace(/Reason:\s*["']?/gi, '')
+    .replace(/\|\s*Clock Out:\s*/gi, ' • ')
+    .replace(/["']/g, '')
+    .replace(/^[|;\s•]+|[|;\s•]+$/g, '')
     .trim();
 
   if (!clean || clean.toLowerCase() === 'unverified punch') return null;
