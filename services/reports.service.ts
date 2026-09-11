@@ -226,23 +226,12 @@ export function calculateAttendanceMetricsForPunches(params: {
   const actualInMins = actualInHour * 60 + actualInMin;
 
   // Clock-In Rounding & Late In calculation
-  let displayClockInTime = formatTimeInTimezone(firstClockIn.timestamp, timezone);
+  const displayClockInTime = formatTimeInTimezone(firstClockIn.timestamp, timezone);
   let lateInMinutes = 0;
 
   if (schedStartMins !== null) {
-    if (actualInMins < schedStartMins) {
-      // Early arrival: display official shift start time
-      const [sh, sm] = scheduledStart!.split(':').map(Number);
-      const isPm = sh >= 12;
-      const h12 = sh % 12 || 12;
-      displayClockInTime = `${String(h12).padStart(2, '0')}:${String(sm).padStart(2, '0')} ${isPm ? 'PM' : 'AM'}`;
-      lateInMinutes = 0;
-    } else if (actualInMins > schedStartMins) {
-      // Late arrival: display exact late clock-in time
-      displayClockInTime = formatTimeInTimezone(firstClockIn.timestamp, timezone);
+    if (actualInMins > schedStartMins) {
       lateInMinutes = actualInMins - schedStartMins;
-    } else {
-      lateInMinutes = 0;
     }
   }
 
@@ -251,6 +240,7 @@ export function calculateAttendanceMetricsForPunches(params: {
   let earlyOutMinutes = 0;
 
   if (lastClockOut) {
+    displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp, timezone);
     const actualOutHour = lastClockOut.timestamp.getHours();
     const actualOutMin = lastClockOut.timestamp.getMinutes();
     let actualOutMins = actualOutHour * 60 + actualOutMin;
@@ -258,24 +248,8 @@ export function calculateAttendanceMetricsForPunches(params: {
       actualOutMins += 24 * 60; // Overnight clock out handle
     }
 
-    if (schedEndMins !== null) {
-      if (actualOutMins > schedEndMins) {
-        // Late Departure: display official shift end time
-        const [eh, em] = scheduledEnd!.split(':').map(Number);
-        const isPm = eh >= 12;
-        const h12 = eh % 12 || 12;
-        displayClockOutTime = `${String(h12).padStart(2, '0')}:${String(em).padStart(2, '0')} ${isPm ? 'PM' : 'AM'}`;
-        earlyOutMinutes = 0;
-      } else if (actualOutMins < schedEndMins) {
-        // Early Departure: display actual early clock-out time
-        displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp, timezone);
-        earlyOutMinutes = schedEndMins - actualOutMins;
-      } else {
-        displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp, timezone);
-        earlyOutMinutes = 0;
-      }
-    } else {
-      displayClockOutTime = formatTimeInTimezone(lastClockOut.timestamp, timezone);
+    if (schedEndMins !== null && actualOutMins < schedEndMins) {
+      earlyOutMinutes = schedEndMins - actualOutMins;
     }
   }
 

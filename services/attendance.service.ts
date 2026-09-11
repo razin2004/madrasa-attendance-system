@@ -2117,8 +2117,7 @@ export async function getAdminDailyAttendance(params: {
   for (const item of staffAttendanceMap.values()) {
     const sorted = item.records.sort((a: any, b: any) => a.timestamp.getTime() - b.timestamp.getTime());
     const firstIn = sorted.find((r: any) => r.type === 'CLOCK_IN');
-    const lastPunch = sorted[sorted.length - 1];
-    const lastOut = lastPunch?.type === 'CLOCK_OUT' ? lastPunch : null;
+    const lastOut = sorted.filter((r: any) => r.type === 'CLOCK_OUT').pop() || null;
 
     if (firstIn) {
       item.clockIn = firstIn.timestamp;
