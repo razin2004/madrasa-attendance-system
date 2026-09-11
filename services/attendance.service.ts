@@ -435,13 +435,14 @@ export async function recordAttendance(params: {
   error?: string;
   evaluation: ThreeLayerEvaluationResult;
 }> {
-  let now = new Date();
+  const now = new Date();
+  let localDateObj = now;
   if (typeof params.clientTimezoneOffset === 'number' && !isNaN(params.clientTimezoneOffset)) {
     const serverOffset = now.getTimezoneOffset();
     const diffMs = (serverOffset - params.clientTimezoneOffset) * 60 * 1000;
-    now = new Date(now.getTime() + diffMs);
+    localDateObj = new Date(now.getTime() + diffMs);
   }
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const startOfDay = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), 0, 0, 0);
 
   // 1. Fresh Server-side Three-Layer Evaluation
   const evaluation = await evaluateThreeLayerAttendance(
@@ -461,7 +462,7 @@ export async function recordAttendance(params: {
     where: { staffProfileId: params.staffProfileId },
   });
 
-  const daySchedule = calculateStaffDaySchedule(now, staffAssignments, staffOverrides);
+  const daySchedule = calculateStaffDaySchedule(localDateObj, staffAssignments, staffOverrides);
 
   // Section 14 & 29: NO SCHEDULE = NO ATTENDANCE (Clock In & Clock Out blocked)
   if (!daySchedule.isScheduled || daySchedule.isHoliday) {
@@ -806,13 +807,15 @@ export async function getStaffTodayAttendanceStatus(
   staffProfileId: string,
   clientTimezoneOffset?: number
 ) {
-  let now = new Date();
+  const now = new Date();
+  let localDateObj = now;
   if (typeof clientTimezoneOffset === 'number' && !isNaN(clientTimezoneOffset)) {
     const serverOffset = now.getTimezoneOffset();
     const diffMs = (serverOffset - clientTimezoneOffset) * 60 * 1000;
-    now = new Date(now.getTime() + diffMs);
+    localDateObj = new Date(now.getTime() + diffMs);
   }
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const startOfDay = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), 0, 0, 0);
+  const startOfDayUtc = new Date(startOfDay.getTime() - (typeof clientTimezoneOffset === 'number' ? (now.getTimezoneOffset() - clientTimezoneOffset) * 60000 : 0));
 
   const staffAssignments = await prisma.shiftAssignment.findMany({
     where: { staffProfileId, shiftPattern: { isActive: true } },
@@ -822,12 +825,12 @@ export async function getStaffTodayAttendanceStatus(
     where: { staffProfileId },
   });
 
-  const daySchedule = calculateStaffDaySchedule(now, staffAssignments, staffOverrides);
+  const daySchedule = calculateStaffDaySchedule(localDateObj, staffAssignments, staffOverrides);
 
   const todayRecords = await prisma.attendanceRecord.findMany({
     where: {
       staffProfileId,
-      timestamp: { gte: startOfDay },
+      timestamp: { gte: startOfDayUtc },
     },
     orderBy: { timestamp: 'asc' },
     include: { branch: true },
