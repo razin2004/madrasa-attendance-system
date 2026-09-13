@@ -517,22 +517,22 @@ export async function recordAttendance(params: {
 
     if (activeCandidateShift && activeCandidateShift.endTime) {
       const [endH, endM] = activeCandidateShift.endTime.split(':').map((s) => parseInt(s, 10));
-      let shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+      let shiftEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), endH, endM, 0, 0);
 
       if (activeCandidateShift.isOvernight && activeCandidateShift.startTime) {
         const [startH, startM] = activeCandidateShift.startTime.split(':').map((s) => parseInt(s, 10));
-        const shiftStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH, startM, 0, 0);
+        const shiftStart = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), startH, startM, 0, 0);
         if (shiftEnd <= shiftStart) {
           shiftEnd.setDate(shiftEnd.getDate() + 1);
         }
       }
 
-      if (now >= shiftEnd) {
+      if (localDateObj >= shiftEnd) {
         const hasRemainingFutureShift = shiftsList.slice(verifiedTodayCount).some((s) => {
           if (!s.endTime) return false;
           const [eH, eM] = s.endTime.split(':').map(Number);
-          const sEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), eH, eM, 0, 0);
-          return now < sEnd || s.isOvernight;
+          const sEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), eH, eM, 0, 0);
+          return localDateObj < sEnd || s.isOvernight;
         });
 
         if (!hasRemainingFutureShift) {
@@ -964,7 +964,7 @@ export async function getStaffTodayAttendanceStatus(
         }
       }
     } else {
-      const nowMins = now.getHours() * 60 + now.getMinutes();
+      const nowMins = localDateObj.getHours() * 60 + localDateObj.getMinutes();
       const candidateShifts =
         completedCyclesCount > 0 && completedCyclesCount < shiftsList.length
           ? shiftsList.slice(completedCyclesCount)
