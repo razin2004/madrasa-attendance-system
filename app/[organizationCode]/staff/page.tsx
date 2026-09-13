@@ -14,11 +14,12 @@ import {
   AlertTriangle,
   RefreshCw,
   History,
-  Building2,
   Calendar,
   ShieldCheck,
   FilePlus,
   ChevronRight,
+  ChevronDown,
+
   Sparkles,
   Loader2,
   AlertCircle,
@@ -142,6 +143,30 @@ export default function StaffDashboardPage() {
   const [checking, setChecking] = useState(false);
   const [clocking, setClocking] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [shiftDropdownOpen, setShiftDropdownOpen] = useState(false);
+  const [selectedShiftIndex, setSelectedShiftIndex] = useState<number | null>(null);
+
+  const getShiftStatusTag = (s: any, idx: number) => {
+    const isCompletedShift = idx < (todayStatus?.completedCycles || 0);
+    const isActive =
+      s.name === todayStatus?.schedule?.activeShift?.name &&
+      s.startTime === todayStatus?.schedule?.activeShift?.startTime;
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const [sh, sm] = (s.startTime || '00:00').split(':').map(Number);
+    const startMins = sh * 60 + sm;
+    const isUpcoming = nowMins < startMins;
+
+    if (isCompletedShift)
+      return { label: '✓ Done', color: '#34d399', bg: 'rgba(52, 211, 153, 0.15)', border: 'rgba(52, 211, 153, 0.3)' };
+    if (isActive && isUpcoming)
+      return { label: '★ Next', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)', border: 'rgba(56, 189, 248, 0.3)' };
+    if (isActive)
+      return { label: '★ Active', color: '#818cf8', bg: 'rgba(129, 140, 248, 0.2)', border: 'rgba(129, 140, 248, 0.4)' };
+    if (isUpcoming)
+      return { label: 'Upcoming', color: '#94a3b8', bg: 'rgba(255, 255, 255, 0.08)', border: 'rgba(255, 255, 255, 0.15)' };
+    return { label: 'Ended', color: '#64748b', bg: 'rgba(255, 255, 255, 0.04)', border: 'rgba(255, 255, 255, 0.08)' };
+  };
   const [locationCoords, setLocationCoords] = useState<{ latitude: number; longitude: number; accuracy?: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationPermissionStatus, setLocationPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'unknown'>('unknown');
@@ -728,43 +753,212 @@ export default function StaffDashboardPage() {
                 {currentDateStr}
               </div>
 
-              <div>
+              {todayStatus?.schedule?.allShifts && todayStatus.schedule.allShifts.length > 1 ? (
+                <div style={{ position: 'relative', display: 'inline-block', marginTop: '14px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShiftDropdownOpen(!shiftDropdownOpen)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '8px 18px',
+                      borderRadius: '20px',
+                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                      border: '1px solid rgba(129, 140, 248, 0.45)',
+                      color: '#ffffff',
+                      fontSize: '13.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+                    }}
+                  >
+                    <Calendar size={15} color="#818cf8" />
+                    <span>
+                      {(() => {
+                        const allShifts = todayStatus.schedule.allShifts;
+                        const current =
+                          selectedShiftIndex !== null && allShifts[selectedShiftIndex]
+                            ? allShifts[selectedShiftIndex]
+                            : todayStatus.schedule.activeShift || allShifts[0];
+
+                        if (!current) return "Today's Shifts";
+                        const now = new Date();
+                        const nowMins = now.getHours() * 60 + now.getMinutes();
+                        const [sh, sm] = (current.startTime || '00:00').split(':').map(Number);
+                        const startMins = sh * 60 + sm;
+                        const [eh, em] = (current.endTime || '00:00').split(':').map(Number);
+                        const endMins = eh * 60 + em;
+
+                        let prefix = 'Shift';
+                        if (nowMins < startMins) prefix = 'Upcoming Shift';
+                        else if (nowMins <= endMins || current.isOvernight) prefix = 'Active Shift';
+                        else prefix = 'Shift Ended';
+
+                        return `${prefix}: ${current.name} (${current.startTime} – ${current.endTime})`;
+                      })()}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        padding: '3px 9px',
+                        borderRadius: '12px',
+                        backgroundColor: 'rgba(129, 140, 248, 0.3)',
+                        color: '#c7d2fe',
+                        border: '1px solid rgba(129, 140, 248, 0.5)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <span>{todayStatus.schedule.allShifts.length} Shifts</span>
+                      <ChevronDown
+                        size={14}
+                        style={{
+                          transform: shiftDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease',
+                        }}
+                      />
+                    </span>
+                  </button>
+
+                  {shiftDropdownOpen && (
+                    <>
+                      <div
+                        onClick={() => setShiftDropdownOpen(false)}
+                        style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'transparent' }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 'calc(100% + 8px)',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: '350px',
+                          maxWidth: '92vw',
+                          backgroundColor: '#0f172a',
+                          backgroundImage: 'linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.99) 100%)',
+                          backdropFilter: 'blur(20px)',
+                          WebkitBackdropFilter: 'blur(20px)',
+                          border: '1px solid rgba(129, 140, 248, 0.4)',
+                          borderRadius: '18px',
+                          padding: '12px',
+                          boxShadow: '0 20px 45px -10px rgba(0, 0, 0, 0.85), 0 0 25px rgba(99, 102, 241, 0.3)',
+                          zIndex: 50,
+                          textAlign: 'left',
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: '4px 8px 10px 8px',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                            marginBottom: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                            {`Today's Assigned Shifts (${todayStatus.schedule.allShifts.length})`}
+                          </span>
+                          <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 600 }}>
+                            Select Shift to View
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '250px', overflowY: 'auto' }}>
+                          {todayStatus.schedule.allShifts.map((s: any, idx: number) => {
+                            const tag = getShiftStatusTag(s, idx);
+                            const isSelected =
+                              selectedShiftIndex === idx ||
+                              (selectedShiftIndex === null &&
+                                s.name === todayStatus?.schedule?.activeShift?.name &&
+                                s.startTime === todayStatus?.schedule?.activeShift?.startTime);
+
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  setSelectedShiftIndex(idx);
+                                  setShiftDropdownOpen(false);
+                                }}
+                                style={{
+                                  padding: '10px 14px',
+                                  borderRadius: '12px',
+                                  backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.03)',
+                                  border: isSelected ? '1px solid rgba(129, 140, 248, 0.6)' : '1px solid rgba(255, 255, 255, 0.06)',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '12px',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: isSelected ? '#ffffff' : '#cbd5e1' }}>
+                                    {s.name}
+                                  </div>
+                                  <div style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
+                                    {s.startTime} – {s.endTime}
+                                  </div>
+                                </div>
+                                <span
+                                  style={{
+                                    fontSize: '10.5px',
+                                    fontWeight: 800,
+                                    padding: '3px 9px',
+                                    borderRadius: '8px',
+                                    backgroundColor: tag.bg,
+                                    color: tag.color,
+                                    border: `1px solid ${tag.border}`,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {tag.label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
                 <span className={styles.shiftBadge}>
                   <Calendar size={14} color="#818cf8" />
                   <span>
-                    {todayStatus?.schedule?.activeShift?.name && todayStatus.schedule.activeShift.startTime
-                      ? `Active Shift: ${todayStatus.schedule.activeShift.name} (${todayStatus.schedule.activeShift.startTime} – ${todayStatus.schedule.activeShift.endTime})`
-                      : todayStatus?.schedule?.shiftPatternName && todayStatus.schedule.startTime
-                      ? `${todayStatus.schedule.shiftPatternName} (${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime})`
-                      : todayStatus?.schedule?.shiftPatternName
-                      ? `${todayStatus.schedule.shiftPatternName} (Off Duty)`
-                      : 'Assigned Shift Schedule'}
+                    {(() => {
+                      const active = todayStatus?.schedule?.activeShift;
+                      if (active && active.name && active.startTime && active.endTime) {
+                        const now = new Date();
+                        const nowMins = now.getHours() * 60 + now.getMinutes();
+                        const [sh, sm] = active.startTime.split(':').map(Number);
+                        const startMins = sh * 60 + sm;
+                        const [eh, em] = active.endTime.split(':').map(Number);
+                        const endMins = eh * 60 + em;
+
+                        if (nowMins < startMins) {
+                          return `Upcoming Shift: ${active.name} (${active.startTime} – ${active.endTime})`;
+                        } else if (nowMins <= endMins || active.isOvernight) {
+                          return `Active Shift: ${active.name} (${active.startTime} – ${active.endTime})`;
+                        } else {
+                          return `Shift Ended: ${active.name} (${active.startTime} – ${active.endTime})`;
+                        }
+                      }
+                      if (todayStatus?.schedule?.shiftPatternName && todayStatus.schedule.startTime) {
+                        return `${todayStatus.schedule.shiftPatternName} (${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime})`;
+                      }
+                      if (todayStatus?.schedule?.shiftPatternName) {
+                        return `${todayStatus.schedule.shiftPatternName} (Off Duty)`;
+                      }
+                      return 'Assigned Shift Schedule';
+                    })()}
                   </span>
                 </span>
-              </div>
-
-              {todayStatus?.schedule?.allShifts && todayStatus.schedule.allShifts.length > 1 && (
-                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
-                  {todayStatus.schedule.allShifts.map((s: any, idx: number) => {
-                    const isActive = s.name === todayStatus.schedule?.activeShift?.name;
-                    return (
-                      <span
-                        key={idx}
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          padding: '3px 9px',
-                          borderRadius: '12px',
-                          border: isActive ? '1px solid #818cf8' : '1px solid rgba(255,255,255,0.15)',
-                          backgroundColor: isActive ? 'rgba(129, 140, 248, 0.2)' : 'rgba(255,255,255,0.05)',
-                          color: isActive ? '#818cf8' : '#94a3b8',
-                        }}
-                      >
-                        {s.name}: {s.startTime} – {s.endTime} {isActive ? '★ Active' : ''}
-                      </span>
-                    );
-                  })}
-                </div>
               )}
             </div>
 

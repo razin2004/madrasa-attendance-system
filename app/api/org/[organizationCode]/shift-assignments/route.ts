@@ -180,7 +180,9 @@ export async function POST(
       const conflictCheck = await checkShiftAssignmentConflict(
         staff.id,
         startDate,
-        endDate
+        endDate,
+        undefined,
+        pattern.id
       );
 
       if (conflictCheck.hasConflict) {

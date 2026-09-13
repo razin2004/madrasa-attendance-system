@@ -80,7 +80,8 @@ export async function PATCH(
       assignment.staffProfileId,
       startDate,
       endDate,
-      assignment.id
+      assignment.id,
+      assignment.shiftPatternId
     );
 
     if (conflictCheck.hasConflict) {

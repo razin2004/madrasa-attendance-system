@@ -925,13 +925,18 @@ export async function getStaffTodayAttendanceStatus(
       }
     } else {
       const nowMins = now.getHours() * 60 + now.getMinutes();
-      let bestShift = shiftsList[0];
+      const candidateShifts =
+        completedCyclesCount > 0 && completedCyclesCount < shiftsList.length
+          ? shiftsList.slice(completedCyclesCount)
+          : shiftsList;
+
+      let bestShift = candidateShifts[0] || shiftsList[shiftsList.length - 1];
       let foundUpcoming = false;
 
-      for (const s of shiftsList) {
+      for (const s of candidateShifts) {
         const [eh, em] = s.endTime.split(':').map(Number);
         const endMins = eh * 60 + em;
-        if (nowMins <= endMins) {
+        if (nowMins <= endMins || s.isOvernight) {
           bestShift = s;
           foundUpcoming = true;
           break;

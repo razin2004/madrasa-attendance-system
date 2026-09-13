@@ -119,8 +119,8 @@ export async function checkStaffShiftIntersection(params: {
       }
     }
   } else {
-    // 4. Fetch Regular Assigned Shift Pattern on this weekday
-    const activeAssignment = await prisma.shiftAssignment.findFirst({
+    // 4. Fetch Regular Assigned Shift Patterns on this weekday
+    const activeAssignments = await prisma.shiftAssignment.findMany({
       where: {
         staffProfileId,
         effectiveFrom: { lte: date },
@@ -136,28 +136,30 @@ export async function checkStaffShiftIntersection(params: {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (activeAssignment?.shiftPattern) {
-      const weekdayNames: Weekday[] = [
-        'SUNDAY',
-        'MONDAY',
-        'TUESDAY',
-        'WEDNESDAY',
-        'THURSDAY',
-        'FRIDAY',
-        'SATURDAY',
-      ];
-      const targetWeekday = weekdayNames[date.getUTCDay()];
+    const weekdayNames: Weekday[] = [
+      'SUNDAY',
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+    ];
+    const targetWeekday = weekdayNames[date.getUTCDay()];
 
-      const weeklyDay = activeAssignment.shiftPattern.weeklyDays.find(
-        (wd) => wd.weekday === targetWeekday
-      );
+    for (const activeAssignment of activeAssignments) {
+      if (activeAssignment.shiftPattern) {
+        const weeklyDay = activeAssignment.shiftPattern.weeklyDays.find(
+          (wd) => wd.weekday === targetWeekday
+        );
 
-      if (weeklyDay && !weeklyDay.isHoliday && weeklyDay.startTime && weeklyDay.endTime) {
-        if (doShiftTimesIntersect(startTime, endTime, weeklyDay.startTime, weeklyDay.endTime)) {
-          return {
-            intersects: true,
-            reason: `Cannot assign additional shift (${startTime}–${endTime}). The shift time for ${dateStr} intersects with Regular Shift (${activeAssignment.shiftPattern.name} ${weeklyDay.startTime}–${weeklyDay.endTime}) for ${staffName}.`,
-          };
+        if (weeklyDay && !weeklyDay.isHoliday && weeklyDay.startTime && weeklyDay.endTime) {
+          if (doShiftTimesIntersect(startTime, endTime, weeklyDay.startTime, weeklyDay.endTime)) {
+            return {
+              intersects: true,
+              reason: `Cannot assign additional shift (${startTime}–${endTime}). The shift time for ${dateStr} intersects with Regular Shift (${activeAssignment.shiftPattern.name} ${weeklyDay.startTime}–${weeklyDay.endTime}) for ${staffName}.`,
+            };
+          }
         }
       }
     }

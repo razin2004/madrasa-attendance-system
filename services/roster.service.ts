@@ -267,7 +267,7 @@ export async function checkShiftAssignmentConflict(
         for (const tInt of targetIntervals) {
           for (const eInt of existingIntervals) {
             if (tInt.weekday === eInt.weekday) {
-              const timeOverlaps = tInt.startMin < eInt.endMin && tInt.endMin > tInt.startMin;
+              const timeOverlaps = tInt.startMin < eInt.endMin && tInt.endMin > eInt.startMin;
               if (timeOverlaps) {
                 return {
                   hasConflict: true,
