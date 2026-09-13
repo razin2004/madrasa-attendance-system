@@ -5,8 +5,8 @@ import { Coffee, Clock, X } from 'lucide-react';
 
 export interface BreakItem {
   breakNumber: number;
-  startTime: string; // e.g. "12:30 PM"
-  endTime: string;   // e.g. "01:00 PM"
+  startTime: string; // e.g. "02:10 am"
+  endTime: string;   // e.g. "02:20 am"
   durationMinutes: number;
 }
 
@@ -73,147 +73,126 @@ export function BreakPopover({ totalBreakMinutes, breaks }: BreakPopoverProps) {
           background: 'rgba(245, 158, 11, 0.15)',
           border: '1px solid rgba(245, 158, 11, 0.35)',
           color: '#fbbf24',
-          fontSize: '12px',
+          fontSize: '11.5px',
           fontWeight: 700,
-          padding: '4px 10px',
+          padding: '2px 8px',
           borderRadius: '6px',
           cursor: 'pointer',
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '5px',
+          gap: '4px',
           transition: 'all 0.15s ease',
-          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+          whiteSpace: 'nowrap',
         }}
         title="Click to view break intervals"
       >
-        <Coffee size={13} />
+        <Coffee size={12} />
         <span>{formatMinutes(totalBreakMinutes)}</span>
       </button>
 
       {isOpen && (
-        <>
-          {/* Backdrop for click away & mobile overlay */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 6px)',
+            right: 0,
+            zIndex: 99999,
+            width: '220px',
+            padding: '10px',
+            backgroundColor: '#0f172a',
+            border: '1px solid var(--border-medium, rgba(255, 255, 255, 0.18))',
+            borderRadius: '10px',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.75)',
+            boxSizing: 'border-box',
+          }}
+        >
           <div
             style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 99990,
-              backgroundColor: 'rgba(0, 0, 0, 0.55)',
-              backdropFilter: 'blur(3px)',
-            }}
-            onClick={handleClose}
-          />
-
-          {/* Modal Popover Card */}
-          <div
-            className="glass-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 99999,
-              width: '90%',
-              maxWidth: '320px',
-              padding: '16px',
-              backgroundColor: '#0d121f',
-              border: '1px solid var(--border-medium, rgba(255, 255, 255, 0.18))',
-              borderRadius: '16px',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9)',
-              boxSizing: 'border-box',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '6px',
+              paddingBottom: '4px',
+              borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.1))',
             }}
           >
-            <div
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 800, color: '#ffffff' }}>
+              <Coffee size={13} color="#fbbf24" />
+              <span>Break Time</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleClose}
               style={{
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: '0',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '12px',
-                paddingBottom: '8px',
-                borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.1))',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>
-                <Coffee size={16} color="#fbbf24" />
-                <span>Break Time Breakdown</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  color: '#94a3b8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            {breaks.length === 0 ? (
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '10px 0', textAlign: 'center' }}>
-                Total Break: <strong>{formatMinutes(totalBreakMinutes)}</strong>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
-                {breaks.map((b) => (
-                  <div
-                    key={b.breakNumber}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 700, color: '#f1f5f9' }}>
-                        Break #{b.breakNumber}
-                      </div>
-                      <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={11} color="#818cf8" />
-                        <span>{b.startTime} – {b.endTime}</span>
-                      </div>
-                    </div>
-                    <span style={{ fontWeight: 800, color: '#fbbf24', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
-                      {formatMinutes(b.durationMinutes)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div
-              style={{
-                marginTop: '12px',
-                paddingTop: '8px',
-                borderTop: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.1))',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: '12px',
-                fontWeight: 800,
-              }}
-            >
-              <span style={{ color: 'var(--text-muted)' }}>Total Break Duration:</span>
-              <span style={{ color: '#fbbf24', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>
-                {formatMinutes(totalBreakMinutes)}
-              </span>
-            </div>
+              <X size={13} />
+            </button>
           </div>
-        </>
+
+          {breaks.length === 0 ? (
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '4px 0', textAlign: 'center' }}>
+              Total: <strong>{formatMinutes(totalBreakMinutes)}</strong>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '160px', overflowY: 'auto' }}>
+              {breaks.map((b) => (
+                <div
+                  key={b.breakNumber}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    padding: '5px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#f1f5f9' }}>
+                      Break #{b.breakNumber}
+                    </div>
+                    <div style={{ color: '#94a3b8', fontSize: '10.5px', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <Clock size={10} color="#818cf8" />
+                      <span>{b.startTime} – {b.endTime}</span>
+                    </div>
+                  </div>
+                  <span style={{ fontWeight: 800, color: '#fbbf24', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                    {formatMinutes(b.durationMinutes)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div
+            style={{
+              marginTop: '6px',
+              paddingTop: '4px',
+              borderTop: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.1))',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '11px',
+              fontWeight: 700,
+            }}
+          >
+            <span style={{ color: 'var(--text-muted)' }}>Total:</span>
+            <span style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>
+              {formatMinutes(totalBreakMinutes)}
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );
