@@ -478,25 +478,71 @@ export async function recordAttendance(params: {
     };
   }
 
-  // Clock In must be before shift end time
-  if (params.type === 'CLOCK_IN' && daySchedule.endTime) {
-    const [endH, endM] = daySchedule.endTime.split(':').map((s) => parseInt(s, 10));
-    let shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+  const shiftsList = (
+    daySchedule.shifts && daySchedule.shifts.length > 0
+      ? daySchedule.shifts.filter((s) => !s.isHoliday && s.startTime && s.endTime)
+      : daySchedule.startTime && daySchedule.endTime
+      ? [
+          {
+            id: daySchedule.shiftPatternId,
+            name: daySchedule.shiftPatternName,
+            startTime: daySchedule.startTime,
+            endTime: daySchedule.endTime,
+            isHoliday: false,
+            isOvernight: daySchedule.isOvernight,
+          },
+        ]
+      : []
+  ) as Array<{
+    id?: string;
+    name?: string;
+    startTime: string;
+    endTime: string;
+    isHoliday?: boolean;
+    isOvernight?: boolean;
+  }>;
 
-    if (daySchedule.isOvernight && daySchedule.startTime) {
-      const [startH, startM] = daySchedule.startTime.split(':').map((s) => parseInt(s, 10));
-      const shiftStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH, startM, 0, 0);
-      if (shiftEnd <= shiftStart) {
-        shiftEnd.setDate(shiftEnd.getDate() + 1);
+  // Clock In must be before candidate shift end time
+  if (params.type === 'CLOCK_IN' && shiftsList.length > 0) {
+    const verifiedTodayCount = await prisma.attendanceRecord.count({
+      where: {
+        staffProfileId: params.staffProfileId,
+        verificationStatus: 'VERIFIED',
+        type: 'CLOCK_OUT',
+        timestamp: { gte: startOfDay },
+      },
+    });
+
+    const activeCandidateShift = shiftsList[verifiedTodayCount] || shiftsList[shiftsList.length - 1];
+
+    if (activeCandidateShift && activeCandidateShift.endTime) {
+      const [endH, endM] = activeCandidateShift.endTime.split(':').map((s) => parseInt(s, 10));
+      let shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+
+      if (activeCandidateShift.isOvernight && activeCandidateShift.startTime) {
+        const [startH, startM] = activeCandidateShift.startTime.split(':').map((s) => parseInt(s, 10));
+        const shiftStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH, startM, 0, 0);
+        if (shiftEnd <= shiftStart) {
+          shiftEnd.setDate(shiftEnd.getDate() + 1);
+        }
       }
-    }
 
-    if (now >= shiftEnd) {
-      return {
-        success: false,
-        error: 'Cannot clock in after your shift has ended.',
-        evaluation,
-      };
+      if (now >= shiftEnd) {
+        const hasRemainingFutureShift = shiftsList.slice(verifiedTodayCount).some((s) => {
+          if (!s.endTime) return false;
+          const [eH, eM] = s.endTime.split(':').map(Number);
+          const sEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), eH, eM, 0, 0);
+          return now < sEnd || s.isOvernight;
+        });
+
+        if (!hasRemainingFutureShift) {
+          return {
+            success: false,
+            error: 'Cannot clock in after your shift has ended.',
+            evaluation,
+          };
+        }
+      }
     }
   }
 
@@ -667,6 +713,8 @@ export async function recordAttendance(params: {
     }
   }
 
+  const maxAllowedCycles = Math.max(MAX_DAILY_ATTENDANCE_CYCLES, shiftsList.length);
+
   if (params.type === 'CLOCK_IN') {
     if (isCurrentlyClockedIn) {
       return {
@@ -675,11 +723,11 @@ export async function recordAttendance(params: {
         evaluation,
       };
     }
-    if (completedCyclesCount >= MAX_DAILY_ATTENDANCE_CYCLES) {
+    if (completedCyclesCount >= maxAllowedCycles) {
       return {
         success: false,
         error:
-          MAX_DAILY_ATTENDANCE_CYCLES > 1
+          maxAllowedCycles > 1
             ? "Today's maximum attendance cycles have been reached."
             : "Today's attendance has already been completed.",
         evaluation,
@@ -711,23 +759,15 @@ export async function recordAttendance(params: {
     name: daySchedule.shiftPatternName,
   };
 
-  if (daySchedule.shifts && daySchedule.shifts.length > 1) {
-    const punchMins = now.getHours() * 60 + now.getMinutes();
-    let minDiff = Infinity;
-
-    for (const s of daySchedule.shifts) {
-      if (!s.startTime || !s.endTime || s.isHoliday) continue;
-      const [sh, sm] = s.startTime.split(':').map(Number);
-      const sMins = sh * 60 + sm;
-      const diff = Math.abs(punchMins - sMins);
-      if (diff < minDiff) {
-        minDiff = diff;
-        chosenShift = {
-          startTime: s.startTime,
-          endTime: s.endTime,
-          name: s.name,
-        };
-      }
+  if (shiftsList.length > 0) {
+    const candidateIdx = Math.min(completedCyclesCount, shiftsList.length - 1);
+    const candidate = shiftsList[candidateIdx];
+    if (candidate && candidate.startTime && candidate.endTime) {
+      chosenShift = {
+        startTime: candidate.startTime,
+        endTime: candidate.endTime,
+        name: candidate.name || daySchedule.shiftPatternName,
+      };
     }
   }
 

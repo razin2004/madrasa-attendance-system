@@ -778,12 +778,19 @@ export default function StaffDashboardPage() {
                     <span>
                       {(() => {
                         const allShifts = todayStatus.schedule.allShifts;
-                        const current =
+                        const currentIdx =
                           selectedShiftIndex !== null && allShifts[selectedShiftIndex]
-                            ? allShifts[selectedShiftIndex]
-                            : todayStatus.schedule.activeShift || allShifts[0];
+                            ? selectedShiftIndex
+                            : allShifts.findIndex(
+                                (s: any) =>
+                                  s.name === todayStatus?.schedule?.activeShift?.name &&
+                                  s.startTime === todayStatus?.schedule?.activeShift?.startTime
+                              );
+                        const current = currentIdx !== -1 && allShifts[currentIdx] ? allShifts[currentIdx] : todayStatus.schedule.activeShift || allShifts[0];
 
                         if (!current) return "Today's Shifts";
+                        const isDone = currentIdx !== -1 && currentIdx < (todayStatus.completedCycles || 0);
+
                         const now = new Date();
                         const nowMins = now.getHours() * 60 + now.getMinutes();
                         const [sh, sm] = (current.startTime || '00:00').split(':').map(Number);
@@ -792,7 +799,8 @@ export default function StaffDashboardPage() {
                         const endMins = eh * 60 + em;
 
                         let prefix = 'Shift';
-                        if (nowMins < startMins) prefix = 'Upcoming Shift';
+                        if (isDone) prefix = '✓ Shift Done';
+                        else if (nowMins < startMins) prefix = 'Upcoming Shift';
                         else if (nowMins <= endMins || current.isOvernight) prefix = 'Active Shift';
                         else prefix = 'Shift Ended';
 
