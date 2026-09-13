@@ -454,15 +454,20 @@ export async function recordAttendance(params: {
   );
 
   // 2. Resolve Scheduled Shift for Today (Section 14, 15, 29)
-  const staffAssignments = await prisma.shiftAssignment.findMany({
-    where: { staffProfileId: params.staffProfileId, shiftPattern: { isActive: true } },
-    include: { shiftPattern: { include: { weeklyDays: true } } },
-  });
-  const staffOverrides = await prisma.staffShiftOverride.findMany({
-    where: { staffProfileId: params.staffProfileId },
-  });
+  const [staffAssignments, staffOverrides, staffAdditionalShifts] = await Promise.all([
+    prisma.shiftAssignment.findMany({
+      where: { staffProfileId: params.staffProfileId, shiftPattern: { isActive: true } },
+      include: { shiftPattern: { include: { weeklyDays: true } } },
+    }),
+    prisma.staffShiftOverride.findMany({
+      where: { staffProfileId: params.staffProfileId },
+    }),
+    prisma.additionalShift.findMany({
+      where: { staffProfileId: params.staffProfileId },
+    }),
+  ]);
 
-  const daySchedule = calculateStaffDaySchedule(localDateObj, staffAssignments, staffOverrides);
+  const daySchedule = calculateStaffDaySchedule(localDateObj, staffAssignments, staffOverrides, staffAdditionalShifts);
 
   // Section 14 & 29: NO SCHEDULE = NO ATTENDANCE (Clock In & Clock Out blocked)
   if (!daySchedule.isScheduled || daySchedule.isHoliday) {
@@ -817,15 +822,20 @@ export async function getStaffTodayAttendanceStatus(
   const startOfDay = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), 0, 0, 0);
   const startOfDayUtc = new Date(startOfDay.getTime() - (typeof clientTimezoneOffset === 'number' ? (now.getTimezoneOffset() - clientTimezoneOffset) * 60000 : 0));
 
-  const staffAssignments = await prisma.shiftAssignment.findMany({
-    where: { staffProfileId, shiftPattern: { isActive: true } },
-    include: { shiftPattern: { include: { weeklyDays: true } } },
-  });
-  const staffOverrides = await prisma.staffShiftOverride.findMany({
-    where: { staffProfileId },
-  });
+  const [staffAssignments, staffOverrides, staffAdditionalShifts] = await Promise.all([
+    prisma.shiftAssignment.findMany({
+      where: { staffProfileId, shiftPattern: { isActive: true } },
+      include: { shiftPattern: { include: { weeklyDays: true } } },
+    }),
+    prisma.staffShiftOverride.findMany({
+      where: { staffProfileId },
+    }),
+    prisma.additionalShift.findMany({
+      where: { staffProfileId },
+    }),
+  ]);
 
-  const daySchedule = calculateStaffDaySchedule(localDateObj, staffAssignments, staffOverrides);
+  const daySchedule = calculateStaffDaySchedule(localDateObj, staffAssignments, staffOverrides, staffAdditionalShifts);
 
   const todayRecords = await prisma.attendanceRecord.findMany({
     where: {
@@ -1190,14 +1200,19 @@ export async function submitAttendanceCorrectionRequest(params: {
   }
 
   if (parsedClockIn) {
-    const staffAssignments = await prisma.shiftAssignment.findMany({
-      where: { staffProfileId: params.staffProfileId },
-      include: { shiftPattern: { include: { weeklyDays: true } } },
-    });
-    const staffOverrides = await prisma.staffShiftOverride.findMany({
-      where: { staffProfileId: params.staffProfileId },
-    });
-    const targetSchedule = calculateStaffDaySchedule(targetDate, staffAssignments, staffOverrides);
+    const [staffAssignments, staffOverrides, staffAdditionalShifts] = await Promise.all([
+      prisma.shiftAssignment.findMany({
+        where: { staffProfileId: params.staffProfileId },
+        include: { shiftPattern: { include: { weeklyDays: true } } },
+      }),
+      prisma.staffShiftOverride.findMany({
+        where: { staffProfileId: params.staffProfileId },
+      }),
+      prisma.additionalShift.findMany({
+        where: { staffProfileId: params.staffProfileId },
+      }),
+    ]);
+    const targetSchedule = calculateStaffDaySchedule(targetDate, staffAssignments, staffOverrides, staffAdditionalShifts);
     if (targetSchedule.endTime) {
       const [endH, endM] = targetSchedule.endTime.split(':').map((s) => parseInt(s, 10));
       let shiftEnd = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), endH, endM, 0, 0);
@@ -1803,6 +1818,14 @@ export async function createAdminManualAttendance(params: {
             },
           },
         },
+        additionalShifts: {
+          where: {
+            date: {
+              gte: scheduleDate,
+              lte: new Date(new Date(scheduleDate).setHours(23, 59, 59, 999)),
+            },
+          },
+        },
       },
     }),
   ]);
@@ -1815,7 +1838,8 @@ export async function createAdminManualAttendance(params: {
   const daySchedule = calculateStaffDaySchedule(
     scheduleDate,
     staff.shiftAssignments,
-    staff.shiftOverrides
+    staff.shiftOverrides,
+    staff.additionalShifts
   );
 
   const formattedDateStr = scheduleDate.toISOString().slice(0, 10);

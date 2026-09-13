@@ -321,22 +321,43 @@ export function calculateStaffDaySchedule(
     isOvernight: boolean;
     reason: string | null;
   }>,
-  timezone: string = 'Asia/Kolkata'
+  additionalShiftsOrTimezone?: Array<{
+    id: string;
+    date: Date;
+    startTime: string;
+    endTime: string;
+    isOvernight: boolean;
+    title?: string | null;
+    notes?: string | null;
+  }> | string,
+  timezoneParam: string = 'Asia/Kolkata'
 ): ScheduledDayResult {
+  let additionalShifts: Array<any> | undefined = undefined;
+  let timezone = 'Asia/Kolkata';
+
+  if (typeof additionalShiftsOrTimezone === 'string') {
+    timezone = additionalShiftsOrTimezone;
+  } else if (Array.isArray(additionalShiftsOrTimezone)) {
+    additionalShifts = additionalShiftsOrTimezone;
+    timezone = timezoneParam || 'Asia/Kolkata';
+  } else if (timezoneParam) {
+    timezone = timezoneParam;
+  }
+
   const dateIso = formatDateToIsoDay(date, timezone);
   const weekday = getWeekdayFromDate(date, timezone);
 
   // 1. Check for staff-specific day override first (Section 17)
   const override = overrides.find((o) => {
-    const overrideIso = formatDateToIsoDay(new Date(o.date));
+    const overrideIso = formatDateToIsoDay(new Date(o.date), timezone);
     return overrideIso === dateIso;
   });
 
   // 2. Find ALL active shift assignments for this target date
   const effectiveAssignments = assignments.filter((a) => {
     if (a.shiftPattern && (a.shiftPattern as any).isActive === false) return false;
-    const startIso = formatDateToIsoDay(new Date(a.effectiveFrom));
-    const endIso = a.effectiveTo ? formatDateToIsoDay(new Date(a.effectiveTo)) : null;
+    const startIso = formatDateToIsoDay(new Date(a.effectiveFrom), timezone);
+    const endIso = a.effectiveTo ? formatDateToIsoDay(new Date(a.effectiveTo), timezone) : null;
 
     const startsOk = dateIso >= startIso;
     const endsOk = !endIso || dateIso <= endIso;
@@ -344,7 +365,12 @@ export function calculateStaffDaySchedule(
     return startsOk && endsOk;
   });
 
-  if (effectiveAssignments.length === 0 && !override) {
+  const matchedAddShifts = (additionalShifts || []).filter((s) => {
+    const addIso = formatDateToIsoDay(new Date(s.date), timezone);
+    return addIso === dateIso;
+  });
+
+  if (effectiveAssignments.length === 0 && !override && matchedAddShifts.length === 0) {
     return {
       date: dateIso,
       weekday,
@@ -409,6 +435,19 @@ export function calculateStaffDaySchedule(
         endTime: dayConfig.endTime,
         isHoliday: dayConfig.isHoliday,
         isOvernight: dayConfig.isOvernight,
+      });
+    }
+  }
+
+  for (const add of matchedAddShifts) {
+    if (add.startTime && add.endTime) {
+      activeShifts.push({
+        id: add.id,
+        name: add.title || 'Additional Shift',
+        startTime: add.startTime,
+        endTime: add.endTime,
+        isHoliday: false,
+        isOvernight: add.isOvernight || false,
       });
     }
   }
