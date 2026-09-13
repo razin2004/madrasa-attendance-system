@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -24,28 +24,21 @@ import {
 import { OrgAdminSidebar } from '../../../../components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '../../../../components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
+import { BreakPopover } from '@/components/attendance/break-popover';
 import { formatTimeInTimezone, getTodayInTimezone } from '@/lib/timezone';
 import { cleanStaffJustification } from '@/lib/reason-parser';
 import { useToast } from '../../../../components/feedback/toast-provider';
 import styles from './AdminAttendance.module.css';
 
-interface DailyAttendanceItem {
-  staff: {
-    id: string;
-    name: string;
-    staffId: string;
-  };
-  branch: {
-    name: string;
-  } | null;
-  clockIn: string | null;
-  clockOut: string | null;
-  source: 'NORMAL' | 'MANUAL' | 'ADJUSTED';
-  isManualEntry: boolean;
-  manualReason?: string | null;
-  creator?: {
-    name: string;
-  } | null;
+interface BranchOption {
+  id: string;
+  name: string;
+}
+
+interface StaffOption {
+  id: string;
+  name: string;
+  staffId: string;
 }
 
 export default function AdminAttendancePage() {
@@ -56,31 +49,33 @@ export default function AdminAttendancePage() {
 
   const todayStr = getTodayInTimezone();
   const [date, setDate] = useState(todayStr);
+  const [branchId, setBranchId] = useState('');
+  const [staffId, setStaffId] = useState('');
+  const [status, setStatus] = useState('');
   const [source, setSource] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const [dailyList, setDailyList] = useState<DailyAttendanceItem[]>([]);
-  const [metrics, setMetrics] = useState({
-    totalPresent: 0,
-    normalCount: 0,
-    manualCount: 0,
-    adjustedCount: 0,
-  });
-
+  const [report, setReport] = useState<any>(null);
+  const [branchList, setBranchList] = useState<BranchOption[]>([]);
+  const [staffList, setStaffList] = useState<StaffOption[]>([]);
   const [pendingCorrectionsCount, setPendingCorrectionsCount] = useState<number>(0);
-
   const [orgData, setOrgData] = useState<any>(null);
 
   useEffect(() => {
-    fetch(`/api/org/${organizationCode}/branding`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.organization) setOrgData(data.organization);
+    Promise.all([
+      fetch(`/api/org/${organizationCode}/branding`).then((r) => r.json()),
+      fetch(`/api/org/${organizationCode}/branches`).then((r) => r.json()),
+      fetch(`/api/org/${organizationCode}/staff`).then((r) => r.json()),
+    ])
+      .then(([metaRes, branchRes, staffRes]) => {
+        if (metaRes.organization) setOrgData(metaRes.organization);
+        if (branchRes.branches) setBranchList(branchRes.branches);
+        if (staffRes.staffMembers) setStaffList(staffRes.staffMembers);
       })
-      .catch(() => {});
+      .catch((err) => console.error('Error fetching metadata:', err));
 
     if (organizationCode) {
       fetch(`/api/org/${organizationCode}/attendance/admin/corrections?status=PENDING`)
@@ -97,7 +92,10 @@ export default function AdminAttendancePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      let url = `/api/org/${organizationCode}/attendance/admin?date=${date}`;
+      let url = `/api/org/${organizationCode}/reports/daily?date=${date}`;
+      if (branchId) url += `&branchId=${branchId}`;
+      if (staffId) url += `&staffId=${staffId}`;
+      if (status) url += `&status=${status}`;
       if (source) url += `&source=${source}`;
       if (search.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
 
@@ -105,8 +103,7 @@ export default function AdminAttendancePage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setDailyList(data.dailyList || []);
-        if (data.metrics) setMetrics(data.metrics);
+        setReport(data.report);
       } else {
         toast.error(data.error || 'Failed to load daily attendance.');
       }
@@ -119,16 +116,11 @@ export default function AdminAttendancePage() {
 
   useEffect(() => {
     fetchData();
-  }, [organizationCode, date, source]);
+  }, [organizationCode, date, branchId, staffId, status, source]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchData();
-  };
-
-  const formatTime = (iso?: string | null) => {
-    if (!iso) return '—';
-    return formatTimeInTimezone(iso);
   };
 
   return (
@@ -145,7 +137,7 @@ export default function AdminAttendancePage() {
           organizationCode={organizationCode}
           logoUrl={orgData?.logoUrl}
           panelTitle="Daily Attendance"
-          panelSubtitle={`Monitor 3-layer verified punches, manual entries, and corrections for ${date}`}
+          panelSubtitle={`Detailed attendance records, working hours, and breaks for ${date}`}
           headerMenuOpen={headerMenuOpen}
           onToggleHeaderMenu={() => setHeaderMenuOpen(!headerMenuOpen)}
         >
@@ -159,106 +151,106 @@ export default function AdminAttendancePage() {
                 className="glass-card"
                 style={{
                   position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    zIndex: 1000,
-                    minWidth: '220px',
-                    padding: '6px',
-                    backgroundColor: '#0d121f',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  zIndex: 1000,
+                  minWidth: '220px',
+                  padding: '6px',
+                  backgroundColor: '#0d121f',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                }}
+              >
+                <Link
+                  href={`/${organizationCode}/admin/attendance/manual`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
                   }}
                 >
-                  <Link
-                    href={`/${organizationCode}/admin/attendance/manual`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#ffffff',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                    }}
-                  >
-                    <Plus size={15} color="#818cf8" />
-                    <span>Record Manual Attendance</span>
-                  </Link>
+                  <Plus size={15} color="#818cf8" />
+                  <span>Record Manual Attendance</span>
+                </Link>
 
-                  <Link
-                    href={`/${organizationCode}/admin/attendance/corrections`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <ShieldCheck size={15} color="#38bdf8" />
-                    <span>Correction Requests</span>
-                  </Link>
+                <Link
+                  href={`/${organizationCode}/admin/attendance/corrections`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <ShieldCheck size={15} color="#38bdf8" />
+                  <span>Correction Requests</span>
+                </Link>
 
-                  <Link
-                    href={`/${organizationCode}/admin/reports`}
-                    onClick={() => setHeaderMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <FileText size={15} color="#34d399" />
-                    <span>Reports &amp; Analytics</span>
-                  </Link>
+                <Link
+                  href={`/${organizationCode}/admin/reports`}
+                  onClick={() => setHeaderMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <FileText size={15} color="#34d399" />
+                  <span>Reports &amp; Analytics</span>
+                </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      fetchData();
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      color: '#cbd5e1',
-                      border: 'none',
-                      background: 'none',
-                      width: '100%',
-                      textAlign: 'left',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
-                    <span>Refresh Logs</span>
-                  </button>
-                </div>
-              </>
-            )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    fetchData();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    border: 'none',
+                    background: 'none',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <RefreshCw size={15} color="#34d399" className={loading ? 'animate-spin' : ''} />
+                  <span>Refresh Logs</span>
+                </button>
+              </div>
+            </>
+          )}
         </OrgAdminHeader>
 
         {/* Main Content Body */}
@@ -312,47 +304,55 @@ export default function AdminAttendancePage() {
           {/* Top Metrics Cards */}
           <div className={styles.metricsGrid} style={{ margin: '0 0 20px 0' }}>
             <div className={styles.metricCard} style={{ borderLeft: '3px solid #3b82f6' }}>
-              <div className={styles.metricLabel}>Total Present</div>
-              <div className={styles.metricValue}>{metrics.totalPresent}</div>
+              <div className={styles.metricLabel}>Total Staff</div>
+              <div className={styles.metricValue}>{report?.metrics?.totalCount || 0}</div>
             </div>
 
             <div className={styles.metricCard} style={{ borderLeft: '3px solid #10b981' }}>
-              <div className={styles.metricLabel}>Verified (Normal)</div>
+              <div className={styles.metricLabel}>Present</div>
               <div className={styles.metricValue} style={{ color: '#34d399' }}>
-                {metrics.normalCount}
+                {report?.metrics?.presentCount || 0}
               </div>
             </div>
 
             <div className={styles.metricCard} style={{ borderLeft: '3px solid #f59e0b' }}>
-              <div className={styles.metricLabel}>Manual Admin Entries</div>
+              <div className={styles.metricLabel}>Partial</div>
               <div className={styles.metricValue} style={{ color: '#fbbf24' }}>
-                {metrics.manualCount}
+                {report?.metrics?.partialCount || 0}
               </div>
             </div>
 
             <div className={styles.metricCard} style={{ borderLeft: '3px solid #38bdf8' }}>
-              <div className={styles.metricLabel}>Adjusted Corrections</div>
+              <div className={styles.metricLabel}>Leave</div>
               <div className={styles.metricValue} style={{ color: '#38bdf8' }}>
-                {metrics.adjustedCount}
+                {report?.metrics?.leaveCount || 0}
+              </div>
+            </div>
+
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #818cf8' }}>
+              <div className={styles.metricLabel}>Holiday</div>
+              <div className={styles.metricValue} style={{ color: '#818cf8' }}>
+                {report?.metrics?.holidayCount || 0}
+              </div>
+            </div>
+
+            <div className={styles.metricCard} style={{ borderLeft: '3px solid #ef4444' }}>
+              <div className={styles.metricLabel}>Absent</div>
+              <div className={styles.metricValue} style={{ color: '#f87171' }}>
+                {report?.metrics?.absentCount || 0}
               </div>
             </div>
           </div>
 
-          {/* Search Field & Inline Desktop Filters */}
+          {/* Search Field & Filters */}
           <div style={{ marginBottom: '16px', width: '100%', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className={styles.searchInputWrapper} style={{ flex: 1, minWidth: '240px' }}>
+            <form onSubmit={handleSearchSubmit} className={styles.searchInputWrapper} style={{ flex: 1, minWidth: '240px' }}>
               <Search size={15} className={styles.searchIcon} />
               <input
                 type="text"
                 placeholder="Search staff name or ID..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    fetchData();
-                  }
-                }}
                 className={styles.searchInput}
               />
               {search && (
@@ -379,12 +379,12 @@ export default function AdminAttendancePage() {
               <button
                 type="button"
                 onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className={`${styles.filterToggleBtn} ${(source || (date && date !== todayStr)) ? styles.filterToggleBtnActive : ''}`}
+                className={`${styles.filterToggleBtn} ${(branchId || staffId || status || source || (date && date !== todayStr)) ? styles.filterToggleBtnActive : ''}`}
                 title="Toggle Filters"
               >
-                <Filter size={15} color={(source || (date && date !== todayStr)) ? '#818cf8' : 'currentColor'} />
+                <Filter size={15} color={(branchId || staffId || status || source || (date && date !== todayStr)) ? '#818cf8' : 'currentColor'} />
               </button>
-            </div>
+            </form>
 
             {/* Desktop Inline Filters */}
             <div className={styles.desktopFilterGroup}>
@@ -409,6 +409,56 @@ export default function AdminAttendancePage() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Branch:</span>
+                <select
+                  className="form-input"
+                  style={{
+                    height: '38px',
+                    fontSize: '12.5px',
+                    backgroundColor: '#131b2e',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    padding: '0 10px',
+                  }}
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                >
+                  <option value="">All Branches</option>
+                  {branchList.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Status:</span>
+                <select
+                  className="form-input"
+                  style={{
+                    height: '38px',
+                    fontSize: '12.5px',
+                    backgroundColor: '#131b2e',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    padding: '0 10px',
+                  }}
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="PRESENT">PRESENT</option>
+                  <option value="PARTIAL">PARTIAL</option>
+                  <option value="HOLIDAY">HOLIDAY</option>
+                  <option value="LEAVE">LEAVE</option>
+                  <option value="ABSENT">ABSENT</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Type:</span>
                 <select
                   className="form-input"
@@ -424,16 +474,16 @@ export default function AdminAttendancePage() {
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                 >
-                  <option value="">All Attendance Types</option>
-                  <option value="NORMAL">NORMAL (3-Layer Verified)</option>
-                  <option value="MANUAL">MANUAL (Admin Created)</option>
-                  <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
+                  <option value="">All Types</option>
+                  <option value="NORMAL">NORMAL</option>
+                  <option value="MANUAL">MANUAL</option>
+                  <option value="ADJUSTED">ADJUSTED</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Filter Bottom Sheet Modal Overlay (Appears when filter icon is clicked) */}
+          {/* Filter Modal Sheet (Mobile) */}
           {showMobileFilters && (
             <div
               style={{
@@ -497,81 +547,118 @@ export default function AdminAttendancePage() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', minWidth: 0 }}>
-                  {/* Target Date Input */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
-                      Target Log Date
-                    </label>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>Target Date</label>
                     <input
                       type="date"
                       className="form-input"
                       style={{
                         height: '40px',
-                        minHeight: '40px',
                         fontSize: '13px',
                         backgroundColor: '#131b2e',
                         color: '#ffffff',
                         colorScheme: 'dark',
                         width: '100%',
-                        maxWidth: '100%',
-                        minWidth: 0,
                         borderRadius: '8px',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         padding: '0 12px',
-                        boxSizing: 'border-box',
-                        WebkitAppearance: 'none',
                       }}
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
                     />
                   </div>
 
-                  {/* Attendance Type Select */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
-                      Attendance Type
-                    </label>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>Branch</label>
                     <select
                       className="form-input"
                       style={{
                         height: '40px',
-                        minHeight: '40px',
                         fontSize: '13px',
                         backgroundColor: '#131b2e',
                         color: '#ffffff',
                         width: '100%',
-                        maxWidth: '100%',
-                        minWidth: 0,
                         borderRadius: '8px',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         padding: '0 12px',
-                        boxSizing: 'border-box',
+                      }}
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                    >
+                      <option value="">All Branches</option>
+                      {branchList.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>Status</label>
+                    <select
+                      className="form-input"
+                      style={{
+                        height: '40px',
+                        fontSize: '13px',
+                        backgroundColor: '#131b2e',
+                        color: '#ffffff',
+                        width: '100%',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        padding: '0 12px',
+                      }}
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="PRESENT">PRESENT</option>
+                      <option value="PARTIAL">PARTIAL</option>
+                      <option value="HOLIDAY">HOLIDAY</option>
+                      <option value="LEAVE">LEAVE</option>
+                      <option value="ABSENT">ABSENT</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>Type</label>
+                    <select
+                      className="form-input"
+                      style={{
+                        height: '40px',
+                        fontSize: '13px',
+                        backgroundColor: '#131b2e',
+                        color: '#ffffff',
+                        width: '100%',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        padding: '0 12px',
                       }}
                       value={source}
                       onChange={(e) => setSource(e.target.value)}
                     >
-                      <option value="">All Attendance Types</option>
-                      <option value="NORMAL">NORMAL (3-Layer Verified)</option>
-                      <option value="MANUAL">MANUAL (Admin Created)</option>
-                      <option value="ADJUSTED">ADJUSTED (Correction Approved)</option>
+                      <option value="">All Types</option>
+                      <option value="NORMAL">NORMAL</option>
+                      <option value="MANUAL">MANUAL</option>
+                      <option value="ADJUSTED">ADJUSTED</option>
                     </select>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                  {(source || (date && date !== todayStr)) ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDate(todayStr);
-                        setSource('');
-                      }}
-                      className="btn btn-secondary btn-xs"
-                      style={{ borderRadius: '6px', fontSize: '11px', padding: '6px 12px' }}
-                    >
-                      Reset Filters
-                    </button>
-                  ) : <div />}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDate(todayStr);
+                      setBranchId('');
+                      setStaffId('');
+                      setStatus('');
+                      setSource('');
+                      setShowMobileFilters(false);
+                    }}
+                    className="btn btn-secondary btn-xs"
+                    style={{ borderRadius: '6px', fontSize: '11px', padding: '6px 12px' }}
+                  >
+                    Reset Filters
+                  </button>
 
                   <button
                     type="button"
@@ -588,172 +675,261 @@ export default function AdminAttendancePage() {
 
           {/* Attendance Table */}
           <div className={styles.tableCard} style={{ margin: 0 }}>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 12px auto' }} />
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading attendance data...</p>
-            </div>
-          ) : dailyList.length === 0 ? (
-            <div
-              style={{
-                padding: '48px 24px',
-                textAlign: 'center',
-                borderRadius: '16px',
-                margin: '12px 0',
-                border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
-                backgroundColor: 'rgba(17, 24, 39, 0.6)',
-              }}
-            >
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 12px auto' }} />
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading attendance data...</p>
+              </div>
+            ) : !report?.rows || report.rows.length === 0 ? (
               <div
                 style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                  border: '1px solid rgba(99, 102, 241, 0.25)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px auto',
+                  padding: '48px 24px',
+                  textAlign: 'center',
+                  borderRadius: '16px',
+                  margin: '12px 0',
+                  border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
+                  backgroundColor: 'rgba(17, 24, 39, 0.6)',
                 }}
               >
-                <Clock size={28} color="#818cf8" />
-              </div>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: '0 0 6px 0' }}>
-                No Attendance Logs Found
-              </h3>
-              <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 auto 18px auto', maxWidth: '380px', lineHeight: '1.5' }}>
-                {search || source || (date && date !== todayStr)
-                  ? 'No attendance records match your current date selection, search query, or verification filters.'
-                  : 'No staff members have recorded attendance logs for today yet.'}
-              </p>
-              {(search || source || (date && date !== todayStr)) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch('');
-                    setDate(todayStr);
-                    setSource('');
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 16px auto',
                   }}
-                  className="btn btn-secondary btn-sm"
-                  style={{ borderRadius: '8px', fontSize: '12px' }}
                 >
-                  Clear All Filters
-                </button>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* MOBILE FEED CARDS */}
-              <div className={styles.feedCardsContainer} style={{ marginBottom: '16px' }}>
-                {dailyList.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={styles.feedCard}
-                    onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
-                    style={{ cursor: 'pointer' }}
+                  <Clock size={28} color="#818cf8" />
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: '0 0 6px 0' }}>
+                  No Attendance Logs Found
+                </h3>
+                <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 auto 18px auto', maxWidth: '380px', lineHeight: '1.5' }}>
+                  {search || branchId || staffId || status || source || (date && date !== todayStr)
+                    ? 'No attendance records match your current date selection, search query, or verification filters.'
+                    : 'No staff members have recorded attendance logs for today yet.'}
+                </p>
+                {(search || branchId || staffId || status || source || (date && date !== todayStr)) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      setDate(todayStr);
+                      setBranchId('');
+                      setStaffId('');
+                      setStatus('');
+                      setSource('');
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ borderRadius: '8px', fontSize: '12px' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontWeight: 800, fontSize: '13px' }}>
-                        {item.staff.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
-                          <MapPin size={11} color="#38bdf8" />
-                          <span>{item.branch?.name || 'Unassigned'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12.5px', fontWeight: 700, color: '#34d399' }}>
-                        {formatTime(item.clockIn)} {item.clockOut ? `– ${formatTime(item.clockOut)}` : ''}
-                      </div>
-                      <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-                        <span className={`${styles.sourceBadge} ${styles[`source${item.source}`]}`}>
-                          {item.source}
-                        </span>
-                        <CheckCircle2 size={13} color="#34d399" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    Clear All Filters
+                  </button>
+                )}
               </div>
+            ) : (
+              <>
+                {/* DESKTOP ATTENDANCE TABLE WITH ALL REPORT COLUMNS */}
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th className={styles.th}>Staff Member</th>
+                      <th className={styles.th}>Branch</th>
+                      <th className={styles.th}>Clock In</th>
+                      <th className={styles.th}>Late In</th>
+                      <th className={styles.th}>Clock Out</th>
+                      <th className={styles.th}>Early Out</th>
+                      <th className={styles.th}>Break Time</th>
+                      <th className={styles.th}>Total Working Hours</th>
+                      <th className={styles.th}>Status</th>
+                      <th className={styles.th}>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.rows.map((row: any, idx: number) => {
+                      const statusKey = (row.status || '').replace(/ /g, '_');
+                      const breaksList = (row.breakDetails || []).map((b: any, bIdx: number) => ({
+                        breakNumber: bIdx + 1,
+                        startTime: b.clockOutTime,
+                        endTime: b.clockInTime,
+                        durationMinutes: b.durationMinutes,
+                      }));
 
-              {/* DESKTOP ATTENDANCE TABLE */}
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th className={styles.th}>Staff Member</th>
-                    <th className={styles.th}>Branch</th>
-                    <th className={styles.th}>Clock In</th>
-                    <th className={styles.th}>Clock Out</th>
-                    <th className={styles.th}>Type</th>
-                    <th className={styles.th}>Verification Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dailyList.map((item, idx) => (
-                    <tr
-                      key={idx}
-                      onClick={() => router.push(`/${organizationCode}/admin/staff/${item.staff.id}`)}
-                      style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'background 0.15s ease' }}
-                    >
-                      <td className={styles.td}>
-                        <div style={{ fontWeight: 700, color: '#ffffff' }}>{item.staff.name}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8', marginTop: '1px' }}>
-                          ID: {item.staff.staffId}
-                        </div>
-                      </td>
+                      return (
+                        <tr
+                          key={idx}
+                          onClick={() => {
+                            if (row.staffProfileId || row.staffId) {
+                              router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
+                            }
+                          }}
+                          style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                        >
+                          <td className={styles.td}>
+                            <div style={{ fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
+                          </td>
 
-                      <td className={styles.td}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          <MapPin size={13} color="#38bdf8" />
-                          <span style={{ color: '#f8fafc' }}>{item.branch?.name || 'Unassigned'}</span>
-                        </span>
-                      </td>
+                          <td className={styles.td}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <MapPin size={13} color="#38bdf8" />
+                              <span style={{ color: '#f8fafc' }}>{row.branchName}</span>
+                            </span>
+                          </td>
 
-                      <td className={styles.td}>
-                        <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{formatTime(item.clockIn)}</strong>
-                      </td>
+                          <td className={styles.td}>
+                            <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>
+                              {row.displayClockInTime || row.clockInTime || '—'}
+                            </strong>
+                          </td>
 
-                      <td className={styles.td}>
-                        <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>{formatTime(item.clockOut)}</strong>
-                      </td>
+                          <td className={styles.td}>
+                            <span style={{ color: row.lateInMinutes > 0 ? '#f87171' : 'var(--text-muted)', fontWeight: row.lateInMinutes > 0 ? 700 : 400 }}>
+                              {row.lateInFormatted || '—'}
+                            </span>
+                          </td>
 
-                      <td className={styles.td}>
-                        <span className={`${styles.sourceBadge} ${styles[`source${item.source}`]}`}>
-                          {item.source}
-                        </span>
-                      </td>
+                          <td className={styles.td}>
+                            <strong style={{ color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>
+                              {row.displayClockOutTime || row.clockOutTime || '—'}
+                            </strong>
+                          </td>
 
-                      <td className={styles.td} style={{ fontSize: '12px' }}>
-                        {item.isManualEntry ? (
-                          <div>
-                            <span style={{ color: '#fbbf24' }}>Manual Entry by Admin</span>
-                            {item.creator && <span> ({item.creator.name})</span>}
-                            {cleanStaffJustification(item.manualReason) && (
-                              <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
-                                &ldquo;{cleanStaffJustification(item.manualReason)}&rdquo;
+                          <td className={styles.td}>
+                            <span style={{ color: row.earlyOutMinutes > 0 ? '#f87171' : 'var(--text-muted)', fontWeight: row.earlyOutMinutes > 0 ? 700 : 400 }}>
+                              {row.earlyOutFormatted || '—'}
+                            </span>
+                          </td>
+
+                          <td className={styles.td}>
+                            <BreakPopover totalBreakMinutes={row.totalBreakMinutes || 0} breaks={breaksList} />
+                          </td>
+
+                          <td className={styles.td}>
+                            <strong style={{ color: '#818cf8', fontWeight: 800 }}>
+                              {row.totalWorkingHoursFormatted || '0h'}
+                            </strong>
+                          </td>
+
+                          <td className={styles.td}>
+                            <span className={`${styles.statusBadge} ${styles[`status${statusKey}`]}`}>
+                              {row.status}
+                            </span>
+                          </td>
+
+                          <td className={styles.td} style={{ fontSize: '12px' }}>
+                            {row.leaveTypeName && (
+                              <div style={{ color: '#38bdf8', fontWeight: 600 }}>
+                                {row.leaveTypeName}
                               </div>
                             )}
+                            {cleanStaffJustification(row.manualReason) && (
+                              <div style={{ color: '#fbbf24', fontStyle: 'italic' }}>
+                                &ldquo;{cleanStaffJustification(row.manualReason)}&rdquo;
+                              </div>
+                            )}
+                            {cleanStaffJustification(row.adjustmentReason) && (
+                              <div style={{ color: '#38bdf8', fontStyle: 'italic' }}>
+                                &ldquo;{cleanStaffJustification(row.adjustmentReason)}&rdquo;
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {/* MOBILE FEED CARDS */}
+                <div className={styles.feedCardsContainer} style={{ marginBottom: '16px' }}>
+                  {report.rows.map((row: any, idx: number) => {
+                    const statusKey = (row.status || '').replace(/ /g, '_');
+                    const breaksList = (row.breakDetails || []).map((b: any, bIdx: number) => ({
+                      breakNumber: bIdx + 1,
+                      startTime: b.clockOutTime,
+                      endTime: b.clockInTime,
+                      durationMinutes: b.durationMinutes,
+                    }));
+
+                    return (
+                      <div
+                        key={idx}
+                        className={styles.feedCard}
+                        onClick={() => {
+                          if (row.staffProfileId || row.staffId) {
+                            router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
+                          }
+                        }}
+                        style={{ cursor: 'pointer', flexDirection: 'column', gap: '10px', alignItems: 'stretch' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontWeight: 800, fontSize: '13px' }}>
+                              {row.staffName ? row.staffName.slice(0, 2).toUpperCase() : 'ST'}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+                                <MapPin size={11} color="#38bdf8" />
+                                <span>{row.branchName || 'Unassigned'}</span>
+                              </div>
+                            </div>
                           </div>
-                        ) : item.source === 'ADJUSTED' ? (
-                          <span style={{ color: '#38bdf8' }}>Approved Adjustment</span>
-                        ) : (
-                          <span style={{ color: '#34d399', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <CheckCircle2 size={13} /> 3-Layer Verified
+
+                          <span className={`${styles.statusBadge} ${styles[`status${statusKey}`]}`}>
+                            {row.status}
                           </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-        </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', borderRadius: '8px', backgroundColor: 'rgba(15, 23, 42, 0.8)' }}>
+                          <div>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Clock In</span>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: '#34d399' }}>
+                              {row.displayClockInTime || row.clockInTime || '—'}
+                            </div>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Clock Out</span>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: '#fbbf24' }}>
+                              {row.displayClockOutTime || row.clockOutTime || '—'}
+                            </div>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Late / Early Out</span>
+                            <div style={{ fontSize: '11px', color: '#f87171' }}>
+                              {row.lateInMinutes > 0 ? `Late: ${row.lateInFormatted}` : ''}
+                              {row.lateInMinutes > 0 && row.earlyOutMinutes > 0 ? ' | ' : ''}
+                              {row.earlyOutMinutes > 0 ? `Early: ${row.earlyOutFormatted}` : ''}
+                              {!row.lateInMinutes && !row.earlyOutMinutes ? 'On Time' : ''}
+                            </div>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Working Hours</span>
+                            <div style={{ fontSize: '12px', fontWeight: 800, color: '#818cf8' }}>
+                              {row.totalWorkingHoursFormatted || '0h'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8' }}>
+                          <BreakPopover totalBreakMinutes={row.totalBreakMinutes || 0} breaks={breaksList} />
+                          {row.leaveTypeName && <span style={{ color: '#38bdf8' }}>{row.leaveTypeName}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </main>
       </div>
       <OrgAdminMobileNav organizationCode={organizationCode} />

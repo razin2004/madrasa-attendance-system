@@ -85,6 +85,41 @@ export async function PATCH(
 
       // If approved, create shift overrides to swap shift assignments on the target date
       if (action === 'APPROVE' && peerId && peerProfile) {
+        const { calculateStaffDaySchedule } = await import('@/services/roster.service');
+
+        // Fetch assignments & overrides for both Requester and Peer
+        const [requesterAssignments, requesterOverrides, peerAssignments, peerOverrides] = await Promise.all([
+          tx.shiftAssignment.findMany({
+            where: { staffProfileId: swapRequest.requesterId },
+            include: { shiftPattern: { include: { weeklyDays: true } } },
+          }),
+          tx.staffShiftOverride.findMany({
+            where: { staffProfileId: swapRequest.requesterId },
+          }),
+          tx.shiftAssignment.findMany({
+            where: { staffProfileId: peerId },
+            include: { shiftPattern: { include: { weeklyDays: true } } },
+          }),
+          tx.staffShiftOverride.findMany({
+            where: { staffProfileId: peerId },
+          }),
+        ]);
+
+        const reqSched = calculateStaffDaySchedule(normalizedDate, requesterAssignments, requesterOverrides);
+        const peerSched = calculateStaffDaySchedule(normalizedDate, peerAssignments, peerOverrides);
+
+        // Requester receives Peer's schedule (or is off if Peer had no shift)
+        const reqNewStartTime = peerSched.isHoliday ? null : peerSched.startTime;
+        const reqNewEndTime = peerSched.isHoliday ? null : peerSched.endTime;
+        const reqNewIsOvernight = peerSched.isOvernight || false;
+        const reqNewIsHoliday = !peerSched.isScheduled || peerSched.isHoliday;
+
+        // Peer receives Requester's schedule (or is off if Requester had no shift)
+        const peerNewStartTime = reqSched.isHoliday ? null : reqSched.startTime;
+        const peerNewEndTime = reqSched.isHoliday ? null : reqSched.endTime;
+        const peerNewIsOvernight = reqSched.isOvernight || false;
+        const peerNewIsHoliday = !reqSched.isScheduled || reqSched.isHoliday;
+
         // Upsert shift override for Requester
         await tx.staffShiftOverride.upsert({
           where: {
@@ -94,12 +129,20 @@ export async function PATCH(
             },
           },
           update: {
+            startTime: reqNewStartTime,
+            endTime: reqNewEndTime,
+            isOvernight: reqNewIsOvernight,
+            isHoliday: reqNewIsHoliday,
             reason: `Shift swapped with ${peerProfile.name} (${peerProfile.staffId})`,
             createdBy: adminUserId,
           },
           create: {
             staffProfileId: swapRequest.requesterId,
             date: normalizedDate,
+            startTime: reqNewStartTime,
+            endTime: reqNewEndTime,
+            isOvernight: reqNewIsOvernight,
+            isHoliday: reqNewIsHoliday,
             reason: `Shift swapped with ${peerProfile.name} (${peerProfile.staffId})`,
             createdBy: adminUserId,
           },
@@ -114,12 +157,20 @@ export async function PATCH(
             },
           },
           update: {
+            startTime: peerNewStartTime,
+            endTime: peerNewEndTime,
+            isOvernight: peerNewIsOvernight,
+            isHoliday: peerNewIsHoliday,
             reason: `Covering shift for ${swapRequest.requester.name} (${swapRequest.requester.staffId})`,
             createdBy: adminUserId,
           },
           create: {
             staffProfileId: peerId,
             date: normalizedDate,
+            startTime: peerNewStartTime,
+            endTime: peerNewEndTime,
+            isOvernight: peerNewIsOvernight,
+            isHoliday: peerNewIsHoliday,
             reason: `Covering shift for ${swapRequest.requester.name} (${swapRequest.requester.staffId})`,
             createdBy: adminUserId,
           },
