@@ -602,20 +602,23 @@ export async function recordAttendance(params: {
     if (params.submitForApproval) {
       const todayNormalized = normalizeDate(now);
 
+      const shiftName = chosenShift.name || daySchedule.shiftPatternName || 'Default Shift';
+      const shiftTag = `[Shift: ${shiftName}]`;
       const userReason = params.unverifiedReason?.trim();
       const failureMsg = userReason
-        ? `Reason: "${userReason}" (Failures: ${evaluation.failureReasons.join('; ')})`
+        ? `${shiftTag} Reason: "${userReason}" (Failures: ${evaluation.failureReasons.join('; ')})`
         : evaluation.failureReasons.length > 0
-        ? `Unverified punch. Failures: ${evaluation.failureReasons.join('; ')}`
-        : 'Unverified punch submitted for admin approval.';
+        ? `${shiftTag} Unverified punch (${params.type === 'CLOCK_IN' ? 'Clock In' : 'Clock Out'}). Failures: ${evaluation.failureReasons.join('; ')}`
+        : `${shiftTag} Unverified punch (${params.type === 'CLOCK_IN' ? 'Clock In' : 'Clock Out'}) submitted for admin approval.`;
 
-      // Check if there is already a pending request for today
+      // Check if there is already a pending request for today for THIS specific shift
       const existingPending = await prisma.attendanceCorrectionRequest.findFirst({
         where: {
           organizationId: params.organizationId,
           staffProfileId: params.staffProfileId,
           date: todayNormalized,
           status: 'PENDING',
+          reason: { contains: shiftTag },
         },
       });
 
@@ -623,14 +626,14 @@ export async function recordAttendance(params: {
         if (params.type === 'CLOCK_IN') {
           return {
             success: false,
-            error: 'You already have a pending clock-in approval request for today.',
+            error: `You already have a pending clock-in approval request for ${shiftName}.`,
             evaluation,
           };
         } else if (params.type === 'CLOCK_OUT') {
           if (existingPending.requestedClockOut) {
             return {
               success: false,
-              error: 'You already have a pending clock-out approval request for today.',
+              error: `You already have a pending clock-out approval request for ${shiftName}.`,
               evaluation,
             };
           }
@@ -651,6 +654,7 @@ export async function recordAttendance(params: {
             entityId: updatedRequest.id,
             metadata: {
               staffProfileId: params.staffProfileId,
+              shiftName,
               type: 'CLOCK_OUT',
               unverifiedSubmission: true,
               userReason: params.unverifiedReason,
