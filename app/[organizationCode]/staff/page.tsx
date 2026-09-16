@@ -155,6 +155,7 @@ export default function StaffDashboardPage() {
     const nowMins = now.getHours() * 60 + now.getMinutes();
     const [sh, sm] = (s.startTime || '00:00').split(':').map(Number);
     const startMins = sh * 60 + sm;
+    const isTooEarly = nowMins < startMins - 30;
     const isUpcoming = nowMins < startMins;
 
     if (isCompletedShift)
@@ -163,6 +164,8 @@ export default function StaffDashboardPage() {
       return { label: '★ Next', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)', border: 'rgba(56, 189, 248, 0.3)' };
     if (isActive)
       return { label: '★ Active', color: '#818cf8', bg: 'rgba(129, 140, 248, 0.2)', border: 'rgba(129, 140, 248, 0.4)' };
+    if (isTooEarly)
+      return { label: 'Too Early', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)', border: 'rgba(168, 85, 247, 0.3)' };
     if (isUpcoming)
       return { label: 'Upcoming', color: '#94a3b8', bg: 'rgba(255, 255, 255, 0.08)', border: 'rgba(255, 255, 255, 0.15)' };
     return { label: 'Ended', color: '#64748b', bg: 'rgba(255, 255, 255, 0.04)', border: 'rgba(255, 255, 255, 0.08)' };
@@ -517,12 +520,23 @@ export default function StaffDashboardPage() {
       };
       if (clientIp) headers['x-client-public-ip'] = clientIp;
 
+      const allShifts = todayStatus?.schedule?.allShifts || [];
+      const selectedShift =
+        selectedShiftIndex !== null && allShifts[selectedShiftIndex]
+          ? allShifts[selectedShiftIndex]
+          : todayStatus?.schedule?.activeShift || allShifts[0];
+
       const payload: any = {
         deviceSecret,
         clientTimezoneOffset: new Date().getTimezoneOffset(),
         branchId: precheck?.candidateBranch?.id,
         submitForApproval,
         unverifiedReason: unverifiedReason?.trim() || undefined,
+        targetShiftName: selectedShift?.name || undefined,
+        targetShiftStartTime: selectedShift?.startTime || undefined,
+        targetShiftEndTime: selectedShift?.endTime || undefined,
+        isAdditionalShift: Boolean((selectedShift as any)?.isAdditionalShift || selectedShift?.name?.includes('Additional')),
+        additionalShiftId: (selectedShift as any)?.id || undefined,
       };
 
       if (coords) {
@@ -643,8 +657,36 @@ export default function StaffDashboardPage() {
     return !hasUpcomingOrActiveShift;
   })();
 
+  const selectedShiftObj = (() => {
+    const allShifts = todayStatus?.schedule?.allShifts || [];
+    if (selectedShiftIndex !== null && allShifts[selectedShiftIndex]) return allShifts[selectedShiftIndex];
+    return todayStatus?.schedule?.activeShift || allShifts[0];
+  })();
+
+  const isTooEarlyToClockIn = (() => {
+    if (!selectedShiftObj || !selectedShiftObj.startTime || isClockedIn) return false;
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const [sh, sm] = (selectedShiftObj.startTime || '00:00').split(':').map(Number);
+    const startMins = sh * 60 + sm;
+    const earlyOpenMins = startMins - 30;
+    return nowMins < earlyOpenMins;
+  })();
+
+  const earlyClockInOpenTimeStr = (() => {
+    if (!selectedShiftObj || !selectedShiftObj.startTime) return '';
+    const [sh, sm] = selectedShiftObj.startTime.split(':').map(Number);
+    const totalStartMins = sh * 60 + sm;
+    const earlyMins = totalStartMins - 30;
+    const openH = Math.floor((earlyMins + 1440) % 1440 / 60);
+    const openM = (earlyMins + 1440) % 60;
+    const ampm = openH >= 12 ? 'PM' : 'AM';
+    const displayH = openH % 12 || 12;
+    return `${displayH}:${openM < 10 ? '0' : ''}${openM} ${ampm}`;
+  })();
+
   const isCompleted = Boolean(todayStatus?.isDailyLimitReached && !isClockedIn);
-  const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isCompleted && !isShiftEndedWithoutClockIn);
+  const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isCompleted && !isShiftEndedWithoutClockIn && !isTooEarlyToClockIn);
 
   const initials = staffInfo?.name
     ? staffInfo.name.trim().split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
@@ -1021,11 +1063,11 @@ export default function StaffDashboardPage() {
                   {/* Punch Button */}
                   <button
                     onClick={handleClockButtonClick}
-                    disabled={!hasSchedule || isCompleted || isShiftEndedWithoutClockIn || Boolean(todayStatus?.hasPendingClockOut) || clocking || checking}
+                    disabled={!hasSchedule || isCompleted || isShiftEndedWithoutClockIn || isTooEarlyToClockIn || Boolean(todayStatus?.hasPendingClockOut) || clocking || checking}
                     className={`${styles.clockButton} ${styles.punchButtonCircle} ${
                       isClockedIn
                         ? styles.clockButtonOut
-                        : isShiftEndedWithoutClockIn
+                        : isShiftEndedWithoutClockIn || isTooEarlyToClockIn
                         ? styles.clockButtonDisabled
                         : todayStatus?.hasPendingClockOut
                         ? styles.clockButtonDisabled
@@ -1038,6 +1080,11 @@ export default function StaffDashboardPage() {
                         <span style={{ fontSize: '14px', fontWeight: 800 }}>
                           {isClockedIn ? 'Clocking Out...' : 'Clocking In...'}
                         </span>
+                      </>
+                    ) : isTooEarlyToClockIn ? (
+                      <>
+                        <Clock size={24} color="#a855f7" />
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#a855f7' }}>Too Early</span>
                       </>
                     ) : isShiftEndedWithoutClockIn ? (
                       <>
@@ -1065,6 +1112,12 @@ export default function StaffDashboardPage() {
                   {todayStatus?.hasPendingClockOut && (
                     <div style={{ fontSize: '12px', color: '#fbbf24', marginTop: '10px', fontWeight: 600 }}>
                       ⚠️ Your clock-out request has been submitted to the Admin panel for approval.
+                    </div>
+                  )}
+
+                  {isTooEarlyToClockIn && (
+                    <div style={{ fontSize: '12px', color: '#c084fc', marginTop: '10px', fontWeight: 600 }}>
+                      ⚠️ Clock-in opens at {earlyClockInOpenTimeStr} (30 mins before shift start).
                     </div>
                   )}
 

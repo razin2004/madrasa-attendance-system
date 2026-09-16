@@ -427,6 +427,11 @@ export async function recordAttendance(params: {
   submitForApproval?: boolean;
   unverifiedReason?: string | null;
   clientTimezoneOffset?: number;
+  targetShiftName?: string | null;
+  targetShiftStartTime?: string | null;
+  targetShiftEndTime?: string | null;
+  isAdditionalShift?: boolean;
+  additionalShiftId?: string | null;
 }): Promise<{
   success: boolean;
   record?: any;
@@ -502,8 +507,8 @@ export async function recordAttendance(params: {
     isOvernight?: boolean;
   }>;
 
-  // Clock In must be before candidate shift end time
-  if (params.type === 'CLOCK_IN' && shiftsList.length > 0) {
+  // 30-minute early clock-in window enforcement
+  if (params.type === 'CLOCK_IN') {
     const verifiedTodayCount = await prisma.attendanceRecord.count({
       where: {
         staffProfileId: params.staffProfileId,
@@ -513,34 +518,63 @@ export async function recordAttendance(params: {
       },
     });
 
-    const activeCandidateShift = shiftsList[verifiedTodayCount] || shiftsList[shiftsList.length - 1];
+    const activeCandidateShift =
+      params.targetShiftStartTime && params.targetShiftEndTime
+        ? {
+            name: params.targetShiftName || daySchedule.shiftPatternName,
+            startTime: params.targetShiftStartTime,
+            endTime: params.targetShiftEndTime,
+            isHoliday: false,
+            isOvernight: daySchedule.isOvernight,
+          }
+        : shiftsList[verifiedTodayCount] || shiftsList[shiftsList.length - 1];
 
-    if (activeCandidateShift && activeCandidateShift.endTime) {
-      const [endH, endM] = activeCandidateShift.endTime.split(':').map((s) => parseInt(s, 10));
-      let shiftEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), endH, endM, 0, 0);
+    if (activeCandidateShift && activeCandidateShift.startTime) {
+      const [startH, startM] = activeCandidateShift.startTime.split(':').map((s) => parseInt(s, 10));
+      const shiftStart = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), startH, startM, 0, 0);
+      const earlyWindowStart = new Date(shiftStart.getTime() - 30 * 60 * 1000);
 
-      if (activeCandidateShift.isOvernight && activeCandidateShift.startTime) {
-        const [startH, startM] = activeCandidateShift.startTime.split(':').map((s) => parseInt(s, 10));
-        const shiftStart = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), startH, startM, 0, 0);
-        if (shiftEnd <= shiftStart) {
-          shiftEnd.setDate(shiftEnd.getDate() + 1);
-        }
+      if (localDateObj < earlyWindowStart) {
+        const formatClockTime = (d: Date) => {
+          let h = d.getHours();
+          const m = d.getMinutes();
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+          return `${h}:${m < 10 ? '0' : ''}${m} ${ampm}`;
+        };
+        const openTimeStr = formatClockTime(earlyWindowStart);
+        return {
+          success: false,
+          error: `Clock-in is not allowed more than 30 minutes before your shift start time (${activeCandidateShift.startTime}). Clock-in opens at ${openTimeStr}.`,
+          evaluation,
+        };
       }
 
-      if (localDateObj >= shiftEnd) {
-        const hasRemainingFutureShift = shiftsList.slice(verifiedTodayCount).some((s) => {
-          if (!s.endTime) return false;
-          const [eH, eM] = s.endTime.split(':').map(Number);
-          const sEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), eH, eM, 0, 0);
-          return localDateObj < sEnd || s.isOvernight;
-        });
+      if (activeCandidateShift.endTime) {
+        const [endH, endM] = activeCandidateShift.endTime.split(':').map((s) => parseInt(s, 10));
+        let shiftEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), endH, endM, 0, 0);
 
-        if (!hasRemainingFutureShift) {
-          return {
-            success: false,
-            error: 'Cannot clock in after your shift has ended.',
-            evaluation,
-          };
+        if (activeCandidateShift.isOvernight && activeCandidateShift.startTime) {
+          if (shiftEnd <= shiftStart) {
+            shiftEnd.setDate(shiftEnd.getDate() + 1);
+          }
+        }
+
+        if (localDateObj >= shiftEnd) {
+          const hasRemainingFutureShift = shiftsList.slice(verifiedTodayCount).some((s) => {
+            if (!s.endTime) return false;
+            const [eH, eM] = s.endTime.split(':').map(Number);
+            const sEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), eH, eM, 0, 0);
+            return localDateObj < sEnd || s.isOvernight;
+          });
+
+          if (!hasRemainingFutureShift) {
+            return {
+              success: false,
+              error: 'Cannot clock in after your shift has ended.',
+              evaluation,
+            };
+          }
         }
       }
     }
@@ -754,19 +788,25 @@ export async function recordAttendance(params: {
 
   // 5. Calculate Time Metrics & Create Verified Attendance Record
   let chosenShift = {
-    startTime: daySchedule.startTime,
-    endTime: daySchedule.endTime,
-    name: daySchedule.shiftPatternName,
+    id: params.additionalShiftId || undefined,
+    startTime: params.targetShiftStartTime || daySchedule.startTime,
+    endTime: params.targetShiftEndTime || daySchedule.endTime,
+    name: params.targetShiftName || daySchedule.shiftPatternName,
+    isAdditionalShift: params.isAdditionalShift || false,
+    additionalShiftId: params.additionalShiftId || null,
   };
 
-  if (shiftsList.length > 0) {
+  if (!params.targetShiftStartTime && shiftsList.length > 0) {
     const candidateIdx = Math.min(completedCyclesCount, shiftsList.length - 1);
     const candidate = shiftsList[candidateIdx];
     if (candidate && candidate.startTime && candidate.endTime) {
       chosenShift = {
+        id: candidate.id,
         startTime: candidate.startTime,
         endTime: candidate.endTime,
         name: candidate.name || daySchedule.shiftPatternName,
+        isAdditionalShift: Boolean((candidate as any).additionalShiftId || candidate.name?.includes('Additional')),
+        additionalShiftId: (candidate as any).additionalShiftId || (candidate.id?.startsWith('cmf') && candidate.name?.includes('Additional') ? candidate.id : null),
       };
     }
   }
@@ -788,6 +828,9 @@ export async function recordAttendance(params: {
       verificationStatus: 'VERIFIED',
       rejectionReason: null,
       source: 'NORMAL',
+
+      isAdditionalShift: Boolean(params.isAdditionalShift || chosenShift.isAdditionalShift),
+      additionalShiftId: params.additionalShiftId || chosenShift.additionalShiftId,
 
       scheduledShiftName: metrics.scheduledShiftName,
       scheduledStartTime: metrics.scheduledStartTime,
