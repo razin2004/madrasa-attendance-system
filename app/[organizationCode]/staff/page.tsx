@@ -795,7 +795,7 @@ export default function StaffDashboardPage() {
                 {currentDateStr}
               </div>
 
-              {todayStatus?.schedule?.allShifts && todayStatus.schedule.allShifts.length > 1 ? (
+              {todayStatus?.schedule?.allShifts && todayStatus.schedule.allShifts.length > 0 ? (
                 <div style={{ position: 'relative', display: 'inline-block', marginTop: '14px' }}>
                   <button
                     type="button"
@@ -1002,10 +1002,7 @@ export default function StaffDashboardPage() {
                       if (todayStatus?.schedule?.shiftPatternName && todayStatus.schedule.startTime) {
                         return `${todayStatus.schedule.shiftPatternName} (${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime})`;
                       }
-                      if (todayStatus?.schedule?.shiftPatternName) {
-                        return `${todayStatus.schedule.shiftPatternName} (Off Duty)`;
-                      }
-                      return 'Assigned Shift Schedule';
+                      return 'Off Duty Today (No Shift Scheduled)';
                     })()}
                   </span>
                 </span>
