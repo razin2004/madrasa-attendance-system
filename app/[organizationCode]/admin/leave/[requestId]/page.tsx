@@ -250,66 +250,149 @@ export default function AdminLeaveReviewPage() {
               </div>
             )}
 
-            {/* STAFFING SHORTAGE WARNING CALLOUT (Section 15 & 16) */}
-            {hasShortage && (
+            {/* STAFFING SHORTAGE WARNING CALLOUT */}
+            {hasShortage ? (
               <div className={styles.shortageWarning}>
-                <AlertTriangle size={24} />
+                <AlertTriangle size={24} color="#f87171" style={{ flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '15px', color: '#ffffff' }}>
-                    Minimum Staffing Threshold Exceeded
+                  <div style={{ fontWeight: 800, fontSize: '15px', color: '#ffffff' }}>
+                    Critical Staffing Shortage Detected
                   </div>
-                  <div style={{ fontSize: '13px', marginTop: '2px', color: 'rgba(255, 255, 255, 0.9)' }}>
-                    Approving this request will reduce available staff below the required minimum staffing threshold on one or more dates. Review the impact analysis below before deciding.
+                  <div style={{ fontSize: '13px', marginTop: '2px', color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.4 }}>
+                    Approving this request will reduce available staff below the required minimum threshold for one or more scheduled shifts.
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '16px 20px', borderRadius: '12px', backgroundColor: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', color: '#34d399', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <CheckCircle2 size={22} color="#34d399" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#ffffff' }}>
+                    Optimal Staffing Coverage
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginTop: '2px' }}>
+                    All scheduled shifts meet or exceed minimum staffing requirements during this requested leave period.
                   </div>
                 </div>
               </div>
             )}
 
-            {/* STAFFING IMPACT ANALYSIS MATRIX */}
+            {/* STAFFING IMPACT ANALYSIS MATRIX & VISUAL COVERAGE GAUGES */}
             <div className={styles.impactCard}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Users size={18} color="#818cf8" />
-                <span>Shift Staffing Impact Breakdown</span>
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={18} color="#818cf8" />
+                  <span>Per-Shift Staffing Coverage &amp; Impact Analysis</span>
+                </h2>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#34d399', fontWeight: 600 }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34d399' }} /> Meets Minimum
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f87171', fontWeight: 600 }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f87171' }} /> Below Minimum
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontWeight: 600 }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#64748b' }} /> Off Duty / Holiday
+                  </span>
+                </div>
+              </div>
 
               {/* Desktop Table View */}
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+              <div className="desktopOnlyImpact" style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
-                      <th style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Date</th>
-                      <th style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Scheduled Staff</th>
-                      <th style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>On Leave</th>
-                      <th style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Remaining Available</th>
-                      <th style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Min Required</th>
-                      <th style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '11.5px', textTransform: 'uppercase' }}>Result</th>
+                    <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                      <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</th>
+                      <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Target Shift</th>
+                      <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Scheduled</th>
+                      <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>On Leave</th>
+                      <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Available</th>
+                      <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Min Req</th>
+                      <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Coverage Meter</th>
+                      <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Result</th>
                     </tr>
                   </thead>
                   <tbody>
                     {impactData.map((day: any, idx: number) => {
+                      const isOffDuty = day.status === 'OFF_DUTY' || day.shiftName === 'Off Duty';
+                      const isHoliday = day.status === 'HOLIDAY' || day.isHoliday;
                       const totalScheduled = day.totalScheduled ?? day.totalAssignedStaff ?? 0;
                       const onLeaveCount = day.onLeaveCount ?? day.alreadyOnLeaveStaff ?? 0;
                       const onLeaveWithThis = day.onLeaveWithThis ?? (onLeaveCount + 1);
                       const remainingStaff = day.remainingStaff ?? day.afterApprovalAvailable ?? 0;
-                      const minRequired = day.minRequired ?? day.minimumStaffingThreshold ?? 3;
-                      const isShortage = day.isShortage ?? (day.status === 'RED' || remainingStaff < minRequired);
+                      const minRequired = day.minRequired ?? day.minimumStaffingThreshold ?? (isOffDuty || isHoliday ? 0 : 1);
+                      const isShortage = !isOffDuty && !isHoliday && (day.isShortage ?? remainingStaff < minRequired);
+
+                      // Calculate coverage bar percentage
+                      const coveragePct = isOffDuty || isHoliday
+                        ? 100
+                        : minRequired > 0
+                        ? Math.min(100, Math.round((remainingStaff / minRequired) * 100))
+                        : 100;
 
                       return (
-                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                          <td style={{ padding: '12px', fontWeight: 700, color: '#ffffff' }}>{day.date}</td>
-                          <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{totalScheduled}</td>
-                          <td style={{ padding: '12px', color: '#fbbf24' }}>{onLeaveWithThis}</td>
-                          <td style={{ padding: '12px', fontWeight: 700, color: isShortage ? '#f87171' : '#34d399' }}>
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle)', backgroundColor: isShortage ? 'rgba(239, 68, 68, 0.04)' : undefined }}>
+                          <td style={{ padding: '12px 14px', fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                            {day.date}
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '6px', fontWeight: 400 }}>
+                              ({day.dayOfWeek?.slice(0, 3)})
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ fontWeight: 700, color: isOffDuty ? '#94a3b8' : isHoliday ? '#818cf8' : '#fbbf24' }}>
+                              {day.shiftName || 'Default Shift'}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              {day.shiftHours || '09:00 - 17:00'}
+                            </div>
+                          </td>
+                          <td style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontWeight: 600 }}>{totalScheduled}</td>
+                          <td style={{ padding: '12px 14px', color: '#fbbf24', fontWeight: 600 }}>{onLeaveWithThis}</td>
+                          <td style={{ padding: '12px 14px', fontWeight: 800, color: isOffDuty || isHoliday ? '#94a3b8' : isShortage ? '#f87171' : '#34d399' }}>
                             {remainingStaff}
                           </td>
-                          <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{minRequired}</td>
-                          <td style={{ padding: '12px' }}>
-                            {isShortage ? (
-                              <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontWeight: 600 }}>{minRequired}</td>
+                          <td style={{ padding: '12px 14px', minWidth: '140px' }}>
+                            {isOffDuty ? (
+                              <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>Off Duty</div>
+                            ) : isHoliday ? (
+                              <div style={{ fontSize: '11px', color: '#818cf8', fontStyle: 'italic' }}>Holiday</div>
+                            ) : (
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px', marginBottom: '3px', fontWeight: 700, color: isShortage ? '#f87171' : '#34d399' }}>
+                                  <span>{coveragePct}% Covered</span>
+                                  <span>{remainingStaff}/{minRequired}</span>
+                                </div>
+                                <div style={{ height: '6px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '9999px', overflow: 'hidden' }}>
+                                  <div
+                                    style={{
+                                      height: '100%',
+                                      width: `${coveragePct}%`,
+                                      backgroundColor: isShortage ? '#ef4444' : '#10b981',
+                                      borderRadius: '9999px',
+                                      transition: 'width 0.3s ease',
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            {isOffDuty ? (
+                              <span className="badge badge-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+                                🌙 Off Duty
+                              </span>
+                            ) : isHoliday ? (
+                              <span className="badge badge-info" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+                                🎉 Holiday
+                              </span>
+                            ) : isShortage ? (
+                              <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
                                 <XCircle size={12} /> Below Minimum
                               </span>
                             ) : (
-                              <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
                                 <CheckCircle2 size={12} /> Meets Minimum
                               </span>
                             )}
@@ -319,6 +402,84 @@ export default function AdminLeaveReviewPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Staffing Cards View */}
+              <div className="mobileOnlyImpact" style={{ display: 'none', flexDirection: 'column', gap: '12px' }}>
+                {impactData.map((day: any, idx: number) => {
+                  const isOffDuty = day.status === 'OFF_DUTY' || day.shiftName === 'Off Duty';
+                  const isHoliday = day.status === 'HOLIDAY' || day.isHoliday;
+                  const totalScheduled = day.totalScheduled ?? day.totalAssignedStaff ?? 0;
+                  const onLeaveCount = day.onLeaveCount ?? day.alreadyOnLeaveStaff ?? 0;
+                  const onLeaveWithThis = day.onLeaveWithThis ?? (onLeaveCount + 1);
+                  const remainingStaff = day.remainingStaff ?? day.afterApprovalAvailable ?? 0;
+                  const minRequired = day.minRequired ?? day.minimumStaffingThreshold ?? (isOffDuty || isHoliday ? 0 : 1);
+                  const isShortage = !isOffDuty && !isHoliday && (day.isShortage ?? remainingStaff < minRequired);
+                  const coveragePct = isOffDuty || isHoliday ? 100 : minRequired > 0 ? Math.min(100, Math.round((remainingStaff / minRequired) * 100)) : 100;
+
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '14px',
+                        borderRadius: '12px',
+                        backgroundColor: isShortage ? 'rgba(239, 68, 68, 0.08)' : 'rgba(15, 23, 42, 0.65)',
+                        border: `1px solid ${isShortage ? 'rgba(239, 68, 68, 0.35)' : 'rgba(255, 255, 255, 0.1)'}`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div>
+                          <strong style={{ fontSize: '14px', color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{day.date}</strong>
+                          <span style={{ fontSize: '11.5px', color: '#94a3b8', marginLeft: '6px' }}>({day.dayOfWeek})</span>
+                        </div>
+                        {isOffDuty ? (
+                          <span className="badge badge-secondary" style={{ fontSize: '11px' }}>🌙 Off Duty</span>
+                        ) : isHoliday ? (
+                          <span className="badge badge-info" style={{ fontSize: '11px' }}>🎉 Holiday</span>
+                        ) : isShortage ? (
+                          <span className="badge badge-danger" style={{ fontSize: '11px' }}>🚨 Below Minimum</span>
+                        ) : (
+                          <span className="badge badge-success" style={{ fontSize: '11px' }}>✅ Meets Minimum</span>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: isOffDuty ? '#94a3b8' : isHoliday ? '#818cf8' : '#fbbf24', marginBottom: '10px' }}>
+                        {day.shiftName} <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 400 }}>({day.shiftHours})</span>
+                      </div>
+
+                      {!isOffDuty && !isHoliday && (
+                        <div style={{ marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: isShortage ? '#f87171' : '#34d399', marginBottom: '3px' }}>
+                            <span>Staffing Coverage: {coveragePct}%</span>
+                            <span>{remainingStaff} Available / {minRequired} Required</span>
+                          </div>
+                          <div style={{ height: '6px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '9999px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${coveragePct}%`, backgroundColor: isShortage ? '#ef4444' : '#10b981', borderRadius: '9999px' }} />
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', fontSize: '11px', textTransform: 'uppercase', textAlign: 'center' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.04)', padding: '6px 4px', borderRadius: '6px' }}>
+                          <div style={{ color: '#94a3b8', fontSize: '9.5px', fontWeight: 700 }}>Scheduled</div>
+                          <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>{totalScheduled}</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.04)', padding: '6px 4px', borderRadius: '6px' }}>
+                          <div style={{ color: '#94a3b8', fontSize: '9.5px', fontWeight: 700 }}>On Leave</div>
+                          <div style={{ fontSize: '13px', fontWeight: 800, color: '#fbbf24', marginTop: '2px' }}>{onLeaveWithThis}</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.04)', padding: '6px 4px', borderRadius: '6px' }}>
+                          <div style={{ color: '#94a3b8', fontSize: '9.5px', fontWeight: 700 }}>Available</div>
+                          <div style={{ fontSize: '13px', fontWeight: 800, color: isShortage ? '#f87171' : '#34d399', marginTop: '2px' }}>{remainingStaff}</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.04)', padding: '6px 4px', borderRadius: '6px' }}>
+                          <div style={{ color: '#94a3b8', fontSize: '9.5px', fontWeight: 700 }}>Min Required</div>
+                          <div style={{ fontSize: '13px', fontWeight: 800, color: '#cbd5e1', marginTop: '2px' }}>{minRequired}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
