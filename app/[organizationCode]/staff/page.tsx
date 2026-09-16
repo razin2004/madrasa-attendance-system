@@ -147,7 +147,11 @@ export default function StaffDashboardPage() {
   const [selectedShiftIndex, setSelectedShiftIndex] = useState<number | null>(null);
 
   const getShiftStatusTag = (s: any, idx: number) => {
-    const isCompletedShift = idx < (todayStatus?.completedCycles || 0);
+    const shiftRecords = (todayStatus?.todayRecords || []).filter((r: any) =>
+      r.verificationStatus !== 'REJECTED' &&
+      ((s.id && r.additionalShiftId === s.id) || (s.name && r.scheduledShiftName === s.name))
+    );
+    const isClockedIn = shiftRecords.length > 0 && shiftRecords[shiftRecords.length - 1].type === 'CLOCK_IN';
     const isActive =
       s.name === todayStatus?.schedule?.activeShift?.name &&
       s.startTime === todayStatus?.schedule?.activeShift?.startTime;
@@ -155,10 +159,15 @@ export default function StaffDashboardPage() {
     const nowMins = now.getHours() * 60 + now.getMinutes();
     const [sh, sm] = (s.startTime || '00:00').split(':').map(Number);
     const startMins = sh * 60 + sm;
+    const [eh, em] = (s.endTime || '00:00').split(':').map(Number);
+    const endMins = eh * 60 + em;
     const isTooEarly = nowMins < startMins - 30;
     const isUpcoming = nowMins < startMins;
+    const isEnded = !s.isOvernight && nowMins > endMins;
 
-    if (isCompletedShift)
+    if (isClockedIn)
+      return { label: '● Clocked In', color: '#34d399', bg: 'rgba(52, 211, 153, 0.2)', border: 'rgba(52, 211, 153, 0.4)' };
+    if (isEnded && shiftRecords.some((r: any) => r.type === 'CLOCK_OUT'))
       return { label: '✓ Done', color: '#34d399', bg: 'rgba(52, 211, 153, 0.15)', border: 'rgba(52, 211, 153, 0.3)' };
     if (isActive && isUpcoming)
       return { label: '★ Next', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)', border: 'rgba(56, 189, 248, 0.3)' };
@@ -612,9 +621,19 @@ export default function StaffDashboardPage() {
     (todayStatus?.hasPendingClockIn && todayStatus?.schedule?.activeShift?.name === selectedShiftObj?.name)
   );
 
-  const isSelectedShiftCompleted = Boolean(
-    selectedShiftRecords.some((r: any) => r.type === 'CLOCK_OUT')
-  );
+  const isSelectedShiftCompleted = (() => {
+    if (!selectedShiftObj || !selectedShiftObj.endTime) return false;
+    if (isSelectedShiftClockedIn) return false;
+    if (selectedShiftObj.isOvernight) return false;
+
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const [endH, endM] = selectedShiftObj.endTime.split(':').map(Number);
+    const endMins = endH * 60 + endM;
+
+    const hasClockedOut = selectedShiftRecords.some((r: any) => r.type === 'CLOCK_OUT');
+    return nowMins > endMins && hasClockedOut;
+  })();
 
   const handleClockButtonClick = () => {
     if (!todayStatus || clocking || checking) return;
@@ -657,27 +676,16 @@ export default function StaffDashboardPage() {
   }
 
   const isShiftEndedWithoutClockIn = (() => {
-    if (!todayStatus || todayStatus.isClockedIn || todayStatus.hasPendingClockIn) return false;
-    if (!todayStatus.schedule || !todayStatus.schedule.isScheduled) return false;
-
-    const currentShift = todayStatus.schedule.activeShift || todayStatus.schedule;
-    if (!currentShift || !currentShift.endTime) return false;
-
-    const shiftsToCheck = todayStatus.schedule.allShifts && todayStatus.schedule.allShifts.length > 0
-      ? todayStatus.schedule.allShifts
-      : [currentShift];
+    if (!selectedShiftObj || !selectedShiftObj.endTime) return false;
+    if (isSelectedShiftClockedIn || isSelectedShiftCompleted) return false;
+    if (selectedShiftObj.isOvernight) return false;
 
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes();
+    const [endH, endM] = selectedShiftObj.endTime.split(':').map(Number);
+    const endMins = endH * 60 + endM;
 
-    const hasUpcomingOrActiveShift = shiftsToCheck.some((s: any) => {
-      if (!s.endTime) return false;
-      const [endH, endM] = s.endTime.split(':').map(Number);
-      const endMins = endH * 60 + endM;
-      return nowMins <= endMins || s.isOvernight;
-    });
-
-    return !hasUpcomingOrActiveShift;
+    return nowMins > endMins;
   })();
 
 

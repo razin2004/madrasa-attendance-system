@@ -710,7 +710,16 @@ export async function recordAttendance(params: {
     };
   }
 
-  // 4. Daily Attendance Cycle Accounting (Section 17, 18, 19, 20, 21)
+  // 4. Resolve Chosen Target Shift
+  let chosenShift = {
+    id: params.additionalShiftId || undefined,
+    startTime: params.targetShiftStartTime || daySchedule.startTime,
+    endTime: params.targetShiftEndTime || daySchedule.endTime,
+    name: params.targetShiftName || daySchedule.shiftPatternName,
+    isAdditionalShift: params.isAdditionalShift || false,
+    additionalShiftId: params.additionalShiftId || null,
+  };
+
   const verifiedTodayRecords = await prisma.attendanceRecord.findMany({
     where: {
       staffProfileId: params.staffProfileId,
@@ -721,80 +730,6 @@ export async function recordAttendance(params: {
   });
 
   const completedCyclesCount = verifiedTodayRecords.filter((r) => r.type === 'CLOCK_OUT').length;
-  const lastVerifiedRecord =
-    verifiedTodayRecords.length > 0 ? verifiedTodayRecords[verifiedTodayRecords.length - 1] : null;
-
-  const pendingClockInToday = await prisma.attendanceCorrectionRequest.findFirst({
-    where: {
-      organizationId: params.organizationId,
-      staffProfileId: params.staffProfileId,
-      status: 'PENDING',
-      requestedClockIn: { not: null },
-      requestedClockOut: null,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  const hasPendingClockIn = Boolean(pendingClockInToday);
-  let isCurrentlyClockedIn = lastVerifiedRecord?.type === 'CLOCK_IN' || hasPendingClockIn;
-
-  // If clocked in via verified punch, but shift ended -> shift expired without clocking out (does NOT expire if pending clock in approval)
-  if (isCurrentlyClockedIn && !hasPendingClockIn && !daySchedule.isOvernight && daySchedule.endTime) {
-    const [endH, endM] = daySchedule.endTime.split(':').map((s) => parseInt(s, 10));
-    const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
-    if (now > shiftEnd) {
-      isCurrentlyClockedIn = false;
-    }
-  }
-
-  const maxAllowedCycles = Math.max(MAX_DAILY_ATTENDANCE_CYCLES, shiftsList.length);
-
-  if (params.type === 'CLOCK_IN') {
-    if (isCurrentlyClockedIn) {
-      return {
-        success: false,
-        error: 'Already clocked in.',
-        evaluation,
-      };
-    }
-    if (completedCyclesCount >= maxAllowedCycles) {
-      return {
-        success: false,
-        error:
-          maxAllowedCycles > 1
-            ? "Today's maximum attendance cycles have been reached."
-            : "Today's attendance has already been completed.",
-        evaluation,
-      };
-    }
-  } else if (params.type === 'CLOCK_OUT') {
-    if (!isCurrentlyClockedIn) {
-      return {
-        success: false,
-        error: 'You are not currently clocked in.',
-        evaluation,
-      };
-    }
-    if (pendingClockInToday) {
-      await prisma.attendanceCorrectionRequest.update({
-        where: { id: pendingClockInToday.id },
-        data: {
-          requestedClockOut: now,
-          originalClockOut: now,
-        },
-      }).catch(() => {});
-    }
-  }
-
-  // 5. Calculate Time Metrics & Create Verified Attendance Record
-  let chosenShift = {
-    id: params.additionalShiftId || undefined,
-    startTime: params.targetShiftStartTime || daySchedule.startTime,
-    endTime: params.targetShiftEndTime || daySchedule.endTime,
-    name: params.targetShiftName || daySchedule.shiftPatternName,
-    isAdditionalShift: params.isAdditionalShift || false,
-    additionalShiftId: params.additionalShiftId || null,
-  };
 
   if (!params.targetShiftStartTime && shiftsList.length > 0) {
     const candidateIdx = Math.min(completedCyclesCount, shiftsList.length - 1);
@@ -810,6 +745,69 @@ export async function recordAttendance(params: {
       };
     }
   }
+
+  // Filter records specifically for chosen target shift (per-shift database isolation)
+  const targetShiftRecords = verifiedTodayRecords.filter((r) => {
+    if (chosenShift.additionalShiftId && r.additionalShiftId === chosenShift.additionalShiftId) return true;
+    if (chosenShift.name && r.scheduledShiftName === chosenShift.name) return true;
+    return false;
+  });
+
+  const lastTargetShiftRecord = targetShiftRecords.length > 0 ? targetShiftRecords[targetShiftRecords.length - 1] : null;
+
+  const pendingClockInToday = await prisma.attendanceCorrectionRequest.findFirst({
+    where: {
+      organizationId: params.organizationId,
+      staffProfileId: params.staffProfileId,
+      status: 'PENDING',
+      requestedClockIn: { not: null },
+      requestedClockOut: null,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const hasPendingClockIn = Boolean(pendingClockInToday);
+  let isCurrentlyClockedIn = lastTargetShiftRecord?.type === 'CLOCK_IN' || hasPendingClockIn;
+
+  // If clocked in to target shift, but shift ended -> shift expired
+  if (isCurrentlyClockedIn && !hasPendingClockIn && !chosenShift.isAdditionalShift && chosenShift.endTime) {
+    const [endH, endM] = chosenShift.endTime.split(':').map((s) => parseInt(s, 10));
+    const shiftEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0, 0);
+    if (now > shiftEnd) {
+      isCurrentlyClockedIn = false;
+    }
+  }
+
+  const maxAllowedCycles = Math.max(MAX_DAILY_ATTENDANCE_CYCLES, shiftsList.length * 3);
+
+  if (params.type === 'CLOCK_IN') {
+    if (isCurrentlyClockedIn) {
+      return {
+        success: false,
+        error: `Already clocked in to ${chosenShift.name || 'shift'}.`,
+        evaluation,
+      };
+    }
+  } else if (params.type === 'CLOCK_OUT') {
+    if (!isCurrentlyClockedIn) {
+      return {
+        success: false,
+        error: `You are not currently clocked in to ${chosenShift.name || 'shift'}.`,
+        evaluation,
+      };
+    }
+    if (pendingClockInToday) {
+      await prisma.attendanceCorrectionRequest.update({
+        where: { id: pendingClockInToday.id },
+        data: {
+          requestedClockOut: now,
+          originalClockOut: now,
+        },
+      }).catch(() => {});
+    }
+  }
+
+  // 5. Calculate Time Metrics & Create Verified Attendance Record
 
   const metrics = calculateAttendanceTimeMetrics({
     type: params.type,
@@ -1008,27 +1006,36 @@ export async function getStaffTodayAttendanceStatus(
       }
     } else {
       const nowMins = localDateObj.getHours() * 60 + localDateObj.getMinutes();
-      const candidateShifts =
-        completedCyclesCount > 0 && completedCyclesCount < shiftsList.length
-          ? shiftsList.slice(completedCyclesCount)
-          : shiftsList;
 
-      let bestShift = candidateShifts[0] || shiftsList[shiftsList.length - 1];
-      let foundUpcoming = false;
-
-      for (const s of candidateShifts) {
+      // Priority 1: Ongoing shift right now (within 30-min pre-window up to shift end time)
+      const ongoingShift = shiftsList.find((s) => {
+        if (!s.startTime || !s.endTime) return false;
+        if (s.isOvernight) return true;
+        const [sh, sm] = s.startTime.split(':').map(Number);
         const [eh, em] = s.endTime.split(':').map(Number);
+        const startMins = sh * 60 + sm;
         const endMins = eh * 60 + em;
-        if (nowMins <= endMins || s.isOvernight) {
-          bestShift = s;
-          foundUpcoming = true;
-          break;
+        return nowMins >= startMins - 30 && nowMins <= endMins;
+      });
+
+      if (ongoingShift) {
+        activeShift = ongoingShift;
+      } else {
+        // Priority 2: First upcoming shift today
+        const upcomingShift = shiftsList.find((s) => {
+          if (!s.startTime) return false;
+          const [sh, sm] = s.startTime.split(':').map(Number);
+          const startMins = sh * 60 + sm;
+          return nowMins < startMins;
+        });
+
+        if (upcomingShift) {
+          activeShift = upcomingShift;
+        } else {
+          // Priority 3: All shifts finished -> fallback to last shift
+          activeShift = shiftsList[shiftsList.length - 1];
         }
       }
-      if (!foundUpcoming && completedCyclesCount < shiftsList.length) {
-        bestShift = shiftsList[completedCyclesCount] || shiftsList[shiftsList.length - 1];
-      }
-      activeShift = bestShift;
     }
   }
 
