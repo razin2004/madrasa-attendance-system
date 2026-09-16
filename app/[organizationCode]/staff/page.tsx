@@ -116,12 +116,24 @@ interface TodayAttendanceStatus {
   lastClockOutIso?: string | null;
   earlyDepartureMinutes?: number;
   currentBranch?: { id: string; name: string } | null;
+  pendingCorrectionRequests?: Array<{
+    id: string;
+    type: string;
+    reason?: string | null;
+    status: string;
+    requestedClockIn?: string | null;
+    requestedClockOut?: string | null;
+  }>;
   todayRecords: Array<{
     id: string;
     type: 'CLOCK_IN' | 'CLOCK_OUT';
     verificationStatus: 'VERIFIED' | 'REJECTED';
     timestamp: string;
     branch?: { name: string } | null;
+    scheduledShiftName?: string | null;
+    additionalShiftId?: string | null;
+    lateMinutes?: number;
+    earlyDepartureMinutes?: number;
   }>;
 }
 
@@ -616,9 +628,26 @@ export default function StaffDashboardPage() {
 
   const lastSelectedShiftRecord = selectedShiftRecords.length > 0 ? selectedShiftRecords[selectedShiftRecords.length - 1] : null;
 
+  const pendingForSelectedShift = (todayStatus?.pendingCorrectionRequests || []).find((req: any) => {
+    if (selectedShiftObj?.id && req.reason?.includes(`[Shift: ${selectedShiftObj.id}]`)) return true;
+    if (selectedShiftObj?.name && req.reason?.includes(`[Shift: ${selectedShiftObj.name}]`)) return true;
+    return false;
+  }) || (
+    todayStatus?.hasPendingClockIn && todayStatus?.schedule?.activeShift?.name === selectedShiftObj?.name
+      ? { requestedClockIn: todayStatus.lastClockInIso || new Date().toISOString(), requestedClockOut: null }
+      : null
+  );
+
+  const hasPendingClockInForSelectedShift = Boolean(
+    pendingForSelectedShift?.requestedClockIn && !pendingForSelectedShift?.requestedClockOut
+  );
+
+  const hasPendingClockOutForSelectedShift = Boolean(
+    pendingForSelectedShift?.requestedClockOut
+  );
+
   const isSelectedShiftClockedIn = Boolean(
-    lastSelectedShiftRecord?.type === 'CLOCK_IN' ||
-    (todayStatus?.hasPendingClockIn && todayStatus?.schedule?.activeShift?.name === selectedShiftObj?.name)
+    lastSelectedShiftRecord?.type === 'CLOCK_IN' || hasPendingClockInForSelectedShift
   );
 
   const isSelectedShiftCompleted = (() => {
@@ -1059,19 +1088,19 @@ export default function StaffDashboardPage() {
                 <div style={{ width: '100%' }}>
                   {isClockedIn && (
                     <div className={styles.clockedInInfo}>
-                      {todayStatus?.hasPendingClockIn ? (
+                      {hasPendingClockInForSelectedShift ? (
                         <span style={{ color: '#fbbf24', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                           <span>⚠️ Requested Clock In:</span>
                           <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                            {formatPunchTimeLocal(todayStatus?.lastClockInIso, todayStatus?.lastClockInTime)} (Pending)
+                            {formatPunchTimeLocal(pendingForSelectedShift?.requestedClockIn?.toString(), null)} (Pending Approval)
                           </strong>
                         </span>
                       ) : (
                         <>
-                          Clocked in at <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{formatPunchTimeLocal(todayStatus?.lastClockInIso, todayStatus?.lastClockInTime)}</strong>
-                          {todayStatus?.lateMinutes ? (
+                          Clocked in at <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{formatPunchTimeLocal(lastSelectedShiftRecord?.timestamp?.toString() || todayStatus?.lastClockInIso, todayStatus?.lastClockInTime)}</strong>
+                          {lastSelectedShiftRecord?.lateMinutes ? (
                             <span style={{ color: '#fbbf24', marginLeft: '8px', fontSize: '12px', fontWeight: 700 }}>
-                              (Late by {todayStatus.lateMinutes} mins)
+                              (Late by {lastSelectedShiftRecord.lateMinutes} mins)
                             </span>
                           ) : (
                             <span style={{ color: '#34d399', marginLeft: '8px', fontSize: '12px', fontWeight: 700 }}>(On Time)</span>
@@ -1081,12 +1110,12 @@ export default function StaffDashboardPage() {
                     </div>
                   )}
 
-                  {!isClockedIn && todayStatus?.hasPendingClockOut && (
+                  {!isClockedIn && hasPendingClockOutForSelectedShift && (
                     <div className={styles.clockedInInfo}>
                       <span style={{ color: '#fbbf24', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <span>⚠️ Requested Clock Out:</span>
                         <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                          {formatPunchTimeLocal(todayStatus?.lastClockOutIso, todayStatus?.lastClockOutTime)} (Pending Approval)
+                          {formatPunchTimeLocal(pendingForSelectedShift?.requestedClockOut?.toString(), null)} (Pending Approval)
                         </strong>
                       </span>
                     </div>

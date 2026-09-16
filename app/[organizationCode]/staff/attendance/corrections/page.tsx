@@ -55,6 +55,13 @@ export default function StaffCorrectionHistoryPage() {
     return t.replace(/_/g, ' ');
   };
 
+  const extractShiftName = (reason?: string | null) => {
+    if (!reason) return 'Regular Shift';
+    const match = reason.match(/\[Shift:\s*([^\]]+)\]/i);
+    if (match && match[1]) return match[1].trim();
+    return 'Regular Shift';
+  };
+
   const pendingCount = corrections.filter((c) => c.status === 'PENDING').length;
   const approvedCount = corrections.filter((c) => c.status === 'APPROVED').length;
   const rejectedCount = corrections.filter((c) => c.status === 'REJECTED').length;
@@ -138,6 +145,7 @@ export default function StaffCorrectionHistoryPage() {
               <thead>
                 <tr>
                   <th>Affected Date</th>
+                  <th>Shift Name</th>
                   <th>Correction Type</th>
                   <th>Requested Punch</th>
                   <th>Reason</th>
@@ -150,6 +158,11 @@ export default function StaffCorrectionHistoryPage() {
                   <tr key={item.id}>
                     <td style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
                       {formatDateStr(item.date)}
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#818cf8', background: 'rgba(129, 140, 248, 0.15)', padding: '3px 8px', borderRadius: '6px', border: '1px solid rgba(129, 140, 248, 0.3)' }}>
+                        📅 {extractShiftName(item.reason)}
+                      </span>
                     </td>
                     <td>
                       <span className="badge badge-warning">{formatCorrectionType(item.type)}</span>
@@ -196,6 +209,9 @@ export default function StaffCorrectionHistoryPage() {
 
                 <div className={styles.cardCategoryRow}>
                   <span className={styles.typeBadge}>{formatCorrectionType(item.type)}</span>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#818cf8' }}>
+                    📅 Shift: {extractShiftName(item.reason)}
+                  </span>
                   <span className={styles.submittedDate}>
                     Submitted: {formatDateInTimezone(item.createdAt)}
                   </span>

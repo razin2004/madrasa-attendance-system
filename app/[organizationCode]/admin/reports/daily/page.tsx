@@ -674,6 +674,7 @@ export default function DailyReportPage() {
                       <tr>
                         <th className={styles.th}>Staff Member</th>
                         <th className={styles.th}>Branch</th>
+                        <th className={styles.th}>Shift Pattern</th>
                         <th className={styles.th}>Clock In</th>
                         <th className={styles.th}>Late In</th>
                         <th className={styles.th}>Clock Out</th>
@@ -714,6 +715,12 @@ export default function DailyReportPage() {
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                                 <MapPin size={13} color="#38bdf8" />
                                 <span style={{ color: '#f8fafc' }}>{row.branchName}</span>
+                              </span>
+                            </td>
+
+                            <td className={styles.td}>
+                              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                {row.shiftPatternName}
                               </span>
                             </td>
 
@@ -822,9 +829,13 @@ export default function DailyReportPage() {
                                 {row.staffId}
                               </span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                              <MapPin size={11} color="#38bdf8" />
-                              <span>{row.branchName}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                <MapPin size={11} color="#38bdf8" />
+                                <span>{row.branchName}</span>
+                              </span>
+                              <span>•</span>
+                              <span style={{ color: '#cbd5e1', fontWeight: 600 }}>{row.shiftPatternName}</span>
                             </div>
                           </div>
 

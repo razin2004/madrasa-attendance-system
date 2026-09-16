@@ -126,6 +126,12 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
     return { staffReason, securityFailures };
   };
 
+  const extractShiftName = (reasonStr?: string | null): string | null => {
+    if (!reasonStr) return null;
+    const match = reasonStr.match(/\[Shift:\s*([^\]]+)\]/i);
+    return match && match[1] ? match[1].trim() : null;
+  };
+
   const formatTime = (iso?: string | null) => {
     if (!iso) return 'None';
     return formatTimeInTimezone(iso);
@@ -393,6 +399,15 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                   <span className={styles.badge} style={{ background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155' }}>
                     📅 Date: {formatDate(request.date)}
                   </span>
+                  {(() => {
+                    const shiftName = extractShiftName(request.reason);
+                    if (!shiftName) return null;
+                    return (
+                      <span className={styles.badge} style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                        🕒 Shift: {shiftName}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -455,6 +470,15 @@ export default function AdminCorrectionReviewPage({ params }: PageProps) {
                         <span className={styles.detailLabel}>Correction Category</span>
                         <span className={styles.detailVal}>{formatTypeName(request)}</span>
                       </div>
+
+                      {extractShiftName(request.reason) && (
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Target Shift</span>
+                          <span className={styles.detailVal} style={{ color: '#818cf8', fontWeight: 700 }}>
+                            {extractShiftName(request.reason)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

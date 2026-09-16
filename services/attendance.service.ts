@@ -924,24 +924,17 @@ export async function getStaffTodayAttendanceStatus(
   const completedCyclesCount = verifiedRecords.filter((r) => r.type === 'CLOCK_OUT').length;
   const lastVerified = verifiedRecords.length > 0 ? verifiedRecords[verifiedRecords.length - 1] : null;
 
-  const pendingClockInToday = await prisma.attendanceCorrectionRequest.findFirst({
+  const pendingCorrectionRequests = await prisma.attendanceCorrectionRequest.findMany({
     where: {
       staffProfileId,
       status: 'PENDING',
-      requestedClockIn: { not: null },
-      requestedClockOut: null,
+      date: { gte: startOfDayUtc },
     },
     orderBy: { createdAt: 'desc' },
   });
 
-  const pendingClockOutToday = await prisma.attendanceCorrectionRequest.findFirst({
-    where: {
-      staffProfileId,
-      status: 'PENDING',
-      requestedClockOut: { not: null },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const pendingClockInToday = pendingCorrectionRequests.find((r) => r.requestedClockIn && !r.requestedClockOut);
+  const pendingClockOutToday = pendingCorrectionRequests.find((r) => r.requestedClockOut);
 
   const hasPendingClockIn = Boolean(pendingClockInToday);
   const hasPendingClockOut = Boolean(pendingClockOutToday);
@@ -1097,6 +1090,7 @@ export async function getStaffTodayAttendanceStatus(
     lastClockOutIso: rawClockOutIso,
     earlyDepartureMinutes: lastClockOut?.earlyDepartureMinutes || 0,
     currentBranch: lastVerified?.branch || null,
+    pendingCorrectionRequests,
     todayRecords,
   };
 }

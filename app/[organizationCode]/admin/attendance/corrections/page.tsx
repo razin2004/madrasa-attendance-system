@@ -200,7 +200,20 @@ export default function AdminAttendanceCorrectionsPage() {
       new Set(rawFailures.map((f) => getShortFailureLabel(f)))
     );
 
-    return { staffReason, securityFailures };
+    let shiftName = '';
+    const shiftMatch = (text || '').match(/\[Shift:\s*([^\]]+)\]/i);
+    if (shiftMatch && shiftMatch[1]) {
+      shiftName = shiftMatch[1].trim();
+    }
+
+    return { staffReason, securityFailures, shiftName };
+  };
+
+  const extractShiftName = (reason?: string | null) => {
+    if (!reason) return 'Regular Shift';
+    const match = reason.match(/\[Shift:\s*([^\]]+)\]/i);
+    if (match && match[1]) return match[1].trim();
+    return 'Regular Shift';
   };
 
   useEffect(() => {
@@ -692,7 +705,12 @@ export default function AdminAttendanceCorrectionsPage() {
                               {formatDateString(item.date)}
                             </td>
                             <td className={styles.td} style={{ whiteSpace: 'nowrap' }}>
-                              {renderTypeBadge(item)}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                {renderTypeBadge(item)}
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#818cf8', background: 'rgba(129, 140, 248, 0.15)', padding: '2px 7px', borderRadius: '6px', border: '1px solid rgba(129, 140, 248, 0.3)' }}>
+                                  📅 Shift: {extractShiftName(item.reason)}
+                                </span>
+                              </div>
                             </td>
                             <td className={styles.td} style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                               In: <span style={{ color: '#34d399', fontWeight: 700 }}>{formatPunchTime(item.requestedClockIn)}</span> &bull; Out:{' '}
@@ -812,7 +830,12 @@ export default function AdminAttendanceCorrectionsPage() {
                           <div className={styles.stackedCol}>
                             <span className={styles.colLabel}>Date &amp; Problem Type</span>
                             <span className={styles.colVal}>{formatDateString(item.date)}</span>
-                            <div style={{ marginTop: '4px' }}>{renderTypeBadge(item)}</div>
+                            <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                              {renderTypeBadge(item)}
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#818cf8', background: 'rgba(129, 140, 248, 0.15)', padding: '2px 7px', borderRadius: '6px', border: '1px solid rgba(129, 140, 248, 0.3)' }}>
+                                📅 Shift: {extractShiftName(item.reason)}
+                              </span>
+                            </div>
                           </div>
                           <div className={styles.stackedCol}>
                             <span className={styles.colLabel}>Requested Time</span>
