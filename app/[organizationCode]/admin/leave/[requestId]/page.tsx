@@ -43,6 +43,8 @@ export default function AdminLeaveReviewPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  const [balances, setBalances] = useState<any[]>([]);
+
   useEffect(() => {
     fetch(`/api/org/${organizationCode}/branding`)
       .then((r) => r.json())
@@ -59,6 +61,7 @@ export default function AdminLeaveReviewPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setRequestDetails(data.request);
+        if (data.balances) setBalances(data.balances);
         if (data.staffingImpact) {
           setImpactData(data.staffingImpact);
           const shortageFound = data.staffingImpact.some((day: any) => day.isShortage);
@@ -174,15 +177,15 @@ export default function AdminLeaveReviewPage() {
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
                 <div>
                   <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Leave Type</div>
                   <div style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', marginTop: '2px' }}>{requestDetails.leaveType}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Date Range</div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#f8fafc', marginTop: '2px' }}>
-                    {new Date(requestDetails.startDate).toLocaleDateString()} – {new Date(requestDetails.endDate).toLocaleDateString()}
+                  <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#f8fafc', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
+                    {new Date(requestDetails.startDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(requestDetails.endDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                 </div>
                 <div>
@@ -191,12 +194,61 @@ export default function AdminLeaveReviewPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Reason</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px', fontStyle: 'italic' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px', fontStyle: 'italic', lineHeight: 1.4 }}>
                     &ldquo;{requestDetails.reason || 'No reason provided'}&rdquo;
                   </div>
                 </div>
               </div>
+
+              {/* Employee Current Leave Balances Preview */}
+              {balances.length > 0 && (
+                <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px dashed var(--border-subtle)' }}>
+                  <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+                    Staff Current Entitlement Balances ({new Date().getUTCFullYear()})
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                    {balances.map((b: any) => (
+                      <div key={b.leaveType} style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>{b.leaveType}</div>
+                        <div style={{ fontSize: '16px', fontWeight: 800, color: b.remaining > 0 ? '#34d399' : '#f87171', marginTop: '2px' }}>
+                          {b.remaining} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 400 }}>/ {b.entitlement} left</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* REVIEW DECISION DETAILS CARD (If Reviewed) */}
+            {requestDetails.status !== 'PENDING' && (
+              <div className="glass-card" style={{ padding: '20px', marginBottom: '24px', borderLeft: `3px solid ${requestDetails.status === 'APPROVED' ? '#10b981' : '#ef4444'}` }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={18} color={requestDetails.status === 'APPROVED' ? '#34d399' : '#f87171'} />
+                  <span>Review Decision Summary</span>
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', fontSize: '13px' }}>
+                  <div>
+                    <span style={{ color: '#94a3b8', fontSize: '11.5px', textTransform: 'uppercase', display: 'block', fontWeight: 700 }}>Reviewed By</span>
+                    <strong style={{ color: '#ffffff' }}>{requestDetails.reviewerUser?.name || 'Administrator'}</strong>
+                  </div>
+                  {requestDetails.reviewedAt && (
+                    <div>
+                      <span style={{ color: '#94a3b8', fontSize: '11.5px', textTransform: 'uppercase', display: 'block', fontWeight: 700 }}>Decision Date</span>
+                      <strong style={{ color: '#ffffff' }}>{new Date(requestDetails.reviewedAt).toLocaleString()}</strong>
+                    </div>
+                  )}
+                  {requestDetails.reviewerComment && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <span style={{ color: '#94a3b8', fontSize: '11.5px', textTransform: 'uppercase', display: 'block', fontWeight: 700, marginBottom: '4px' }}>Admin Feedback / Comment</span>
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '8px', color: '#ffffff', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        {requestDetails.reviewerComment}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* STAFFING SHORTAGE WARNING CALLOUT (Section 15 & 16) */}
             {hasShortage && (
@@ -213,13 +265,14 @@ export default function AdminLeaveReviewPage() {
               </div>
             )}
 
-            {/* STAFFING IMPACT ANALYSIS MATRIX (Section 15) */}
+            {/* STAFFING IMPACT ANALYSIS MATRIX */}
             <div className={styles.impactCard}>
               <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={18} color="#818cf8" />
                 <span>Shift Staffing Impact Breakdown</span>
               </h2>
 
+              {/* Desktop Table View */}
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
                   <thead>

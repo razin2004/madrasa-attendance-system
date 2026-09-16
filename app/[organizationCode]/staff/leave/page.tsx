@@ -452,7 +452,7 @@ export default function StaffLeaveDashboardPage() {
                   <th>Leave Type</th>
                   <th>Date Range</th>
                   <th>Duration</th>
-                  <th>Reason</th>
+                  <th>Reason &amp; Feedback</th>
                   <th>Status</th>
                   <th>Submitted</th>
                   <th style={{ textAlign: 'right' }}>Action</th>
@@ -464,14 +464,31 @@ export default function StaffLeaveDashboardPage() {
                     <td style={{ fontWeight: 700, color: '#ffffff' }}>
                       {formatLeaveType(req.type || req.leaveType)}
                     </td>
-                    <td style={{ color: '#94a3b8', fontFamily: 'var(--font-mono)', fontSize: '12.5px' }}>
+                    <td style={{ color: '#cbd5e1', fontFamily: 'var(--font-mono)', fontSize: '12.5px' }}>
                       {new Date(req.startDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(req.endDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
                     <td style={{ fontWeight: 700, color: '#818cf8', fontFamily: 'var(--font-mono)' }}>
                       {req.daysCount} {req.daysCount === 1 ? 'day' : 'days'}
                     </td>
-                    <td style={{ color: '#94a3b8', fontStyle: 'italic', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      &ldquo;{req.reason}&rdquo;
+                    <td style={{ maxWidth: '280px' }}>
+                      <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '12.5px' }}>
+                        &ldquo;{req.reason}&rdquo;
+                      </div>
+                      {req.reviewerComment && (
+                        <div
+                          style={{
+                            marginTop: '6px',
+                            padding: '6px 10px',
+                            borderRadius: '6px',
+                            backgroundColor: req.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                            border: req.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                            fontSize: '11.5px',
+                            color: req.status === 'APPROVED' ? '#34d399' : '#f87171',
+                          }}
+                        >
+                          <strong>Admin Note{req.reviewerUser?.name ? ` (${req.reviewerUser.name})` : ''}:</strong> {req.reviewerComment}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <span className={`badge ${req.status === 'APPROVED' ? 'badge-success' : req.status === 'REJECTED' ? 'badge-danger' : req.status === 'CANCELLED' ? 'badge-secondary' : 'badge-warning'}`}>
@@ -511,23 +528,44 @@ export default function StaffLeaveDashboardPage() {
                   </span>
                 </div>
 
-                <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginBottom: '6px', fontFamily: 'var(--font-mono)' }}>
-                  {new Date(req.startDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(req.endDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px', color: '#cbd5e1', marginBottom: '10px', fontFamily: 'var(--font-mono)', background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px' }}>
+                  <span>
+                    📅 {new Date(req.startDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(req.endDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                  <strong style={{ color: '#818cf8', fontWeight: 800 }}>{req.daysCount} {req.daysCount === 1 ? 'day' : 'days'}</strong>
                 </div>
 
-                <div style={{ fontSize: '12.5px', color: '#818cf8', fontWeight: 700, marginBottom: '8px' }}>
-                  Duration: {req.daysCount} {req.daysCount === 1 ? 'day' : 'days'}
+                <div style={{ fontSize: '12px', color: '#cbd5e1', backgroundColor: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>
+                    Reason / Justification
+                  </div>
+                  <div style={{ fontStyle: 'italic', color: '#e2e8f0', lineHeight: 1.4 }}>&ldquo;{req.reason}&rdquo;</div>
                 </div>
 
-                <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', backgroundColor: 'rgba(0,0,0,0.2)', padding: '8px 10px', borderRadius: '6px', marginBottom: '10px' }}>
-                  &ldquo;{req.reason}&rdquo;
-                </div>
+                {req.reviewerComment && (
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      backgroundColor: req.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      border: req.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    <div style={{ fontSize: '10.5px', fontWeight: 800, color: req.status === 'APPROVED' ? '#34d399' : '#f87171', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px', letterSpacing: '0.5px' }}>
+                      <span>{req.status === 'APPROVED' ? 'Approval Feedback' : 'Rejection Reason'}</span>
+                      {req.reviewerUser?.name && <span style={{ color: '#94a3b8', fontWeight: 500 }}>(by {req.reviewerUser.name})</span>}
+                    </div>
+                    <div style={{ color: '#ffffff', fontWeight: 600, lineHeight: 1.4 }}>{req.reviewerComment}</div>
+                  </div>
+                )}
 
                 {req.status === 'PENDING' && (
                   <button
                     onClick={() => setCancelRequestId(req.id)}
                     className="btn btn-secondary btn-sm"
-                    style={{ color: '#f87171', width: '100%', fontSize: '12px', padding: '6px 0', marginTop: '4px' }}
+                    style={{ color: '#f87171', width: '100%', fontSize: '12px', padding: '7px 0', marginTop: '4px', borderRadius: '8px' }}
                   >
                     Cancel Leave Request
                   </button>

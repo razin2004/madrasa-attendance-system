@@ -323,8 +323,8 @@ export default function AdminLeavePage() {
                         <td className={styles.td}>
                           <span style={{ fontWeight: 600, color: '#f8fafc' }}>{item.leaveType}</span>
                         </td>
-                        <td className={styles.td} style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                          {new Date(item.startDate).toLocaleDateString()} – {new Date(item.endDate).toLocaleDateString()}
+                        <td className={styles.td} style={{ fontSize: '13px', color: '#cbd5e1', fontFamily: 'var(--font-mono)' }}>
+                          {new Date(item.startDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(item.endDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}
                         </td>
                         <td className={styles.td}>
                           <strong style={{ color: '#818cf8' }}>{item.daysCount} days</strong>
@@ -391,9 +391,9 @@ export default function AdminLeavePage() {
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>
-                        {new Date(item.startDate).toLocaleDateString()} – {new Date(item.endDate).toLocaleDateString()}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span style={{ fontSize: '11.5px', color: '#cbd5e1', fontFamily: 'var(--font-mono)' }}>
+                        {new Date(item.startDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(item.endDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#818cf8', fontWeight: 600 }}>
                         <span>Review</span>

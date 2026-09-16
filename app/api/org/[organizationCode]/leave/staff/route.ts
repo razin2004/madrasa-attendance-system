@@ -29,6 +29,9 @@ export async function GET(
           organizationId: organization.id,
           staffProfileId: staffProfile.id,
         },
+        include: {
+          reviewerUser: { select: { id: true, name: true } },
+        },
         orderBy: { startDate: 'desc' },
       }),
     ]);
