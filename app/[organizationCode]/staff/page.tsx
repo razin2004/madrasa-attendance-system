@@ -592,15 +592,38 @@ export default function StaffDashboardPage() {
     }
   };
 
+  const selectedShiftObj = (() => {
+    const allShifts = todayStatus?.schedule?.allShifts || [];
+    if (selectedShiftIndex !== null && allShifts[selectedShiftIndex]) return allShifts[selectedShiftIndex];
+    return todayStatus?.schedule?.activeShift || allShifts[0];
+  })();
+
+  const selectedShiftRecords = (todayStatus?.todayRecords || []).filter((r: any) => {
+    if (r.verificationStatus === 'REJECTED') return false;
+    if (selectedShiftObj?.id && r.additionalShiftId === selectedShiftObj.id) return true;
+    if (selectedShiftObj?.name && r.scheduledShiftName === selectedShiftObj.name) return true;
+    return false;
+  });
+
+  const lastSelectedShiftRecord = selectedShiftRecords.length > 0 ? selectedShiftRecords[selectedShiftRecords.length - 1] : null;
+
+  const isSelectedShiftClockedIn = Boolean(
+    lastSelectedShiftRecord?.type === 'CLOCK_IN' ||
+    (todayStatus?.hasPendingClockIn && todayStatus?.schedule?.activeShift?.name === selectedShiftObj?.name)
+  );
+
+  const isSelectedShiftCompleted = Boolean(
+    selectedShiftRecords.some((r: any) => r.type === 'CLOCK_OUT')
+  );
+
   const handleClockButtonClick = () => {
     if (!todayStatus || clocking || checking) return;
 
-    if (!todayStatus.isClockedIn) {
+    if (!isSelectedShiftClockedIn) {
       setClocking(true);
       startClockFlow('CLOCK_IN');
     } else {
-      const activeShiftObj = todayStatus.schedule?.activeShift || todayStatus.schedule;
-      const schedEndStr = activeShiftObj?.endTime;
+      const schedEndStr = selectedShiftObj?.endTime;
       if (schedEndStr) {
         const now = new Date();
         const [hStr, mStr] = schedEndStr.split(':');
@@ -620,9 +643,9 @@ export default function StaffDashboardPage() {
   };
 
   const hasSchedule = Boolean(todayStatus?.hasSchedule);
-  let isClockedIn = Boolean(todayStatus?.isClockedIn || todayStatus?.hasPendingClockIn);
+  let isClockedIn = isSelectedShiftClockedIn;
 
-  const activeShiftObj = todayStatus?.schedule?.activeShift || todayStatus?.schedule;
+  const activeShiftObj = selectedShiftObj || todayStatus?.schedule?.activeShift || todayStatus?.schedule;
   if (isClockedIn && !todayStatus?.hasPendingClockIn && activeShiftObj?.endTime && !activeShiftObj?.isOvernight) {
     const now = new Date();
     const [hStr, mStr] = activeShiftObj.endTime.split(':');
@@ -657,11 +680,7 @@ export default function StaffDashboardPage() {
     return !hasUpcomingOrActiveShift;
   })();
 
-  const selectedShiftObj = (() => {
-    const allShifts = todayStatus?.schedule?.allShifts || [];
-    if (selectedShiftIndex !== null && allShifts[selectedShiftIndex]) return allShifts[selectedShiftIndex];
-    return todayStatus?.schedule?.activeShift || allShifts[0];
-  })();
+
 
   const isTooEarlyToClockIn = (() => {
     if (!selectedShiftObj || !selectedShiftObj.startTime || isClockedIn) return false;
@@ -1060,11 +1079,11 @@ export default function StaffDashboardPage() {
                   {/* Punch Button */}
                   <button
                     onClick={handleClockButtonClick}
-                    disabled={!hasSchedule || isCompleted || isShiftEndedWithoutClockIn || isTooEarlyToClockIn || Boolean(todayStatus?.hasPendingClockOut) || clocking || checking}
+                    disabled={!hasSchedule || isSelectedShiftCompleted || isShiftEndedWithoutClockIn || isTooEarlyToClockIn || Boolean(todayStatus?.hasPendingClockOut) || clocking || checking}
                     className={`${styles.clockButton} ${styles.punchButtonCircle} ${
-                      isClockedIn
+                      isSelectedShiftClockedIn
                         ? styles.clockButtonOut
-                        : isShiftEndedWithoutClockIn || isTooEarlyToClockIn
+                        : isSelectedShiftCompleted || isShiftEndedWithoutClockIn || isTooEarlyToClockIn
                         ? styles.clockButtonDisabled
                         : todayStatus?.hasPendingClockOut
                         ? styles.clockButtonDisabled
@@ -1075,8 +1094,13 @@ export default function StaffDashboardPage() {
                       <>
                         <Loader2 size={24} className="animate-spin" />
                         <span style={{ fontSize: '14px', fontWeight: 800 }}>
-                          {isClockedIn ? 'Clocking Out...' : 'Clocking In...'}
+                          {isSelectedShiftClockedIn ? 'Clocking Out...' : 'Clocking In...'}
                         </span>
+                      </>
+                    ) : isSelectedShiftCompleted ? (
+                      <>
+                        <CheckCircle2 size={24} color="#34d399" />
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#34d399' }}>Completed</span>
                       </>
                     ) : isTooEarlyToClockIn ? (
                       <>
@@ -1093,7 +1117,7 @@ export default function StaffDashboardPage() {
                         <CheckCircle2 size={24} color="#fbbf24" />
                         <span style={{ fontSize: '14px', fontWeight: 800, color: '#fbbf24' }}>Clock Out Pending</span>
                       </>
-                    ) : isClockedIn ? (
+                    ) : isSelectedShiftClockedIn ? (
                       <>
                         <Clock size={24} />
                         <span style={{ fontSize: '14px', fontWeight: 800 }}>Clock Out</span>

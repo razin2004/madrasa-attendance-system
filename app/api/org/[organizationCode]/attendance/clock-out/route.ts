@@ -20,7 +20,18 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { latitude, longitude, locationAccuracy, deviceLabel, unverifiedReason } = body;
+    const {
+      latitude,
+      longitude,
+      locationAccuracy,
+      deviceLabel,
+      unverifiedReason,
+      targetShiftName,
+      targetShiftStartTime,
+      targetShiftEndTime,
+      isAdditionalShift,
+      additionalShiftId,
+    } = body;
     const deviceSecret =
       body.deviceSecret ||
       request.headers.get('x-shiftguard-device-secret') ||
@@ -64,6 +75,11 @@ export async function POST(
       submitForApproval: Boolean(body.submitForApproval),
       unverifiedReason: unverifiedReason || null,
       clientTimezoneOffset,
+      targetShiftName: targetShiftName || null,
+      targetShiftStartTime: targetShiftStartTime || null,
+      targetShiftEndTime: targetShiftEndTime || null,
+      isAdditionalShift: Boolean(isAdditionalShift),
+      additionalShiftId: additionalShiftId || null,
     });
 
     if (!result.success) {
