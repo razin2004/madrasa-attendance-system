@@ -858,7 +858,12 @@ export default function StaffDashboardPage() {
                         const current = currentIdx !== -1 && allShifts[currentIdx] ? allShifts[currentIdx] : todayStatus.schedule.activeShift || allShifts[0];
 
                         if (!current) return "Today's Shifts";
-                        const isDone = currentIdx !== -1 && currentIdx < (todayStatus.completedCycles || 0);
+
+                        const shiftRecs = (todayStatus?.todayRecords || []).filter((r: any) =>
+                          r.verificationStatus !== 'REJECTED' &&
+                          ((current.id && r.additionalShiftId === current.id) || (current.name && r.scheduledShiftName === current.name))
+                        );
+                        const isClockedInCurrently = shiftRecs.length > 0 && shiftRecs[shiftRecs.length - 1].type === 'CLOCK_IN';
 
                         const now = new Date();
                         const nowMins = now.getHours() * 60 + now.getMinutes();
@@ -866,10 +871,13 @@ export default function StaffDashboardPage() {
                         const startMins = sh * 60 + sm;
                         const [eh, em] = (current.endTime || '00:00').split(':').map(Number);
                         const endMins = eh * 60 + em;
+                        const shiftEnded = !current.isOvernight && nowMins > endMins;
+                        const isDone = shiftEnded && shiftRecs.some((r: any) => r.type === 'CLOCK_OUT');
 
                         let prefix = 'Shift';
-                        if (isDone) prefix = '✓ Shift Done';
-                        else if (nowMins < startMins) prefix = 'Upcoming Shift';
+                        if (isClockedInCurrently) prefix = '● Clocked In';
+                        else if (isDone) prefix = '✓ Shift Done';
+                        else if (nowMins < startMins - 30) prefix = 'Upcoming Shift';
                         else if (nowMins <= endMins || current.isOvernight) prefix = 'Active Shift';
                         else prefix = 'Shift Ended';
 

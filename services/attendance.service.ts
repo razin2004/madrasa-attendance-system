@@ -458,7 +458,7 @@ export async function recordAttendance(params: {
     params.coordinates
   );
 
-  // 2. Resolve Scheduled Shift for Today (Section 14, 15, 29)
+  // 2. Resolve Scheduled Shift & Target Shift for Today
   const [staffAssignments, staffOverrides, staffAdditionalShifts] = await Promise.all([
     prisma.shiftAssignment.findMany({
       where: { staffProfileId: params.staffProfileId, shiftPattern: { isActive: true } },
@@ -507,75 +507,92 @@ export async function recordAttendance(params: {
     isOvernight?: boolean;
   }>;
 
-  // 30-minute early clock-in window enforcement
-  if (params.type === 'CLOCK_IN') {
-    const verifiedTodayCount = await prisma.attendanceRecord.count({
-      where: {
-        staffProfileId: params.staffProfileId,
-        verificationStatus: 'VERIFIED',
-        type: 'CLOCK_OUT',
-        timestamp: { gte: startOfDay },
-      },
-    });
+  // Resolve Chosen Target Shift specifically from request payload
+  let chosenShift = {
+    id: params.additionalShiftId || undefined,
+    startTime: params.targetShiftStartTime || daySchedule.startTime,
+    endTime: params.targetShiftEndTime || daySchedule.endTime,
+    name: params.targetShiftName || daySchedule.shiftPatternName,
+    isAdditionalShift: params.isAdditionalShift || false,
+    additionalShiftId: params.additionalShiftId || null,
+  };
 
-    const activeCandidateShift =
-      params.targetShiftStartTime && params.targetShiftEndTime
-        ? {
-            name: params.targetShiftName || daySchedule.shiftPatternName,
-            startTime: params.targetShiftStartTime,
-            endTime: params.targetShiftEndTime,
-            isHoliday: false,
-            isOvernight: daySchedule.isOvernight,
-          }
-        : shiftsList[verifiedTodayCount] || shiftsList[shiftsList.length - 1];
+  const matchedShiftFromList = shiftsList.find((s) => {
+    if (params.additionalShiftId && (s as any).id === params.additionalShiftId) return true;
+    if (params.targetShiftName && s.name === params.targetShiftName) return true;
+    if (params.targetShiftStartTime && s.startTime === params.targetShiftStartTime) return true;
+    return false;
+  });
 
-    if (activeCandidateShift && activeCandidateShift.startTime) {
-      const [startH, startM] = activeCandidateShift.startTime.split(':').map((s) => parseInt(s, 10));
-      const shiftStart = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), startH, startM, 0, 0);
-      const earlyWindowStart = new Date(shiftStart.getTime() - 30 * 60 * 1000);
+  if (matchedShiftFromList) {
+    chosenShift = {
+      id: matchedShiftFromList.id,
+      startTime: matchedShiftFromList.startTime,
+      endTime: matchedShiftFromList.endTime,
+      name: matchedShiftFromList.name || daySchedule.shiftPatternName,
+      isAdditionalShift: Boolean((matchedShiftFromList as any).additionalShiftId || matchedShiftFromList.name?.includes('Additional')),
+      additionalShiftId: (matchedShiftFromList as any).additionalShiftId || (matchedShiftFromList.id?.startsWith('cmf') && matchedShiftFromList.name?.includes('Additional') ? matchedShiftFromList.id : null),
+    };
+  } else if (!params.targetShiftStartTime && shiftsList.length > 0) {
+    const nowMins = localDateObj.getHours() * 60 + localDateObj.getMinutes();
+    const ongoingOrUpcoming =
+      shiftsList.find((s) => {
+        if (!s.startTime || !s.endTime) return false;
+        const [sh, sm] = s.startTime.split(':').map(Number);
+        const [eh, em] = s.endTime.split(':').map(Number);
+        const startMins = sh * 60 + sm;
+        const endMins = eh * 60 + em;
+        return nowMins <= endMins || s.isOvernight;
+      }) || shiftsList[0];
 
-      if (localDateObj < earlyWindowStart) {
-        const formatClockTime = (d: Date) => {
-          let h = d.getHours();
-          const m = d.getMinutes();
-          const ampm = h >= 12 ? 'PM' : 'AM';
-          h = h % 12 || 12;
-          return `${h}:${m < 10 ? '0' : ''}${m} ${ampm}`;
-        };
-        const openTimeStr = formatClockTime(earlyWindowStart);
-        return {
-          success: false,
-          error: `Clock-in is not allowed more than 30 minutes before your shift start time (${activeCandidateShift.startTime}). Clock-in opens at ${openTimeStr}.`,
-          evaluation,
-        };
+    chosenShift = {
+      id: ongoingOrUpcoming.id,
+      startTime: ongoingOrUpcoming.startTime,
+      endTime: ongoingOrUpcoming.endTime,
+      name: ongoingOrUpcoming.name || daySchedule.shiftPatternName,
+      isAdditionalShift: Boolean((ongoingOrUpcoming as any).additionalShiftId || ongoingOrUpcoming.name?.includes('Additional')),
+      additionalShiftId: (ongoingOrUpcoming as any).additionalShiftId || null,
+    };
+  }
+
+  // 30-minute early clock-in window & shift end enforcement per target chosenShift
+  if (params.type === 'CLOCK_IN' && chosenShift && chosenShift.startTime) {
+    const [startH, startM] = chosenShift.startTime.split(':').map((s) => parseInt(s, 10));
+    const shiftStart = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), startH, startM, 0, 0);
+    const earlyWindowStart = new Date(shiftStart.getTime() - 30 * 60 * 1000);
+
+    if (localDateObj < earlyWindowStart) {
+      const formatClockTime = (d: Date) => {
+        let h = d.getHours();
+        const m = d.getMinutes();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h}:${m < 10 ? '0' : ''}${m} ${ampm}`;
+      };
+      const openTimeStr = formatClockTime(earlyWindowStart);
+      return {
+        success: false,
+        error: `Clock-in is not allowed more than 30 minutes before your shift start time (${chosenShift.startTime}). Clock-in opens at ${openTimeStr}.`,
+        evaluation,
+      };
+    }
+
+    if (chosenShift.endTime) {
+      const [endH, endM] = chosenShift.endTime.split(':').map((s) => parseInt(s, 10));
+      let shiftEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), endH, endM, 0, 0);
+
+      if (chosenShift.endTime < chosenShift.startTime) {
+        if (shiftEnd <= shiftStart) {
+          shiftEnd.setDate(shiftEnd.getDate() + 1);
+        }
       }
 
-      if (activeCandidateShift.endTime) {
-        const [endH, endM] = activeCandidateShift.endTime.split(':').map((s) => parseInt(s, 10));
-        let shiftEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), endH, endM, 0, 0);
-
-        if (activeCandidateShift.isOvernight && activeCandidateShift.startTime) {
-          if (shiftEnd <= shiftStart) {
-            shiftEnd.setDate(shiftEnd.getDate() + 1);
-          }
-        }
-
-        if (localDateObj >= shiftEnd) {
-          const hasRemainingFutureShift = shiftsList.slice(verifiedTodayCount).some((s) => {
-            if (!s.endTime) return false;
-            const [eH, eM] = s.endTime.split(':').map(Number);
-            const sEnd = new Date(localDateObj.getFullYear(), localDateObj.getMonth(), localDateObj.getDate(), eH, eM, 0, 0);
-            return localDateObj < sEnd || s.isOvernight;
-          });
-
-          if (!hasRemainingFutureShift) {
-            return {
-              success: false,
-              error: 'Cannot clock in after your shift has ended.',
-              evaluation,
-            };
-          }
-        }
+      if (localDateObj >= shiftEnd) {
+        return {
+          success: false,
+          error: `Cannot clock in after your shift (${chosenShift.name || 'selected shift'}) has ended.`,
+          evaluation,
+        };
       }
     }
   }
@@ -710,16 +727,7 @@ export async function recordAttendance(params: {
     };
   }
 
-  // 4. Resolve Chosen Target Shift
-  let chosenShift = {
-    id: params.additionalShiftId || undefined,
-    startTime: params.targetShiftStartTime || daySchedule.startTime,
-    endTime: params.targetShiftEndTime || daySchedule.endTime,
-    name: params.targetShiftName || daySchedule.shiftPatternName,
-    isAdditionalShift: params.isAdditionalShift || false,
-    additionalShiftId: params.additionalShiftId || null,
-  };
-
+  // 4. Per-shift Attendance Accounting
   const verifiedTodayRecords = await prisma.attendanceRecord.findMany({
     where: {
       staffProfileId: params.staffProfileId,
@@ -728,23 +736,6 @@ export async function recordAttendance(params: {
     },
     orderBy: { timestamp: 'asc' },
   });
-
-  const completedCyclesCount = verifiedTodayRecords.filter((r) => r.type === 'CLOCK_OUT').length;
-
-  if (!params.targetShiftStartTime && shiftsList.length > 0) {
-    const candidateIdx = Math.min(completedCyclesCount, shiftsList.length - 1);
-    const candidate = shiftsList[candidateIdx];
-    if (candidate && candidate.startTime && candidate.endTime) {
-      chosenShift = {
-        id: candidate.id,
-        startTime: candidate.startTime,
-        endTime: candidate.endTime,
-        name: candidate.name || daySchedule.shiftPatternName,
-        isAdditionalShift: Boolean((candidate as any).additionalShiftId || candidate.name?.includes('Additional')),
-        additionalShiftId: (candidate as any).additionalShiftId || (candidate.id?.startsWith('cmf') && candidate.name?.includes('Additional') ? candidate.id : null),
-      };
-    }
-  }
 
   // Filter records specifically for chosen target shift (per-shift database isolation)
   const targetShiftRecords = verifiedTodayRecords.filter((r) => {
@@ -777,8 +768,6 @@ export async function recordAttendance(params: {
       isCurrentlyClockedIn = false;
     }
   }
-
-  const maxAllowedCycles = Math.max(MAX_DAILY_ATTENDANCE_CYCLES, shiftsList.length * 3);
 
   if (params.type === 'CLOCK_IN') {
     if (isCurrentlyClockedIn) {
