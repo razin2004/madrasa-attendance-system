@@ -45,6 +45,14 @@ interface StaffDetailItem {
     hasOverride: boolean;
     overrideId?: string;
     overrideReason?: string | null;
+    shifts?: Array<{
+      id?: string;
+      name?: string;
+      startTime: string | null;
+      endTime: string | null;
+      isHoliday: boolean;
+      isOvernight?: boolean;
+    }>;
   };
 }
 
@@ -289,21 +297,44 @@ export default function RosterDayDetailPage() {
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '13px',
-                              fontWeight: 700,
-                              color: staff.schedule.isOvernight ? '#c084fc' : '#818cf8',
-                              backgroundColor: staff.schedule.isOvernight ? 'rgba(168, 85, 247, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                              padding: '4px 10px',
-                              borderRadius: '6px',
-                              border: `1px solid ${staff.schedule.hasOverride ? '#fbbf24' : 'rgba(99, 102, 241, 0.3)'}`,
-                            }}
-                          >
-                            {staff.schedule.startTime} – {staff.schedule.endTime}
-                            {staff.schedule.isOvernight && ' (Overnight)'}
-                          </span>
+                          {staff.schedule.shifts && staff.schedule.shifts.length > 1 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                              {staff.schedule.shifts.map((s, sIdx) => (
+                                <span
+                                  key={sIdx}
+                                  style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    color: s.isOvernight ? '#c084fc' : '#818cf8',
+                                    backgroundColor: s.isOvernight ? 'rgba(168, 85, 247, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                                  }}
+                                >
+                                  {s.startTime} – {s.endTime}
+                                  {s.name && <span style={{ opacity: 0.8, fontSize: '10px', marginLeft: '6px' }}>({s.name})</span>}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span
+                              style={{
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                color: staff.schedule.isOvernight ? '#c084fc' : '#818cf8',
+                                backgroundColor: staff.schedule.isOvernight ? 'rgba(168, 85, 247, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                border: `1px solid ${staff.schedule.hasOverride ? '#fbbf24' : 'rgba(99, 102, 241, 0.3)'}`,
+                              }}
+                            >
+                              {staff.schedule.startTime} – {staff.schedule.endTime}
+                              {staff.schedule.isOvernight && ' (Overnight)'}
+                            </span>
+                          )}
 
                           <button
                             onClick={() => openOverrideModal(staff)}

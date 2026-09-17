@@ -559,6 +559,14 @@ export async function calculateWeeklyRoster(
           },
         },
       },
+      additionalShifts: {
+        where: {
+          date: {
+            gte: startDate,
+            lte: new Date(endDate.getTime() + 86400000),
+          },
+        },
+      },
     },
     orderBy: { staffId: 'asc' },
   });
@@ -577,7 +585,8 @@ export async function calculateWeeklyRoster(
       const schedule = calculateStaffDaySchedule(
         day.dateObj,
         profile.shiftAssignments,
-        profile.shiftOverrides
+        profile.shiftOverrides,
+        profile.additionalShifts
       );
 
       // Optional shift pattern filter
@@ -650,8 +659,16 @@ export async function calculateRosterDayDetail(
       shiftOverrides: {
         where: {
           date: {
-            gte: new Date(date.setHours(0, 0, 0, 0)),
-            lte: new Date(date.setHours(23, 59, 59, 999)),
+            gte: new Date(date.getTime()),
+            lte: new Date(date.getTime() + 86400000),
+          },
+        },
+      },
+      additionalShifts: {
+        where: {
+          date: {
+            gte: new Date(date.getTime()),
+            lte: new Date(date.getTime() + 86400000),
           },
         },
       },
@@ -660,7 +677,7 @@ export async function calculateRosterDayDetail(
   });
 
   const staffDetails = staffProfiles.map((p) => {
-    const schedule = calculateStaffDaySchedule(date, p.shiftAssignments, p.shiftOverrides);
+    const schedule = calculateStaffDaySchedule(date, p.shiftAssignments, p.shiftOverrides, p.additionalShifts);
     return {
       profileId: p.id,
       staffId: p.staffId,
