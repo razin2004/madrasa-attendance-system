@@ -299,7 +299,7 @@ export default function AdminLeaveReviewPage() {
               </div>
 
               {/* Desktop Table View */}
-              <div className="desktopOnlyImpact" style={{ overflowX: 'auto' }}>
+              <div className={styles.desktopOnlyImpact} style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', backgroundColor: 'rgba(255,255,255,0.02)' }}>
@@ -405,7 +405,7 @@ export default function AdminLeaveReviewPage() {
               </div>
 
               {/* Mobile Staffing Cards View */}
-              <div className="mobileOnlyImpact" style={{ display: 'none', flexDirection: 'column', gap: '12px' }}>
+              <div className={styles.mobileOnlyImpact} style={{ flexDirection: 'column', gap: '12px' }}>
                 {impactData.map((day: any, idx: number) => {
                   const isOffDuty = day.status === 'OFF_DUTY' || day.shiftName === 'Off Duty';
                   const isHoliday = day.status === 'HOLIDAY' || day.isHoliday;

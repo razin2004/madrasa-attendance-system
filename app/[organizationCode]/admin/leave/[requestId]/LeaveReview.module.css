@@ -47,6 +47,14 @@
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
 }
 
+.desktopOnlyImpact {
+  display: block;
+}
+
+.mobileOnlyImpact {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .mainContent {
     padding: 16px 14px 100px 14px;
@@ -76,11 +84,11 @@
     gap: 10px;
   }
 
-  :global(.desktopOnlyImpact) {
+  .desktopOnlyImpact {
     display: none !important;
   }
 
-  :global(.mobileOnlyImpact) {
+  .mobileOnlyImpact {
     display: flex !important;
   }
 }
