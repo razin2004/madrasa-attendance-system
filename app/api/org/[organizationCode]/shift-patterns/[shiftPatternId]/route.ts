@@ -321,8 +321,27 @@ export async function DELETE(
       );
     }
 
-    await prisma.shiftPattern.delete({
-      where: { id: shiftPattern.id },
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete dependent shift assignments
+      await tx.shiftAssignment.deleteMany({
+        where: { shiftPatternId: shiftPattern.id },
+      });
+
+      // 2. Unlink shift swap requests
+      await tx.shiftSwapRequest.updateMany({
+        where: { shiftPatternId: shiftPattern.id },
+        data: { shiftPatternId: null },
+      });
+
+      // 3. Delete weekly shift days
+      await tx.weeklyShiftDay.deleteMany({
+        where: { shiftPatternId: shiftPattern.id },
+      });
+
+      // 4. Delete the shift pattern itself
+      await tx.shiftPattern.delete({
+        where: { id: shiftPattern.id },
+      });
     });
 
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';

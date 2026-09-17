@@ -19,6 +19,7 @@ import {
   X,
   Loader2,
   Menu,
+  Trash2,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
@@ -80,6 +81,8 @@ export default function ShiftPatternsPage() {
   const [search, setSearch] = useState('');
   const [togglePattern, setTogglePattern] = useState<ShiftPatternItem | null>(null);
   const [toggleLoading, setToggleLoading] = useState(false);
+  const [deletePattern, setDeletePattern] = useState<ShiftPatternItem | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
@@ -239,6 +242,28 @@ export default function ShiftPatternsPage() {
       toast.error('Network error updating status.');
     } finally {
       setToggleLoading(false);
+    }
+  };
+
+  const handleDeletePattern = async () => {
+    if (!deletePattern) return;
+    try {
+      setDeleteLoading(true);
+      const res = await fetch(`/api/org/${organizationCode}/shift-patterns/${deletePattern.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Shift pattern "${deletePattern.name}" deleted successfully.`);
+        setDeletePattern(null);
+        fetchInitialData();
+      } else {
+        toast.error(data.error || 'Failed to delete shift pattern.');
+      }
+    } catch {
+      toast.error('Network error deleting shift pattern.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -601,19 +626,31 @@ export default function ShiftPatternsPage() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
+                      gap: '8px',
                       paddingTop: '14px',
                       marginTop: '14px',
                       borderTop: '1px solid var(--border-subtle)',
                     }}
                   >
-                    <button
-                      onClick={() => setTogglePattern(pattern)}
-                      className={`btn btn-sm ${pattern.isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Power size={13} />
-                      <span>{pattern.isActive ? 'Deactivate' : 'Activate'}</span>
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        onClick={() => setTogglePattern(pattern)}
+                        className={`btn btn-sm ${pattern.isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Power size={13} />
+                        <span>{pattern.isActive ? 'Deactivate' : 'Activate'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setDeletePattern(pattern)}
+                        className="btn btn-ghost btn-sm"
+                        style={{ color: 'var(--danger-text)', padding: '6px' }}
+                        title="Delete Shift Pattern"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
 
                     <Link
                       href={`/${organizationCode}/admin/shifts/${pattern.id}`}
@@ -998,7 +1035,7 @@ export default function ShiftPatternsPage() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
+      {/* Toggle Status Confirmation Modal */}
       <ConfirmationModal
         isOpen={Boolean(togglePattern)}
         onClose={() => setTogglePattern(null)}
@@ -1011,6 +1048,18 @@ export default function ShiftPatternsPage() {
         }
         confirmText={togglePattern?.isActive ? 'Deactivate Pattern' : 'Activate Pattern'}
         variant={togglePattern?.isActive ? 'danger' : 'primary'}
+      />
+
+      {/* Delete Pattern Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={Boolean(deletePattern)}
+        onClose={() => setDeletePattern(null)}
+        onConfirm={handleDeletePattern}
+        title="Delete Shift Pattern"
+        message={`Are you sure you want to permanently delete "${deletePattern?.name}"? This action cannot be undone and will remove all associated weekly shift days and staff assignments.`}
+        confirmText="Delete Shift Pattern"
+        variant="danger"
+        isLoading={deleteLoading}
       />
 
       {/* Mobile Navigation */}

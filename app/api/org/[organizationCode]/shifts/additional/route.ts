@@ -361,8 +361,29 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Additional shift ID is required.' }, { status: 400 });
     }
 
-    await prisma.additionalShift.delete({
-      where: { id },
+    const existingShift = await prisma.additionalShift.findFirst({
+      where: {
+        id,
+        organizationId: auth.organization.id,
+      },
+    });
+
+    if (!existingShift) {
+      return NextResponse.json(
+        { success: false, error: 'Additional shift not found or access denied.' },
+        { status: 404 }
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.attendanceRecord.updateMany({
+        where: { additionalShiftId: id },
+        data: { additionalShiftId: null, isAdditionalShift: false },
+      });
+
+      await tx.additionalShift.delete({
+        where: { id },
+      });
     });
 
     return NextResponse.json({ success: true, message: 'Additional shift removed.' });
