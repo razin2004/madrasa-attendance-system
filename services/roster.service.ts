@@ -806,7 +806,16 @@ export async function calculateShiftStaffingShortage(
     (a) => a.staffProfile.user.status === 'ACTIVE'
   );
 
-  const totalAssigned = activeStaffAssignments.length;
+  const additionalShiftsCount = await prisma.additionalShift.count({
+    where: {
+      organizationId,
+      date: normDate,
+      title: { equals: pattern.name, mode: 'insensitive' },
+      staffProfile: { user: { status: 'ACTIVE' } },
+    },
+  });
+
+  const totalAssigned = activeStaffAssignments.length + additionalShiftsCount;
   const approvedLeave = activeStaffAssignments.filter(
     (a) => a.staffProfile.leaveRequests.length > 0
   ).length;

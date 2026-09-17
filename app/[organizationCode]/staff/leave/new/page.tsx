@@ -160,29 +160,28 @@ export default function StaffApplyLeavePage() {
 
   return (
     <div className={styles.container}>
-      <div style={{ marginBottom: '24px' }}>
-        <Link
-          href={`/${orgCode}/staff/leave`}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '13px', textDecoration: 'none', marginBottom: '12px' }}
-        >
+      {/* Page Header */}
+      <div className={styles.headerSection}>
+        <Link href={`/${orgCode}/staff/leave`} className={styles.backLink}>
           <ArrowLeft size={16} />
           <span>Back to My Leave</span>
         </Link>
 
-        <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-          Apply for Leave
-        </h1>
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+        <h1 className={styles.title}>Apply for Leave</h1>
+        <p className={styles.subtitle}>
           Submit a new leave application for admin review &amp; staffing coverage assessment.
         </p>
       </div>
 
-      <div className="glass-card" style={{ maxWidth: '640px', padding: '28px' }}>
+      {/* Form Card */}
+      <div className={styles.formCard}>
         <form onSubmit={handleSubmit}>
           {/* Section 1: Leave Type Cards */}
           <div style={{ marginBottom: '24px' }}>
-            <label className="form-label" style={{ marginBottom: '10px', display: 'block' }}>Select Leave Type *</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+            <label className="form-label" style={{ marginBottom: '10px', display: 'block', fontWeight: 700 }}>
+              Select Leave Type *
+            </label>
+            <div className={styles.typeGrid}>
               {[
                 { type: 'ANNUAL', name: 'Annual Leave', desc: 'Planned vacation or time away from work' },
                 { type: 'SICK', name: 'Sick Leave', desc: 'Medical absence due to illness or injury' },
@@ -192,21 +191,12 @@ export default function StaffApplyLeavePage() {
                 <div
                   key={lt.type}
                   onClick={() => setType(lt.type as any)}
-                  style={{
-                    padding: '14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: `1px solid ${type === lt.type ? '#818cf8' : 'var(--border-subtle)'}`,
-                    backgroundColor: type === lt.type ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255, 255, 255, 0.02)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
+                  className={`${styles.typeCard} ${type === lt.type ? styles.typeCardActive : ''}`}
                 >
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: type === lt.type ? '#ffffff' : 'var(--text-secondary)' }}>
+                  <div className={styles.typeCardTitle} style={{ color: type === lt.type ? '#ffffff' : '#f1f5f9' }}>
                     {lt.name}
                   </div>
-                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {lt.desc}
-                  </div>
+                  <div className={styles.typeCardDesc}>{lt.desc}</div>
                 </div>
               ))}
             </div>
@@ -237,15 +227,17 @@ export default function StaffApplyLeavePage() {
             </div>
           )}
 
-          {/* Section 2: Application Mode Switcher (Single Date vs Date Range) */}
+          {/* Section 2: Application Mode Switcher */}
           <div style={{ marginBottom: '20px' }}>
-            <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>Application Mode *</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <label className="form-label" style={{ marginBottom: '8px', display: 'block', fontWeight: 700 }}>
+              Application Mode *
+            </label>
+            <div className={styles.modeGrid}>
               <button
                 type="button"
                 onClick={() => setDateMode('SINGLE_DATE')}
                 className={`btn ${dateMode === 'SINGLE_DATE' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '10px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                style={{ padding: '10px 14px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
                 <Calendar size={15} />
                 <span>Single Specific Day</span>
@@ -255,7 +247,7 @@ export default function StaffApplyLeavePage() {
                 type="button"
                 onClick={() => setDateMode('DATE_RANGE')}
                 className={`btn ${dateMode === 'DATE_RANGE' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '10px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                style={{ padding: '10px 14px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
                 <Clock size={15} />
                 <span>Custom Date Range</span>
@@ -287,7 +279,7 @@ export default function StaffApplyLeavePage() {
               />
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+            <div className={styles.dateRangeGrid} style={{ marginBottom: '20px' }}>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', minWidth: 0 }}>
                 <label className="form-label" style={{ fontSize: '12.5px', marginBottom: 0 }}>Start Date *</label>
                 <input
@@ -350,21 +342,22 @@ export default function StaffApplyLeavePage() {
 
           {/* Section 3: Reason */}
           <div className="form-group" style={{ marginBottom: '24px' }}>
-            <label className="form-label">Reason for Leave *</label>
+            <label className="form-label" style={{ fontWeight: 700 }}>Reason for Leave *</label>
             <textarea
               className="form-input"
-              style={{ height: '90px' }}
+              style={{ height: '90px', width: '100%', fontSize: '13px', boxSizing: 'border-box' }}
               placeholder="Provide context or explanation for your leave request..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
-            <Link href={`/${orgCode}/staff/leave`} className="btn btn-secondary" style={{ flex: 1, textAlign: 'center' }}>
+          {/* Action Buttons */}
+          <div className={styles.actionsRow}>
+            <Link href={`/${orgCode}/staff/leave`} className="btn btn-secondary" style={{ minWidth: '120px' }}>
               Cancel
             </Link>
-            <button type="submit" disabled={submitting || Boolean(valWarning)} className="btn btn-primary" style={{ flex: 1 }}>
+            <button type="submit" disabled={submitting || Boolean(valWarning)} className="btn btn-primary" style={{ minWidth: '180px' }}>
               {submitting ? 'Submitting...' : 'Submit Leave Request'}
             </button>
           </div>

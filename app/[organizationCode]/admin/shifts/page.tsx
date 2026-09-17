@@ -856,6 +856,47 @@ export default function ShiftPatternsPage() {
                 />
               </div>
 
+              {/* Preset Normal Shift Selector */}
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" htmlFor="presetPattern">
+                  Assign Preset Normal Shift Pattern (Optional)
+                </label>
+                <select
+                  id="presetPattern"
+                  className="form-input"
+                  style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    if (!selectedId) return;
+                    const pat = patterns.find((p) => p.id === selectedId);
+                    if (pat) {
+                      setAddTitle(pat.name);
+                      const workDay = pat.weeklyDays.find((d) => !d.isHoliday && d.startTime && d.endTime);
+                      if (workDay) {
+                        setAddStartTime(workDay.startTime || '08:00');
+                        setAddEndTime(workDay.endTime || '17:00');
+                      }
+                    }
+                  }}
+                >
+                  <option value="">-- Custom Additional / Overtime Shift --</option>
+                  {patterns
+                    .filter((p) => p.isActive)
+                    .map((p) => {
+                      const sampleDay = p.weeklyDays.find((d) => !d.isHoliday && d.startTime && d.endTime);
+                      const hours = sampleDay ? ` (${sampleDay.startTime} - ${sampleDay.endTime})` : '';
+                      return (
+                        <option key={p.id} value={p.id}>
+                          Normal Shift: {p.name}{hours}
+                        </option>
+                      );
+                    })}
+                </select>
+                <p style={{ fontSize: '11.5px', color: '#818cf8', marginTop: '4px' }}>
+                  Assigning a normal shift pattern calculates this staff member as active coverage for that shift on this date, helping resolve minimum staffing shortages.
+                </p>
+              </div>
+
               {/* Time Interval Inputs */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
@@ -889,12 +930,12 @@ export default function ShiftPatternsPage() {
               {/* Shift Title / Reason */}
               <div className="form-group" style={{ marginBottom: '16px' }}>
                 <label className="form-label" htmlFor="addTitle">
-                  Shift Title / Classification
+                  Shift Title / Classification Name *
                 </label>
                 <input
                   id="addTitle"
                   type="text"
-                  placeholder="e.g. Overtime Shift, Holiday Duty"
+                  placeholder="e.g. Morning, Evening, Overtime Shift"
                   value={addTitle}
                   onChange={(e) => setAddTitle(e.target.value)}
                   className="form-input"

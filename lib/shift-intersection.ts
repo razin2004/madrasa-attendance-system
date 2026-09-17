@@ -81,6 +81,23 @@ export async function checkStaffShiftIntersection(params: {
   // Format date as YYYY-MM-DD
   const dateStr = date.toISOString().split('T')[0];
 
+  // 1b. Check if staff member is on Approved Leave for this date
+  const approvedLeave = await prisma.leaveRequest.findFirst({
+    where: {
+      staffProfileId,
+      status: 'APPROVED',
+      startDate: { lte: date },
+      endDate: { gte: date },
+    },
+  });
+
+  if (approvedLeave) {
+    return {
+      intersects: true,
+      reason: `Cannot assign additional shift. ${staffName} is on approved leave for this date (${dateStr}).`,
+    };
+  }
+
   // 2. Fetch existing Additional Shifts on this date
   const existingAdditionalShifts = await prisma.additionalShift.findMany({
     where: {

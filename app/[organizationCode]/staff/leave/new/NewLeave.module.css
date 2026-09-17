@@ -1,86 +1,164 @@
+/* Apply for Leave Staff Page Styling */
 .container {
   min-height: 100vh;
-  background-color: var(--bg-primary);
-  display: flex;
-  flex-direction: column;
-}
-
-.header {
-  padding: 16px 24px;
-  background-color: rgba(13, 18, 31, 0.7);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  position: sticky;
-  top: 0;
-  z-index: 40;
-}
-
-.content {
-  flex: 1;
-  max-width: 600px;
-  width: 100%;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+  padding: 32px 24px 80px 24px;
+  max-width: 820px;
   margin: 0 auto;
-  padding: 24px 16px 64px 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  box-sizing: border-box;
+}
+
+.headerSection {
+  margin-bottom: 24px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-bottom: 14px;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: #818cf8;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.subtitle {
+  font-size: 13.5px;
+  color: var(--text-secondary, #94a3b8);
+  margin: 6px 0 0 0;
+  line-height: 1.45;
 }
 
 .formCard {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
+/* Leave Type Grid */
 .typeGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 
-.typeOption {
-  padding: 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
+.typeCard {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
   background-color: rgba(255, 255, 255, 0.02);
   cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: all 0.2s ease;
 }
 
-.typeOptionSelected {
+.typeCardActive {
   border-color: #818cf8;
-  background-color: rgba(99, 102, 241, 0.12);
+  background-color: rgba(99, 102, 241, 0.14);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.15);
 }
 
-.balancePreview {
-  padding: 14px;
-  border-radius: var(--radius-md);
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+.typeCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.typeCardDesc {
+  font-size: 11.5px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Mode Switcher Buttons */
+.modeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* Date Range Inputs Grid */
+.dateRangeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+/* Action Buttons Footer */
+.actionsRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
 }
 
-@media (max-width: 600px) {
-  .header {
-    padding: 12px 14px;
+/* Responsive Media Queries */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px 14px 90px 14px;
   }
-  .content {
-    padding: 16px 12px 90px 12px;
+
+  .title {
+    font-size: 20px;
   }
+
+  .subtitle {
+    font-size: 12.5px;
+  }
+
   .formCard {
-    padding: 16px;
+    padding: 20px 16px;
     border-radius: 14px;
   }
+}
+
+@media (max-width: 580px) {
   .typeGrid {
     grid-template-columns: 1fr;
+  }
+
+  .modeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dateRangeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionsRow {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .actionsRow a,
+  .actionsRow button {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
   }
 }

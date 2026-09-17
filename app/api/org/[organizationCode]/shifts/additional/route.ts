@@ -125,8 +125,32 @@ export async function POST(
     const [endH, endM] = endTime.split(':').map(Number);
     const isOvernight = endH * 60 + endM <= startH * 60 + startM;
 
-    // 1. Run Intersection Validation for EACH selected staff member
+    // 1. Run Intersection & Approved Leave Validation for EACH selected staff member
     for (const staffProfileId of staffProfileIds) {
+      const staff = await prisma.staffProfile.findUnique({
+        where: { id: staffProfileId },
+        select: { name: true },
+      });
+
+      const approvedLeave = await prisma.leaveRequest.findFirst({
+        where: {
+          staffProfileId,
+          status: 'APPROVED',
+          startDate: { lte: targetDate },
+          endDate: { gte: targetDate },
+        },
+      });
+
+      if (approvedLeave) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Cannot assign additional shift to ${staff?.name || 'Staff Member'}: Staff is on approved leave for this date (${date}).`,
+          },
+          { status: 400 }
+        );
+      }
+
       const check = await checkStaffShiftIntersection({
         staffProfileId,
         date: targetDate,

@@ -288,7 +288,7 @@ export async function calculateStaffingImpact(
         ? `${override.startTime || '09:00'} - ${override.endTime || '17:00'}`
         : `${weeklyDay?.startTime || '09:00'} - ${weeklyDay?.endTime || '17:00'}`;
 
-      const totalAssignedStaff = await prisma.shiftAssignment.count({
+      const regularAssignedStaff = await prisma.shiftAssignment.count({
         where: {
           shiftPatternId: shiftPattern.id,
           effectiveFrom: { lte: currDate },
@@ -299,6 +299,20 @@ export async function calculateStaffingImpact(
           },
         },
       });
+
+      // Count additional shifts assigned to staff for this shift pattern on currDate
+      const additionalAssignedStaff = await prisma.additionalShift.count({
+        where: {
+          organizationId,
+          date: currDate,
+          title: { equals: shiftPattern.name, mode: 'insensitive' },
+          staffProfile: {
+            user: { status: 'ACTIVE' },
+          },
+        },
+      });
+
+      const totalAssignedStaff = regularAssignedStaff + additionalAssignedStaff;
 
       const approvedLeavesOnDate = await prisma.leaveRequest.count({
         where: {
