@@ -18,9 +18,12 @@ import {
   Search,
   X,
   Filter,
+  Eye,
+  ShieldCheck,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
+import { LeaveShiftsGraph } from '@/components/leave/leave-shifts-graph';
 import styles from './StaffLeave.module.css';
 
 export default function StaffLeaveDashboardPage() {
@@ -35,6 +38,11 @@ export default function StaffLeaveDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
+
+  // Leave Details Modal State for Staff
+  const [selectedDetailRequest, setSelectedDetailRequest] = useState<any | null>(null);
+  const [detailImpactData, setDetailImpactData] = useState<any[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState<boolean>(false);
 
   const fetchLeaveData = async () => {
     setLoading(true);
@@ -74,6 +82,25 @@ export default function StaffLeaveDashboardPage() {
       }
     } catch {
       toast.error('Network error cancelling request.');
+    }
+  };
+
+  const handleViewDetails = async (req: any) => {
+    setSelectedDetailRequest(req);
+    setLoadingDetails(true);
+    setDetailImpactData([]);
+    try {
+      const res = await fetch(`/api/org/${orgCode}/leave/staff/${req.id}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setDetailImpactData(data.staffingImpact || []);
+      } else {
+        toast.error(data.error || 'Could not fetch shift details.');
+      }
+    } catch {
+      toast.error('Network error loading request details.');
+    } finally {
+      setLoadingDetails(false);
     }
   };
 
@@ -499,15 +526,26 @@ export default function StaffLeaveDashboardPage() {
                       {new Date(req.createdAt).toLocaleDateString()}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      {req.status === 'PENDING' && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <button
-                          onClick={() => setCancelRequestId(req.id)}
-                          className="btn btn-secondary btn-sm"
-                          style={{ color: '#f87171', padding: '4px 10px', fontSize: '12px' }}
+                          onClick={() => handleViewDetails(req)}
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: '#818cf8', padding: '4px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          title="View Shift Range Graph & Impact"
                         >
-                          Cancel
+                          <Eye size={14} />
+                          <span>Shifts Graph</span>
                         </button>
-                      )}
+                        {req.status === 'PENDING' && (
+                          <button
+                            onClick={() => setCancelRequestId(req.id)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ color: '#f87171', padding: '4px 10px', fontSize: '12px' }}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -561,11 +599,20 @@ export default function StaffLeaveDashboardPage() {
                   </div>
                 )}
 
+                <button
+                  onClick={() => handleViewDetails(req)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ width: '100%', fontSize: '12.5px', padding: '8px 0', marginTop: '4px', marginBottom: req.status === 'PENDING' ? '6px' : '0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#818cf8', borderColor: 'rgba(129, 140, 248, 0.3)' }}
+                >
+                  <Eye size={14} />
+                  <span>View Shifts Graph &amp; Impact</span>
+                </button>
+
                 {req.status === 'PENDING' && (
                   <button
                     onClick={() => setCancelRequestId(req.id)}
                     className="btn btn-secondary btn-sm"
-                    style={{ color: '#f87171', width: '100%', fontSize: '12px', padding: '7px 0', marginTop: '4px', borderRadius: '8px' }}
+                    style={{ color: '#f87171', width: '100%', fontSize: '12px', padding: '7px 0', borderRadius: '8px' }}
                   >
                     Cancel Leave Request
                   </button>
@@ -574,6 +621,131 @@ export default function StaffLeaveDashboardPage() {
             ))}
           </div>
         </>
+      )}
+
+      {/* STAFF LEAVE RANGE SHIFTS DETAILS MODAL */}
+      {selectedDetailRequest && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => setSelectedDetailRequest(null)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '850px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              backgroundColor: '#0d121f',
+              borderRadius: '20px',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              padding: '24px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                    {formatLeaveType(selectedDetailRequest.type || selectedDetailRequest.leaveType)}
+                  </h2>
+                  <span className={`badge ${selectedDetailRequest.status === 'APPROVED' ? 'badge-success' : selectedDetailRequest.status === 'REJECTED' ? 'badge-danger' : selectedDetailRequest.status === 'CANCELLED' ? 'badge-secondary' : 'badge-warning'}`}>
+                    {selectedDetailRequest.status}
+                  </span>
+                </div>
+                <p style={{ fontSize: '13px', color: '#94a3b8', margin: '4px 0 0 0', fontFamily: 'var(--font-mono)' }}>
+                  📅 {new Date(selectedDetailRequest.startDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(selectedDetailRequest.endDate).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })} ({selectedDetailRequest.daysCount} Days)
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedDetailRequest(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  color: '#94a3b8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Admin Note if present */}
+            {selectedDetailRequest.reviewerComment && (
+              <div
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  backgroundColor: selectedDetailRequest.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                  border: selectedDetailRequest.status === 'APPROVED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#ffffff',
+                }}
+              >
+                <div style={{ fontSize: '11px', fontWeight: 800, color: selectedDetailRequest.status === 'APPROVED' ? '#34d399' : '#f87171', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ShieldCheck size={14} />
+                  <span>Admin Decision Note {selectedDetailRequest.reviewerUser?.name ? `(${selectedDetailRequest.reviewerUser.name})` : ''}</span>
+                </div>
+                <div style={{ fontSize: '13px', lineHeight: 1.4, fontWeight: 500 }}>
+                  {selectedDetailRequest.reviewerComment}
+                </div>
+              </div>
+            )}
+
+            {/* Range Shifts Graph Component */}
+            {loadingDetails ? (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <Loader2 size={32} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 10px auto' }} />
+                <p style={{ fontSize: '13px', color: '#94a3b8' }}>Calculating shift staffing impact...</p>
+              </div>
+            ) : detailImpactData.length > 0 ? (
+              <LeaveShiftsGraph
+                impactData={detailImpactData}
+                startDate={selectedDetailRequest.startDate}
+                endDate={selectedDetailRequest.endDate}
+                daysCount={selectedDetailRequest.daysCount}
+                leaveType={selectedDetailRequest.type || selectedDetailRequest.leaveType}
+              />
+            ) : (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                Shift staffing impact data is not available for this period.
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedDetailRequest(null)}
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '8px 20px', borderRadius: '10px' }}
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* CANCEL CONFIRMATION MODAL */}

@@ -21,6 +21,7 @@ import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
+import { LeaveShiftsGraph } from '@/components/leave/leave-shifts-graph';
 import styles from './LeaveReview.module.css';
 
 export default function AdminLeaveReviewPage() {
@@ -274,6 +275,19 @@ export default function AdminLeaveReviewPage() {
                     All scheduled shifts meet or exceed minimum staffing requirements during this requested leave period.
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* LEAVE REQUEST RANGE SHIFTS GRAPH VISUALIZER */}
+            {impactData && impactData.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <LeaveShiftsGraph
+                  impactData={impactData}
+                  startDate={requestDetails.startDate}
+                  endDate={requestDetails.endDate}
+                  daysCount={requestDetails.daysCount}
+                  leaveType={requestDetails.leaveType}
+                />
               </div>
             )}
 
