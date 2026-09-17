@@ -735,7 +735,7 @@ export default function ShiftPatternDetailPage() {
             <form onSubmit={handleSaveSchedule}>
               <div style={{ padding: '14px 16px', borderRadius: '12px', backgroundColor: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)', marginBottom: '18px' }}>
                 <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                  Effective From Date (Apply schedule changes from this date onwards) *
+                  Effective From Date *
                 </label>
                 <input
                   type="date"
@@ -746,7 +746,7 @@ export default function ShiftPatternDetailPage() {
                   style={{ width: '100%', height: '40px', fontSize: '13px', backgroundColor: '#0d121f', color: '#ffffff' }}
                 />
                 <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '6px' }}>
-                  Schedule changes will apply to assigned staff starting from this date. All past attendance logs and schedules prior to this date remain 100% preserved.
+                  Updating this schedule will directly update this shift pattern's weekly timings for assigned staff.
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>

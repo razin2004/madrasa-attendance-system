@@ -212,7 +212,7 @@
 }
 
 .mobileFilterBtn {
-  display: none;
+  display: none !important;
 }
 
 @media (max-width: 768px) {
@@ -242,6 +242,8 @@
   }
   .mobileFilterBtn {
     display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
   }
   .rosterTableContainer {
     display: none;

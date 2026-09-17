@@ -370,6 +370,7 @@ export default function RosterCalendarPage() {
                     e.stopPropagation();
                     setShowMobileFilters((prev) => !prev);
                   }}
+                  className={styles.mobileFilterBtn}
                   style={{
                     position: 'absolute',
                     right: '5px',
@@ -377,9 +378,6 @@ export default function RosterCalendarPage() {
                     transform: 'translateY(-50%)',
                     width: '30px',
                     height: '30px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     borderRadius: '6px',
                     background: selectedBranchId ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.06)',
                     border: selectedBranchId ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--border-medium, rgba(255, 255, 255, 0.12))',
@@ -427,104 +425,6 @@ export default function RosterCalendarPage() {
                 </div>
               </div>
             </div>
-
-            {/* Mobile Filter Sheet Modal */}
-            {showMobileFilters && (
-              <div
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(0,0,0,0.65)',
-                  backdropFilter: 'blur(4px)',
-                  zIndex: 1100,
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'center',
-                }}
-                onClick={() => setShowMobileFilters(false)}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    maxWidth: '500px',
-                    backgroundColor: '#0f172a',
-                    borderTopLeftRadius: '20px',
-                    borderTopRightRadius: '20px',
-                    border: '1px solid var(--border-medium)',
-                    borderBottom: 'none',
-                    padding: '20px',
-                    boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Filter size={16} color="#818cf8" />
-                      <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Roster Filters</h3>
-                    </div>
-                    <button
-                      onClick={() => setShowMobileFilters(false)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-                        Branch Location
-                      </label>
-                      <select
-                        value={selectedBranchId}
-                        onChange={(e) => setSelectedBranchId(e.target.value)}
-                        className="form-input"
-                        style={{
-                          width: '100%',
-                          height: '40px',
-                          padding: '0 12px',
-                          fontSize: '13px',
-                          color: '#ffffff',
-                          backgroundColor: 'rgba(255,255,255,0.05)',
-                          border: '1px solid var(--border-medium)',
-                          borderRadius: '10px',
-                        }}
-                      >
-                        <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
-                        {branches.map((b) => (
-                          <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                      onClick={() => {
-                        setSelectedBranchId('');
-                        setShowMobileFilters(false);
-                      }}
-                      className="btn btn-secondary"
-                      style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
-                    >
-                      Reset Filters
-                    </button>
-                    <button
-                      onClick={() => setShowMobileFilters(false)}
-                      className="btn btn-primary"
-                      style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
-                    >
-                      Apply Filters
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Loading */}
@@ -798,6 +698,104 @@ export default function RosterCalendarPage() {
           )}
         </main>
       </div>
+
+      {/* Mobile Filter Sheet Modal */}
+      {showMobileFilters && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowMobileFilters(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              backgroundColor: '#0f172a',
+              borderTopLeftRadius: '20px',
+              borderTopRightRadius: '20px',
+              border: '1px solid var(--border-medium)',
+              borderBottom: 'none',
+              padding: '20px',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Filter size={16} color="#818cf8" />
+                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Roster Filters</h3>
+              </div>
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                  Branch Location
+                </label>
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  className="form-input"
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    padding: '0 12px',
+                    fontSize: '13px',
+                    color: '#ffffff',
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '10px',
+                  }}
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  setSelectedBranchId('');
+                  setShowMobileFilters(false);
+                }}
+                className="btn btn-secondary"
+                style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+              >
+                Reset Filters
+              </button>
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="btn btn-primary"
+                style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Nav */}
       <OrgAdminMobileNav organizationCode={organizationCode} />
