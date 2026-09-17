@@ -1,30 +1,31 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
   Clock,
   Calendar,
-  Users,
-  Moon,
-  Sparkles,
-  Info,
   Layers,
+  Info,
 } from 'lucide-react';
 import styles from './leave-shifts-graph.module.css';
 
 export interface DayStaffingPicture {
-  date: string;
+  date: string; // YYYY-MM-DD
   dayOfWeek: string;
   shiftName?: string | null;
   shiftHours?: string | null;
   totalScheduled?: number;
+  totalAssignedStaff?: number;
   onLeaveCount?: number;
   onLeaveWithThis?: number;
+  alreadyOnLeaveStaff?: number;
   remainingStaff?: number;
+  afterApprovalAvailable?: number;
   minRequired?: number;
+  minimumStaffingThreshold?: number;
   isShortage?: boolean;
   isHoliday?: boolean;
   status?: 'GREEN' | 'AMBER' | 'RED' | 'HOLIDAY' | 'NO_SHIFT' | 'OFF_DUTY';
@@ -39,36 +40,68 @@ interface LeaveShiftsGraphProps {
   leaveType?: string;
 }
 
+interface ShiftGroup {
+  shiftName: string;
+  shiftHours: string;
+  workingDays: DayStaffingPicture[];
+  hasShortage: boolean;
+  hasTight: boolean;
+}
+
 export function LeaveShiftsGraph({
   impactData,
-  startDate,
-  endDate,
-  daysCount,
-  leaveType,
 }: LeaveShiftsGraphProps) {
+  const [activeTooltip, setActiveTooltip] = useState<{ shiftName: string; date: string } | null>(null);
+
   if (!impactData || impactData.length === 0) {
     return null;
   }
 
-  // Count totals for quick top-bar metrics
-  let totalShortageShifts = 0;
-  let totalTightShifts = 0;
-  let totalOptimalShifts = 0;
-  let totalOffDutyShifts = 0;
+  // 1. Group data by shift name
+  const shiftMap = new Map<string, ShiftGroup>();
 
-  impactData.forEach((day) => {
-    const isOffDuty = day.status === 'OFF_DUTY' || day.shiftName === 'Off Duty';
-    const isHoliday = day.status === 'HOLIDAY' || day.isHoliday;
-    const remainingStaff = day.remainingStaff ?? 0;
-    const minRequired = day.minRequired ?? (isOffDuty || isHoliday ? 0 : 1);
-    const isShortage = !isOffDuty && !isHoliday && (day.isShortage ?? remainingStaff < minRequired);
-    const isTight = !isOffDuty && !isHoliday && !isShortage && remainingStaff === minRequired;
+  impactData.forEach((item) => {
+    // Exclude off-duty or general non-shift items if unassigned
+    const name = item.shiftName || 'Standard Shift';
+    const hours = item.shiftHours || '';
 
-    if (isOffDuty || isHoliday) totalOffDutyShifts++;
-    else if (isShortage) totalShortageShifts++;
-    else if (isTight) totalTightShifts++;
-    else totalOptimalShifts++;
+    const isOffDuty = item.status === 'OFF_DUTY' || name === 'Off Duty';
+    const isHoliday = item.status === 'HOLIDAY' || item.isHoliday;
+
+    // Filter out holidays and off-duty days for this shift graph
+    if (isOffDuty || isHoliday) {
+      return;
+    }
+
+    if (!shiftMap.has(name)) {
+      shiftMap.set(name, {
+        shiftName: name,
+        shiftHours: hours,
+        workingDays: [],
+        hasShortage: false,
+        hasTight: false,
+      });
+    }
+
+    const group = shiftMap.get(name)!;
+    if (hours && !group.shiftHours) {
+      group.shiftHours = hours;
+    }
+
+    const scheduled = item.totalScheduled ?? item.totalAssignedStaff ?? 0;
+    const onLeave = item.onLeaveWithThis ?? (item.onLeaveCount ?? 0) + 1;
+    const available = item.remainingStaff ?? item.afterApprovalAvailable ?? 0;
+    const minReq = item.minRequired ?? item.minimumStaffingThreshold ?? 1;
+    const shortage = item.isShortage ?? available < minReq;
+    const tight = !shortage && available === minReq;
+
+    if (shortage) group.hasShortage = true;
+    if (tight) group.hasTight = true;
+
+    group.workingDays.push(item);
   });
+
+  const shiftGroups = Array.from(shiftMap.values());
 
   return (
     <div className={styles.container}>
@@ -81,227 +114,406 @@ export function LeaveShiftsGraph({
             </div>
             <div>
               <h3 className={styles.titleText}>
-                Leave Request Range Shifts Visualizer
+                Leave Request Per-Shift Staffing Graphs
               </h3>
               <p className={styles.subtitleText}>
-                Shift-by-shift staffing impact &amp; requirement analysis for requested leave
+                Shift-by-shift staffing levels across working days (Holidays / Off-days excluded)
               </p>
             </div>
           </div>
 
           <div className={styles.legendGroup}>
             <span className={styles.legendItem}>
-              <span className={styles.dotGreen} /> Meets Requirement
+              <span className={styles.dotGreen} /> Available &ge; Min Req
             </span>
             <span className={styles.legendItem}>
-              <span className={styles.dotAmber} /> Exactly at Minimum
+              <span className={styles.dotRed} /> Shortage (Below Min Req)
             </span>
             <span className={styles.legendItem}>
-              <span className={styles.dotRed} /> Below Minimum Shortage
-            </span>
-            <span className={styles.legendItem}>
-              <span className={styles.dotSlate} /> Off Duty / Holiday
+              <span style={{ width: '12px', height: '2px', backgroundColor: '#ef4444', borderTop: '1px dashed #ef4444' }} /> Min Required Line
             </span>
           </div>
         </div>
 
-        {/* Timeline Horizontal Overview Strip */}
-        <div className={styles.timelineOverview}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Calendar size={14} color="#818cf8" />
-              <span>Range Timeline Overview ({impactData.length} Shift Window{impactData.length > 1 ? 's' : ''})</span>
-            </span>
-            <span style={{ color: totalShortageShifts > 0 ? '#f87171' : '#34d399', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>
-              {totalShortageShifts > 0
-                ? `🚨 ${totalShortageShifts} Shift Shortage${totalShortageShifts > 1 ? 's' : ''} Detected`
-                : '✅ All Shifts Fully Covered'}
-            </span>
+        {/* Render a dedicated graph for each shift */}
+        {shiftGroups.length === 0 ? (
+          <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+            <Calendar size={24} style={{ color: '#818cf8', margin: '0 auto 8px auto', display: 'block' }} />
+            No active shift working days in requested date range (All days are Holidays or Off-Duty).
           </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {shiftGroups.map((group) => {
+              const { shiftName, shiftHours, workingDays, hasShortage, hasTight } = group;
 
-          <div className={styles.timelineBar}>
-            {impactData.map((day, idx) => {
-              const isOffDuty = day.status === 'OFF_DUTY' || day.shiftName === 'Off Duty';
-              const isHoliday = day.status === 'HOLIDAY' || day.isHoliday;
-              const remainingStaff = day.remainingStaff ?? 0;
-              const minRequired = day.minRequired ?? 0;
-              const isShortage = !isOffDuty && !isHoliday && (day.isShortage ?? remainingStaff < minRequired);
-              const isTight = !isOffDuty && !isHoliday && !isShortage && remainingStaff === minRequired;
+              // Calculate Y-axis bounds
+              let maxVal = 0;
+              workingDays.forEach((d) => {
+                const s = d.totalScheduled ?? d.totalAssignedStaff ?? 0;
+                const m = d.minRequired ?? d.minimumStaffingThreshold ?? 0;
+                const a = d.remainingStaff ?? d.afterApprovalAvailable ?? 0;
+                if (s > maxVal) maxVal = s;
+                if (m > maxVal) maxVal = m;
+                if (a > maxVal) maxVal = a;
+              });
 
-              let color = '#10b981'; // Green
-              if (isOffDuty || isHoliday) color = '#64748b'; // Slate
-              else if (isShortage) color = '#ef4444'; // Red
-              else if (isTight) color = '#f59e0b'; // Amber
+              // Add Y-axis headroom
+              const yMax = Math.max(maxVal + 2, 4);
+
+              // SVG Dimensions
+              const svgHeight = 220;
+              const paddingLeft = 40;
+              const paddingRight = 20;
+              const paddingTop = 30;
+              const paddingBottom = 45;
+              const graphHeight = svgHeight - paddingTop - paddingBottom;
+
+              // Compute Y ticks
+              const yTicks: number[] = [];
+              for (let i = 0; i <= yMax; i += yMax <= 6 ? 1 : Math.ceil(yMax / 5)) {
+                yTicks.push(i);
+              }
 
               return (
                 <div
-                  key={idx}
-                  className={styles.timelineSegment}
-                  style={{ backgroundColor: color }}
-                  title={`${day.date} (${day.dayOfWeek}): ${day.shiftName} - ${isShortage ? 'Shortage Alert' : isTight ? 'Tight Staffing' : isOffDuty ? 'Off Duty' : 'Meets Minimum'}`}
-                />
+                  key={shiftName}
+                  className={`${styles.shiftCard} ${
+                    hasShortage ? styles.shiftCardRed : hasTight ? styles.shiftCardAmber : styles.shiftCardGreen
+                  }`}
+                >
+                  {/* Shift Graph Header */}
+                  <div className={styles.cardHeader}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <div className={styles.shiftTitle}>
+                        <span>{shiftName}</span>
+                        {shiftHours && (
+                          <span className={styles.hoursPill}>
+                            <Clock size={11} style={{ marginRight: '4px' }} />
+                            {shiftHours}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
+                        &bull; {workingDays.length} Working Day{workingDays.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    {hasShortage ? (
+                      <span className="badge badge-danger" style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <XCircle size={12} /> Critical Shortage Alert
+                      </span>
+                    ) : hasTight ? (
+                      <span className="badge badge-warning" style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <AlertTriangle size={12} /> Tight (At Minimum)
+                      </span>
+                    ) : (
+                      <span className="badge badge-success" style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCircle2 size={12} /> Optimal Staffing
+                      </span>
+                    )}
+                  </div>
+
+                  {/* SVG GRAPH CANVAS */}
+                  <div style={{ position: 'relative', width: '100%', overflowX: 'auto' }}>
+                    <div style={{ minWidth: workingDays.length > 5 ? `${workingDays.length * 90}px` : '100%' }}>
+                      <svg
+                        viewBox={`0 0 ${Math.max(600, workingDays.length * 100)} ${svgHeight}`}
+                        style={{ width: '100%', height: 'auto', display: 'block' }}
+                      >
+                        <defs>
+                          <linearGradient id={`gradScheduled-${shiftName.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#818cf8" stopOpacity="0.85" />
+                            <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.3" />
+                          </linearGradient>
+
+                          <linearGradient id={`gradGreen-${shiftName.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#34d399" stopOpacity="0.95" />
+                            <stop offset="100%" stopColor="#059669" stopOpacity="0.6" />
+                          </linearGradient>
+
+                          <linearGradient id={`gradRed-${shiftName.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f87171" stopOpacity="0.95" />
+                            <stop offset="100%" stopColor="#dc2626" stopOpacity="0.6" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Y-Axis Horizontal Gridlines */}
+                        {yTicks.map((val) => {
+                          const y = paddingTop + graphHeight - (val / yMax) * graphHeight;
+                          return (
+                            <g key={val}>
+                              <line
+                                x1={paddingLeft}
+                                y1={y}
+                                x2={Math.max(600, workingDays.length * 100) - paddingRight}
+                                y2={y}
+                                stroke="rgba(255, 255, 255, 0.08)"
+                                strokeDasharray={val === 0 ? undefined : '3 3'}
+                              />
+                              <text
+                                x={paddingLeft - 8}
+                                y={y + 4}
+                                fill="#94a3b8"
+                                fontSize="11"
+                                textAnchor="end"
+                                fontFamily="monospace"
+                              >
+                                {val}
+                              </text>
+                            </g>
+                          );
+                        })}
+
+                        {/* Minimum Required Staff Line (per day or overall) */}
+                        {workingDays.map((day, idx) => {
+                          const minReq = day.minRequired ?? day.minimumStaffingThreshold ?? 1;
+                          const totalCols = workingDays.length;
+                          const chartWidth = Math.max(600, workingDays.length * 100) - paddingLeft - paddingRight;
+                          const colWidth = chartWidth / totalCols;
+                          const xCenter = paddingLeft + idx * colWidth + colWidth / 2;
+
+                          const yMinReq = paddingTop + graphHeight - (minReq / yMax) * graphHeight;
+
+                          return (
+                            <g key={`minreq-${idx}`}>
+                              {/* Short segment for this day's min threshold */}
+                              <line
+                                x1={xCenter - colWidth * 0.4}
+                                y1={yMinReq}
+                                x2={xCenter + colWidth * 0.4}
+                                y2={yMinReq}
+                                stroke="#ef4444"
+                                strokeWidth="2.5"
+                                strokeDasharray="4 3"
+                              />
+                            </g>
+                          );
+                        })}
+
+                        {/* DAY COLUMNS (BARS & MARKERS) */}
+                        {workingDays.map((day, idx) => {
+                          const totalCols = workingDays.length;
+                          const chartWidth = Math.max(600, workingDays.length * 100) - paddingLeft - paddingRight;
+                          const colWidth = chartWidth / totalCols;
+                          const xCenter = paddingLeft + idx * colWidth + colWidth / 2;
+
+                          const scheduled = day.totalScheduled ?? day.totalAssignedStaff ?? 0;
+                          const available = day.remainingStaff ?? day.afterApprovalAvailable ?? 0;
+                          const minReq = day.minRequired ?? day.minimumStaffingThreshold ?? 1;
+                          const onLeave = day.onLeaveWithThis ?? (day.onLeaveCount ?? 0) + 1;
+                          const isShortage = day.isShortage ?? available < minReq;
+
+                          // Bar heights
+                          const hScheduled = (scheduled / yMax) * graphHeight;
+                          const yScheduled = paddingTop + graphHeight - hScheduled;
+
+                          const hAvailable = (available / yMax) * graphHeight;
+                          const yAvailable = paddingTop + graphHeight - hAvailable;
+
+                          const barW = Math.min(36, colWidth * 0.35);
+
+                          const dateLabel = day.date.slice(5); // MM-DD
+                          const isSelected = activeTooltip?.shiftName === shiftName && activeTooltip?.date === day.date;
+
+                          return (
+                            <g
+                              key={day.date}
+                              style={{ cursor: 'pointer' }}
+                              onClick={() =>
+                                setActiveTooltip(
+                                  isSelected ? null : { shiftName, date: day.date }
+                                )
+                              }
+                            >
+                              {/* Hover Highlight Area */}
+                              <rect
+                                x={paddingLeft + idx * colWidth + 4}
+                                y={paddingTop}
+                                width={colWidth - 8}
+                                height={graphHeight}
+                                fill={isSelected ? 'rgba(255, 255, 255, 0.08)' : 'transparent'}
+                                rx="6"
+                              />
+
+                              {/* Scheduled Staff Bar */}
+                              <rect
+                                x={xCenter - barW - 2}
+                                y={yScheduled}
+                                width={barW}
+                                height={hScheduled}
+                                fill={`url(#gradScheduled-${shiftName.replace(/\s+/g, '')})`}
+                                rx="4"
+                              />
+
+                              {/* Scheduled Staff Value Label */}
+                              <text
+                                x={xCenter - barW / 2 - 2}
+                                y={yScheduled - 6}
+                                fill="#c7d2fe"
+                                fontSize="10.5"
+                                fontWeight="bold"
+                                textAnchor="middle"
+                              >
+                                {scheduled}
+                              </text>
+
+                              {/* Available Staff Bar (After Leave Approval) */}
+                              <rect
+                                x={xCenter + 2}
+                                y={yAvailable}
+                                width={barW}
+                                height={hAvailable}
+                                fill={
+                                  isShortage
+                                    ? `url(#gradRed-${shiftName.replace(/\s+/g, '')})`
+                                    : `url(#gradGreen-${shiftName.replace(/\s+/g, '')})`
+                                }
+                                rx="4"
+                              />
+
+                              {/* Available Staff Value Label */}
+                              <text
+                                x={xCenter + barW / 2 + 2}
+                                y={yAvailable - 6}
+                                fill={isShortage ? '#f87171' : '#34d399'}
+                                fontSize="11"
+                                fontWeight="800"
+                                textAnchor="middle"
+                              >
+                                {available}
+                              </text>
+
+                              {/* On Leave Badge Tag */}
+                              {onLeave > 0 && (
+                                <g>
+                                  <rect
+                                    x={xCenter - 22}
+                                    y={paddingTop + graphHeight + 22}
+                                    width="44"
+                                    height="16"
+                                    fill="rgba(245, 158, 11, 0.15)"
+                                    stroke="rgba(245, 158, 11, 0.4)"
+                                    rx="8"
+                                  />
+                                  <text
+                                    x={xCenter}
+                                    y={paddingTop + graphHeight + 33}
+                                    fill="#fbbf24"
+                                    fontSize="9.5"
+                                    fontWeight="bold"
+                                    textAnchor="middle"
+                                  >
+                                    -{onLeave} Leave
+                                  </text>
+                                </g>
+                              )}
+
+                              {/* X-Axis Date & Day of Week Text */}
+                              <text
+                                x={xCenter}
+                                y={paddingTop + graphHeight + 14}
+                                fill="#ffffff"
+                                fontSize="11"
+                                fontWeight="bold"
+                                textAnchor="middle"
+                                fontFamily="monospace"
+                              >
+                                {dateLabel}
+                              </text>
+                            </g>
+                          );
+                        })}
+
+                        {/* Legend Overlay inside Chart Top Right */}
+                        <g transform={`translate(${Math.max(600, workingDays.length * 100) - 240}, 10)`}>
+                          <rect width="220" height="20" fill="rgba(0,0,0,0.5)" rx="10" />
+                          <rect x="8" y="6" width="8" height="8" fill="#818cf8" rx="2" />
+                          <text x="20" y="13" fill="#cbd5e1" fontSize="9.5">Sched</text>
+                          <rect x="65" y="6" width="8" height="8" fill="#34d399" rx="2" />
+                          <text x="77" y="13" fill="#cbd5e1" fontSize="9.5">Avail</text>
+                          <rect x="115" y="6" width="8" height="8" fill="#f87171" rx="2" />
+                          <text x="127" y="13" fill="#cbd5e1" fontSize="9.5">Shortage</text>
+                          <line x1="175" y1="10" x2="190" y2="10" stroke="#ef4444" strokeWidth="2" strokeDasharray="3 2" />
+                          <text x="195" y="13" fill="#ef4444" fontSize="9.5" fontWeight="bold">Min</text>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* POPUP TOOLTIP DETAILS ON SELECTION */}
+                  {activeTooltip?.shiftName === shiftName && (
+                    <div style={{ background: 'rgba(15, 23, 42, 0.95)', border: '1px solid #818cf8', borderRadius: '10px', padding: '12px', fontSize: '12px' }}>
+                      {(() => {
+                        const day = workingDays.find((d) => d.date === activeTooltip.date);
+                        if (!day) return null;
+                        const scheduled = day.totalScheduled ?? day.totalAssignedStaff ?? 0;
+                        const available = day.remainingStaff ?? day.afterApprovalAvailable ?? 0;
+                        const minReq = day.minRequired ?? day.minimumStaffingThreshold ?? 1;
+                        const onLeave = day.onLeaveWithThis ?? (day.onLeaveCount ?? 0) + 1;
+                        const isShortage = day.isShortage ?? available < minReq;
+
+                        return (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px' }}>
+                            <div>
+                              <span style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase' }}>Date</span>
+                              <div style={{ fontWeight: 800, color: '#ffffff' }}>{day.date} ({day.dayOfWeek})</div>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase' }}>Scheduled</span>
+                              <div style={{ fontWeight: 800, color: '#818cf8' }}>{scheduled} Staff</div>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase' }}>On Leave</span>
+                              <div style={{ fontWeight: 800, color: '#fbbf24' }}>{onLeave} Staff</div>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase' }}>Available</span>
+                              <div style={{ fontWeight: 800, color: isShortage ? '#f87171' : '#34d399' }}>{available} Staff</div>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase' }}>Min Required</span>
+                              <div style={{ fontWeight: 800, color: '#cbd5e1' }}>{minReq} Staff</div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* SHIFT SUMMARY EXPLICIT CALLOUT MESSAGE */}
+                  <div
+                    className={`${styles.messageBox} ${
+                      hasShortage ? styles.msgRed : hasTight ? styles.msgAmber : styles.msgGreen
+                    }`}
+                  >
+                    {hasShortage ? (
+                      <>
+                        <XCircle size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#f87171' }} />
+                        <div>
+                          <strong>🚨 Shortage Alert for {shiftName}:</strong> Approving this leave causes available staff to drop below the minimum required threshold of <strong>{workingDays[0]?.minRequired ?? 1} staff</strong> on one or more working days.
+                        </div>
+                      </>
+                    ) : hasTight ? (
+                      <>
+                        <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#fbbf24' }} />
+                        <div>
+                          <strong>⚠️ Tight Staffing for {shiftName}:</strong> Available staff strictly equals the required minimum of <strong>{workingDays[0]?.minRequired ?? 1} staff</strong>. Zero staffing buffer remaining.
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#34d399' }} />
+                        <div>
+                          <strong>✅ Optimal Staffing for {shiftName}:</strong> All {workingDays.length} working day(s) maintain sufficient available staff to meet or exceed minimum staffing requirements.
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
-        </div>
-
-        {/* Shift-by-Shift Detailed Cards Grid */}
-        <div className={styles.shiftsGrid}>
-          {impactData.map((day, idx) => {
-            const isOffDuty = day.status === 'OFF_DUTY' || day.shiftName === 'Off Duty';
-            const isHoliday = day.status === 'HOLIDAY' || day.isHoliday;
-            const totalScheduled = day.totalScheduled ?? 0;
-            const onLeaveWithThis = day.onLeaveWithThis ?? 1;
-            const remainingStaff = day.remainingStaff ?? 0;
-            const minRequired = day.minRequired ?? (isOffDuty || isHoliday ? 0 : 1);
-            const isShortage = !isOffDuty && !isHoliday && (day.isShortage ?? remainingStaff < minRequired);
-            const isTight = !isOffDuty && !isHoliday && !isShortage && remainingStaff === minRequired;
-            const isOptimal = !isOffDuty && !isHoliday && !isShortage && !isTight;
-
-            // Compute coverage percentage
-            const coveragePct = isOffDuty || isHoliday
-              ? 100
-              : minRequired > 0
-              ? Math.min(100, Math.round((remainingStaff / minRequired) * 100))
-              : 100;
-
-            // Determine styling variant
-            const cardClass = isShortage
-              ? styles.shiftCardRed
-              : isTight
-              ? styles.shiftCardAmber
-              : isOptimal
-              ? styles.shiftCardGreen
-              : styles.shiftCardSlate;
-
-            const msgClass = isShortage
-              ? styles.msgRed
-              : isTight
-              ? styles.msgAmber
-              : isOptimal
-              ? styles.msgGreen
-              : styles.msgSlate;
-
-            const meterFillClass = isShortage
-              ? styles.meterFillRed
-              : isTight
-              ? styles.meterFillAmber
-              : isOptimal
-              ? styles.meterFillGreen
-              : styles.meterFillSlate;
-
-            return (
-              <div key={idx} className={`${styles.shiftCard} ${cardClass}`}>
-                {/* Card Top Header */}
-                <div className={styles.cardHeader}>
-                  <div>
-                    <span className={styles.dateBadge}>{day.date}</span>
-                    <span className={styles.weekdayTag}>({day.dayOfWeek})</span>
-                  </div>
-
-                  {isOffDuty ? (
-                    <span className="badge badge-secondary" style={{ fontSize: '11px', gap: '4px' }}>
-                      <Moon size={12} /> Off Duty
-                    </span>
-                  ) : isHoliday ? (
-                    <span className="badge badge-info" style={{ fontSize: '11px', gap: '4px' }}>
-                      <Sparkles size={12} /> Holiday
-                    </span>
-                  ) : isShortage ? (
-                    <span className="badge badge-danger" style={{ fontSize: '11px', gap: '4px' }}>
-                      <XCircle size={12} /> Below Minimum
-                    </span>
-                  ) : isTight ? (
-                    <span className="badge badge-warning" style={{ fontSize: '11px', gap: '4px' }}>
-                      <AlertTriangle size={12} /> Exactly at Minimum
-                    </span>
-                  ) : (
-                    <span className="badge badge-success" style={{ fontSize: '11px', gap: '4px' }}>
-                      <CheckCircle2 size={12} /> Meets Minimum
-                    </span>
-                  )}
-                </div>
-
-                {/* Shift Name & Hours */}
-                <div className={styles.shiftTitle}>
-                  <span>{day.shiftName || 'Standard Shift'}</span>
-                  {day.shiftHours && (
-                    <span className={styles.hoursPill}>
-                      <Clock size={11} style={{ marginRight: '4px' }} />
-                      {day.shiftHours}
-                    </span>
-                  )}
-                </div>
-
-                {/* Meter Progress Bar */}
-                {!isOffDuty && !isHoliday && (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, marginBottom: '4px', color: isShortage ? '#f87171' : isTight ? '#fbbf24' : '#34d399' }}>
-                      <span>Staffing Meter ({coveragePct}%)</span>
-                      <span>{remainingStaff} Available / {minRequired} Minimum</span>
-                    </div>
-                    <div className={styles.meterTrack}>
-                      <div className={meterFillClass} style={{ width: `${coveragePct}%` }} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Explicit Message Box */}
-                <div className={`${styles.messageBox} ${msgClass}`}>
-                  {isShortage ? (
-                    <>
-                      <XCircle size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#f87171' }} />
-                      <div>
-                        <strong>🚨 Shortage Alert (Below Minimum):</strong> Approving leave reduces available staff to <strong>{remainingStaff}</strong>, falling below the required minimum of <strong>{minRequired}</strong> by <strong>{minRequired - remainingStaff} staff</strong>.
-                      </div>
-                    </>
-                  ) : isTight ? (
-                    <>
-                      <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#fbbf24' }} />
-                      <div>
-                        <strong>⚠️ Tight Coverage (At Minimum):</strong> Available staff will be <strong>{remainingStaff}</strong>, which exactly equals the minimum requirement of <strong>{minRequired}</strong>. Zero staffing buffer left.
-                      </div>
-                    </>
-                  ) : isOptimal ? (
-                    <>
-                      <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#34d399' }} />
-                      <div>
-                        <strong>✅ Optimal Staffing Coverage:</strong> Available staff (<strong>{remainingStaff}</strong>) comfortably meets the minimum required threshold of <strong>{minRequired}</strong> (+{remainingStaff - minRequired} extra buffer).
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Moon size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#94a3b8' }} />
-                      <div>
-                        <strong>🌙 Non-Working Day / Holiday:</strong> No active shift scheduled or minimum staffing requirement for this date.
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Stats Breakdown Chips */}
-                <div className={styles.statsRow}>
-                  <div className={styles.statChip}>
-                    <div className={styles.statLabel}>Scheduled</div>
-                    <div className={styles.statVal}>{totalScheduled}</div>
-                  </div>
-                  <div className={styles.statChip}>
-                    <div className={styles.statLabel}>On Leave</div>
-                    <div className={styles.statVal} style={{ color: '#fbbf24' }}>{onLeaveWithThis}</div>
-                  </div>
-                  <div className={styles.statChip}>
-                    <div className={styles.statLabel}>Available</div>
-                    <div className={styles.statVal} style={{ color: isShortage ? '#f87171' : isTight ? '#fbbf24' : '#34d399' }}>{remainingStaff}</div>
-                  </div>
-                  <div className={styles.statChip}>
-                    <div className={styles.statLabel}>Min Req</div>
-                    <div className={styles.statVal} style={{ color: '#cbd5e1' }}>{minRequired}</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        )}
       </div>
     </div>
   );
