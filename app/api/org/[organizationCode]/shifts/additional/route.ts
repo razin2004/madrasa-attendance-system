@@ -4,6 +4,7 @@ import { requireOrgAdmin } from '@/lib/tenant-auth';
 import { checkStaffShiftIntersection } from '@/lib/shift-intersection';
 import { sendEmail } from '@/services/email.service';
 import { templateAdditionalShiftAssigned } from '@/services/email-templates';
+import { Weekday } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,105 +123,52 @@ export async function POST(
 
     const targetDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
 
-    // CASE A: Assign Existing Normal Shift Pattern for Target Date
+    let shiftStartTime = startTime;
+    let shiftEndTime = endTime;
+    let shiftIsOvernight = false;
+    let shiftTitle = title ? title.trim() : 'Additional Shift';
+
+    // If preset normal shift pattern selected, determine shift timing and title from pattern configuration
     if (shiftPatternId) {
       const shiftPattern = await prisma.shiftPattern.findFirst({
         where: { id: shiftPatternId, organizationId: org.id },
+        include: { weeklyDays: true },
       });
 
       if (!shiftPattern) {
         return NextResponse.json({ success: false, error: 'Selected shift pattern not found.' }, { status: 404 });
       }
 
-      // Check approved leave & time conflicts for each staff
-      for (const staffProfileId of staffProfileIds) {
-        const staff = await prisma.staffProfile.findUnique({
-          where: { id: staffProfileId },
-          select: { name: true },
-        });
+      shiftTitle = shiftPattern.name;
 
-        const approvedLeave = await prisma.leaveRequest.findFirst({
-          where: {
-            staffProfileId,
-            status: 'APPROVED',
-            startDate: { lte: targetDate },
-            endDate: { gte: targetDate },
-          },
-        });
+      const weekdayNames: Weekday[] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+      const targetWeekday = weekdayNames[targetDate.getUTCDay()];
+      const dayConfig = shiftPattern.weeklyDays.find((w) => w.weekday === targetWeekday);
 
-        if (approvedLeave) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `Cannot assign shift to ${staff?.name || 'Staff Member'}: Staff is on approved leave for this date (${date}).`,
-            },
-            { status: 400 }
-          );
-        }
-
-        // Check if staff member already has an active assignment to this exact pattern
-        const existingAssign = await prisma.shiftAssignment.findFirst({
-          where: {
-            staffProfileId,
-            shiftPatternId,
-            effectiveFrom: { lte: targetDate },
-            OR: [{ effectiveTo: null }, { effectiveTo: { gte: targetDate } }],
-          },
-        });
-
-        if (existingAssign) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `${staff?.name || 'Staff Member'} is already assigned to ${shiftPattern.name} shift for this date.`,
-            },
-            { status: 400 }
-          );
+      if (dayConfig && !dayConfig.isHoliday && dayConfig.startTime && dayConfig.endTime) {
+        shiftStartTime = dayConfig.startTime;
+        shiftEndTime = dayConfig.endTime;
+        shiftIsOvernight = dayConfig.isOvernight;
+      } else {
+        const validDay = shiftPattern.weeklyDays.find((w) => !w.isHoliday && w.startTime && w.endTime);
+        if (validDay && validDay.startTime && validDay.endTime) {
+          shiftStartTime = validDay.startTime;
+          shiftEndTime = validDay.endTime;
+          shiftIsOvernight = validDay.isOvernight;
         }
       }
-
-      // Create single-day ShiftAssignment for each selected staff member
-      const createdAssignments = await prisma.$transaction(
-        staffProfileIds.map((staffProfileId) =>
-          prisma.shiftAssignment.create({
-            data: {
-              staffProfileId,
-              shiftPatternId,
-              effectiveFrom: targetDate,
-              effectiveTo: targetDate,
-              assignedBy: auth.session!.user.id,
-            },
-            include: {
-              staffProfile: {
-                select: {
-                  name: true,
-                  staffId: true,
-                  user: { select: { email: true } },
-                },
-              },
-            },
-          })
-        )
-      );
-
-      return NextResponse.json({
-        success: true,
-        message: `Successfully assigned ${shiftPattern.name} shift for ${createdAssignments.length} staff member(s) on ${date}.`,
-        count: createdAssignments.length,
-      });
     }
 
-    // CASE B: Create Custom Additional / Overtime Shift
-    if (!startTime || !endTime) {
+    if (!shiftStartTime || !shiftEndTime) {
       return NextResponse.json(
-        { success: false, error: 'Start time and end time are required for custom shifts.' },
+        { success: false, error: 'Start time and end time are required for the additional shift.' },
         { status: 400 }
       );
     }
 
-    const [startH, startM] = startTime.split(':').map(Number);
-    const [endH, endM] = endTime.split(':').map(Number);
-    const isOvernight = endH * 60 + endM <= startH * 60 + startM;
+    const [startH, startM] = shiftStartTime.split(':').map(Number);
+    const [endH, endM] = shiftEndTime.split(':').map(Number);
+    shiftIsOvernight = endH * 60 + endM <= startH * 60 + startM;
 
     // Run Intersection & Approved Leave Validation for EACH selected staff member
     for (const staffProfileId of staffProfileIds) {
@@ -251,8 +199,8 @@ export async function POST(
       const check = await checkStaffShiftIntersection({
         staffProfileId,
         date: targetDate,
-        startTime,
-        endTime,
+        startTime: shiftStartTime,
+        endTime: shiftEndTime,
       });
 
       if (check.intersects) {
@@ -266,7 +214,7 @@ export async function POST(
       }
     }
 
-    // Create Additional Shifts in Prisma transaction
+    // Create Additional Shifts strictly in AdditionalShift table (without modifying permanent ShiftAssignments)
     const createdShifts = await prisma.$transaction(
       staffProfileIds.map((staffProfileId) =>
         prisma.additionalShift.create({
@@ -274,11 +222,11 @@ export async function POST(
             organizationId: org.id,
             staffProfileId,
             date: targetDate,
-            startTime,
-            endTime,
-            isOvernight,
-            title: title || 'Additional Shift',
-            notes: notes || null,
+            startTime: shiftStartTime,
+            endTime: shiftEndTime,
+            isOvernight: shiftIsOvernight,
+            title: shiftTitle,
+            notes: notes ? notes.trim() : null,
             createdBy: auth.session!.user.id,
           },
           include: {
@@ -305,9 +253,9 @@ export async function POST(
           staffName: shift.staffProfile.name,
           orgName: org.name,
           date,
-          startTime,
-          endTime,
-          title: shift.title,
+          startTime: shift.startTime,
+          endTime: shift.endTime,
+          title: shift.title || 'Additional Shift',
           notes: shift.notes,
           loginUrl,
         });
