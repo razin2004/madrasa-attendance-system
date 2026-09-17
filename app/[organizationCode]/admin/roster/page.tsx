@@ -44,6 +44,14 @@ interface ScheduledDay {
   shiftPatternName?: string;
   hasOverride: boolean;
   overrideReason?: string | null;
+  shifts?: Array<{
+    id?: string;
+    name?: string;
+    startTime: string | null;
+    endTime: string | null;
+    isHoliday: boolean;
+    isOvernight?: boolean;
+  }>;
 }
 
 interface StaffRow {
@@ -505,23 +513,47 @@ export default function RosterCalendarPage() {
                                 style={{ textDecoration: 'none', display: 'inline-block' }}
                               >
                                 {isWorking ? (
-                                  <div
-                                    className={`${styles.cellWorking} ${
-                                      day.isOvernight ? styles.cellOvernight : ''
-                                    } ${day.hasOverride ? styles.cellOverride : ''}`}
-                                    title={day.hasOverride ? `Override: ${day.overrideReason || 'Custom Hours'}` : day.shiftPatternName}
-                                  >
-                                    <span>
-                                      {day.startTime} – {day.endTime}
-                                    </span>
-                                    {day.isOvernight && (
-                                      <span style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                        <Moon size={9} />
-                                        <span>Overnight</span>
+                                  day.shifts && day.shifts.length > 1 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center', padding: '2px 0' }}>
+                                      {day.shifts.map((s, idx) => (
+                                        <div
+                                          key={idx}
+                                          className={`${styles.cellWorking} ${
+                                            s.isOvernight ? styles.cellOvernight : ''
+                                          } ${day.hasOverride ? styles.cellOverride : ''}`}
+                                          title={`${s.name || 'Shift'}: ${s.startTime} – ${s.endTime}`}
+                                          style={{ width: '100%', boxSizing: 'border-box' }}
+                                        >
+                                          <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                                            {s.startTime} – {s.endTime}
+                                          </span>
+                                          {s.name && (
+                                            <span style={{ fontSize: '8.5px', opacity: 0.85, fontWeight: 600, display: 'block', lineHeight: 1.1 }}>
+                                              {s.name}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className={`${styles.cellWorking} ${
+                                        day.isOvernight ? styles.cellOvernight : ''
+                                      } ${day.hasOverride ? styles.cellOverride : ''}`}
+                                      title={day.hasOverride ? `Override: ${day.overrideReason || 'Custom Hours'}` : day.shiftPatternName}
+                                    >
+                                      <span>
+                                        {day.startTime} – {day.endTime}
                                       </span>
-                                    )}
-                                    {day.hasOverride && <span className={styles.overrideTag}>Override</span>}
-                                  </div>
+                                      {day.isOvernight && (
+                                        <span style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                          <Moon size={9} />
+                                          <span>Overnight</span>
+                                        </span>
+                                      )}
+                                      {day.hasOverride && <span className={styles.overrideTag}>Override</span>}
+                                    </div>
+                                  )
                                 ) : isHoliday ? (
                                   <div className={`${styles.cellHoliday} ${day.hasOverride ? styles.cellOverride : ''}`}>
                                     <span>HOLIDAY</span>
@@ -664,18 +696,39 @@ export default function RosterCalendarPage() {
                                   style={{ textDecoration: 'none' }}
                                 >
                                   {daySchedule.isScheduled && !daySchedule.isHoliday ? (
-                                    <div className={`${styles.cellWorking} ${daySchedule.isOvernight ? styles.cellOvernight : ''} ${daySchedule.hasOverride ? styles.cellOverride : ''}`}>
-                                      <span style={{ fontSize: '11.5px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                                        {daySchedule.startTime} – {daySchedule.endTime}
-                                      </span>
-                                      {daySchedule.isOvernight && (
-                                        <span style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '1px' }}>
-                                          <Moon size={9} />
-                                          <span>Overnight</span>
+                                    daySchedule.shifts && daySchedule.shifts.length > 1 ? (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                                        {daySchedule.shifts.map((s, idx) => (
+                                          <div
+                                            key={idx}
+                                            className={`${styles.cellWorking} ${s.isOvernight ? styles.cellOvernight : ''}`}
+                                            style={{ textAlign: 'right' }}
+                                          >
+                                            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                                              {s.startTime} – {s.endTime}
+                                            </span>
+                                            {s.name && (
+                                              <span style={{ fontSize: '8.5px', opacity: 0.85, display: 'block', marginTop: '1px' }}>
+                                                {s.name}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className={`${styles.cellWorking} ${daySchedule.isOvernight ? styles.cellOvernight : ''} ${daySchedule.hasOverride ? styles.cellOverride : ''}`}>
+                                        <span style={{ fontSize: '11.5px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                                          {daySchedule.startTime} – {daySchedule.endTime}
                                         </span>
-                                      )}
-                                      {daySchedule.hasOverride && <span className={styles.overrideTag}>Override</span>}
-                                    </div>
+                                        {daySchedule.isOvernight && (
+                                          <span style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '1px' }}>
+                                            <Moon size={9} />
+                                            <span>Overnight</span>
+                                          </span>
+                                        )}
+                                        {daySchedule.hasOverride && <span className={styles.overrideTag}>Override</span>}
+                                      </div>
+                                    )
                                   ) : daySchedule.isScheduled && daySchedule.isHoliday ? (
                                     <div className={`${styles.cellHoliday} ${daySchedule.hasOverride ? styles.cellOverride : ''}`}>
                                       <span>HOLIDAY</span>
