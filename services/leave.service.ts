@@ -671,6 +671,8 @@ export async function approveLeaveRequest(params: {
   requestId: string;
   reviewerUserId: string;
   reviewerComment?: string;
+  approvedStartDate?: Date | string;
+  approvedEndDate?: Date | string;
   originUrl?: string;
 }) {
   return await prisma.$transaction(async (tx) => {
@@ -695,9 +697,32 @@ export async function approveLeaveRequest(params: {
       throw new Error(`This leave request is already ${request.status.toLowerCase()}.`);
     }
 
-    const year = request.startDate.getUTCFullYear();
+    // Determine approved date range & approved days count
+    const normRequestStart = normalizeDate(request.startDate);
+    const normRequestEnd = normalizeDate(request.endDate);
 
-    // 2. If ANNUAL or SICK, check & update balance transactionally
+    let normApprovedStart = normRequestStart;
+    let normApprovedEnd = normRequestEnd;
+
+    if (params.approvedStartDate) {
+      normApprovedStart = normalizeDate(params.approvedStartDate);
+    }
+    if (params.approvedEndDate) {
+      normApprovedEnd = normalizeDate(params.approvedEndDate);
+    }
+
+    if (normApprovedStart < normRequestStart || normApprovedEnd > normRequestEnd) {
+      throw new Error('Approved date range must fall within original requested leave dates.');
+    }
+    if (normApprovedStart > normApprovedEnd) {
+      throw new Error('Approved start date cannot be after approved end date.');
+    }
+
+    const approvedDaysCount = countDaysBetween(normApprovedStart, normApprovedEnd);
+    const isPartiallyApproved = approvedDaysCount < request.daysCount;
+    const year = normApprovedStart.getUTCFullYear();
+
+    // 2. If ANNUAL or SICK, check & update balance transactionally for approvedDaysCount ONLY
     if (request.type === 'ANNUAL' || request.type === 'SICK') {
       let balance = await tx.leaveBalance.findUnique({
         where: {
@@ -723,23 +748,26 @@ export async function approveLeaveRequest(params: {
       }
 
       const remaining = balance.entitlement - balance.used;
-      if (remaining < request.daysCount) {
-        throw new Error(`Cannot approve: insufficient ${request.type.toLowerCase()} balance. Available: ${remaining}, Required: ${request.daysCount}.`);
+      if (remaining < approvedDaysCount) {
+        throw new Error(`Cannot approve: insufficient ${request.type.toLowerCase()} balance. Available: ${remaining}, Required: ${approvedDaysCount}.`);
       }
 
-      // Deduct used balance
+      // Deduct used balance for approvedDaysCount
       await tx.leaveBalance.update({
         where: { id: balance.id },
         data: {
-          used: { increment: request.daysCount },
+          used: { increment: approvedDaysCount },
         },
       });
     }
 
-    // 3. Update Leave Request
+    // 3. Update Leave Request with approved dates & daysCount
     const updated = await tx.leaveRequest.update({
       where: { id: request.id },
       data: {
+        startDate: normApprovedStart,
+        endDate: normApprovedEnd,
+        daysCount: approvedDaysCount,
         status: 'APPROVED',
         reviewerUserId: params.reviewerUserId,
         reviewedAt: new Date(),
@@ -752,15 +780,19 @@ export async function approveLeaveRequest(params: {
       data: {
         organizationId: params.organizationId,
         actorUserId: params.reviewerUserId,
-        action: 'LEAVE_APPROVED',
+        action: isPartiallyApproved ? 'LEAVE_PARTIALLY_APPROVED' : 'LEAVE_APPROVED',
         entityType: 'LeaveRequest',
         entityId: updated.id,
         metadata: {
           staffProfileId: request.staffProfileId,
           leaveType: request.type,
-          startDate: formatUtcDateString(request.startDate),
-          endDate: formatUtcDateString(request.endDate),
-          daysCount: request.daysCount,
+          originalStartDate: formatUtcDateString(normRequestStart),
+          originalEndDate: formatUtcDateString(normRequestEnd),
+          originalDaysCount: request.daysCount,
+          approvedStartDate: formatUtcDateString(normApprovedStart),
+          approvedEndDate: formatUtcDateString(normApprovedEnd),
+          approvedDaysCount,
+          isPartiallyApproved,
           reviewerComment: params.reviewerComment || null,
         },
       },
@@ -775,9 +807,13 @@ export async function approveLeaveRequest(params: {
             orgName: request.staffProfile.organization.name,
             staffName: request.staffProfile.name,
             leaveType: request.type,
-            dateRange: `${formatUtcDateString(request.startDate)} to ${formatUtcDateString(request.endDate)}`,
-            daysCount: request.daysCount,
-            reviewerComment: params.reviewerComment,
+            dateRange: `${formatUtcDateString(normApprovedStart)} to ${formatUtcDateString(normApprovedEnd)}${isPartiallyApproved ? ' (Partially Approved)' : ''}`,
+            daysCount: approvedDaysCount,
+            reviewerComment: params.reviewerComment
+              ? `${params.reviewerComment}${isPartiallyApproved ? ` [Original request: ${formatUtcDateString(normRequestStart)} to ${formatUtcDateString(normRequestEnd)}]` : ''}`
+              : isPartiallyApproved
+              ? `Approved for ${approvedDaysCount} day(s) (${formatUtcDateString(normApprovedStart)} to ${formatUtcDateString(normApprovedEnd)}) out of ${request.daysCount} requested days.`
+              : undefined,
             loginUrl,
           });
 

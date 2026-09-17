@@ -17,7 +17,7 @@ export async function POST(
 
     const { organization, session } = auth;
     const body = await req.json().catch(() => ({}));
-    const { comment } = body;
+    const { comment, approvedStartDate, approvedEndDate } = body;
     const originUrl = req.nextUrl.origin;
 
     const updated = await approveLeaveRequest({
@@ -25,6 +25,8 @@ export async function POST(
       requestId: params.requestId,
       reviewerUserId: session.user.id,
       reviewerComment: comment,
+      approvedStartDate,
+      approvedEndDate,
       originUrl,
     });
 

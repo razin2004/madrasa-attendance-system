@@ -62,6 +62,14 @@ export default function AdminLeaveReviewPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setRequestDetails(data.request);
+        if (data.request?.startDate) {
+          const s = new Date(data.request.startDate).toISOString().split('T')[0];
+          setApprovedStartDate(s);
+        }
+        if (data.request?.endDate) {
+          const e = new Date(data.request.endDate).toISOString().split('T')[0];
+          setApprovedEndDate(e);
+        }
         if (data.balances) setBalances(data.balances);
         if (data.staffingImpact) {
           setImpactData(data.staffingImpact);
@@ -84,15 +92,43 @@ export default function AdminLeaveReviewPage() {
     }
   }, [organizationCode, requestId]);
 
+  // Partial & Full Approval States
+  const [approveMode, setApproveMode] = useState<'FULL' | 'PARTIAL'>('FULL');
+  const [approvedStartDate, setApprovedStartDate] = useState('');
+  const [approvedEndDate, setApprovedEndDate] = useState('');
+  const [approveComment, setApproveComment] = useState('');
+
   const handleApprove = async () => {
     setProcessing(true);
     try {
+      const payload: any = {
+        comment: approveComment,
+      };
+
+      if (approveMode === 'PARTIAL') {
+        if (!approvedStartDate || !approvedEndDate) {
+          toast.error('Please select approved start and end dates.');
+          setProcessing(false);
+          return;
+        }
+        if (new Date(approvedStartDate) > new Date(approvedEndDate)) {
+          toast.error('Approved start date cannot be after end date.');
+          setProcessing(false);
+          return;
+        }
+        payload.approvedStartDate = approvedStartDate;
+        payload.approvedEndDate = approvedEndDate;
+      }
+
       const res = await fetch(`/api/org/${organizationCode}/leave/admin/${requestId}/approve`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success('Leave request approved successfully.');
+        toast.success(approveMode === 'PARTIAL' ? 'Leave partially approved successfully!' : 'Leave request approved successfully.');
         setShowApproveModal(false);
         fetchData();
       } else {
@@ -150,7 +186,8 @@ export default function AdminLeaveReviewPage() {
           backHref={`/${organizationCode}/admin/leave`}
         />
 
-        {loading ? (
+        <div className={styles.pageBody}>
+          {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <Loader2 size={36} className="animate-spin" style={{ color: '#818cf8', margin: '0 auto 12px auto' }} />
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading request details &amp; staffing impact...</p>
@@ -544,6 +581,7 @@ export default function AdminLeaveReviewPage() {
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* FULLSCREEN ATTACHMENT MODAL */}
@@ -575,16 +613,113 @@ export default function AdminLeaveReviewPage() {
         </div>
       )}
 
-      {/* APPROVAL MODAL */}
-      <ConfirmationModal
-        isOpen={showApproveModal}
-        onClose={() => setShowApproveModal(false)}
-        onConfirm={handleApprove}
-        title="Approve Leave Request?"
-        message={`Are you sure you want to approve ${requestDetails?.daysCount} days of ${requestDetails?.leaveType} for ${requestDetails?.staff?.name}?`}
-        confirmText="Approve Leave"
-        variant="primary"
-      />
+      {/* APPROVAL DECISION MODAL WITH PARTIAL RANGE SELECTOR */}
+      {showApproveModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 999999, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '24px', backgroundColor: '#0d121f' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle2 size={20} color="#34d399" />
+              <span>Approve Leave Request</span>
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 20px 0' }}>
+              Approve full requested duration or select a specific partial date range for {requestDetails?.staff?.name}.
+            </p>
+
+            {/* Scope Switcher */}
+            <div style={{ marginBottom: '20px' }}>
+              <label className="form-label" style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '8px', display: 'block' }}>Approval Scope</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setApproveMode('FULL')}
+                  className={`btn ${approveMode === 'FULL' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '10px', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  <CheckCircle2 size={14} />
+                  <span>Full Request ({requestDetails?.daysCount} Days)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setApproveMode('PARTIAL')}
+                  className={`btn ${approveMode === 'PARTIAL' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '10px', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  <Calendar size={14} />
+                  <span>Specific Date Range</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Partial Date Range Pickers */}
+            {approveMode === 'PARTIAL' && (
+              <div style={{ marginBottom: '20px', padding: '14px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', marginBottom: '10px' }}>
+                  Select Approved Date Range (Within Request Bounds)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '8px' }}>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '11.5px' }}>Approved Start *</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={approvedStartDate}
+                      min={requestDetails?.startDate ? new Date(requestDetails.startDate).toISOString().split('T')[0] : undefined}
+                      max={requestDetails?.endDate ? new Date(requestDetails.endDate).toISOString().split('T')[0] : undefined}
+                      onChange={(e) => setApprovedStartDate(e.target.value)}
+                      style={{ width: '100%', fontSize: '12.5px', backgroundColor: '#0f172a', colorScheme: 'dark' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '11.5px' }}>Approved End *</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={approvedEndDate}
+                      min={requestDetails?.startDate ? new Date(requestDetails.startDate).toISOString().split('T')[0] : undefined}
+                      max={requestDetails?.endDate ? new Date(requestDetails.endDate).toISOString().split('T')[0] : undefined}
+                      onChange={(e) => setApprovedEndDate(e.target.value)}
+                      style={{ width: '100%', fontSize: '12.5px', backgroundColor: '#0f172a', colorScheme: 'dark' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '11.5px', color: '#cbd5e1', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                  Approved Days: {(() => {
+                    if (!approvedStartDate || !approvedEndDate) return 0;
+                    const s = new Date(`${approvedStartDate}T00:00:00Z`);
+                    const e = new Date(`${approvedEndDate}T00:00:00Z`);
+                    if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return 0;
+                    return Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                  })()} Days
+                </div>
+              </div>
+            )}
+
+            {/* Optional Comment */}
+            <div style={{ marginBottom: '20px' }}>
+              <label className="form-label" style={{ fontSize: '12px' }}>Admin Decision Note / Feedback to Staff</label>
+              <textarea
+                className="form-input"
+                style={{ width: '100%', height: '70px', fontSize: '13px' }}
+                placeholder="Optional feedback for employee (e.g. approved 2 out of 4 days due to coverage)..."
+                value={approveComment}
+                onChange={(e) => setApproveComment(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button onClick={() => setShowApproveModal(false)} className="btn btn-secondary btn-sm">
+                Cancel
+              </button>
+              <button onClick={handleApprove} disabled={processing} className="btn btn-primary btn-sm">
+                {processing ? 'Approving...' : approveMode === 'PARTIAL' ? 'Confirm Partial Approval' : 'Confirm Full Approval'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* REJECTION MODAL */}
       {showRejectModal && (
