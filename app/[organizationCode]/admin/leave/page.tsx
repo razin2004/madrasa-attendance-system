@@ -163,6 +163,16 @@ export default function AdminLeavePage() {
                 <span>Record Manual Leave</span>
               </Link>
 
+              <Link
+                href={`/${organizationCode}/admin/leave/rules`}
+                className="btn btn-ghost btn-sm"
+                style={{ justifyContent: 'flex-start', gap: '8px', width: '100%', textDecoration: 'none', color: '#f8fafc', fontSize: '12.5px' }}
+                onClick={() => setHeaderMenuOpen(false)}
+              >
+                <CalendarDays size={15} color="#fbbf24" />
+                <span>Leave Date Rules &amp; Blackouts</span>
+              </Link>
+
               <button
                 onClick={() => {
                   setHeaderMenuOpen(false);

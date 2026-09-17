@@ -118,6 +118,11 @@ enum LeaveRequestStatus {
   CANCELLED
 }
 
+enum LeaveRestrictionType {
+  ALLOWED_WINDOW
+  BLACKOUT_PERIOD
+}
+
 enum ShiftSwapStatus {
   PENDING_PEER
   PEER_ACCEPTED
@@ -164,6 +169,7 @@ model Organization {
   securityTokens    SecurityToken[]
   shiftSwapRequests ShiftSwapRequest[]
   additionalShifts  AdditionalShift[]
+  leaveRestrictionRules LeaveRestrictionRule[]
 
   @@index([organizationCode])
   @@index([status])
@@ -572,6 +578,28 @@ model LeaveBalance {
   @@index([staffProfileId])
   @@index([year])
   @@map("leave_balances")
+}
+
+model LeaveRestrictionRule {
+  id             String               @id @default(uuid())
+  organizationId String
+  title          String
+  ruleType       LeaveRestrictionType
+  startDate      DateTime             // Normalized midnight start date
+  endDate        DateTime             // Normalized midnight end date
+  leaveType      String               @default("ALL") // "ALL" | "ANNUAL" | "SICK" | "OTHER" | "DUTY"
+  isActive       Boolean              @default(true)
+  description    String?
+  createdById    String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, isActive, ruleType])
+  @@index([startDate, endDate])
+  @@map("leave_restriction_rules")
 }
 
 // =========================================================================

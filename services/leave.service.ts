@@ -447,6 +447,80 @@ export async function suggestAlternativeDateRanges(
 }
 
 // -----------------------------------------------------------------------------
+// 4b. Leave Restriction Rules & Blackout Engine
+// -----------------------------------------------------------------------------
+export async function getOrganizationLeaveRestrictionRules(organizationId: string) {
+  return await prisma.leaveRestrictionRule.findMany({
+    where: {
+      organizationId,
+      isActive: true,
+    },
+    orderBy: { startDate: 'asc' },
+  });
+}
+
+export async function validateLeaveDatesAgainstRules(
+  organizationId: string,
+  startDate: Date,
+  endDate: Date,
+  leaveType: LeaveType
+) {
+  const normStart = normalizeDate(startDate);
+  const normEnd = normalizeDate(endDate);
+
+  const rules = await getOrganizationLeaveRestrictionRules(organizationId);
+
+  if (rules.length === 0) return { isValid: true };
+
+  // 1. Check Blackout Periods
+  const blackoutRules = rules.filter(
+    (r) =>
+      r.ruleType === 'BLACKOUT_PERIOD' &&
+      (r.leaveType === 'ALL' || r.leaveType === leaveType)
+  );
+
+  for (const rule of blackoutRules) {
+    const ruleStart = normalizeDate(rule.startDate);
+    const ruleEnd = normalizeDate(rule.endDate);
+
+    if (normStart <= ruleEnd && normEnd >= ruleStart) {
+      return {
+        isValid: false,
+        error: `Leave applications are restricted during blackout period: "${rule.title}" (${formatUtcDateString(ruleStart)} to ${formatUtcDateString(ruleEnd)}).`,
+        rule,
+      };
+    }
+  }
+
+  // 2. Check Allowed Windows (If any ALLOWED_WINDOW rule exists for this leave type)
+  const allowedRules = rules.filter(
+    (r) =>
+      r.ruleType === 'ALLOWED_WINDOW' &&
+      (r.leaveType === 'ALL' || r.leaveType === leaveType)
+  );
+
+  if (allowedRules.length > 0) {
+    const insideAllowedWindow = allowedRules.some((rule) => {
+      const ruleStart = normalizeDate(rule.startDate);
+      const ruleEnd = normalizeDate(rule.endDate);
+      return normStart >= ruleStart && normEnd <= ruleEnd;
+    });
+
+    if (!insideAllowedWindow) {
+      const windowDescs = allowedRules
+        .map((r) => `"${r.title}" (${formatUtcDateString(r.startDate)} to ${formatUtcDateString(r.endDate)})`)
+        .join(', ');
+      return {
+        isValid: false,
+        error: `Requested dates fall outside allowed leave application windows. Active allowed windows for ${leaveType}: ${windowDescs}.`,
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
+// -----------------------------------------------------------------------------
 // 5. Submit Staff Leave Request (Section 4, 5, 30, 31, 37)
 // -----------------------------------------------------------------------------
 export async function submitStaffLeaveRequest(params: {
@@ -484,6 +558,17 @@ export async function submitStaffLeaveRequest(params: {
 
   if (!staff) {
     throw new Error('Staff profile not found or inactive.');
+  }
+
+  // 1b. Validate against Organization Leave Restriction Rules (Allowed Windows & Blackout Periods)
+  const ruleCheck = await validateLeaveDatesAgainstRules(
+    params.organizationId,
+    normStart,
+    normEnd,
+    params.type
+  );
+  if (!ruleCheck.isValid) {
+    throw new Error(ruleCheck.error || 'Requested leave dates are restricted by organization policy.');
   }
 
   // 2. Check overlap
