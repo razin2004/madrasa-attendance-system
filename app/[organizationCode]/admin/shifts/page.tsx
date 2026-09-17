@@ -88,6 +88,7 @@ export default function ShiftPatternsPage() {
   const [staffList, setStaffList] = useState<{ id: string; name: string; staffId: string }[]>([]);
   const [additionalShifts, setAdditionalShifts] = useState<any[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+  const [selectedShiftPatternId, setSelectedShiftPatternId] = useState<string>('');
   const [addDate, setAddDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [addStartTime, setAddStartTime] = useState('11:00');
   const [addEndTime, setAddEndTime] = useState('16:00');
@@ -156,8 +157,8 @@ export default function ShiftPatternsPage() {
       setAdditionalError('Please select at least one staff member.');
       return;
     }
-    if (!addDate || !addStartTime || !addEndTime) {
-      setAdditionalError('Please specify date, start time, and end time.');
+    if (!addDate) {
+      setAdditionalError('Please specify date.');
       return;
     }
 
@@ -169,22 +170,24 @@ export default function ShiftPatternsPage() {
         body: JSON.stringify({
           staffProfileIds: selectedStaffIds,
           date: addDate,
+          shiftPatternId: selectedShiftPatternId || null,
           startTime: addStartTime,
           endTime: addEndTime,
-          title: addTitle.trim() || 'Overtime Shift',
+          title: addTitle.trim() || 'Additional Shift',
           notes: addNotes.trim() || null,
         }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success(data.message || 'Additional shift assigned successfully!');
+        toast.success(data.message || 'Shift assigned successfully!');
         setAdditionalModalOpen(false);
         setSelectedStaffIds([]);
+        setSelectedShiftPatternId('');
         setAddNotes('');
         fetchInitialData();
       } else {
-        setAdditionalError(data.error || 'Failed to assign additional shift.');
+        setAdditionalError(data.error || 'Failed to assign shift.');
         toast.error(data.error || 'Intersection or validation error.');
       }
     } catch {
@@ -865,17 +868,22 @@ export default function ShiftPatternsPage() {
                   id="presetPattern"
                   className="form-input"
                   style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+                  value={selectedShiftPatternId}
                   onChange={(e) => {
                     const selectedId = e.target.value;
-                    if (!selectedId) return;
-                    const pat = patterns.find((p) => p.id === selectedId);
-                    if (pat) {
-                      setAddTitle(pat.name);
-                      const workDay = pat.weeklyDays.find((d) => !d.isHoliday && d.startTime && d.endTime);
-                      if (workDay) {
-                        setAddStartTime(workDay.startTime || '08:00');
-                        setAddEndTime(workDay.endTime || '17:00');
+                    setSelectedShiftPatternId(selectedId);
+                    if (selectedId) {
+                      const pat = patterns.find((p) => p.id === selectedId);
+                      if (pat) {
+                        setAddTitle(pat.name);
+                        const workDay = pat.weeklyDays.find((d) => !d.isHoliday && d.startTime && d.endTime);
+                        if (workDay) {
+                          setAddStartTime(workDay.startTime || '08:00');
+                          setAddEndTime(workDay.endTime || '17:00');
+                        }
                       }
+                    } else {
+                      setAddTitle('Overtime Shift');
                     }
                   }}
                 >

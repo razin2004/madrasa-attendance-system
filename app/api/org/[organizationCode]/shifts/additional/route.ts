@@ -99,7 +99,7 @@ export async function POST(
 
     const org = auth.organization;
     const body = await request.json().catch(() => ({}));
-    const { staffProfileIds, date, startTime, endTime, title, notes } = body;
+    const { staffProfileIds, date, shiftPatternId, startTime, endTime, title, notes } = body;
 
     if (!staffProfileIds || !Array.isArray(staffProfileIds) || staffProfileIds.length === 0) {
       return NextResponse.json(
@@ -108,9 +108,9 @@ export async function POST(
       );
     }
 
-    if (!date || !startTime || !endTime) {
+    if (!date) {
       return NextResponse.json(
-        { success: false, error: 'Date, start time, and end time are required.' },
+        { success: false, error: 'Date is required.' },
         { status: 400 }
       );
     }
@@ -121,11 +121,108 @@ export async function POST(
     }
 
     const targetDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+
+    // CASE A: Assign Existing Normal Shift Pattern for Target Date
+    if (shiftPatternId) {
+      const shiftPattern = await prisma.shiftPattern.findFirst({
+        where: { id: shiftPatternId, organizationId: org.id },
+      });
+
+      if (!shiftPattern) {
+        return NextResponse.json({ success: false, error: 'Selected shift pattern not found.' }, { status: 404 });
+      }
+
+      // Check approved leave & time conflicts for each staff
+      for (const staffProfileId of staffProfileIds) {
+        const staff = await prisma.staffProfile.findUnique({
+          where: { id: staffProfileId },
+          select: { name: true },
+        });
+
+        const approvedLeave = await prisma.leaveRequest.findFirst({
+          where: {
+            staffProfileId,
+            status: 'APPROVED',
+            startDate: { lte: targetDate },
+            endDate: { gte: targetDate },
+          },
+        });
+
+        if (approvedLeave) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Cannot assign shift to ${staff?.name || 'Staff Member'}: Staff is on approved leave for this date (${date}).`,
+            },
+            { status: 400 }
+          );
+        }
+
+        // Check if staff member already has an active assignment to this exact pattern
+        const existingAssign = await prisma.shiftAssignment.findFirst({
+          where: {
+            staffProfileId,
+            shiftPatternId,
+            effectiveFrom: { lte: targetDate },
+            OR: [{ effectiveTo: null }, { effectiveTo: { gte: targetDate } }],
+          },
+        });
+
+        if (existingAssign) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `${staff?.name || 'Staff Member'} is already assigned to ${shiftPattern.name} shift for this date.`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Create single-day ShiftAssignment for each selected staff member
+      const createdAssignments = await prisma.$transaction(
+        staffProfileIds.map((staffProfileId) =>
+          prisma.shiftAssignment.create({
+            data: {
+              staffProfileId,
+              shiftPatternId,
+              effectiveFrom: targetDate,
+              effectiveTo: targetDate,
+              assignedBy: auth.session!.user.id,
+            },
+            include: {
+              staffProfile: {
+                select: {
+                  name: true,
+                  staffId: true,
+                  user: { select: { email: true } },
+                },
+              },
+            },
+          })
+        )
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully assigned ${shiftPattern.name} shift for ${createdAssignments.length} staff member(s) on ${date}.`,
+        count: createdAssignments.length,
+      });
+    }
+
+    // CASE B: Create Custom Additional / Overtime Shift
+    if (!startTime || !endTime) {
+      return NextResponse.json(
+        { success: false, error: 'Start time and end time are required for custom shifts.' },
+        { status: 400 }
+      );
+    }
+
     const [startH, startM] = startTime.split(':').map(Number);
     const [endH, endM] = endTime.split(':').map(Number);
     const isOvernight = endH * 60 + endM <= startH * 60 + startM;
 
-    // 1. Run Intersection & Approved Leave Validation for EACH selected staff member
+    // Run Intersection & Approved Leave Validation for EACH selected staff member
     for (const staffProfileId of staffProfileIds) {
       const staff = await prisma.staffProfile.findUnique({
         where: { id: staffProfileId },
@@ -169,7 +266,7 @@ export async function POST(
       }
     }
 
-    // 2. Create Additional Shifts in Prisma transaction
+    // Create Additional Shifts in Prisma transaction
     const createdShifts = await prisma.$transaction(
       staffProfileIds.map((staffProfileId) =>
         prisma.additionalShift.create({
@@ -197,7 +294,7 @@ export async function POST(
       )
     );
 
-    // 3. Dispatch Email Notifications asynchronously
+    // Dispatch Email Notifications asynchronously
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const loginUrl = `${baseUrl}/${params.organizationCode.toLowerCase()}/login`;
 
