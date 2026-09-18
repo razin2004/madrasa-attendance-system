@@ -9,6 +9,7 @@ import {
   Calendar,
   Layers,
   Info,
+  ArrowRight,
 } from 'lucide-react';
 import styles from './leave-shifts-graph.module.css';
 
@@ -73,7 +74,8 @@ export function LeaveShiftsGraph({
       return;
     }
 
-    const mapKey = `${name}__${hours}`;
+    // Key by shift name so that all days for "Morning Shift" go to Graph 1 and "Evening Shift" go to Graph 2
+    const mapKey = name.trim().toLowerCase();
 
     if (!shiftMap.has(mapKey)) {
       shiftMap.set(mapKey, {
@@ -86,7 +88,7 @@ export function LeaveShiftsGraph({
     }
 
     const group = shiftMap.get(mapKey)!;
-    if (hours && !group.shiftHours) {
+    if (hours && (!group.shiftHours || group.shiftHours === '')) {
       group.shiftHours = hours;
     }
 
@@ -162,13 +164,15 @@ export function LeaveShiftsGraph({
               // Add Y-axis headroom
               const yMax = Math.max(maxVal + 2, 4);
 
-              // SVG Dimensions
+              // Column width per day and SVG dimensions
+              const colWidth = 90;
+              const paddingLeft = 45;
+              const paddingRight = 25;
               const svgHeight = 220;
-              const paddingLeft = 40;
-              const paddingRight = 20;
               const paddingTop = 30;
               const paddingBottom = 45;
               const graphHeight = svgHeight - paddingTop - paddingBottom;
+              const totalContentWidth = paddingLeft + paddingRight + workingDays.length * colWidth;
 
               // Compute Y ticks
               const yTicks: number[] = [];
@@ -198,6 +202,11 @@ export function LeaveShiftsGraph({
                       <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
                         &bull; {workingDays.length} Working Day{workingDays.length > 1 ? 's' : ''}
                       </span>
+                      {workingDays.length > 5 && (
+                        <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: 'rgba(99, 102, 241, 0.12)', padding: '2px 8px', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                          <ArrowRight size={12} /> Swipe left for all days
+                        </span>
+                      )}
                     </div>
 
                     {hasShortage ? (
@@ -215,12 +224,14 @@ export function LeaveShiftsGraph({
                     )}
                   </div>
 
-                  {/* SVG GRAPH CANVAS */}
-                  <div style={{ position: 'relative', width: '100%', overflowX: 'auto' }}>
-                    <div style={{ minWidth: workingDays.length > 5 ? `${workingDays.length * 90}px` : '100%' }}>
+                  {/* SWIPEABLE / HORIZONTALLY SCROLLABLE SVG GRAPH CANVAS */}
+                  <div style={{ position: 'relative', width: '100%', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+                    <div style={{ width: `${totalContentWidth}px`, minWidth: '100%' }}>
                       <svg
-                        viewBox={`0 0 ${Math.max(600, workingDays.length * 100)} ${svgHeight}`}
-                        style={{ width: '100%', height: 'auto', display: 'block' }}
+                        width={totalContentWidth}
+                        height={svgHeight}
+                        viewBox={`0 0 ${totalContentWidth} ${svgHeight}`}
+                        style={{ display: 'block', width: `${totalContentWidth}px`, height: `${svgHeight}px` }}
                       >
                         <defs>
                           <linearGradient id={`gradScheduled-${shiftName.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
@@ -247,7 +258,7 @@ export function LeaveShiftsGraph({
                               <line
                                 x1={paddingLeft}
                                 y1={y}
-                                x2={Math.max(600, workingDays.length * 100) - paddingRight}
+                                x2={totalContentWidth - paddingRight}
                                 y2={y}
                                 stroke="rgba(255, 255, 255, 0.08)"
                                 strokeDasharray={val === 0 ? undefined : '3 3'}
@@ -266,19 +277,14 @@ export function LeaveShiftsGraph({
                           );
                         })}
 
-                        {/* Minimum Required Staff Line (per day or overall) */}
+                        {/* Minimum Required Staff Line */}
                         {workingDays.map((day, idx) => {
                           const minReq = day.minRequired ?? day.minimumStaffingThreshold ?? 1;
-                          const totalCols = workingDays.length;
-                          const chartWidth = Math.max(600, workingDays.length * 100) - paddingLeft - paddingRight;
-                          const colWidth = chartWidth / totalCols;
                           const xCenter = paddingLeft + idx * colWidth + colWidth / 2;
-
                           const yMinReq = paddingTop + graphHeight - (minReq / yMax) * graphHeight;
 
                           return (
                             <g key={`minreq-${idx}`}>
-                              {/* Short segment for this day's min threshold */}
                               <line
                                 x1={xCenter - colWidth * 0.4}
                                 y1={yMinReq}
@@ -294,9 +300,6 @@ export function LeaveShiftsGraph({
 
                         {/* DAY COLUMNS (BARS & MARKERS) */}
                         {workingDays.map((day, idx) => {
-                          const totalCols = workingDays.length;
-                          const chartWidth = Math.max(600, workingDays.length * 100) - paddingLeft - paddingRight;
-                          const colWidth = chartWidth / totalCols;
                           const xCenter = paddingLeft + idx * colWidth + colWidth / 2;
 
                           const scheduled = day.totalScheduled ?? day.totalAssignedStaff ?? 0;
@@ -359,7 +362,7 @@ export function LeaveShiftsGraph({
                                 {scheduled}
                               </text>
 
-                              {/* Available Staff Bar (After Leave Approval) */}
+                              {/* Available Staff Bar */}
                               <rect
                                 x={xCenter + 2}
                                 y={yAvailable}
@@ -410,7 +413,7 @@ export function LeaveShiftsGraph({
                                 </g>
                               )}
 
-                              {/* X-Axis Date & Day of Week Text */}
+                              {/* X-Axis Date */}
                               <text
                                 x={xCenter}
                                 y={paddingTop + graphHeight + 14}
@@ -427,7 +430,7 @@ export function LeaveShiftsGraph({
                         })}
 
                         {/* Legend Overlay inside Chart Top Right */}
-                        <g transform={`translate(${Math.max(600, workingDays.length * 100) - 240}, 10)`}>
+                        <g transform={`translate(${Math.max(10, totalContentWidth - 230)}, 10)`}>
                           <rect width="220" height="20" fill="rgba(0,0,0,0.5)" rx="10" />
                           <rect x="8" y="6" width="8" height="8" fill="#818cf8" rx="2" />
                           <text x="20" y="13" fill="#cbd5e1" fontSize="9.5">Sched</text>
