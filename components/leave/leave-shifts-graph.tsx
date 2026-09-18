@@ -57,7 +57,7 @@ export function LeaveShiftsGraph({
     return null;
   }
 
-  // 1. Group data by shift name
+  // 1. Group data by shift name and hours
   const shiftMap = new Map<string, ShiftGroup>();
 
   impactData.forEach((item) => {
@@ -73,8 +73,10 @@ export function LeaveShiftsGraph({
       return;
     }
 
-    if (!shiftMap.has(name)) {
-      shiftMap.set(name, {
+    const mapKey = `${name}__${hours}`;
+
+    if (!shiftMap.has(mapKey)) {
+      shiftMap.set(mapKey, {
         shiftName: name,
         shiftHours: hours,
         workingDays: [],
@@ -83,7 +85,7 @@ export function LeaveShiftsGraph({
       });
     }
 
-    const group = shiftMap.get(name)!;
+    const group = shiftMap.get(mapKey)!;
     if (hours && !group.shiftHours) {
       group.shiftHours = hours;
     }

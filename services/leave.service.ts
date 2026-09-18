@@ -176,7 +176,7 @@ export async function calculateStaffingImpact(
   const normEnd = normalizeDate(endDate);
   const totalDays = countDaysBetween(normStart, normEnd);
 
-  // Load staff profile with branch assignments & active shift assignments
+  // Load staff profile with branch assignments, active shift assignments & additional shifts
   const staff = await prisma.staffProfile.findUnique({
     where: { id: staffProfileId },
     include: {
@@ -188,6 +188,14 @@ export async function calculateStaffingImpact(
           },
         },
         orderBy: { effectiveFrom: 'desc' },
+      },
+      additionalShifts: {
+        where: {
+          date: {
+            gte: normStart,
+            lte: normEnd,
+          },
+        },
       },
     },
   });
@@ -220,8 +228,14 @@ export async function calculateStaffingImpact(
       .filter((p) => p && p.isActive)
       .filter((p) => p.weeklyDays.some((d) => d.weekday === dayOfWeek));
 
-    // If staff has NO scheduled shift pattern on this weekday -> OFF DUTY
-    if (activePatternsForDay.length === 0) {
+    // Find additional shifts assigned to staff on this date
+    const staffAddShiftsForDay = (staff.additionalShifts || []).filter((s) => {
+      const sIso = formatUtcDateString(new Date(s.date));
+      return sIso === dateStr;
+    });
+
+    // If staff has NO scheduled shift pattern and NO additional shift on this date -> OFF DUTY
+    if (activePatternsForDay.length === 0 && staffAddShiftsForDay.length === 0) {
       daysResult.push({
         date: dateStr,
         dayOfWeek,
@@ -245,7 +259,7 @@ export async function calculateStaffingImpact(
       continue;
     }
 
-    // Process each active shift pattern for this date (handles multi-shifts per day)
+    // Process each active shift pattern for this date
     for (const shiftPattern of activePatternsForDay) {
       const weeklyDay = shiftPattern.weeklyDays.find((d) => d.weekday === dayOfWeek);
 
@@ -364,6 +378,80 @@ export async function calculateStaffingImpact(
         statusMessage,
 
         // Aliases for Frontend & API
+        totalScheduled: totalAssignedStaff,
+        onLeaveCount: approvedLeavesOnDate,
+        onLeaveWithThis: approvedLeavesOnDate + 1,
+        remainingStaff: afterApprovalAvailable,
+        minRequired: minimum,
+        isShortage,
+      });
+    }
+
+    // Process each additional shift assigned to staff for this date
+    for (const addShift of staffAddShiftsForDay) {
+      const shiftName = addShift.title || 'Additional Shift';
+      const shiftHours = `${addShift.startTime} - ${addShift.endTime}`;
+
+      const additionalAssignedStaff = await prisma.additionalShift.count({
+        where: {
+          organizationId,
+          date: currDate,
+          title: { equals: shiftName, mode: 'insensitive' },
+          staffProfile: {
+            user: { status: 'ACTIVE' },
+          },
+        },
+      });
+
+      const totalAssignedStaff = Math.max(1, additionalAssignedStaff);
+      const approvedLeavesOnDate = await prisma.leaveRequest.count({
+        where: {
+          organizationId,
+          status: 'APPROVED',
+          staffProfileId: { not: staffProfileId },
+          startDate: { lte: currDate },
+          endDate: { gte: currDate },
+          staffProfile: {
+            additionalShifts: {
+              some: {
+                date: currDate,
+                title: { equals: shiftName, mode: 'insensitive' },
+              },
+            },
+          },
+        },
+      });
+
+      const minimum = 1;
+      const afterApprovalAvailable = Math.max(0, totalAssignedStaff - approvedLeavesOnDate - 1);
+      const isShortage = afterApprovalAvailable < minimum;
+
+      let status: 'GREEN' | 'AMBER' | 'RED' = 'GREEN';
+      let statusMessage = 'Meets minimum staffing threshold';
+
+      if (isShortage) {
+        status = 'RED';
+        statusMessage = `Below minimum (${afterApprovalAvailable} / ${minimum} required)`;
+        totalShortageDays++;
+      } else if (afterApprovalAvailable === minimum) {
+        status = 'AMBER';
+        statusMessage = `Exactly at minimum (${afterApprovalAvailable} / ${minimum})`;
+      }
+
+      daysResult.push({
+        date: dateStr,
+        dayOfWeek,
+        isHoliday: false,
+        branchName: staff.branchAssignments[0]?.branch.name || null,
+        shiftName,
+        shiftHours,
+        totalAssignedStaff,
+        alreadyOnLeaveStaff: approvedLeavesOnDate,
+        afterApprovalAvailable,
+        minimumStaffingThreshold: minimum,
+        status,
+        statusMessage,
+
         totalScheduled: totalAssignedStaff,
         onLeaveCount: approvedLeavesOnDate,
         onLeaveWithThis: approvedLeavesOnDate + 1,

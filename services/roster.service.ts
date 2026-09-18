@@ -367,7 +367,8 @@ export function calculateStaffDaySchedule(
 
   const matchedAddShifts = (additionalShifts || []).filter((s) => {
     const addIso = formatDateToIsoDay(new Date(s.date), timezone);
-    return addIso === dateIso;
+    const rawIso = s.date instanceof Date ? s.date.toISOString().slice(0, 10) : String(s.date).slice(0, 10);
+    return addIso === dateIso || rawIso === dateIso;
   });
 
   if (effectiveAssignments.length === 0 && !override && matchedAddShifts.length === 0) {
@@ -386,32 +387,54 @@ export function calculateStaffDaySchedule(
 
   // Apply override if present (override supersedes patterns)
   if (override) {
+    const overrideShifts: Array<{
+      id?: string;
+      name?: string;
+      startTime: string | null;
+      endTime: string | null;
+      isHoliday: boolean;
+      isOvernight: boolean;
+    }> = override.isHoliday
+      ? []
+      : [
+          {
+            id: effectiveAssignments[0]?.shiftPattern.id,
+            name: override.reason || 'Override',
+            startTime: override.startTime,
+            endTime: override.endTime,
+            isHoliday: override.isHoliday,
+            isOvernight: override.isOvernight,
+          },
+        ];
+
+    for (const add of matchedAddShifts) {
+      if (add.startTime && add.endTime) {
+        overrideShifts.push({
+          id: add.id,
+          name: add.title || 'Additional Shift',
+          startTime: add.startTime,
+          endTime: add.endTime,
+          isHoliday: false,
+          isOvernight: add.isOvernight || false,
+        });
+      }
+    }
+
     return {
       date: dateIso,
       weekday,
-      isScheduled: true,
-      isHoliday: override.isHoliday,
-      startTime: override.isHoliday ? null : override.startTime,
-      endTime: override.isHoliday ? null : override.endTime,
-      isOvernight: override.isOvernight,
+      isScheduled: override.isHoliday ? matchedAddShifts.length > 0 : true,
+      isHoliday: override.isHoliday && matchedAddShifts.length === 0,
+      startTime: overrideShifts[0]?.startTime || override.startTime,
+      endTime: overrideShifts[overrideShifts.length - 1]?.endTime || override.endTime,
+      isOvernight: overrideShifts.some((s) => s.isOvernight),
       shiftPatternId: effectiveAssignments[0]?.shiftPattern.id,
-      shiftPatternName: effectiveAssignments[0]?.shiftPattern.name,
+      shiftPatternName: overrideShifts.map((s) => s.name).filter(Boolean).join(', '),
       minimumStaffingThreshold: effectiveAssignments[0]?.shiftPattern.minimumStaffingThreshold,
       hasOverride: true,
       overrideId: override.id,
       overrideReason: override.reason,
-      shifts: override.isHoliday
-        ? []
-        : [
-            {
-              id: effectiveAssignments[0]?.shiftPattern.id,
-              name: override.reason || 'Override',
-              startTime: override.startTime,
-              endTime: override.endTime,
-              isHoliday: override.isHoliday,
-              isOvernight: override.isOvernight,
-            },
-          ],
+      shifts: overrideShifts,
     };
   }
 
