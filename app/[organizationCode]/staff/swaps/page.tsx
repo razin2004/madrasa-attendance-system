@@ -7,20 +7,19 @@ import {
   Calendar,
   Clock,
   CheckCircle2,
-  ArrowLeft,
-  User,
   Plus,
-  ArrowRight,
   Check,
   X,
   Loader2,
   Users,
   Send,
-  ShieldCheck,
   Search,
   Filter,
+  ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { useToast } from '@/components/feedback/toast-provider';
+import { StaffAvatar } from '@/components/ui/staff-avatar';
 import styles from './ShiftSwapsStaff.module.css';
 
 interface ShiftSwapRecipient {
@@ -31,6 +30,7 @@ interface ShiftSwapRecipient {
     id: string;
     staffId: string;
     name: string;
+    avatarUrl?: string | null;
     user: { email: string };
   };
 }
@@ -47,6 +47,7 @@ interface OutgoingRequest {
     staffId: string;
     name: string;
     phone: string | null;
+    avatarUrl?: string | null;
     user: { email: string };
   } | null;
   recipients?: ShiftSwapRecipient[];
@@ -64,11 +65,13 @@ interface IncomingRequest {
     staffId: string;
     name: string;
     phone: string | null;
+    avatarUrl?: string | null;
     user: { email: string };
   };
   peer: {
     id: string;
     name: string;
+    avatarUrl?: string | null;
   } | null;
   recipients?: ShiftSwapRecipient[];
 }
@@ -163,24 +166,33 @@ export default function StaffShiftSwapsPage() {
   const filteredIncoming = incomingRequests.filter(filterRequest);
   const filteredOutgoing = outgoingRequests.filter(filterRequest);
 
+  // Status Filter Options with Badges
+  const filterOptions = [
+    { id: 'ALL', label: 'All Statuses' },
+    { id: 'PENDING_PEER', label: 'Pending Peer' },
+    { id: 'PEER_ACCEPTED', label: 'Peer Accepted' },
+    { id: 'APPROVED', label: 'Approved' },
+    { id: 'REJECTED', label: 'Rejected' },
+  ];
+
   return (
-    <div className={styles.container} style={{ padding: '16px', maxWidth: '920px', margin: '0 auto' }}>
-      {/* Top Header Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
-        <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-            Shift Swapping &amp; Substitute Requests
+    <div className={styles.pageContainer}>
+      {/* Top Header Section */}
+      <div className={styles.headerSection}>
+        <div className={styles.headerTitleGroup}>
+          <h1 className={styles.pageTitle}>
+            <Sparkles size={22} color="#818cf8" />
+            <span>Shift Swapping &amp; Coverage</span>
           </h1>
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '4px 0 0 0' }}>
+          <p className={styles.pageSubtitle}>
             Request colleagues for shift coverage with first-come peer acceptance &amp; 1-click admin approval.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%', maxWidth: '400px' }}>
+        <div className={styles.headerActionGroup}>
           <Link
             href={`/${organizationCode}/staff/swaps/new`}
-            className={`btn btn-primary btn-sm ${styles.desktopOnlyAction}`}
-            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 800, padding: '10px 16px', borderRadius: '10px', flex: 1 }}
+            className={styles.primaryActionBtn}
           >
             <Plus size={16} />
             <span>Apply for Shift Swap</span>
@@ -188,29 +200,18 @@ export default function StaffShiftSwapsPage() {
         </div>
       </div>
 
-
       {/* Incoming Notification Banner */}
       {pendingIncomingCount > 0 && (
-        <div
-          style={{
-            marginBottom: '20px',
-            padding: '16px 20px',
-            borderRadius: '14px',
-            backgroundColor: 'rgba(56, 189, 248, 0.12)',
-            border: '1px solid rgba(56, 189, 248, 0.35)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            color: '#38bdf8',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Clock size={22} color="#38bdf8" />
+        <div className={styles.bannerAlert}>
+          <div className={styles.bannerTextGroup}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(56, 189, 248, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+              <Clock size={22} />
+            </div>
             <div>
-              <strong style={{ color: '#ffffff', fontSize: '14.5px' }}>
+              <div className={styles.bannerTitle}>
                 {pendingIncomingCount} Incoming Shift Swap Invitation{pendingIncomingCount > 1 ? 's' : ''}
-              </strong>
-              <div style={{ fontSize: '12.5px', color: '#bae6fd', marginTop: '2px' }}>
+              </div>
+              <div className={styles.bannerSubtitle}>
                 A colleague has requested shift coverage. First colleague to accept secures the swap.
               </div>
             </div>
@@ -218,244 +219,215 @@ export default function StaffShiftSwapsPage() {
           <button
             onClick={() => setActiveTab('INCOMING')}
             className="btn btn-primary btn-sm"
-            style={{ fontSize: '12px', fontWeight: 700 }}
+            style={{ fontSize: '12.5px', fontWeight: 700, borderRadius: '10px', padding: '8px 14px' }}
           >
             View Invites ({pendingIncomingCount})
           </button>
         </div>
       )}
 
-      {/* Search & Filter Header Bar (Org Admin Style) */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ width: '100%' }}>
-          <div style={{ position: 'relative', width: '100%' }}>
-            <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
+      {/* Controls Toolbar: Search & Filters */}
+      <div className={styles.controlsCard}>
+        <div className={styles.searchAndFilterRow}>
+          <div className={styles.searchWrapper}>
+            <Search size={16} className={styles.searchIcon} />
             <input
               type="text"
               placeholder="Search by colleague name, shift, or reason..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '9px 40px 9px 36px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#ffffff',
-                fontSize: '13px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
+              className={styles.searchInput}
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                style={{
-                  position: 'absolute',
-                  right: '42px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  padding: '2px',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
+                className={styles.clearSearchBtn}
+                title="Clear search"
               >
                 <X size={14} />
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setShowMobileFilters(!showMobileFilters)}
-              className={styles.filterToggleBtn}
-              style={{
-                position: 'absolute',
-                right: '6px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '30px',
-                height: '30px',
-                borderRadius: '8px',
-                backgroundColor: statusFilter !== 'ALL' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.06)',
-                border: statusFilter !== 'ALL' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(255, 255, 255, 0.12)',
-                color: statusFilter !== 'ALL' ? '#818cf8' : '#ffffff',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-              title="Toggle Filters"
-            >
-              <Filter size={15} color={statusFilter !== 'ALL' ? '#818cf8' : 'currentColor'} />
-            </button>
           </div>
 
-          {/* Desktop Inline Status Filters */}
+          {/* Desktop Filter Pills */}
           <div className={styles.desktopFilterGroup}>
-            <div style={{ display: 'flex', gap: '4px', backgroundColor: 'rgba(255, 255, 255, 0.04)', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              {[
-                { id: 'ALL', label: 'All Status' },
-                { id: 'PENDING_PEER', label: 'Pending Peer' },
-                { id: 'PEER_ACCEPTED', label: 'Peer Accepted' },
-                { id: 'APPROVED', label: 'Approved' },
-                { id: 'REJECTED', label: 'Rejected' },
-              ].map((st) => (
+            {filterOptions.map((st) => {
+              const isActive = statusFilter === st.id;
+              return (
                 <button
                   key={st.id}
                   type="button"
                   onClick={() => setStatusFilter(st.id)}
-                  className={`btn btn-sm ${statusFilter === st.id ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}
+                  className={`${styles.filterPill} ${isActive ? styles.filterPillActive : ''}`}
                 >
                   {st.label}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
+
+          {/* Mobile Filter Trigger Button */}
+          <button
+            type="button"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className={styles.filterToggleBtn}
+          >
+            <Filter size={15} style={{ marginRight: '6px' }} />
+            <span>Filters {statusFilter !== 'ALL' ? `(${statusFilter})` : ''}</span>
+          </button>
         </div>
 
         {/* Navigation Tabs (Incoming vs Outgoing) */}
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
-          <button
-            onClick={() => setActiveTab('INCOMING')}
-            className={`btn btn-sm ${activeTab === 'INCOMING' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '13px' }}
-          >
-            <Users size={14} />
-            <span>Incoming Invites ({incomingRequests.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('OUTGOING')}
-            className={`btn btn-sm ${activeTab === 'OUTGOING' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px', fontSize: '13px' }}
-          >
-            <Send size={14} />
-            <span>My Sent Requests ({outgoingRequests.length})</span>
-          </button>
-        </div>
-
-        {/* Bottom Sheet Filter Modal Overlay */}
-        {showMobileFilters && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.65)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 1100,
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-            }}
-            onClick={() => setShowMobileFilters(false)}
-          >
-            <div
-              style={{
-                width: '100%',
-                maxWidth: '500px',
-                backgroundColor: '#0f172a',
-                borderTopLeftRadius: '20px',
-                borderTopRightRadius: '20px',
-                border: '1px solid var(--border-medium)',
-                borderBottom: 'none',
-                padding: '20px',
-                boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-                boxSizing: 'border-box',
-                maxHeight: '85vh',
-                overflowY: 'auto',
-              }}
-              onClick={(e) => e.stopPropagation()}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', paddingTop: '4px' }}>
+          <div className={styles.tabBar}>
+            <button
+              onClick={() => setActiveTab('INCOMING')}
+              className={`${styles.tabBtn} ${activeTab === 'INCOMING' ? styles.tabBtnActive : ''}`}
             >
-              {/* Modal Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: 800, fontSize: '15px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Filter size={16} color="#818cf8" />
-                  <span>Filter Shift Swap Requests</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowMobileFilters(false)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '28px',
-                    height: '28px',
-                    color: 'var(--text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
+              <Users size={15} />
+              <span>Incoming Invites</span>
+              <span className={`${styles.tabBadge} ${activeTab === 'INCOMING' ? styles.tabBadgeActive : ''}`}>
+                {incomingRequests.length}
+              </span>
+            </button>
 
-              {/* Status Options */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '8px' }}>
-                  Request Status
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {[
-                    { id: 'ALL', label: 'All Statuses' },
-                    { id: 'PENDING_PEER', label: 'Pending Peer' },
-                    { id: 'PEER_ACCEPTED', label: 'Peer Accepted' },
-                    { id: 'APPROVED', label: 'Approved' },
-                    { id: 'REJECTED', label: 'Rejected' },
-                  ].map((st) => (
-                    <button
-                      key={st.id}
-                      type="button"
-                      onClick={() => setStatusFilter(st.id)}
-                      className={`btn btn-sm ${statusFilter === st.id ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ borderRadius: '8px', padding: '8px 14px', fontSize: '12.5px', fontWeight: 600 }}
-                    >
-                      {st.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Footer */}
-              <div style={{ display: 'flex', gap: '10px', marginTop: '8px', paddingTop: '14px', borderTop: '1px solid var(--border-subtle)' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter('ALL');
-                    setSearchQuery('');
-                  }}
-                  className="btn btn-secondary btn-sm"
-                  style={{ flex: 1, padding: '10px' }}
-                >
-                  Reset Filters
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowMobileFilters(false)}
-                  className="btn btn-primary btn-sm"
-                  style={{ flex: 1, padding: '10px', fontWeight: 700 }}
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
+            <button
+              onClick={() => setActiveTab('OUTGOING')}
+              className={`${styles.tabBtn} ${activeTab === 'OUTGOING' ? styles.tabBtnActive : ''}`}
+            >
+              <Send size={15} />
+              <span>My Sent Requests</span>
+              <span className={`${styles.tabBadge} ${activeTab === 'OUTGOING' ? styles.tabBadgeActive : ''}`}>
+                {outgoingRequests.length}
+              </span>
+            </button>
           </div>
-        )}
+
+          {(statusFilter !== 'ALL' || searchQuery) && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('ALL');
+                setSearchQuery('');
+              }}
+              style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: '12px', fontWeight: 700, cursor: 'pointer', padding: '4px 8px' }}
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Mobile Filter Drawer Overlay */}
+      {showMobileFilters && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowMobileFilters(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              backgroundColor: '#0f172a',
+              borderTopLeftRadius: '20px',
+              borderTopRightRadius: '20px',
+              border: '1px solid var(--border-medium)',
+              borderBottom: 'none',
+              padding: '24px 20px',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              boxSizing: 'border-box',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontWeight: 800, fontSize: '16px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Filter size={18} color="#818cf8" />
+                <span>Filter Requests</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '30px',
+                  height: '30px',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '10px' }}>
+                Request Status
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {filterOptions.map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setStatusFilter(st.id)}
+                    className={`btn btn-sm ${statusFilter === st.id ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ borderRadius: '8px', padding: '8px 14px', fontSize: '12.5px', fontWeight: 600 }}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('ALL');
+                  setSearchQuery('');
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{ flex: 1, padding: '12px' }}
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters(false)}
+                className="btn btn-primary btn-sm"
+                style={{ flex: 1, padding: '12px', fontWeight: 700 }}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Area */}
       {loading ? (
-        <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
-          <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 12px auto', color: '#818cf8' }} />
-          <p style={{ color: 'var(--text-secondary)' }}>Loading shift swaps...</p>
+        <div className="glass-card" style={{ padding: '60px 24px', textAlign: 'center', borderRadius: '16px' }}>
+          <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto 14px auto', color: '#818cf8' }} />
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading shift swap requests...</p>
         </div>
       ) : (
         <>
@@ -463,15 +435,17 @@ export default function StaffShiftSwapsPage() {
           {activeTab === 'INCOMING' && (
             <div>
               {filteredIncoming.length === 0 ? (
-                <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
-                  <CheckCircle2 size={32} color="#34d399" style={{ margin: '0 auto 12px auto' }} />
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No Incoming Swap Invites Found</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    No incoming shift swap requests match your search filter.
+                <div className="glass-card" style={{ padding: '60px 24px', textAlign: 'center', borderRadius: '16px' }}>
+                  <CheckCircle2 size={36} color="#34d399" style={{ margin: '0 auto 14px auto' }} />
+                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0 }}>No Incoming Invites Found</h3>
+                  <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                    {searchQuery || statusFilter !== 'ALL'
+                      ? 'No incoming shift swap requests match your current filters.'
+                      : 'You do not have any incoming shift swap invitations right now.'}
                   </p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div className={styles.cardsGrid}>
                   {filteredIncoming.map((req) => {
                     const targetDateFormatted = new Date(req.targetDate).toLocaleDateString(undefined, {
                       weekday: 'short',
@@ -480,119 +454,120 @@ export default function StaffShiftSwapsPage() {
                       day: 'numeric',
                     });
                     const isResponding = respondingId === req.id;
-                    const isBroadCast = (req.recipients?.length || 0) > 1;
+                    const isBroadcast = (req.recipients?.length || 0) > 1;
 
-                    // Check if accepted by someone else
                     const acceptedByOther =
                       req.status === 'PEER_ACCEPTED' &&
                       req.peer &&
                       req.peer.id !== currentStaff?.id;
 
-                    // Check current staff recipient status
                     const myRecipientStatus = req.recipients?.find(
                       (r) => r.peerId === currentStaff?.id
                     )?.status;
 
+                    const isActionNeeded = req.status === 'PENDING_PEER' && !acceptedByOther && myRecipientStatus !== 'REJECTED';
+
                     return (
                       <div
                         key={req.id}
-                        className="glass-card"
-                        style={{
-                          padding: '20px',
-                          borderRadius: '14px',
-                          border:
-                            req.status === 'PENDING_PEER' && !acceptedByOther
-                              ? '1px solid rgba(56, 189, 248, 0.4)'
-                              : '1px solid var(--border-subtle)',
-                          backgroundColor:
-                            req.status === 'PENDING_PEER' && !acceptedByOther
-                              ? 'rgba(56, 189, 248, 0.04)'
-                              : 'rgba(13, 18, 31, 0.8)',
-                        }}
+                        className={`${styles.swapCard} ${isActionNeeded ? styles.swapCardActionNeeded : ''}`}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
-                              <User size={18} />
+                        <div>
+                          {/* Card Top Header */}
+                          <div className={styles.cardHeader}>
+                            <div className={styles.userInfo}>
+                              <StaffAvatar
+                                name={req.requester.name}
+                                avatarUrl={req.requester.avatarUrl}
+                                size="md"
+                              />
+                              <div>
+                                <div className={styles.userName}>{req.requester.name}</div>
+                                <div className={styles.userSubtext}>
+                                  Staff ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{req.requester.staffId}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{req.requester.name}</div>
-                              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                                Staff ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{req.requester.staffId}</span> | {req.requester.user.email}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                              <span
+                                className={`badge ${
+                                  req.status === 'APPROVED'
+                                    ? 'badge-active'
+                                    : acceptedByOther
+                                    ? 'badge-rejected'
+                                    : isActionNeeded
+                                    ? 'badge-pending'
+                                    : 'badge-info'
+                                }`}
+                                style={{ fontSize: '11px', fontWeight: 800 }}
+                              >
+                                {acceptedByOther
+                                  ? `TAKEN BY ${req.peer?.name.toUpperCase()}`
+                                  : isActionNeeded
+                                  ? 'ACTION NEEDED'
+                                  : req.status}
+                              </span>
+
+                              {isBroadcast && (
+                                <span style={{ fontSize: '10.5px', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', fontWeight: 700 }}>
+                                  Broadcast ({req.recipients?.length})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Shift Comparison Mini-Boxes */}
+                          <div className={styles.swapComparisonGrid}>
+                            <div className={styles.swapMiniBox}>
+                              <div className={styles.swapMiniBoxTitle}>Requester's Shift</div>
+                              <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
+                              <div className={styles.swapMiniBoxSub} style={{ color: '#818cf8' }}>
+                                {req.shiftPatternName || 'Scheduled Shift'}
+                              </div>
+                            </div>
+
+                            <div className={styles.swapMiniBox}>
+                              <div className={styles.swapMiniBoxTitle}>Your Coverage Date</div>
+                              <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
+                              <div className={styles.swapMiniBoxSub} style={{ color: '#34d399' }}>
+                                Direct Swap Offer
                               </div>
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {isBroadCast && (
-                              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', fontWeight: 700 }}>
-                                Broadcast to {req.recipients?.length} Colleagues
-                              </span>
-                            )}
-                            <span
-                              className={`badge ${
-                                req.status === 'APPROVED'
-                                  ? 'badge-active'
-                                  : acceptedByOther
-                                  ? 'badge-rejected'
-                                  : req.status === 'PENDING_PEER'
-                                  ? 'badge-pending'
-                                  : 'badge-info'
-                              }`}
-                            >
-                              {acceptedByOther
-                                ? `ACCEPTED BY ${req.peer?.name.toUpperCase()}`
-                                : req.status === 'PENDING_PEER'
-                                ? 'ACTION NEEDED (ACCEPT / DECLINE)'
-                                : req.status}
-                            </span>
-                          </div>
+                          {/* Reason Quote */}
+                          {req.reason && (
+                            <div className={styles.reasonBox}>
+                              <strong>Reason:</strong> {req.reason}
+                            </div>
+                          )}
+
+                          {acceptedByOther && (
+                            <div style={{ fontSize: '12px', color: '#fbbf24', fontStyle: 'italic', marginBottom: '12px', padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(251, 191, 36, 0.08)' }}>
+                              This swap request was accepted by {req.peer?.name} and is locked awaiting Org Admin approval.
+                            </div>
+                          )}
                         </div>
 
-                        {/* Side-by-Side Shift Comparison Mini-Boxes */}
-                        <div className={styles.swapComparisonGrid}>
-                          <div className={styles.swapMiniBox}>
-                            <div className={styles.swapMiniBoxTitle}>Colleague's Shift</div>
-                            <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
-                            <div style={{ fontSize: '11px', color: '#a5b4fc', marginTop: '2px' }}>{req.shiftPatternName || 'Scheduled Shift'}</div>
-                          </div>
-                          <div className={styles.swapMiniBox}>
-                            <div className={styles.swapMiniBoxTitle}>My Assigned Shift</div>
-                            <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
-                            <div style={{ fontSize: '11px', color: '#34d399', marginTop: '2px' }}>Offered for Swap</div>
-                          </div>
-                        </div>
-
-                        {req.reason && (
-                          <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '16px', padding: '8px 12px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                            <strong>Reason Note:</strong> {req.reason}
-                          </div>
-                        )}
-
-                        {acceptedByOther && (
-                          <div style={{ fontSize: '12px', color: '#fbbf24', fontStyle: 'italic', marginBottom: '12px' }}>
-                            This shift request was accepted by {req.peer?.name} and is locked awaiting Org Admin approval.
-                          </div>
-                        )}
-
-                        {/* Response Actions */}
-                        {req.status === 'PENDING_PEER' && !acceptedByOther && myRecipientStatus !== 'REJECTED' && (
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                        {/* Card Footer Actions */}
+                        {isActionNeeded && (
+                          <div className={styles.cardFooter}>
                             <button
                               onClick={() => handlePeerRespond(req.id, 'REJECT')}
                               disabled={isResponding}
                               className="btn btn-secondary btn-sm"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', borderRadius: '8px' }}
                             >
                               <X size={14} />
-                              <span>Decline Swap</span>
+                              <span>Decline</span>
                             </button>
 
                             <button
                               onClick={() => handlePeerRespond(req.id, 'ACCEPT')}
                               disabled={isResponding}
                               className="btn btn-primary btn-sm"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 800, borderRadius: '8px', padding: '8px 16px' }}
                             >
                               {isResponding ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                               <span>Accept Shift Swap</span>
@@ -611,18 +586,21 @@ export default function StaffShiftSwapsPage() {
           {activeTab === 'OUTGOING' && (
             <div>
               {filteredOutgoing.length === 0 ? (
-                <div className="glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
-                  <Calendar size={32} color="var(--text-muted)" style={{ margin: '0 auto 12px auto' }} />
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No Outgoing Swap Requests Found</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
-                    No outgoing shift swap requests match your search filter.
+                <div className="glass-card" style={{ padding: '60px 24px', textAlign: 'center', borderRadius: '16px' }}>
+                  <Calendar size={36} color="var(--text-muted)" style={{ margin: '0 auto 14px auto' }} />
+                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0 }}>No Sent Requests Found</h3>
+                  <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '6px', marginBottom: '20px' }}>
+                    {searchQuery || statusFilter !== 'ALL'
+                      ? 'No sent swap requests match your search filter.'
+                      : 'You have not submitted any shift swap requests yet.'}
                   </p>
-                  <Link href={`/${organizationCode}/staff/swaps/new`} className="btn btn-primary btn-sm">
-                    + Apply for Shift Swap
+                  <Link href={`/${organizationCode}/staff/swaps/new`} className={styles.primaryActionBtn} style={{ display: 'inline-flex', width: 'auto' }}>
+                    <Plus size={16} />
+                    <span>Apply for Shift Swap</span>
                   </Link>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div className={styles.cardsGrid}>
                   {filteredOutgoing.map((req) => {
                     const targetDateFormatted = new Date(req.targetDate).toLocaleDateString(undefined, {
                       weekday: 'short',
@@ -635,90 +613,110 @@ export default function StaffShiftSwapsPage() {
                     const acceptedRecipient = req.recipients?.find((r) => r.status === 'ACCEPTED');
 
                     return (
-                      <div key={req.id} className="glass-card" style={{ padding: '20px', borderRadius: '14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-                          <div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
-                              Target Shift &amp; Recipients
+                      <div key={req.id} className={styles.swapCard}>
+                        <div>
+                          {/* Card Header */}
+                          <div className={styles.cardHeader}>
+                            <div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                                Target Shift &amp; Recipients
+                              </div>
+                              <div style={{ fontSize: '15.5px', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>
+                                {req.peer
+                                  ? `Direct Request to ${req.peer.name}`
+                                  : acceptedRecipient
+                                  ? `Accepted by ${acceptedRecipient.peer.name}`
+                                  : `Broadcast Request (${recipientCount} Invited)`}
+                              </div>
                             </div>
-                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
-                              {req.peer
-                                ? `Direct Request to ${req.peer.name}`
-                                : acceptedRecipient
-                                ? `Accepted by ${acceptedRecipient.peer.name}`
-                                : `Broadcast Sent to ${recipientCount} Colleagues`}
-                            </div>
-                          </div>
 
-                          <span
-                            className={`badge ${
-                              req.status === 'APPROVED'
-                                ? 'badge-active'
+                            <span
+                              className={`badge ${
+                                req.status === 'APPROVED'
+                                  ? 'badge-active'
+                                  : req.status === 'PEER_ACCEPTED'
+                                  ? 'badge-pending'
+                                  : req.status === 'PENDING_PEER'
+                                  ? 'badge-info'
+                                  : 'badge-rejected'
+                              }`}
+                              style={{ fontSize: '11px', fontWeight: 800 }}
+                            >
+                              {req.status === 'PENDING_PEER'
+                                ? `AWAITING PEER (${recipientCount})`
                                 : req.status === 'PEER_ACCEPTED'
-                                ? 'badge-pending'
-                                : req.status === 'PENDING_PEER'
-                                ? 'badge-info'
-                                : 'badge-rejected'
-                            }`}
-                          >
-                            {req.status === 'PENDING_PEER'
-                              ? `AWAITING PEER ACCEPTANCE (${recipientCount} INVITED)`
-                              : req.status === 'PEER_ACCEPTED'
-                              ? 'PEER ACCEPTED (AWAITING ADMIN)'
-                              : req.status}
-                          </span>
+                                ? 'PEER ACCEPTED (AWAITING ADMIN)'
+                                : req.status}
+                            </span>
+                          </div>
+
+                          {/* Side-by-Side Shift Comparison */}
+                          <div className={styles.swapComparisonGrid}>
+                            <div className={styles.swapMiniBox}>
+                              <div className={styles.swapMiniBoxTitle}>My Assigned Shift</div>
+                              <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
+                              <div className={styles.swapMiniBoxSub} style={{ color: '#38bdf8' }}>
+                                {req.shiftPatternName || 'Scheduled Shift'}
+                              </div>
+                            </div>
+
+                            <div className={styles.swapMiniBox}>
+                              <div className={styles.swapMiniBoxTitle}>Requested Cover</div>
+                              <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
+                              <div className={styles.swapMiniBoxSub} style={{ color: '#c084fc' }}>
+                                Outgoing Swap Request
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Invited Recipients Pills */}
+                          {req.recipients && req.recipients.length > 0 && (
+                            <div style={{ marginBottom: '12px' }}>
+                              <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 700, marginBottom: '6px' }}>
+                                Invited Colleagues ({req.recipients.length}):
+                              </div>
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                {req.recipients.map((r) => (
+                                  <div
+                                    key={r.id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      fontSize: '11.5px',
+                                      padding: '4px 10px',
+                                      borderRadius: '20px',
+                                      backgroundColor:
+                                        r.status === 'ACCEPTED'
+                                          ? 'rgba(52, 211, 153, 0.15)'
+                                          : r.status === 'REJECTED'
+                                          ? 'rgba(244, 63, 94, 0.15)'
+                                          : 'rgba(255,255,255,0.05)',
+                                      color:
+                                        r.status === 'ACCEPTED'
+                                          ? '#34d399'
+                                          : r.status === 'REJECTED'
+                                          ? '#f43f5e'
+                                          : '#cbd5e1',
+                                      border: '1px solid rgba(255,255,255,0.08)',
+                                    }}
+                                  >
+                                    <StaffAvatar name={r.peer.name} avatarUrl={r.peer.avatarUrl} size="xs" />
+                                    <span style={{ fontWeight: 600 }}>{r.peer.name}</span>
+                                    <span style={{ fontSize: '10px', opacity: 0.8, textTransform: 'uppercase' }}>({r.status})</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Reason Quote */}
+                          {req.reason && (
+                            <div className={styles.reasonBox}>
+                              <strong>Reason:</strong> {req.reason}
+                            </div>
+                          )}
                         </div>
-
-                        {/* Side-by-Side Shift Comparison Mini-Boxes */}
-                        <div className={styles.swapComparisonGrid}>
-                          <div className={styles.swapMiniBox}>
-                            <div className={styles.swapMiniBoxTitle}>My Current Shift</div>
-                            <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
-                            <div style={{ fontSize: '11px', color: '#38bdf8', marginTop: '2px' }}>{req.shiftPatternName || 'Scheduled Shift'}</div>
-                          </div>
-                          <div className={styles.swapMiniBox}>
-                            <div className={styles.swapMiniBoxTitle}>Target Cover Shift</div>
-                            <div className={styles.swapMiniBoxValue}>{targetDateFormatted}</div>
-                            <div style={{ fontSize: '11px', color: '#c084fc', marginTop: '2px' }}>Requested Coverage</div>
-                          </div>
-                        </div>
-
-                        {/* Recipients List Pills */}
-                        {req.recipients && req.recipients.length > 0 && (
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
-                            {req.recipients.map((r) => (
-                              <span
-                                key={r.id}
-                                style={{
-                                  fontSize: '11px',
-                                  padding: '3px 8px',
-                                  borderRadius: '12px',
-                                  backgroundColor:
-                                    r.status === 'ACCEPTED'
-                                      ? 'rgba(52, 211, 153, 0.2)'
-                                      : r.status === 'REJECTED'
-                                      ? 'rgba(244, 63, 94, 0.2)'
-                                      : 'rgba(255,255,255,0.05)',
-                                  color:
-                                    r.status === 'ACCEPTED'
-                                      ? '#34d399'
-                                      : r.status === 'REJECTED'
-                                      ? '#f43f5e'
-                                      : 'var(--text-muted)',
-                                  border: '1px solid var(--border-subtle)',
-                                }}
-                              >
-                                {r.peer.name}: {r.status}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {req.reason && (
-                          <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                            <strong>Reason Note:</strong> {req.reason}
-                          </div>
-                        )}
                       </div>
                     );
                   })}

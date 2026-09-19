@@ -16,6 +16,7 @@ import {
   Shield,
   ArrowLeftRight,
 } from 'lucide-react';
+import { StaffAvatar } from '@/components/ui/staff-avatar';
 import styles from './StaffLayout.module.css';
 
 interface StaffSidebarProps {
@@ -24,6 +25,7 @@ interface StaffSidebarProps {
   onToggleCollapse: () => void;
   staffName?: string;
   staffEmail?: string;
+  avatarUrl?: string | null;
   onSignOut: () => void;
 }
 
@@ -33,6 +35,7 @@ export function StaffSidebar({
   onToggleCollapse,
   staffName = 'Staff Member',
   staffEmail = '',
+  avatarUrl,
   onSignOut,
 }: StaffSidebarProps) {
   const rawPathname = usePathname();
@@ -137,7 +140,7 @@ export function StaffSidebar({
       <div className={styles.sidebarFooter}>
         {!isCollapsed && (
           <div className={styles.userCard}>
-            <div className={styles.userAvatar}>{getInitials(staffName)}</div>
+            <StaffAvatar name={staffName} avatarUrl={avatarUrl} size="sm" />
             <div className={styles.userInfo}>
               <span className={styles.userName}>{staffName}</span>
               <span className={styles.userEmail}>{staffEmail || org}</span>

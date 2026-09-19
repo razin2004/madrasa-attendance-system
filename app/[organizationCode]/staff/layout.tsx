@@ -16,7 +16,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [staffInfo, setStaffInfo] = useState<{ name: string; email: string } | null>(null);
+  const [staffInfo, setStaffInfo] = useState<{ name: string; email: string; avatarUrl?: string | null } | null>(null);
   const [isPrecheckReady, setIsPrecheckReady] = useState<boolean | undefined>(undefined);
   const [orgBranding, setOrgBranding] = useState<{ name?: string; logoUrl?: string | null } | null>(null);
 
@@ -33,7 +33,11 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       .then((r) => r.json())
       .then((data) => {
         if (data.user) {
-          setStaffInfo({ name: data.user.name || 'Staff Member', email: data.user.email || '' });
+          setStaffInfo((prev) => ({
+            name: data.user.name || 'Staff Member',
+            email: data.user.email || '',
+            avatarUrl: prev?.avatarUrl || data.user.staffProfile?.avatarUrl || null,
+          }));
         }
       })
       .catch(() => {});
@@ -53,6 +57,13 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     fetch(`/api/org/${orgCode}/attendance/precheck`)
       .then((r) => r.json())
       .then((data) => {
+        if (data.staffProfile) {
+          setStaffInfo((prev) => ({
+            name: data.staffProfile.name || prev?.name || 'Staff Member',
+            email: data.staffProfile.user?.email || prev?.email || '',
+            avatarUrl: data.staffProfile.avatarUrl || null,
+          }));
+        }
         if (data.success && data.evaluation) {
           setIsPrecheckReady(Boolean(data.evaluation.isReady));
         } else {
@@ -109,6 +120,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         onToggleCollapse={handleToggleCollapse}
         staffName={staffInfo?.name || 'Staff Member'}
         staffEmail={staffInfo?.email || ''}
+        avatarUrl={staffInfo?.avatarUrl}
         onSignOut={() => setShowSignOutModal(true)}
       />
 
@@ -123,6 +135,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           organizationName={orgBranding?.name}
           logoUrl={orgBranding?.logoUrl}
           staffName={staffInfo?.name}
+          avatarUrl={staffInfo?.avatarUrl}
           isPrecheckReady={isPrecheckReady}
           onSignOut={() => setShowSignOutModal(true)}
         />
