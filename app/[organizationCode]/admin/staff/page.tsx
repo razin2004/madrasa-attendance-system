@@ -38,6 +38,7 @@ import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import { UpdatePasswordModal } from '@/components/staff/update-password-modal';
+import { StaffAvatar } from '@/components/ui/staff-avatar';
 import { openWhatsAppInvite } from '@/lib/whatsapp';
 import styles from './StaffDirectory.module.css';
 
@@ -53,6 +54,7 @@ interface StaffItem {
   id: string;
   staffId: string;
   name: string;
+  avatarUrl?: string | null;
   phone: string;
   address: string;
   idDocType: string;
@@ -652,9 +654,7 @@ export default function StaffDirectoryPage() {
                           {/* Staff Name & ID */}
                           <td style={{ padding: '16px 20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div className={styles.avatarBadge}>
-                                {getInitials(staff.name)}
-                              </div>
+                              <StaffAvatar name={staff.name} avatarUrl={staff.avatarUrl} size="md" />
                               <div>
                                 <div style={{ fontWeight: 700, color: '#ffffff' }}>{staff.name}</div>
                                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8', marginTop: '1px' }}>
@@ -801,7 +801,7 @@ export default function StaffDirectoryPage() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div className={styles.avatarBadge}>{getInitials(staff.name)}</div>
+                          <StaffAvatar name={staff.name} avatarUrl={staff.avatarUrl} size="sm" />
                           <div>
                             <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{staff.name}</div>
                             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {staff.staffId}</div>

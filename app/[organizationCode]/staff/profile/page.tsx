@@ -7,6 +7,8 @@ import { useToast } from '@/components/feedback/toast-provider';
 import { ConfirmationModal } from '@/components/feedback/confirmation-modal';
 import styles from './StaffProfile.module.css';
 
+import { StaffAvatar } from '@/components/ui/staff-avatar';
+
 export default function StaffProfilePage() {
   const params = useParams();
   const orgCode = (params.organizationCode as string)?.toUpperCase() || '';
@@ -17,6 +19,8 @@ export default function StaffProfilePage() {
   const [orgData, setOrgData] = useState<any>(null);
   const [precheck, setPrecheck] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -111,6 +115,74 @@ export default function StaffProfilePage() {
     }
   };
 
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file (JPEG, PNG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image file size must be less than 5MB.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Data = reader.result as string;
+        const res = await fetch(`/api/org/${orgCode}/staff/profile`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatarUrl: base64Data }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          toast.success('Profile picture updated successfully!');
+          setStaffProfile((prev: any) => ({ ...prev, avatarUrl: base64Data }));
+        } else {
+          toast.error(data.error || 'Failed to update profile picture.');
+        }
+        setUploadingAvatar(false);
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read image file.');
+        setUploadingAvatar(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error('Network error uploading profile picture.');
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!staffProfile?.avatarUrl) return;
+    setUploadingAvatar(true);
+    try {
+      const res = await fetch(`/api/org/${orgCode}/staff/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: null }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Profile picture removed.');
+        setStaffProfile((prev: any) => ({ ...prev, avatarUrl: null }));
+      } else {
+        toast.error(data.error || 'Failed to remove profile picture.');
+      }
+    } catch {
+      toast.error('Network error removing profile picture.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const isDeviceRegistered =
     Boolean(precheck?.layer1Device?.isVerified) ||
     Boolean(staffProfile?.devices?.some((d: any) => d.status === 'REGISTERED'));
@@ -147,6 +219,14 @@ export default function StaffProfilePage() {
 
   return (
     <div className={styles.profileContainer}>
+      <input
+        type="file"
+        ref={avatarInputRef}
+        onChange={handleAvatarFileSelect}
+        accept="image/png,image/jpeg,image/webp,image/jpg"
+        style={{ display: 'none' }}
+      />
+
       <div className={styles.headerBar}>
         <h2>Staff Profile &amp; Account Security</h2>
         <p>Manage your account identity, registered device token, and workspace settings</p>
@@ -155,19 +235,56 @@ export default function StaffProfilePage() {
       {/* Centered Avatar Preview Section */}
       <div className={styles.avatarCard}>
         <div className={styles.avatarSection}>
-          <div className={styles.avatarCircle}>
-            {staffProfile?.name ? staffProfile.name.charAt(0).toUpperCase() : <User size={34} />}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <StaffAvatar
+              name={staffProfile?.name}
+              avatarUrl={staffProfile?.avatarUrl}
+              size="hero"
+              showStatus
+              status={staffProfile?.user?.status || 'ACTIVE'}
+            />
           </div>
-          <button
-            type="button"
-            className={styles.avatarUploadBtn}
-            onClick={() => toast.info('Profile picture upload feature coming soon.')}
-          >
-            <Upload size={12} />
-            <span>Upload Photo</span>
-          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px' }}>
+            <button
+              type="button"
+              disabled={uploadingAvatar}
+              className={styles.avatarUploadBtn}
+              onClick={() => avatarInputRef.current?.click()}
+            >
+              {uploadingAvatar ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Upload size={13} />
+              )}
+              <span>{staffProfile?.avatarUrl ? 'Change Photo' : 'Upload Photo'}</span>
+            </button>
+
+            {staffProfile?.avatarUrl && (
+              <button
+                type="button"
+                disabled={uploadingAvatar}
+                onClick={handleAvatarRemove}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '20px',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#f87171',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span>Remove</span>
+              </button>
+            )}
+          </div>
         </div>
-        <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', margin: '4px 0 2px 0' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', margin: '10px 0 2px 0' }}>
           {staffProfile?.name || 'Staff Member'}
         </h3>
         <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>

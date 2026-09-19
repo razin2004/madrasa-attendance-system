@@ -68,7 +68,26 @@ export async function PATCH(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { idDocType, idDocLast4 } = body;
+    const { idDocType, idDocLast4, avatarUrl } = body;
+
+    // Handle avatar-only update
+    if (avatarUrl !== undefined && (!idDocType || typeof idDocType !== 'string')) {
+      const updatedProfile = await prisma.staffProfile.update({
+        where: { id: auth.staffProfile.id },
+        data: { avatarUrl: avatarUrl || null },
+        include: {
+          user: true,
+          branchAssignments: { include: { branch: true } },
+          devices: true,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Profile picture updated successfully!',
+        staffProfile: updatedProfile,
+      });
+    }
 
     if (!idDocType || typeof idDocType !== 'string') {
       return NextResponse.json(

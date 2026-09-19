@@ -44,9 +44,12 @@ import { UpdatePasswordModal } from '@/components/staff/update-password-modal';
 import { openWhatsAppInvite } from '@/lib/whatsapp';
 import styles from './StaffProfile.module.css';
 
+import { StaffAvatar } from '@/components/ui/staff-avatar';
+
 interface BranchItem {
   id: string;
   name: string;
+  code: string;
   address: string;
   status: string;
 }
@@ -64,6 +67,7 @@ interface StaffDetails {
   name: string;
   phone: string;
   address: string;
+  avatarUrl?: string | null;
   idDocType: string;
   idDocLast4: string | null;
   createdAt: string;
@@ -101,6 +105,74 @@ export default function StaffProfilePage() {
 
   // Header Dropdown Menu State
   const [menuOpen, setMenuOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleAdminAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !staff) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file (JPEG, PNG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image file size must be less than 5MB.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Data = reader.result as string;
+        const res = await fetch(`/api/org/${organizationCode}/staff/${staff.id}/avatar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatarUrl: base64Data }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          toast.success('Staff profile picture updated successfully!');
+          setStaff((prev: any) => (prev ? { ...prev, avatarUrl: base64Data } : prev));
+        } else {
+          toast.error(data.error || 'Failed to update profile picture.');
+        }
+        setUploadingAvatar(false);
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read image file.');
+        setUploadingAvatar(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error('Network error uploading staff photo.');
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleAdminAvatarRemove = async () => {
+    if (!staff?.avatarUrl) return;
+    setUploadingAvatar(true);
+    try {
+      const res = await fetch(`/api/org/${organizationCode}/staff/${staff.id}/avatar`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Staff profile picture removed.');
+        setStaff((prev: any) => (prev ? { ...prev, avatarUrl: null } : prev));
+      } else {
+        toast.error(data.error || 'Failed to remove profile picture.');
+      }
+    } catch {
+      toast.error('Network error removing staff photo.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   // Edit Metadata State
   const [isEditing, setIsEditing] = useState(false);
@@ -662,22 +734,50 @@ export default function StaffProfilePage() {
         </OrgAdminHeader>
 
         <main className={styles.pageContainer}>
+          <input
+            type="file"
+            ref={avatarInputRef}
+            onChange={handleAdminAvatarFileSelect}
+            accept="image/png,image/jpeg,image/webp,image/jpg"
+            style={{ display: 'none' }}
+          />
+
           {/* Hero Profile Banner Header */}
           <div className={styles.heroCard}>
             <div className={styles.heroCoverGlow} />
             <div className={styles.heroMain}>
               <div className={styles.heroAvatarSection}>
-                <div className={styles.avatarBox}>
-                  <span className={styles.avatarInitials}>{initials}</span>
-                  <span
-                    className={`${styles.statusPulse} ${
-                      isActive
-                        ? styles.statusPulseActive
-                        : isPending
-                        ? styles.statusPulsePending
-                        : styles.statusPulseInactive
-                    }`}
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <StaffAvatar
+                    name={staff.name}
+                    avatarUrl={staff.avatarUrl}
+                    size="2xl"
+                    showStatus
+                    status={staff.user.status}
                   />
+                  <button
+                    type="button"
+                    title={staff.avatarUrl ? 'Change Photo' : 'Upload Photo'}
+                    disabled={uploadingAvatar}
+                    onClick={() => avatarInputRef.current?.click()}
+                    style={{
+                      position: 'absolute',
+                      bottom: '-4px',
+                      right: '-4px',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      backgroundColor: '#4f46e5',
+                      border: '2px solid #0f172a',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {uploadingAvatar ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                  </button>
                 </div>
 
                 <div className={styles.heroTextGroup}>

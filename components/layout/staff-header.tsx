@@ -19,6 +19,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { OrgLogo } from '@/components/branding/org-logo';
+import { StaffAvatar } from '@/components/ui/staff-avatar';
 import styles from './StaffLayout.module.css';
 
 interface StaffHeaderProps {
@@ -26,6 +27,7 @@ interface StaffHeaderProps {
   organizationName?: string;
   logoUrl?: string | null;
   staffName?: string;
+  avatarUrl?: string | null;
   isPrecheckReady?: boolean;
   onSignOut: () => void;
 }
@@ -35,6 +37,7 @@ export function StaffHeader({
   organizationName,
   logoUrl,
   staffName,
+  avatarUrl,
   isPrecheckReady,
   onSignOut,
 }: StaffHeaderProps) {
@@ -124,11 +127,7 @@ export function StaffHeader({
       {/* Header Right: Staff Name Badge & 3-Line Navigation Menu */}
       <div className={styles.headerActions}>
         <div className={styles.staffNamePill} title={`Logged in as ${staffName || 'Staff Member'}`}>
-          <div className={styles.staffAvatarCircle}>
-            {staffName
-              ? staffName.trim().split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
-              : 'ST'}
-          </div>
+          <StaffAvatar name={staffName} avatarUrl={avatarUrl} size="sm" />
           <span className={styles.staffNameText}>{staffName || 'Staff Member'}</span>
         </div>
 

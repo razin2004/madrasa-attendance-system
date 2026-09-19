@@ -271,6 +271,7 @@ model StaffProfile {
   name           String
   phone          String?
   address        String
+  avatarUrl      String?      // Staff profile picture (base64 data URL or external URL)
   idDocType      IdDocType    @default(AADHAAR)
   idDocLast4     String?      // Only last 4 digits (e.g. "5482")
   idDocHash      String?      // Salted SHA-256 hash for intra-organization duplicate detection

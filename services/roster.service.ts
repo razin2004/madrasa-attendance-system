@@ -72,6 +72,7 @@ export interface StaffRosterRow {
   staffId: string;
   profileId: string;
   name: string;
+  avatarUrl?: string | null;
   phone: string;
   status: 'ACTIVE' | 'INACTIVE';
   branches: Array<{ id: string; name: string }>;
@@ -681,6 +682,7 @@ export async function calculateWeeklyRoster(
       staffId: profile.staffId,
       profileId: profile.id,
       name: profile.name,
+      avatarUrl: profile.avatarUrl,
       phone: profile.phone || '',
       status: profile.user.status as 'ACTIVE' | 'INACTIVE',
       branches: profile.branchAssignments.map((b) => ({ id: b.branch.id, name: b.branch.name })),

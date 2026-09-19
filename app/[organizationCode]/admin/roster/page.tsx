@@ -26,6 +26,7 @@ import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { useToast } from '@/components/feedback/toast-provider';
 import { formatDateToIsoDay, Weekday } from '@/lib/shift-validation';
+import { StaffAvatar } from '@/components/ui/staff-avatar';
 import styles from './Roster.module.css';
 
 interface BranchItem {
@@ -60,6 +61,7 @@ interface StaffRow {
   staffId: string;
   profileId: string;
   name: string;
+  avatarUrl?: string | null;
   phone: string;
   status: 'ACTIVE' | 'INACTIVE';
   branches: Array<{ id: string; name: string }>;
@@ -596,27 +598,32 @@ export default function RosterCalendarPage() {
                       <tr key={staff.profileId}>
                         {/* Staff Member Cell */}
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span
-                              style={{
-                                fontFamily: 'var(--font-mono)',
-                                fontSize: '11px',
-                                fontWeight: 800,
-                                padding: '1px 6px',
-                                borderRadius: '4px',
-                                backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                                color: '#818cf8',
-                              }}
-                            >
-                              {staff.staffId}
-                            </span>
-                            <strong style={{ color: '#ffffff', fontSize: '13.5px' }}>{staff.name}</strong>
-                          </div>
-                          {staff.branches.length > 0 && (
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                              {staff.branches.map((b) => b.name).join(', ')}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <StaffAvatar name={staff.name} avatarUrl={staff.avatarUrl} size="sm" />
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <strong style={{ color: '#ffffff', fontSize: '13.5px' }}>{staff.name}</strong>
+                                <span
+                                  style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '10px',
+                                    fontWeight: 800,
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                    color: '#818cf8',
+                                  }}
+                                >
+                                  {staff.staffId}
+                                </span>
+                              </div>
+                              {staff.branches.length > 0 && (
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                  {staff.branches.map((b) => b.name).join(', ')}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </td>
 
                         {/* Days Columns */}
@@ -791,34 +798,37 @@ export default function RosterCalendarPage() {
                               }}
                             >
                               {/* Staff Info */}
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                {/* Line 1: Name + Staff ID */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                  <strong style={{ color: '#ffffff', fontSize: '13.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {staff.name}
-                                  </strong>
-                                  <span
-                                    style={{
-                                      fontFamily: 'var(--font-mono)',
-                                      fontSize: '10.5px',
-                                      fontWeight: 800,
-                                      padding: '1px 6px',
-                                      borderRadius: '4px',
-                                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                                      color: '#818cf8',
-                                      border: '1px solid rgba(99, 102, 241, 0.25)',
-                                    }}
-                                  >
-                                    {staff.staffId}
-                                  </span>
-                                </div>
+                              <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <StaffAvatar name={staff.name} avatarUrl={staff.avatarUrl} size="sm" />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  {/* Line 1: Name + Staff ID */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                    <strong style={{ color: '#ffffff', fontSize: '13.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {staff.name}
+                                    </strong>
+                                    <span
+                                      style={{
+                                        fontFamily: 'var(--font-mono)',
+                                        fontSize: '10.5px',
+                                        fontWeight: 800,
+                                        padding: '1px 6px',
+                                        borderRadius: '4px',
+                                        backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                        color: '#818cf8',
+                                        border: '1px solid rgba(99, 102, 241, 0.25)',
+                                      }}
+                                    >
+                                      {staff.staffId}
+                                    </span>
+                                  </div>
 
-                                {/* Line 2: Branch Info */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                                  <MapPin size={11} style={{ flexShrink: 0 }} />
-                                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {staff.branches.length > 0 ? staff.branches.map((b) => b.name).join(', ') : 'All Branches'}
-                                  </span>
+                                  {/* Line 2: Branch Info */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                                    <MapPin size={11} style={{ flexShrink: 0 }} />
+                                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {staff.branches.length > 0 ? staff.branches.map((b) => b.name).join(', ') : 'All Branches'}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
