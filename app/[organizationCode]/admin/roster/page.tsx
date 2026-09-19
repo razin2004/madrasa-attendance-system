@@ -44,6 +44,8 @@ interface ScheduledDay {
   shiftPatternName?: string;
   hasOverride: boolean;
   overrideReason?: string | null;
+  hasLeaveConflict?: boolean;
+  leaveConflictReason?: string;
   shifts?: Array<{
     id?: string;
     name?: string;
@@ -69,9 +71,21 @@ interface WeeklyRosterData {
   endDate: string;
   days: Array<{ date: string; weekday: Weekday }>;
   staffRows: StaffRow[];
+  conflicts?: Array<{
+    id: string;
+    type: string;
+    date: string;
+    staffName?: string;
+    shiftName?: string;
+    title: string;
+    message: string;
+    severity: string;
+  }>;
   summary: {
     totalStaff: number;
     scheduledCountByDay: Record<string, number>;
+    totalConflicts?: number;
+    approvedLeavesCount?: number;
   };
 }
 
@@ -117,7 +131,10 @@ export default function RosterCalendarPage() {
     };
   }, [headerMenuOpen]);
 
-  // Week Navigation
+  // View Mode: Week vs Month View
+  const [viewMode, setViewMode] = useState<'WEEK' | 'MONTH'>('WEEK');
+
+  // Week Navigation State
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const now = new Date();
     const day = now.getDay();
@@ -126,6 +143,12 @@ export default function RosterCalendarPage() {
     monday.setDate(now.getDate() + diff);
     monday.setHours(0, 0, 0, 0);
     return monday;
+  });
+
+  // Month Navigation State
+  const [currentMonthDate, setCurrentMonthDate] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
   const [rosterData, setRosterData] = useState<WeeklyRosterData | null>(null);
@@ -138,7 +161,7 @@ export default function RosterCalendarPage() {
 
   useEffect(() => {
     fetchRoster();
-  }, [organizationCode, currentWeekStart, selectedBranchId]);
+  }, [organizationCode, currentWeekStart, currentMonthDate, viewMode, selectedBranchId]);
 
   const fetchInitial = async () => {
     try {
@@ -155,10 +178,20 @@ export default function RosterCalendarPage() {
   const fetchRoster = async () => {
     try {
       setLoading(true);
-      const startStr = formatDateToIsoDay(currentWeekStart);
-      const sunday = new Date(currentWeekStart);
-      sunday.setDate(currentWeekStart.getDate() + 6);
-      const endStr = formatDateToIsoDay(sunday);
+      let startStr = '';
+      let endStr = '';
+
+      if (viewMode === 'WEEK') {
+        startStr = formatDateToIsoDay(currentWeekStart);
+        const sunday = new Date(currentWeekStart);
+        sunday.setDate(currentWeekStart.getDate() + 6);
+        endStr = formatDateToIsoDay(sunday);
+      } else {
+        const firstDay = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth(), 1);
+        const lastDay = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 0);
+        startStr = formatDateToIsoDay(firstDay);
+        endStr = formatDateToIsoDay(lastDay);
+      }
 
       let url = `/api/org/${organizationCode}/roster?startDate=${startStr}&endDate=${endStr}`;
       if (selectedBranchId) url += `&branchId=${selectedBranchId}`;
@@ -177,31 +210,49 @@ export default function RosterCalendarPage() {
     }
   };
 
-  const handlePrevWeek = () => {
-    const prev = new Date(currentWeekStart);
-    prev.setDate(currentWeekStart.getDate() - 7);
-    setCurrentWeekStart(prev);
+  const handlePrevPeriod = () => {
+    if (viewMode === 'WEEK') {
+      const prev = new Date(currentWeekStart);
+      prev.setDate(currentWeekStart.getDate() - 7);
+      setCurrentWeekStart(prev);
+    } else {
+      const prev = new Date(currentMonthDate);
+      prev.setMonth(currentMonthDate.getMonth() - 1);
+      setCurrentMonthDate(prev);
+    }
   };
 
-  const handleNextWeek = () => {
-    const next = new Date(currentWeekStart);
-    next.setDate(currentWeekStart.getDate() + 7);
-    setCurrentWeekStart(next);
+  const handleNextPeriod = () => {
+    if (viewMode === 'WEEK') {
+      const next = new Date(currentWeekStart);
+      next.setDate(currentWeekStart.getDate() + 7);
+      setCurrentWeekStart(next);
+    } else {
+      const next = new Date(currentMonthDate);
+      next.setMonth(currentMonthDate.getMonth() + 1);
+      setCurrentMonthDate(next);
+    }
   };
 
-  const handleCurrentWeek = () => {
+  const handleCurrentPeriod = () => {
     const now = new Date();
-    const day = now.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diff);
-    monday.setHours(0, 0, 0, 0);
-    setCurrentWeekStart(monday);
+    if (viewMode === 'WEEK') {
+      const day = now.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diff);
+      monday.setHours(0, 0, 0, 0);
+      setCurrentWeekStart(monday);
+    } else {
+      setCurrentMonthDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    }
   };
 
   const weekEnd = new Date(currentWeekStart);
   weekEnd.setDate(currentWeekStart.getDate() + 6);
   const weekLabel = `${currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  const monthLabel = currentMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const periodLabel = viewMode === 'WEEK' ? weekLabel : monthLabel;
 
   // Filtered Staff Rows for Search Query
   const filteredStaffRows = rosterData?.staffRows.filter((staff) => {
@@ -287,43 +338,84 @@ export default function RosterCalendarPage() {
 
         {/* Content Body */}
         <main className="pageMainContent" style={{ maxWidth: '1280px' }}>
-          {/* Controls Bar: Week Navigator, Search & Branch Filters */}
+          {/* Controls Bar: View Toggle, Period Navigator, Search & Branch Filters */}
           <div className={styles.controlsBar}>
-            {/* Week Navigator */}
-            <div className={styles.weekNavigator}>
-              <button
-                onClick={handlePrevWeek}
-                className="btn btn-ghost btn-sm"
-                style={{ padding: '5px 8px' }}
-                title="Previous Week"
-              >
-                <ChevronLeft size={16} />
-              </button>
+            {/* View Mode Toggle & Period Navigator */}
+            <div className={styles.weekNavigator} style={{ flexWrap: 'wrap', gap: '8px' }}>
+              {/* View Toggle */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.85)', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-medium, rgba(255,255,255,0.12))' }}>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('WEEK')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    border: 'none',
+                    backgroundColor: viewMode === 'WEEK' ? '#4f46e5' : 'transparent',
+                    color: viewMode === 'WEEK' ? '#ffffff' : '#94a3b8',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  Week View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('MONTH')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    border: 'none',
+                    backgroundColor: viewMode === 'MONTH' ? '#4f46e5' : 'transparent',
+                    color: viewMode === 'MONTH' ? '#ffffff' : '#94a3b8',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  Month View
+                </button>
+              </div>
 
-              <button
-                onClick={handleCurrentWeek}
-                className="btn btn-ghost btn-sm"
-                style={{ fontSize: '12.5px', fontWeight: 700, color: '#f8fafc', padding: '5px 8px' }}
-              >
-                {weekLabel}
-              </button>
+              {/* Prev / Next / Today */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <button
+                  onClick={handlePrevPeriod}
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '5px 8px' }}
+                  title={viewMode === 'WEEK' ? 'Previous Week' : 'Previous Month'}
+                >
+                  <ChevronLeft size={16} />
+                </button>
 
-              <button
-                onClick={handleNextWeek}
-                className="btn btn-ghost btn-sm"
-                style={{ padding: '5px 8px' }}
-                title="Next Week"
-              >
-                <ChevronRight size={16} />
-              </button>
+                <button
+                  onClick={handleCurrentPeriod}
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: '12.5px', fontWeight: 700, color: '#f8fafc', padding: '5px 8px' }}
+                >
+                  {periodLabel}
+                </button>
 
-              <button
-                onClick={handleCurrentWeek}
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', marginLeft: '2px' }}
-              >
-                Today
-              </button>
+                <button
+                  onClick={handleNextPeriod}
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '5px 8px' }}
+                  title={viewMode === 'WEEK' ? 'Next Week' : 'Next Month'}
+                >
+                  <ChevronRight size={16} />
+                </button>
+
+                <button
+                  onClick={handleCurrentPeriod}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', marginLeft: '4px' }}
+                >
+                  Current
+                </button>
+              </div>
             </div>
 
             {/* Filters Bar: Search & Branch */}
@@ -457,6 +549,32 @@ export default function RosterCalendarPage() {
             </div>
           ) : (
             <>
+              {/* Conflict Alert Banner */}
+              {rosterData.conflicts && rosterData.conflicts.length > 0 && (
+                <div
+                  style={{
+                    marginBottom: '16px',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    color: '#f87171',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '13.5px', marginBottom: '6px' }}>
+                    <AlertTriangle size={16} color="#f87171" />
+                    <span>Roster Conflicts Detected ({rosterData.conflicts.length})</span>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#fca5a5', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {rosterData.conflicts.map((c) => (
+                      <li key={c.id}>
+                        <strong style={{ color: '#ffffff' }}>{c.date}:</strong> {c.title} — {c.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* DESKTOP ROSTER GRID */}
               <div className={styles.rosterTableContainer}>
                 <table className={styles.rosterTable}>
@@ -501,7 +619,7 @@ export default function RosterCalendarPage() {
                           )}
                         </td>
 
-                        {/* 7 Days Columns */}
+                        {/* Days Columns */}
                         {staff.days.map((day) => {
                           const isWorking = day.isScheduled && !day.isHoliday;
                           const isHoliday = day.isScheduled && day.isHoliday;
@@ -532,6 +650,11 @@ export default function RosterCalendarPage() {
                                               {s.name}
                                             </span>
                                           )}
+                                          {day.hasLeaveConflict && (
+                                            <span style={{ fontSize: '8px', color: '#f87171', display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center', marginTop: '1px' }}>
+                                              <AlertTriangle size={8} /> Leave Overlap
+                                            </span>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
@@ -545,6 +668,11 @@ export default function RosterCalendarPage() {
                                       <span>
                                         {day.startTime} – {day.endTime}
                                       </span>
+                                      {day.shiftPatternName && (
+                                        <span style={{ fontSize: '8.5px', opacity: 0.85, fontWeight: 600, display: 'block', lineHeight: 1.1 }}>
+                                          {day.shiftPatternName}
+                                        </span>
+                                      )}
                                       {day.isOvernight && (
                                         <span style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px' }}>
                                           <Moon size={9} />
@@ -552,6 +680,11 @@ export default function RosterCalendarPage() {
                                         </span>
                                       )}
                                       {day.hasOverride && <span className={styles.overrideTag}>Override</span>}
+                                      {day.hasLeaveConflict && (
+                                        <span style={{ fontSize: '8px', color: '#f87171', display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center', marginTop: '1px' }}>
+                                          <AlertTriangle size={8} /> Leave Overlap
+                                        </span>
+                                      )}
                                     </div>
                                   )
                                 ) : isHoliday ? (
@@ -712,6 +845,11 @@ export default function RosterCalendarPage() {
                                                 {s.name}
                                               </span>
                                             )}
+                                            {daySchedule.hasLeaveConflict && (
+                                              <span style={{ fontSize: '8px', color: '#f87171', display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '1px' }}>
+                                                <AlertTriangle size={8} /> Leave Overlap
+                                              </span>
+                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -720,6 +858,11 @@ export default function RosterCalendarPage() {
                                         <span style={{ fontSize: '11.5px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                                           {daySchedule.startTime} – {daySchedule.endTime}
                                         </span>
+                                        {daySchedule.shiftPatternName && (
+                                          <span style={{ fontSize: '8.5px', opacity: 0.85, display: 'block', marginTop: '1px' }}>
+                                            {daySchedule.shiftPatternName}
+                                          </span>
+                                        )}
                                         {daySchedule.isOvernight && (
                                           <span style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '1px' }}>
                                             <Moon size={9} />
@@ -727,6 +870,11 @@ export default function RosterCalendarPage() {
                                           </span>
                                         )}
                                         {daySchedule.hasOverride && <span className={styles.overrideTag}>Override</span>}
+                                        {daySchedule.hasLeaveConflict && (
+                                          <span style={{ fontSize: '8px', color: '#f87171', display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '1px' }}>
+                                            <AlertTriangle size={8} /> Leave Overlap
+                                          </span>
+                                        )}
                                       </div>
                                     )
                                   ) : daySchedule.isScheduled && daySchedule.isHoliday ? (

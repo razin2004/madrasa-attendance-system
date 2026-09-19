@@ -21,6 +21,7 @@ import {
   Calendar,
   CheckCircle2,
   AlertTriangle,
+  Clock,
   Mail,
   X,
   Loader2,
@@ -66,6 +67,13 @@ interface StaffItem {
   };
   branchAssignments: BranchAssignment[];
   devices: any[];
+  shiftAssignments?: Array<{
+    id: string;
+    shiftPattern?: {
+      id: string;
+      name: string;
+    };
+  }>;
 }
 
 interface OrgBranding {
@@ -616,6 +624,9 @@ export default function StaffDirectoryPage() {
                         Assigned Branches
                       </th>
                       <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase' }}>
+                        Assigned Shifts
+                      </th>
+                      <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase' }}>
                         Status
                       </th>
                       <th style={{ padding: '14px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '11.5px', textTransform: 'uppercase' }}>
@@ -692,6 +703,38 @@ export default function StaffDirectoryPage() {
                               ) : (
                                 <span style={{ fontSize: '11.5px', color: 'var(--warning-text)' }}>
                                   No branch assigned
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Assigned Shifts */}
+                          <td style={{ padding: '16px 20px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                              {staff.shiftAssignments && staff.shiftAssignments.length > 0 ? (
+                                staff.shiftAssignments.map((sa: any) => (
+                                  <span
+                                    key={sa.id}
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      backgroundColor: 'rgba(192, 132, 252, 0.15)',
+                                      border: '1px solid rgba(192, 132, 252, 0.3)',
+                                      color: '#c084fc',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                    }}
+                                  >
+                                    <Clock size={10} color="#c084fc" />
+                                    <span>{sa.shiftPattern?.name || 'Shift'}</span>
+                                  </span>
+                                ))
+                              ) : (
+                                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                  No shift assigned
                                 </span>
                               )}
                             </div>
@@ -789,6 +832,14 @@ export default function StaffDirectoryPage() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                             <MapPin size={13} color="#818cf8" />
                             <span>{staff.branchAssignments.map((b) => b.branch.name).join(', ')}</span>
+                          </div>
+                        )}
+                        {staff.shiftAssignments && staff.shiftAssignments.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
+                            <Clock size={13} color="#c084fc" />
+                            <span style={{ fontSize: '12px', color: '#c084fc', fontWeight: 600 }}>
+                              {staff.shiftAssignments.map((sa: any) => sa.shiftPattern?.name).filter(Boolean).join(', ')}
+                            </span>
                           </div>
                         )}
                       </div>

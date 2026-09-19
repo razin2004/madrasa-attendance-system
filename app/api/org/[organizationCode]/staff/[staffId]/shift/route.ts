@@ -114,11 +114,17 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const { shiftPatternId, effectiveFrom } = body;
+    const { shiftPatternId, shiftPatternIds, effectiveFrom } = body;
 
-    if (!shiftPatternId || typeof shiftPatternId !== 'string') {
+    const patternIdsToAssign: string[] = Array.isArray(shiftPatternIds) && shiftPatternIds.length > 0
+      ? shiftPatternIds
+      : typeof shiftPatternId === 'string' && shiftPatternId.trim()
+      ? [shiftPatternId.trim()]
+      : [];
+
+    if (patternIdsToAssign.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Please select a valid shift pattern.' },
+        { success: false, error: 'Please select at least one valid shift pattern.' },
         { status: 400 }
       );
     }
@@ -144,20 +150,6 @@ export async function POST(
       );
     }
 
-    const shiftPattern = await prisma.shiftPattern.findFirst({
-      where: {
-        id: shiftPatternId,
-        organizationId: auth.organization.id,
-      },
-    });
-
-    if (!shiftPattern) {
-      return NextResponse.json(
-        { success: false, error: 'Selected shift pattern does not exist in this organization.' },
-        { status: 404 }
-      );
-    }
-
     const startDate = new Date(effectiveFrom);
     if (isNaN(startDate.getTime())) {
       return NextResponse.json(
@@ -166,28 +158,47 @@ export async function POST(
       );
     }
 
-    // Assign shift assignment (will throw error if time conflict exists)
-    let assignment;
-    try {
-      assignment = await assignOrUpdateStaffShift({
-        staffProfileId: staffProfile.id,
-        shiftPatternId: shiftPattern.id,
-        effectiveFrom: startDate,
-        assignedBy: auth.session.user.name || auth.session.user.email,
+    const createdAssignments = [];
+    for (const pId of patternIdsToAssign) {
+      const shiftPattern = await prisma.shiftPattern.findFirst({
+        where: {
+          id: pId,
+          organizationId: auth.organization.id,
+        },
       });
-    } catch (err: any) {
-      return NextResponse.json(
-        { success: false, error: err.message || 'Time conflict detected with an existing shift assignment.' },
-        { status: 409 }
-      );
+
+      if (!shiftPattern) {
+        return NextResponse.json(
+          { success: false, error: `Shift pattern "${pId}" does not exist in this organization.` },
+          { status: 404 }
+        );
+      }
+
+      try {
+        const assignment = await assignOrUpdateStaffShift({
+          staffProfileId: staffProfile.id,
+          shiftPatternId: shiftPattern.id,
+          effectiveFrom: startDate,
+          assignedBy: auth.session.user.name || auth.session.user.email,
+        });
+        createdAssignments.push(assignment);
+      } catch (err: any) {
+        return NextResponse.json(
+          { success: false, error: err.message || 'Time conflict detected with an existing shift assignment.' },
+          { status: 409 }
+        );
+      }
     }
 
     // Check staffing availability shortage for this shift pattern on effective date
-    const shortageInfo = await calculateShiftStaffingShortage(
-      auth.organization.id,
-      shiftPattern.id,
-      startDate
-    );
+    const firstAssignment = createdAssignments[0];
+    const shortageInfo = firstAssignment
+      ? await calculateShiftStaffingShortage(
+          auth.organization.id,
+          firstAssignment.shiftPatternId,
+          startDate
+        )
+      : null;
 
     // Record Audit Log
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
@@ -196,13 +207,12 @@ export async function POST(
       actorUserId: auth.session.user.id,
       action: 'SHIFT_PATTERN_UPDATED',
       entityType: 'ShiftAssignment',
-      entityId: assignment.id,
+      entityId: firstAssignment?.id || staffProfile.id,
       metadata: {
         staffProfileId: staffProfile.id,
         staffId: staffProfile.staffId,
         staffName: staffProfile.name,
-        shiftPatternId: shiftPattern.id,
-        shiftPatternName: shiftPattern.name,
+        assignedShiftCount: createdAssignments.length,
         effectiveFrom: startDate.toISOString().slice(0, 10),
         shortageInfo,
       },
@@ -212,8 +222,9 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Assigned "${shiftPattern.name}" to ${staffProfile.name} starting from ${startDate.toISOString().slice(0, 10)}.`,
-      assignment,
+      message: `Assigned ${createdAssignments.length} shift pattern(s) to ${staffProfile.name} starting from ${startDate.toISOString().slice(0, 10)}.`,
+      assignments: createdAssignments,
+      assignment: firstAssignment || null,
       shortageInfo,
     });
   } catch (error: any) {

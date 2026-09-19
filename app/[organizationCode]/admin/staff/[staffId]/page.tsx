@@ -27,6 +27,7 @@ import {
   Share2,
   Trash2,
   Upload,
+  Plus,
   Activity,
   Settings,
   ChevronRight,
@@ -146,6 +147,7 @@ export default function StaffProfilePage() {
   const [activeShiftAssignment, setActiveShiftAssignment] = useState<any>(null);
   const [activeShiftAssignments, setActiveShiftAssignments] = useState<any[]>([]);
   const [selectedShiftPatternId, setSelectedShiftPatternId] = useState('');
+  const [selectedShiftPatternIds, setSelectedShiftPatternIds] = useState<string[]>([]);
   const [shiftEffectiveFrom, setShiftEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
   const [savingShift, setSavingShift] = useState(false);
   const [removingShiftId, setRemovingShiftId] = useState<string | null>(null);
@@ -384,8 +386,12 @@ export default function StaffProfilePage() {
   // Assign Shift Pattern
   const handleSaveShiftAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedShiftPatternId) {
-      toast.error('Please select a shift pattern.');
+    const idsToAssign = selectedShiftPatternIds.length > 0
+      ? selectedShiftPatternIds
+      : selectedShiftPatternId ? [selectedShiftPatternId] : [];
+
+    if (idsToAssign.length === 0) {
+      toast.error('Please select at least one shift pattern.');
       return;
     }
     try {
@@ -394,14 +400,20 @@ export default function StaffProfilePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          shiftPatternId: selectedShiftPatternId,
+          shiftPatternIds: idsToAssign,
           effectiveFrom: shiftEffectiveFrom,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        toast.success('Shift pattern assigned successfully.');
+        toast.success(
+          idsToAssign.length > 1
+            ? `${idsToAssign.length} shift patterns assigned successfully.`
+            : 'Shift pattern assigned successfully.'
+        );
+        setSelectedShiftPatternIds([]);
+        setSelectedShiftPatternId('');
         fetchData();
       } else {
         toast.error(data.error || 'Failed to assign shift pattern.');
@@ -752,9 +764,22 @@ export default function StaffProfilePage() {
               <div className={styles.statContent}>
                 <span className={styles.statLabel}>Shift Schedule</span>
                 <span className={styles.statVal}>
-                  {activeShiftAssignment?.shiftPattern?.name || 'No Shift Assigned'}
+                  {activeShiftAssignments.length > 1
+                    ? `${activeShiftAssignments.length} Active Shifts`
+                    : activeShiftAssignments[0]?.shiftPattern?.name || 'No Shift Assigned'}
                 </span>
-                <span className={styles.statSubtext}>{shiftTimesLabel}</span>
+                <span className={styles.statSubtext}>
+                  {activeShiftAssignments.length > 0
+                    ? activeShiftAssignments
+                        .map((a) => {
+                          const name = a.shiftPattern?.name || 'Shift';
+                          const workDays = a.shiftPattern?.weeklyDays?.filter((w: any) => !w.isHoliday && w.startTime && w.endTime) || [];
+                          const timeStr = workDays.length > 0 ? `${workDays[0].startTime}–${workDays[0].endTime}` : '';
+                          return timeStr ? `${name} (${timeStr})` : name;
+                        })
+                        .join(', ')
+                    : 'No active schedule pattern'}
+                </span>
               </div>
             </div>
 
@@ -1039,13 +1064,15 @@ export default function StaffProfilePage() {
               </div>
 
               {activeShiftAssignments.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
                   <div style={{ fontSize: '12px', fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Active Assigned Shifts ({activeShiftAssignments.length})
                   </div>
                   {activeShiftAssignments.map((assignment) => {
-                    const workDay = assignment.shiftPattern?.weeklyDays?.find((w: any) => !w.isHoliday && w.startTime && w.endTime);
-                    const hoursText = workDay ? `${workDay.startTime} – ${workDay.endTime}` : 'Scheduled Pattern';
+                    const workDays = assignment.shiftPattern?.weeklyDays?.filter((w: any) => !w.isHoliday && w.startTime && w.endTime) || [];
+                    const hoursText = workDays.length > 0
+                      ? workDays.map((w: any) => `${w.weekday.slice(0, 3)}: ${w.startTime} – ${w.endTime}`).join(' | ')
+                      : 'Scheduled Pattern';
                     const isDeleting = removingShiftId === assignment.id;
 
                     return (
@@ -1077,43 +1104,80 @@ export default function StaffProfilePage() {
                 </div>
               ) : (
                 <div style={{ padding: '24px', borderRadius: '16px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13.5px', color: '#94a3b8', textAlign: 'center', marginBottom: '20px' }}>
-                  No active shift schedule assigned yet. Assign a shift pattern below.
+                  No active shift schedule assigned yet. Assign shift pattern(s) below.
                 </div>
               )}
 
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', marginBottom: '12px' }}>
-                Assign Shift Pattern (Non-Overlapping Times)
+              <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff', marginBottom: '6px' }}>
+                Assign Shift Pattern(s) (Multi-Shift Supported)
               </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                Select one or multiple non-overlapping shift patterns to assign to this staff member.
+              </p>
 
               <form onSubmit={handleSaveShiftAssignment} className={styles.shiftForm}>
-                <div className={styles.shiftInputsRow}>
-                  <div>
-                    <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Select Shift Pattern *</label>
-                    <select
-                      value={selectedShiftPatternId}
-                      onChange={(e) => setSelectedShiftPatternId(e.target.value)}
-                      className="form-input"
-                      style={{
-                        width: '100%',
-                        marginTop: '4px',
-                        height: '44px',
-                        fontSize: '13.5px',
-                        backgroundColor: '#0d121f',
-                        color: '#ffffff',
-                        boxSizing: 'border-box',
-                      }}
-                    >
-                      <option value="">-- Select Shift Pattern --</option>
-                      {shiftPatterns.map((p) => {
-                        const workDay = p.weeklyDays?.find((w: any) => !w.isHoliday);
-                        const hoursLabel = workDay && workDay.startTime && workDay.endTime ? ` (${workDay.startTime} – ${workDay.endTime})` : '';
-                        return (
-                          <option key={p.id} value={p.id}>{p.name}{hoursLabel}</option>
-                        );
-                      })}
-                    </select>
-                  </div>
+                {/* Multi-Shift Checkbox Selector */}
+                <div style={{ marginBottom: '20px' }}>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                    Select Shift Patterns
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
+                    {shiftPatterns.map((p) => {
+                      const isAssigned = activeShiftAssignments.some((a) => a.shiftPattern?.id === p.id);
+                      const isChecked = selectedShiftPatternIds.includes(p.id) || selectedShiftPatternId === p.id;
+                      const workDays = p.weeklyDays?.filter((w: any) => !w.isHoliday && w.startTime && w.endTime) || [];
+                      const hoursText = workDays.length > 0 ? `${workDays[0].startTime} – ${workDays[0].endTime}` : 'Custom Days';
 
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => {
+                            if (selectedShiftPatternIds.includes(p.id)) {
+                              setSelectedShiftPatternIds(selectedShiftPatternIds.filter((id) => id !== p.id));
+                              if (selectedShiftPatternId === p.id) setSelectedShiftPatternId('');
+                            } else {
+                              setSelectedShiftPatternIds([...selectedShiftPatternIds, p.id]);
+                              setSelectedShiftPatternId(p.id);
+                            }
+                          }}
+                          style={{
+                            padding: '12px 14px',
+                            borderRadius: '10px',
+                            backgroundColor: isChecked ? 'rgba(99, 102, 241, 0.15)' : 'rgba(15, 23, 42, 0.85)',
+                            border: `1px solid ${isChecked ? 'rgba(99, 102, 241, 0.5)' : 'var(--border-medium, rgba(255, 255, 255, 0.12))'}`,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>{p.name}</span>
+                              {isAssigned && (
+                                <span style={{ fontSize: '9.5px', padding: '1px 5px', borderRadius: '4px', backgroundColor: 'rgba(52, 211, 153, 0.2)', color: '#34d399', fontWeight: 800 }}>
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              {hoursText}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={styles.shiftInputsRow}>
                   <div>
                     <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>Effective Date *</label>
                     <input
@@ -1124,12 +1188,18 @@ export default function StaffProfilePage() {
                       style={{ width: '100%', marginTop: '4px', height: '44px', fontSize: '13.5px', boxSizing: 'border-box' }}
                     />
                   </div>
-                </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                  <button type="submit" disabled={savingShift} className="btn btn-primary" style={{ height: '44px', padding: '0 28px', fontWeight: 700 }}>
-                    {savingShift ? 'Saving Shift Pattern...' : 'Assign Shift Pattern'}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <button
+                      type="submit"
+                      disabled={savingShift || (selectedShiftPatternIds.length === 0 && !selectedShiftPatternId)}
+                      className="btn btn-primary"
+                      style={{ width: '100%', height: '44px', fontSize: '13.5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      {savingShift ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                      <span>{savingShift ? 'Saving Shifts...' : selectedShiftPatternIds.length > 1 ? `Assign ${selectedShiftPatternIds.length} Shifts` : 'Assign Shift Pattern'}</span>
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

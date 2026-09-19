@@ -55,6 +55,15 @@ export async function GET(
           },
         },
         devices: true,
+        shiftAssignments: {
+          include: {
+            shiftPattern: {
+              include: {
+                weeklyDays: true,
+              },
+            },
+          },
+        },
       },
     });
 

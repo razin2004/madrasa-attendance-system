@@ -13,6 +13,18 @@ export interface ShiftConflictResult {
   };
 }
 
+export interface RosterConflict {
+  id: string;
+  type: 'LEAVE_CONFLICT' | 'UNDERSTAFFED' | 'OVERLAPPING_SHIFTS' | 'REST_VIOLATION';
+  date: string;
+  staffProfileId?: string;
+  staffName?: string;
+  shiftName?: string;
+  title: string;
+  message: string;
+  severity: 'HIGH' | 'MEDIUM';
+}
+
 export interface ScheduledDayResult {
   date: string; // "YYYY-MM-DD"
   weekday: Weekday;
@@ -27,6 +39,9 @@ export interface ScheduledDayResult {
   hasOverride: boolean;
   overrideId?: string;
   overrideReason?: string | null;
+  hasLeaveConflict?: boolean;
+  leaveConflictReason?: string;
+  conflicts?: RosterConflict[];
   activeShift?: {
     id?: string;
     name?: string;
@@ -68,9 +83,12 @@ export interface WeeklyRosterResult {
   endDate: string;
   days: Array<{ date: string; weekday: Weekday }>;
   staffRows: StaffRosterRow[];
+  conflicts: RosterConflict[];
   summary: {
     totalStaff: number;
     scheduledCountByDay: Record<string, number>;
+    totalConflicts: number;
+    approvedLeavesCount: number;
   };
 }
 
@@ -594,6 +612,20 @@ export async function calculateWeeklyRoster(
     orderBy: { staffId: 'asc' },
   });
 
+  // Query approved leave requests in date range
+  const approvedLeaves = await prisma.leaveRequest.findMany({
+    where: {
+      organizationId,
+      status: 'APPROVED',
+      startDate: { lte: endDate },
+      endDate: { gte: startDate },
+    },
+    include: {
+      staffProfile: { select: { id: true, name: true, staffId: true } },
+    },
+  });
+
+  const conflicts: RosterConflict[] = [];
   const staffRows: StaffRosterRow[] = [];
   const scheduledCountByDay: Record<string, number> = {};
 
@@ -604,6 +636,9 @@ export async function calculateWeeklyRoster(
   for (const profile of staffProfiles) {
     const days: ScheduledDayResult[] = [];
 
+    // Find all approved leaves for this staff member
+    const profileLeaves = approvedLeaves.filter((l) => l.staffProfileId === profile.id);
+
     for (const day of dateList) {
       const schedule = calculateStaffDaySchedule(
         day.dateObj,
@@ -612,9 +647,27 @@ export async function calculateWeeklyRoster(
         profile.additionalShifts
       );
 
-      // Optional shift pattern filter
-      if (options?.shiftPatternId && schedule.shiftPatternId !== options.shiftPatternId) {
-        // Leave as is or skip
+      // Check if staff has an approved leave request on this day
+      const leaveMatch = profileLeaves.find((l) => {
+        const lStart = formatDateToIsoDay(new Date(l.startDate));
+        const lEnd = formatDateToIsoDay(new Date(l.endDate));
+        return day.date >= lStart && day.date <= lEnd;
+      });
+
+      if (leaveMatch && schedule.isScheduled && !schedule.isHoliday) {
+        schedule.hasLeaveConflict = true;
+        schedule.leaveConflictReason = `Approved ${leaveMatch.type} Leave overlaps with scheduled shift`;
+        conflicts.push({
+          id: `leave-conflict-${profile.id}-${day.date}`,
+          type: 'LEAVE_CONFLICT',
+          date: day.date,
+          staffProfileId: profile.id,
+          staffName: profile.name,
+          shiftName: schedule.shiftPatternName || 'Shift',
+          title: `Leave Conflict for ${profile.name}`,
+          message: `${profile.name} is on approved ${leaveMatch.type} Leave on ${day.date} but has a scheduled shift (${schedule.shiftPatternName || 'Shift'}).`,
+          severity: 'HIGH',
+        });
       }
 
       days.push(schedule);
@@ -640,9 +693,12 @@ export async function calculateWeeklyRoster(
     endDate: endDateStr,
     days: dateList.map((d) => ({ date: d.date, weekday: d.weekday })),
     staffRows,
+    conflicts,
     summary: {
       totalStaff: staffProfiles.length,
       scheduledCountByDay,
+      totalConflicts: conflicts.length,
+      approvedLeavesCount: approvedLeaves.length,
     },
   };
 }
