@@ -153,23 +153,24 @@ export default function StaffProfilePage() {
       </div>
 
       {/* Centered Avatar Preview Section */}
-      <div className={styles.card} style={{ textAlign: 'center', padding: '24px 16px' }}>
+      <div className={styles.avatarCard}>
         <div className={styles.avatarSection}>
           <div className={styles.avatarCircle}>
-            {staffProfile?.name ? staffProfile.name.charAt(0).toUpperCase() : <User size={32} />}
+            {staffProfile?.name ? staffProfile.name.charAt(0).toUpperCase() : <User size={34} />}
           </div>
           <button
             type="button"
             className={styles.avatarUploadBtn}
             onClick={() => toast.info('Profile picture upload feature coming soon.')}
           >
+            <Upload size={12} />
             <span>Upload Photo</span>
           </button>
         </div>
-        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: '4px 0 2px 0' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', margin: '4px 0 2px 0' }}>
           {staffProfile?.name || 'Staff Member'}
         </h3>
-        <p style={{ fontSize: '12.5px', color: '#94a3b8', margin: 0 }}>
+        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
           ID: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#818cf8' }}>{staffProfile?.staffId || '—'}</span>
         </p>
       </div>
@@ -257,7 +258,7 @@ export default function StaffProfilePage() {
               Your identity card details have not been registered by administrator yet. Please submit your identity card details below:
             </p>
 
-            <div className={styles.formGrid}>
+            <div className={styles.formRowTwoCol}>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
                   Identity Document Type

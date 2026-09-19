@@ -749,6 +749,14 @@ export default function StaffDashboardPage() {
     ? staffInfo.name.trim().split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
     : 'SG';
 
+  const isNoShiftOrLeave = !hasSchedule || Boolean(todayStatus?.schedule?.isHoliday) || Boolean(selectedShiftObj?.isHoliday) || !selectedShiftObj || !selectedShiftObj.startTime;
+  const isCompleted = Boolean(todayStatus?.isDailyLimitReached && !isClockedIn);
+  const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isNoShiftOrLeave && !isCompleted && !isShiftEndedWithoutClockIn && !isTooEarlyToClockIn);
+
+  const initials = staffInfo?.name
+    ? staffInfo.name.trim().split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+    : 'SG';
+
   const verifiedLayersCount = [
     precheck?.layer1Device.isVerified,
     precheck?.layer2Network.isVerified,
@@ -798,26 +806,27 @@ export default function StaffDashboardPage() {
         )}
 
         {/* NO SCHEDULE WARNING BANNER */}
-        {!loading && !hasSchedule && (
+        {!loading && (!hasSchedule || todayStatus?.schedule?.isHoliday) && (
           <div className={styles.noScheduleBanner}>
             <AlertTriangle size={24} color="#fbbf24" style={{ flexShrink: 0 }} />
             <div>
               <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#ffffff' }}>
-                No Shift Schedule Assigned Today
+                {todayStatus?.schedule?.isHoliday ? 'Leave / Off-Day Scheduled Today' : 'No Shift Schedule Assigned Today'}
               </div>
               <div style={{ fontSize: '12.5px', marginTop: '2px', color: '#cbd5e1', lineHeight: '1.4' }}>
-                Clock-in is temporarily locked because no active shift schedule is assigned to your profile for today. Contact your organization administrator if you need a shift assigned.
+                {todayStatus?.schedule?.isHoliday
+                  ? 'Clock-in is unavailable today because you are on an approved leave or off-day schedule.'
+                  : 'Clock-in is temporarily locked because no active shift schedule is assigned to your profile for today. Contact your organization administrator if you need a shift assigned.'}
               </div>
             </div>
           </div>
         )}
 
-        {/* MAIN 2-COLUMN GRID */}
+        {/* MAIN 2-COLUMN GRID (TOP ROW: CLOCK CARD ON LEFT, VERTICAL QUICK ACTIONS ON RIGHT) */}
         <div className={styles.mainLayout}>
           
-          {/* PANEL 1: LIVE DIGITAL CLOCK & HERO ACTION HUB */}
+          {/* LEFT COLUMN: LIVE DIGITAL CLOCK & HERO ACTION HUB */}
           <div className={styles.heroClockCard} style={{ position: 'relative' }}>
-            {/* Re-verify Icon Only on Top-Right Edge (No text, no container background) */}
             <button
               type="button"
               onClick={handleManualRefresh}
@@ -1122,16 +1131,14 @@ export default function StaffDashboardPage() {
                     </div>
                   )}
 
-                  {/* Punch Button */}
+                  {/* Punch Button - Disabled & Unclickable if no shift, non-existing shift, or on leave */}
                   <button
                     onClick={handleClockButtonClick}
-                    disabled={!hasSchedule || isSelectedShiftCompleted || isShiftEndedWithoutClockIn || isTooEarlyToClockIn || Boolean(todayStatus?.hasPendingClockOut) || clocking || checking}
+                    disabled={isNoShiftOrLeave || isSelectedShiftCompleted || isShiftEndedWithoutClockIn || isTooEarlyToClockIn || Boolean(todayStatus?.hasPendingClockOut) || clocking || checking}
                     className={`${styles.clockButton} ${styles.punchButtonCircle} ${
                       isSelectedShiftClockedIn
                         ? styles.clockButtonOut
-                        : isSelectedShiftCompleted || isShiftEndedWithoutClockIn || isTooEarlyToClockIn
-                        ? styles.clockButtonDisabled
-                        : todayStatus?.hasPendingClockOut
+                        : isNoShiftOrLeave || isSelectedShiftCompleted || isShiftEndedWithoutClockIn || isTooEarlyToClockIn || todayStatus?.hasPendingClockOut
                         ? styles.clockButtonDisabled
                         : styles.clockButtonIn
                     }`}
@@ -1141,6 +1148,13 @@ export default function StaffDashboardPage() {
                         <Loader2 size={24} className="animate-spin" />
                         <span style={{ fontSize: '14px', fontWeight: 800 }}>
                           {isSelectedShiftClockedIn ? 'Clocking Out...' : 'Clocking In...'}
+                        </span>
+                      </>
+                    ) : isNoShiftOrLeave ? (
+                      <>
+                        <XCircle size={24} color="#f87171" />
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#f87171' }}>
+                          {todayStatus?.schedule?.isHoliday || selectedShiftObj?.isHoliday ? 'On Leave / Off Day' : 'No Shift Assigned'}
                         </span>
                       </>
                     ) : isSelectedShiftCompleted ? (
@@ -1223,8 +1237,8 @@ export default function StaffDashboardPage() {
 
                   {!isReadyToClock && (
                     <p className={styles.lockGuidanceText} style={{ textAlign: 'center', margin: '14px auto 0 auto', width: '100%', maxWidth: '360px' }}>
-                      {!hasSchedule
-                        ? 'Attendance action is locked because no shift schedule is assigned for today.'
+                      {isNoShiftOrLeave
+                        ? 'Attendance action is locked because no active shift schedule is assigned for today.'
                         : 'All 3 security verification layers (Device, Network IP, Geofence GPS) must pass to unlock Clock In / Clock Out.'}
                     </p>
                   )}
@@ -1233,190 +1247,187 @@ export default function StaffDashboardPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: QUICK ACTIONS & EXPANDABLE RECENT LOGS */}
-          <div className={styles.rightDashboardCol}>
-            {/* QUICK ACTIONS PANEL */}
-            <div>
-              <h2 className={styles.sectionTitle} style={{ marginBottom: '14px' }}>
-                <Sparkles size={18} color="#38bdf8" />
-                <span>Quick Workspace Actions</span>
-              </h2>
+          {/* RIGHT COLUMN: QUICK ACCESS BUTTONS STACKED VERTICALLY */}
+          <div className={styles.quickActionsColumn}>
+            <h2 className={styles.sectionTitle} style={{ marginBottom: '14px' }}>
+              <Sparkles size={18} color="#38bdf8" />
+              <span>Quick Workspace Actions</span>
+            </h2>
 
-              <div className={styles.quickActionsGrid} style={{ marginBottom: 0 }}>
-                <Link href={`/${orgCode}/staff/leave/new`} className={styles.quickTile}>
-                  <div className={styles.quickTileContent}>
-                    <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8' }}>
-                      <FilePlus size={22} />
-                    </div>
-                    <div>
-                      <div className={styles.quickTileTitle}>Apply Leave</div>
-                      <div className={styles.quickTileSub}>Submit time-off application</div>
-                    </div>
+            <div className={styles.verticalQuickTilesGroup}>
+              <Link href={`/${orgCode}/staff/leave/new`} className={styles.quickTile}>
+                <div className={styles.quickTileContent}>
+                  <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8' }}>
+                    <FilePlus size={22} />
                   </div>
-                  <ChevronRight size={18} className={styles.arrowIcon} />
-                </Link>
+                  <div>
+                    <div className={styles.quickTileTitle}>Apply Leave</div>
+                    <div className={styles.quickTileSub}>Submit time-off application</div>
+                  </div>
+                </div>
+                <ChevronRight size={18} className={styles.arrowIcon} />
+              </Link>
 
-                <button
-                  type="button"
-                  onClick={() => setShowCorrectionModal(true)}
-                  className={styles.quickTile}
-                  style={{ width: '100%', cursor: 'pointer', textAlign: 'left' }}
-                >
-                  <div className={styles.quickTileContent}>
-                    <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(245, 158, 11, 0.14)', color: '#fbbf24' }}>
-                      <AlertCircle size={22} />
-                    </div>
-                    <div>
-                      <div className={styles.quickTileTitle}>Request Correction</div>
-                      <div className={styles.quickTileSub}>Fix missed or incorrect punch</div>
-                    </div>
+              <button
+                type="button"
+                onClick={() => setShowCorrectionModal(true)}
+                className={styles.quickTile}
+                style={{ width: '100%', cursor: 'pointer', textAlign: 'left' }}
+              >
+                <div className={styles.quickTileContent}>
+                  <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(245, 158, 11, 0.14)', color: '#fbbf24' }}>
+                    <AlertCircle size={22} />
                   </div>
-                  <ChevronRight size={18} className={styles.arrowIcon} />
-                </button>
+                  <div>
+                    <div className={styles.quickTileTitle}>Request Correction</div>
+                    <div className={styles.quickTileSub}>Fix missed or incorrect punch</div>
+                  </div>
+                </div>
+                <ChevronRight size={18} className={styles.arrowIcon} />
+              </button>
 
-                <Link href={`/${orgCode}/staff/attendance`} className={styles.quickTile}>
-                  <div className={styles.quickTileContent}>
-                    <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(129, 140, 248, 0.14)', color: '#818cf8' }}>
-                      <History size={22} />
-                    </div>
-                    <div>
-                      <div className={styles.quickTileTitle}>View Log History</div>
-                      <div className={styles.quickTileSub}>Full attendance history</div>
-                    </div>
+              <Link href={`/${orgCode}/staff/attendance`} className={styles.quickTile}>
+                <div className={styles.quickTileContent}>
+                  <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(129, 140, 248, 0.14)', color: '#818cf8' }}>
+                    <History size={22} />
                   </div>
-                  <ChevronRight size={18} className={styles.arrowIcon} />
-                </Link>
-              </div>
+                  <div>
+                    <div className={styles.quickTileTitle}>View Log History</div>
+                    <div className={styles.quickTileSub}>Full attendance history</div>
+                  </div>
+                </div>
+                <ChevronRight size={18} className={styles.arrowIcon} />
+              </Link>
             </div>
+          </div>
+        </div>
 
-            {/* RECENT ATTENDANCE ACTIVITY LOGS WITH EXPANDABLE VIEW MORE/LESS */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
-                  <History size={18} color="#818cf8" />
-                  <span>Recent Attendance Logs</span>
-                </h2>
-                {recentRecords.length > 3 && (
-                  <button
-                    type="button"
-                    onClick={() => setIsLogsExpanded(!isLogsExpanded)}
-                    style={{
-                      background: 'rgba(129, 140, 248, 0.12)',
-                      border: '1px solid rgba(129, 140, 248, 0.3)',
-                      color: '#818cf8',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <span>{isLogsExpanded ? 'View Less' : `View More (${recentRecords.length - 3})`}</span>
-                    <ChevronDown size={13} style={{ transform: isLogsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
-                  </button>
-                )}
+        {/* BOTTOM SECTION: RECENT ATTENDANCE LOGS (BELOW CLOCK CARD & QUICK ACCESS) */}
+        <div style={{ marginBottom: '24px', marginTop: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
+              <History size={18} color="#818cf8" />
+              <span>Recent Attendance Logs</span>
+            </h2>
+            {recentRecords.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setIsLogsExpanded(!isLogsExpanded)}
+                style={{
+                  background: 'rgba(129, 140, 248, 0.12)',
+                  border: '1px solid rgba(129, 140, 248, 0.3)',
+                  color: '#818cf8',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>{isLogsExpanded ? 'View Less' : `View More (${Math.min(recentRecords.length, 20) - 5})`}</span>
+                <ChevronDown size={13} style={{ transform: isLogsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+              </button>
+            )}
+          </div>
+
+          <div className={styles.historyTableCard}>
+            {recentRecords.length === 0 ? (
+              <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                No recent attendance punch records found.
               </div>
+            ) : (
+              <>
+                <div className={styles.tableScrollWrapper}>
+                  <table className={styles.historyTable}>
+                    <thead>
+                      <tr className={styles.tableHeaderRow}>
+                        <th className={styles.tableHeaderTh}>Punch Type</th>
+                        <th className={styles.tableHeaderTh}>Branch</th>
+                        <th className={styles.tableHeaderTh}>Timestamp</th>
+                        <th className={styles.tableHeaderTh}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(isLogsExpanded ? recentRecords.slice(0, 20) : recentRecords.slice(0, 5)).map((r, i) => (
+                        <tr key={i} className={styles.tableRow}>
+                          <td className={styles.tableTd}>
+                            <span
+                              style={{
+                                fontSize: '11.5px',
+                                fontWeight: 800,
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                backgroundColor: r.type === 'CLOCK_IN' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                color: r.type === 'CLOCK_IN' ? '#34d399' : '#fbbf24',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              <Clock size={12} />
+                              {r.type === 'CLOCK_IN' ? 'CLOCK IN' : 'CLOCK OUT'}
+                            </span>
+                          </td>
+                          <td className={styles.tableTd} style={{ color: '#ffffff', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            {r.branch?.name || 'Main Branch'}
+                          </td>
+                          <td className={styles.tableTd} style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
+                            {formatDateTimeInTimezone(r.timestamp)}
+                          </td>
+                          <td className={styles.tableTd}>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                color: '#34d399',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              VERIFIED
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-              <div className={styles.historyTableCard}>
-                {recentRecords.length === 0 ? (
-                  <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
-                    No recent attendance punch records found.
+                {recentRecords.length > 5 && (
+                  <div style={{ padding: '10px', textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsLogsExpanded(!isLogsExpanded)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#818cf8',
+                        fontSize: '12.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 12px',
+                        borderRadius: '6px',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <span>{isLogsExpanded ? 'View Less' : `View More (${Math.min(recentRecords.length, 20) - 5} more logs)`}</span>
+                      <ChevronDown size={14} style={{ transform: isLogsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                    </button>
                   </div>
-                ) : (
-                  <>
-                    <div className={styles.tableScrollWrapper}>
-                      <table className={styles.historyTable}>
-                        <thead>
-                          <tr className={styles.tableHeaderRow}>
-                            <th className={styles.tableHeaderTh}>Punch Type</th>
-                            <th className={styles.tableHeaderTh}>Branch</th>
-                            <th className={styles.tableHeaderTh}>Timestamp</th>
-                            <th className={styles.tableHeaderTh}>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(isLogsExpanded ? recentRecords : recentRecords.slice(0, 3)).map((r, i) => (
-                            <tr key={i} className={styles.tableRow}>
-                              <td className={styles.tableTd}>
-                                <span
-                                  style={{
-                                    fontSize: '11.5px',
-                                    fontWeight: 800,
-                                    padding: '4px 10px',
-                                    borderRadius: '6px',
-                                    backgroundColor: r.type === 'CLOCK_IN' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                                    color: r.type === 'CLOCK_IN' ? '#34d399' : '#fbbf24',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  <Clock size={12} />
-                                  {r.type === 'CLOCK_IN' ? 'CLOCK IN' : 'CLOCK OUT'}
-                                </span>
-                              </td>
-                              <td className={styles.tableTd} style={{ color: '#ffffff', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                {r.branch?.name || 'Main Branch'}
-                              </td>
-                              <td className={styles.tableTd} style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
-                                {formatDateTimeInTimezone(r.timestamp)}
-                              </td>
-                              <td className={styles.tableTd}>
-                                <span
-                                  style={{
-                                    fontSize: '11px',
-                                    fontWeight: 800,
-                                    padding: '3px 8px',
-                                    borderRadius: '6px',
-                                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                                    color: '#34d399',
-                                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  VERIFIED
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {recentRecords.length > 3 && (
-                      <div style={{ padding: '10px', textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
-                        <button
-                          type="button"
-                          onClick={() => setIsLogsExpanded(!isLogsExpanded)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#818cf8',
-                            fontSize: '12.5px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '4px 12px',
-                            borderRadius: '6px',
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          <span>{isLogsExpanded ? 'View Less' : `View More (${recentRecords.length - 3} more logs)`}</span>
-                          <ChevronDown size={14} style={{ transform: isLogsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
-                        </button>
-                      </div>
-                    )}
-                  </>
                 )}
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </div>
       </main>

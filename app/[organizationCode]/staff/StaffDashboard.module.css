@@ -566,6 +566,12 @@
   margin-bottom: 36px;
 }
 
+.verticalQuickTilesGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .quickTile {
   padding: 22px;
   border-radius: 20px;
