@@ -116,6 +116,8 @@ export async function POST(
       idDocLast4,
       idDocHash,
       branchIds = [],
+      shiftPatternIds = [],
+      shiftPatternId,
     } = body;
 
     // 1. Validation: Name and Email are mandatory. Phone is optional.
@@ -246,6 +248,27 @@ export async function POST(
               branchId: bId,
               assignedBy: auth.session!.user.name || auth.session!.user.email,
             })),
+          });
+        }
+
+        // Shift assignments
+        const effectiveFromDate = new Date();
+        effectiveFromDate.setHours(0, 0, 0, 0);
+
+        const patternsToAssign: string[] = Array.isArray(shiftPatternIds) && shiftPatternIds.length > 0
+          ? shiftPatternIds
+          : typeof shiftPatternId === 'string' && shiftPatternId.trim()
+          ? [shiftPatternId.trim()]
+          : [];
+
+        for (const sId of patternsToAssign) {
+          await tx.shiftAssignment.create({
+            data: {
+              staffProfileId: profile.id,
+              shiftPatternId: sId,
+              effectiveFrom: effectiveFromDate,
+              assignedBy: auth.session!.user.name || auth.session!.user.email,
+            },
           });
         }
 

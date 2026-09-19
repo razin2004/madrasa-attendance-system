@@ -27,6 +27,11 @@
   width: 80px;
 }
 
+.sidebar.collapsed .sidebarHeader {
+  justify-content: center;
+  padding: 0;
+}
+
 .sidebarHeader {
   height: 64px;
   padding: 0 16px;

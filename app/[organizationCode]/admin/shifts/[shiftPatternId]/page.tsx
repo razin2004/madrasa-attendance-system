@@ -348,44 +348,74 @@ export default function ShiftPatternDetailPage() {
     e.preventDefault();
     setConflictError(null);
 
-    if (selectedStaffIds.length === 0) {
-      toast.error('Please select at least one staff member.');
+    const todayStr = formatDateToIsoDay(new Date());
+    const currentlyAssignedMap = new Map<string, string>();
+    if (pattern?.assignments) {
+      pattern.assignments.forEach((a) => {
+        if (!a.effectiveTo || a.effectiveTo.slice(0, 10) >= todayStr) {
+          currentlyAssignedMap.set(a.staffProfile.id, a.id);
+        }
+      });
+    }
+
+    const currentlyAssignedStaffIds = Array.from(currentlyAssignedMap.keys());
+    const staffIdsToRemove = currentlyAssignedStaffIds.filter((id) => !selectedStaffIds.includes(id));
+    const staffIdsToAdd = selectedStaffIds.filter((id) => !currentlyAssignedStaffIds.includes(id));
+
+    if (staffIdsToRemove.length === 0 && staffIdsToAdd.length === 0) {
+      toast.info('No changes made to staff assignments.');
+      setAssignModalOpen(false);
       return;
     }
 
-    if (!effectiveFrom) {
+    if (!effectiveFrom && staffIdsToAdd.length > 0) {
       toast.error('Effective start date is required.');
       return;
     }
 
     try {
       setAssigning(true);
-      const res = await fetch(`/api/org/${organizationCode}/shift-assignments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shiftPatternId,
-          staffProfileIds: selectedStaffIds,
-          effectiveFrom,
-          effectiveTo: effectiveTo || null,
-        }),
-      });
 
-      const data = await res.json();
-      if (data.success) {
-        toast.success('Staff assigned successfully.');
-        setAssignModalOpen(false);
-        setSelectedStaffIds([]);
-        fetchInitialData();
-      } else {
-        if (res.status === 409) {
-          setConflictError(data.error || 'Shift assignment conflict detected. Staff already has another shift assigned for this date range.');
-        } else {
-          toast.error(data.error || 'Failed to assign staff.');
+      // Handle removals
+      for (const removeId of staffIdsToRemove) {
+        const assignmentId = currentlyAssignedMap.get(removeId);
+        if (assignmentId) {
+          await fetch(`/api/org/${organizationCode}/shift-assignments/${assignmentId}`, {
+            method: 'DELETE',
+          });
         }
       }
+
+      // Handle additions
+      if (staffIdsToAdd.length > 0) {
+        const res = await fetch(`/api/org/${organizationCode}/shift-assignments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shiftPatternId,
+            staffProfileIds: staffIdsToAdd,
+            effectiveFrom,
+            effectiveTo: effectiveTo || null,
+          }),
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          if (res.status === 409) {
+            setConflictError(data.error || 'Shift assignment conflict detected.');
+          } else {
+            toast.error(data.error || 'Failed to assign staff.');
+          }
+          fetchInitialData();
+          return;
+        }
+      }
+
+      toast.success('Staff assignments updated successfully.');
+      setAssignModalOpen(false);
+      fetchInitialData();
     } catch {
-      toast.error('Network error assigning shift pattern.');
+      toast.error('Network error updating shift assignments.');
     } finally {
       setAssigning(false);
     }
@@ -467,6 +497,11 @@ export default function ShiftPatternDetailPage() {
               onClick={() => {
                 setMenuOpen(false);
                 setConflictError(null);
+                const todayStr = formatDateToIsoDay(new Date());
+                const currentlyAssignedIds = (pattern?.assignments || [])
+                  .filter((a) => !a.effectiveTo || a.effectiveTo.slice(0, 10) >= todayStr)
+                  .map((a) => a.staffProfile.id);
+                setSelectedStaffIds(currentlyAssignedIds);
                 setAssignModalOpen(true);
               }}
               disabled={!isActive}
@@ -935,18 +970,9 @@ export default function ShiftPatternDetailPage() {
                 </div>
               </div>
 
-              {/* Compute staff available for assignment (exclude staff with active assignments to this pattern) */}
+              {/* Render all staff for assignment, with pre-ticked checkboxes for currently assigned staff */}
               {(() => {
                 const todayStr = formatDateToIsoDay(new Date());
-                const availableStaff = allStaff.filter((staff) => {
-                  const isAssigned = pattern.assignments.some((a) => {
-                    if (a.staffProfile.id !== staff.id) return false;
-                    if (!a.effectiveTo) return true;
-                    return a.effectiveTo.slice(0, 10) >= todayStr;
-                  });
-                  return !isAssigned;
-                });
-
                 return (
                   <div className="form-group">
                     <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
@@ -954,7 +980,7 @@ export default function ShiftPatternDetailPage() {
                     </label>
                     <div
                       style={{
-                        maxHeight: '200px',
+                        maxHeight: '220px',
                         overflowY: 'auto',
                         border: '1px solid var(--border-subtle)',
                         borderRadius: 'var(--radius-md)',
@@ -965,13 +991,16 @@ export default function ShiftPatternDetailPage() {
                         gap: '6px',
                       }}
                     >
-                      {availableStaff.length === 0 ? (
+                      {allStaff.length === 0 ? (
                         <div style={{ padding: '16px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px', fontStyle: 'italic' }}>
-                          All active staff members are already assigned to this shift pattern.
+                          No staff members found.
                         </div>
                       ) : (
-                        availableStaff.map((s) => {
+                        allStaff.map((s) => {
                           const isSelected = selectedStaffIds.includes(s.id);
+                          const isCurrentlyAssigned = pattern.assignments.some(
+                            (a) => a.staffProfile.id === s.id && (!a.effectiveTo || a.effectiveTo.slice(0, 10) >= todayStr)
+                          );
                           return (
                             <div
                               key={s.id}
@@ -990,30 +1019,48 @@ export default function ShiftPatternDetailPage() {
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
+                                justifyContent: 'space-between',
                                 gap: '10px',
                               }}
                             >
-                              <div
-                                style={{
-                                  width: '16px',
-                                  height: '16px',
-                                  borderRadius: '3px',
-                                  backgroundColor: isSelected ? '#4f46e5' : 'transparent',
-                                  border: `1px solid ${isSelected ? '#4f46e5' : 'var(--border-medium)'}`,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  color: '#ffffff',
-                                }}
-                              >
-                                {isSelected && <Check size={11} />}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div
+                                  style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '3px',
+                                    backgroundColor: isSelected ? '#4f46e5' : 'transparent',
+                                    border: `1px solid ${isSelected ? '#4f46e5' : 'var(--border-medium)'}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#ffffff',
+                                  }}
+                                >
+                                  {isSelected && <Check size={11} />}
+                                </div>
+                                <div style={{ fontSize: '13px', color: '#ffffff' }}>
+                                  <span style={{ fontFamily: 'var(--font-mono)', color: '#818cf8', marginRight: '6px' }}>
+                                    {s.staffId}
+                                  </span>
+                                  {s.name}
+                                </div>
                               </div>
-                              <div style={{ fontSize: '13px', color: '#ffffff' }}>
-                                <span style={{ fontFamily: 'var(--font-mono)', color: '#818cf8', marginRight: '6px' }}>
-                                  {s.staffId}
+                              {isCurrentlyAssigned && (
+                                <span
+                                  style={{
+                                    fontSize: '10.5px',
+                                    fontWeight: 700,
+                                    color: '#34d399',
+                                    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+                                    padding: '2px 7px',
+                                    borderRadius: '4px',
+                                    border: '1px solid rgba(52, 211, 153, 0.3)',
+                                  }}
+                                >
+                                  ✓ Assigned
                                 </span>
-                                {s.name}
-                              </div>
+                              )}
                             </div>
                           );
                         })

@@ -205,14 +205,18 @@ export default function StaffProfilePage() {
       const shiftHistoryRes = await fetch(`/api/org/${organizationCode}/staff/${staffId}/shift`);
       const shiftHistoryData = await shiftHistoryRes.json();
       if (shiftHistoryData.success) {
-        setActiveShiftAssignment(shiftHistoryData.activeAssignment || null);
-        setActiveShiftAssignments(
+        const activeList =
           shiftHistoryData.activeAssignments && shiftHistoryData.activeAssignments.length > 0
             ? shiftHistoryData.activeAssignments
             : shiftHistoryData.activeAssignment
             ? [shiftHistoryData.activeAssignment]
-            : []
-        );
+            : [];
+        setActiveShiftAssignment(shiftHistoryData.activeAssignment || null);
+        setActiveShiftAssignments(activeList);
+
+        // Pre-select / tick checkboxes for all active assigned shift patterns
+        const activePatternIds = activeList.map((a: any) => a.shiftPattern?.id).filter(Boolean);
+        setSelectedShiftPatternIds(activePatternIds);
       }
     } catch {
       toast.error('Network error loading staff profile.');
@@ -383,43 +387,53 @@ export default function StaffProfilePage() {
     }
   };
 
-  // Assign Shift Pattern
+  // Save Shift Assignments (Add new ticked shifts & remove unticked shifts)
   const handleSaveShiftAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
-    const idsToAssign = selectedShiftPatternIds.length > 0
-      ? selectedShiftPatternIds
-      : selectedShiftPatternId ? [selectedShiftPatternId] : [];
-
-    if (idsToAssign.length === 0) {
-      toast.error('Please select at least one shift pattern.');
-      return;
-    }
     try {
       setSavingShift(true);
-      const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/shift`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shiftPatternIds: idsToAssign,
-          effectiveFrom: shiftEffectiveFrom,
-        }),
-      });
+      const currentAssignedIds = activeShiftAssignments
+        .map((a: any) => a.shiftPattern?.id)
+        .filter(Boolean);
 
-      const data = await res.json();
-      if (data.success) {
-        toast.success(
-          idsToAssign.length > 1
-            ? `${idsToAssign.length} shift patterns assigned successfully.`
-            : 'Shift pattern assigned successfully.'
-        );
-        setSelectedShiftPatternIds([]);
-        setSelectedShiftPatternId('');
-        fetchData();
-      } else {
-        toast.error(data.error || 'Failed to assign shift pattern.');
+      // 1. Remove assignments for shift patterns that were unticked
+      const assignmentsToRemove = activeShiftAssignments.filter(
+        (a: any) => a.shiftPattern?.id && !selectedShiftPatternIds.includes(a.shiftPattern.id)
+      );
+
+      for (const removeAssig of assignmentsToRemove) {
+        await fetch(`/api/org/${organizationCode}/shift-assignments/${removeAssig.id}`, {
+          method: 'DELETE',
+        });
       }
+
+      // 2. Add newly ticked shift patterns
+      const idsToAdd = selectedShiftPatternIds.filter(
+        (pId) => !currentAssignedIds.includes(pId)
+      );
+
+      if (idsToAdd.length > 0) {
+        const res = await fetch(`/api/org/${organizationCode}/staff/${staffId}/shift`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shiftPatternIds: idsToAdd,
+            effectiveFrom: shiftEffectiveFrom,
+          }),
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          toast.error(data.error || 'Failed to assign shift pattern.');
+          await fetchData(true);
+          return;
+        }
+      }
+
+      toast.success('Shift pattern assignments updated successfully.');
+      await fetchData(true);
     } catch {
-      toast.error('Network error assigning shift pattern.');
+      toast.error('Network error updating shift assignments.');
     } finally {
       setSavingShift(false);
     }

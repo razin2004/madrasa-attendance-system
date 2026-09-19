@@ -50,8 +50,9 @@ export default function OnboardStaffPage() {
 
   const [branding, setBranding] = useState<OrgBranding | null>(null);
   const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [shiftPatterns, setShiftPatterns] = useState<any[]>([]);
 
-  // Step Tracker: 1 = Basic Info, 2 = Branch Assignment, 3 = ID Upload, 4 = Review & Confirm
+  // Step Tracker: 1 = Basic Info, 2 = Branch & Shift Assignment, 3 = ID Upload, 4 = Review & Confirm
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Form Fields
@@ -62,8 +63,9 @@ export default function OnboardStaffPage() {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
 
-  // Step 2: Branch Assignment
+  // Step 2: Branch & Shift Assignment
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  const [selectedShiftPatternIds, setSelectedShiftPatternIds] = useState<string[]>([]);
 
   // Step 3: ID Document Collection
   const [idDocType, setIdDocType] = useState('AADHAAR');
@@ -155,6 +157,13 @@ export default function OnboardStaffPage() {
           setSelectedBranchIds([activeBranches[0].id]);
         }
       }
+
+      const shiftRes = await fetch(`/api/org/${organizationCode}/shift-patterns`);
+      const shiftData = await shiftRes.json();
+      if (shiftData.success) {
+        const patterns = shiftData.shiftPatterns || shiftData.patterns || [];
+        setShiftPatterns(patterns);
+      }
     } catch {}
   };
 
@@ -163,6 +172,14 @@ export default function OnboardStaffPage() {
       setSelectedBranchIds(selectedBranchIds.filter((id) => id !== bId));
     } else {
       setSelectedBranchIds([...selectedBranchIds, bId]);
+    }
+  };
+
+  const toggleShiftSelection = (sId: string) => {
+    if (selectedShiftPatternIds.includes(sId)) {
+      setSelectedShiftPatternIds(selectedShiftPatternIds.filter((id) => id !== sId));
+    } else {
+      setSelectedShiftPatternIds([...selectedShiftPatternIds, sId]);
     }
   };
 
@@ -209,6 +226,7 @@ export default function OnboardStaffPage() {
           address: address.trim() || '',
           idDocType,
           branchIds: selectedBranchIds,
+          shiftPatternIds: selectedShiftPatternIds,
         }),
       });
 
@@ -552,6 +570,66 @@ export default function OnboardStaffPage() {
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {/* Shift Pattern Selection Section */}
+                  {shiftPatterns.length > 0 && (
+                    <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
+                      <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+                        Assign Shift Schedule Pattern(s) <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>(Optional - Multi-Shift Supported)</span>
+                      </label>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                        Select shift patterns to assign to this staff member upon onboarding.
+                      </p>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+                        {shiftPatterns.map((p) => {
+                          const isSelected = selectedShiftPatternIds.includes(p.id);
+                          const workDays = p.weeklyDays?.filter((w: any) => !w.isHoliday && w.startTime && w.endTime) || [];
+                          const hoursText = workDays.length > 0 ? `${workDays[0].startTime} – ${workDays[0].endTime}` : 'Custom Schedule';
+
+                          return (
+                            <div
+                              key={p.id}
+                              onClick={() => toggleShiftSelection(p.id)}
+                              style={{
+                                padding: '14px 16px',
+                                borderRadius: 'var(--radius-md)',
+                                backgroundColor: isSelected ? 'rgba(192, 132, 252, 0.15)' : 'rgba(13, 18, 31, 0.8)',
+                                border: `1px solid ${isSelected ? 'rgba(192, 132, 252, 0.5)' : 'var(--border-subtle)'}`,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: '20px',
+                                  height: '20px',
+                                  borderRadius: '4px',
+                                  backgroundColor: isSelected ? '#a855f7' : 'rgba(255, 255, 255, 0.06)',
+                                  border: `1px solid ${isSelected ? '#a855f7' : 'var(--border-medium)'}`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: '#ffffff',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {isSelected && <Check size={14} />}
+                              </div>
+
+                              <div>
+                                <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#ffffff' }}>{p.name}</div>
+                                <div style={{ fontSize: '11.5px', color: '#c084fc', marginTop: '1px' }}>{hoursText}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 

@@ -150,6 +150,7 @@ export default function StaffDashboardPage() {
   const [precheck, setPrecheck] = useState<PrecheckData | null>(null);
   const [todayStatus, setTodayStatus] = useState<TodayAttendanceStatus | null>(null);
   const [recentRecords, setRecentRecords] = useState<any[]>([]);
+  const [isLogsExpanded, setIsLogsExpanded] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
@@ -433,7 +434,7 @@ export default function StaffDashboardPage() {
 
     try {
       const tzOffset = new Date().getTimezoneOffset();
-      const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=5&clientTimezoneOffset=${tzOffset}`);
+      const histRes = await fetch(`/api/org/${orgCode}/attendance/history?limit=15&clientTimezoneOffset=${tzOffset}`);
       const histData = await histRes.json();
       if (histData.success) {
         setRecentRecords(histData.records || []);
@@ -1221,7 +1222,7 @@ export default function StaffDashboardPage() {
                   </div>
 
                   {!isReadyToClock && (
-                    <p className={styles.lockGuidanceText}>
+                    <p className={styles.lockGuidanceText} style={{ textAlign: 'center', margin: '14px auto 0 auto', width: '100%', maxWidth: '360px' }}>
                       {!hasSchedule
                         ? 'Attendance action is locked because no shift schedule is assigned for today.'
                         : 'All 3 security verification layers (Device, Network IP, Geofence GPS) must pass to unlock Clock In / Clock Out.'}
@@ -1231,135 +1232,191 @@ export default function StaffDashboardPage() {
               )}
             </div>
           </div>
-        </div>
 
-        {/* PANEL 3: QUICK ACTIONS GRID */}
-        <div style={{ marginBottom: '14px' }}>
-          <h2 className={styles.sectionTitle}>
-            <Sparkles size={18} color="#38bdf8" />
-            <span>Quick Workspace Actions</span>
-          </h2>
-        </div>
+          {/* RIGHT COLUMN: QUICK ACTIONS & EXPANDABLE RECENT LOGS */}
+          <div className={styles.rightDashboardCol}>
+            {/* QUICK ACTIONS PANEL */}
+            <div>
+              <h2 className={styles.sectionTitle} style={{ marginBottom: '14px' }}>
+                <Sparkles size={18} color="#38bdf8" />
+                <span>Quick Workspace Actions</span>
+              </h2>
 
-        <div className={styles.quickActionsGrid}>
-          <Link href={`/${orgCode}/staff/leave/new`} className={styles.quickTile}>
-            <div className={styles.quickTileContent}>
-              <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8' }}>
-                <FilePlus size={22} />
-              </div>
-              <div>
-                <div className={styles.quickTileTitle}>Apply Leave</div>
-                <div className={styles.quickTileSub}>Submit time-off application</div>
+              <div className={styles.quickActionsGrid} style={{ marginBottom: 0 }}>
+                <Link href={`/${orgCode}/staff/leave/new`} className={styles.quickTile}>
+                  <div className={styles.quickTileContent}>
+                    <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8' }}>
+                      <FilePlus size={22} />
+                    </div>
+                    <div>
+                      <div className={styles.quickTileTitle}>Apply Leave</div>
+                      <div className={styles.quickTileSub}>Submit time-off application</div>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className={styles.arrowIcon} />
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCorrectionModal(true)}
+                  className={styles.quickTile}
+                  style={{ width: '100%', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <div className={styles.quickTileContent}>
+                    <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(245, 158, 11, 0.14)', color: '#fbbf24' }}>
+                      <AlertCircle size={22} />
+                    </div>
+                    <div>
+                      <div className={styles.quickTileTitle}>Request Correction</div>
+                      <div className={styles.quickTileSub}>Fix missed or incorrect punch</div>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className={styles.arrowIcon} />
+                </button>
+
+                <Link href={`/${orgCode}/staff/attendance`} className={styles.quickTile}>
+                  <div className={styles.quickTileContent}>
+                    <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(129, 140, 248, 0.14)', color: '#818cf8' }}>
+                      <History size={22} />
+                    </div>
+                    <div>
+                      <div className={styles.quickTileTitle}>View Log History</div>
+                      <div className={styles.quickTileSub}>Full attendance history</div>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className={styles.arrowIcon} />
+                </Link>
               </div>
             </div>
-            <ChevronRight size={18} className={styles.arrowIcon} />
-          </Link>
 
-          <button
-            type="button"
-            onClick={() => setShowCorrectionModal(true)}
-            className={styles.quickTile}
-            style={{ width: '100%', cursor: 'pointer', textAlign: 'left' }}
-          >
-            <div className={styles.quickTileContent}>
-              <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(245, 158, 11, 0.14)', color: '#fbbf24' }}>
-                <AlertCircle size={22} />
+            {/* RECENT ATTENDANCE ACTIVITY LOGS WITH EXPANDABLE VIEW MORE/LESS */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
+                  <History size={18} color="#818cf8" />
+                  <span>Recent Attendance Logs</span>
+                </h2>
+                {recentRecords.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsLogsExpanded(!isLogsExpanded)}
+                    style={{
+                      background: 'rgba(129, 140, 248, 0.12)',
+                      border: '1px solid rgba(129, 140, 248, 0.3)',
+                      color: '#818cf8',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>{isLogsExpanded ? 'View Less' : `View More (${recentRecords.length - 3})`}</span>
+                    <ChevronDown size={13} style={{ transform: isLogsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                  </button>
+                )}
               </div>
-              <div>
-                <div className={styles.quickTileTitle}>Request Correction</div>
-                <div className={styles.quickTileSub}>Fix missed or incorrect punch</div>
+
+              <div className={styles.historyTableCard}>
+                {recentRecords.length === 0 ? (
+                  <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                    No recent attendance punch records found.
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.tableScrollWrapper}>
+                      <table className={styles.historyTable}>
+                        <thead>
+                          <tr className={styles.tableHeaderRow}>
+                            <th className={styles.tableHeaderTh}>Punch Type</th>
+                            <th className={styles.tableHeaderTh}>Branch</th>
+                            <th className={styles.tableHeaderTh}>Timestamp</th>
+                            <th className={styles.tableHeaderTh}>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(isLogsExpanded ? recentRecords : recentRecords.slice(0, 3)).map((r, i) => (
+                            <tr key={i} className={styles.tableRow}>
+                              <td className={styles.tableTd}>
+                                <span
+                                  style={{
+                                    fontSize: '11.5px',
+                                    fontWeight: 800,
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    backgroundColor: r.type === 'CLOCK_IN' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                    color: r.type === 'CLOCK_IN' ? '#34d399' : '#fbbf24',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  <Clock size={12} />
+                                  {r.type === 'CLOCK_IN' ? 'CLOCK IN' : 'CLOCK OUT'}
+                                </span>
+                              </td>
+                              <td className={styles.tableTd} style={{ color: '#ffffff', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                {r.branch?.name || 'Main Branch'}
+                              </td>
+                              <td className={styles.tableTd} style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
+                                {formatDateTimeInTimezone(r.timestamp)}
+                              </td>
+                              <td className={styles.tableTd}>
+                                <span
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 800,
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                    color: '#34d399',
+                                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  VERIFIED
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {recentRecords.length > 3 && (
+                      <div style={{ padding: '10px', textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.06)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIsLogsExpanded(!isLogsExpanded)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#818cf8',
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span>{isLogsExpanded ? 'View Less' : `View More (${recentRecords.length - 3} more logs)`}</span>
+                          <ChevronDown size={14} style={{ transform: isLogsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
-            <ChevronRight size={18} className={styles.arrowIcon} />
-          </button>
-
-          <Link href={`/${orgCode}/staff/attendance`} className={styles.quickTile}>
-            <div className={styles.quickTileContent}>
-              <div className={styles.quickTileIcon} style={{ backgroundColor: 'rgba(129, 140, 248, 0.14)', color: '#818cf8' }}>
-                <History size={22} />
-              </div>
-              <div>
-                <div className={styles.quickTileTitle}>View Log History</div>
-                <div className={styles.quickTileSub}>Full attendance history</div>
-              </div>
-            </div>
-            <ChevronRight size={18} className={styles.arrowIcon} />
-          </Link>
-        </div>
-
-        {/* PANEL 4: RECENT ATTENDANCE ACTIVITY LOGS */}
-        <div style={{ marginBottom: '24px' }}>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '14px' }}>
-            <History size={18} color="#818cf8" />
-            <span>Recent Attendance Logs</span>
-          </h2>
-
-          <div className={styles.historyTableCard}>
-            {recentRecords.length === 0 ? (
-              <div style={{ padding: '36px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
-                No recent attendance punch records found.
-              </div>
-            ) : (
-              <div className={styles.tableScrollWrapper}>
-                <table className={styles.historyTable}>
-                  <thead>
-                    <tr className={styles.tableHeaderRow}>
-                      <th className={styles.tableHeaderTh}>Punch Type</th>
-                      <th className={styles.tableHeaderTh}>Branch</th>
-                      <th className={styles.tableHeaderTh}>Timestamp</th>
-                      <th className={styles.tableHeaderTh}>Verification Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentRecords.map((r, i) => (
-                      <tr key={i} className={styles.tableRow}>
-                        <td className={styles.tableTd}>
-                          <span
-                            style={{
-                              fontSize: '11.5px',
-                              fontWeight: 800,
-                              padding: '4px 10px',
-                              borderRadius: '6px',
-                              backgroundColor: r.type === 'CLOCK_IN' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                              color: r.type === 'CLOCK_IN' ? '#34d399' : '#fbbf24',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            <Clock size={12} />
-                            {r.type === 'CLOCK_IN' ? 'CLOCK IN' : 'CLOCK OUT'}
-                          </span>
-                        </td>
-                        <td className={styles.tableTd} style={{ color: '#ffffff', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                          {r.branch?.name || 'Main Branch'}
-                        </td>
-                        <td className={styles.tableTd} style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
-                          {formatDateTimeInTimezone(r.timestamp)}
-                        </td>
-                        <td className={styles.tableTd}>
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              fontWeight: 800,
-                              padding: '3px 8px',
-                              borderRadius: '6px',
-                              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                              color: '#34d399',
-                              border: '1px solid rgba(16, 185, 129, 0.3)',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            VERIFIED
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         </div>
       </main>

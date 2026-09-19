@@ -247,6 +247,12 @@
   margin-bottom: 32px;
 }
 
+.rightDashboardCol {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 /* PANEL 1: HERO DIGITAL CLOCK & ACTION HUB */
 .heroClockCard {
   padding: 34px 30px;
@@ -415,9 +421,11 @@
 .lockGuidanceText {
   font-size: 12px;
   color: #94a3b8;
-  margin-top: 14px;
+  margin: 14px auto 0 auto;
+  text-align: center;
   line-height: 1.45;
-  max-width: 320px;
+  max-width: 360px;
+  width: 100%;
 }
 
 .zeroTrustFooter {
