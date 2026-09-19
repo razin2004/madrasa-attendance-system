@@ -742,13 +742,6 @@ export default function StaffDashboardPage() {
     return `${displayH}:${openM < 10 ? '0' : ''}${openM} ${ampm}`;
   })();
 
-  const isCompleted = Boolean(todayStatus?.isDailyLimitReached && !isClockedIn);
-  const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isCompleted && !isShiftEndedWithoutClockIn && !isTooEarlyToClockIn);
-
-  const initials = staffInfo?.name
-    ? staffInfo.name.trim().split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
-    : 'SG';
-
   const isNoShiftOrLeave = !hasSchedule || Boolean(todayStatus?.schedule?.isHoliday) || Boolean(selectedShiftObj?.isHoliday) || !selectedShiftObj || !selectedShiftObj.startTime;
   const isCompleted = Boolean(todayStatus?.isDailyLimitReached && !isClockedIn);
   const isReadyToClock = Boolean(precheck?.isReady && hasSchedule && !isNoShiftOrLeave && !isCompleted && !isShiftEndedWithoutClockIn && !isTooEarlyToClockIn);
