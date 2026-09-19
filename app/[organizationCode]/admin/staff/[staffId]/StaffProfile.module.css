@@ -21,6 +21,8 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* ==========================================================================
@@ -38,6 +40,8 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .heroCoverGlow {
@@ -58,63 +62,21 @@
   gap: 24px;
   flex-wrap: wrap;
   z-index: 1;
+  min-width: 0;
 }
 
 .heroAvatarSection {
   display: flex;
   align-items: center;
   gap: 24px;
-}
-
-.avatarBox {
-  position: relative;
-  width: 84px;
-  height: 84px;
-  border-radius: 26px;
-  background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3);
-  flex-shrink: 0;
-}
-
-.avatarInitials {
-  font-size: 32px;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.5px;
-}
-
-.statusPulse {
-  position: absolute;
-  bottom: -3px;
-  right: -3px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 3.5px solid #0f172a;
-}
-
-.statusPulseActive {
-  background-color: #34d399;
-  box-shadow: 0 0 12px #34d399;
-}
-
-.statusPulsePending {
-  background-color: #fbbf24;
-  box-shadow: 0 0 12px #fbbf24;
-}
-
-.statusPulseInactive {
-  background-color: #f87171;
-  box-shadow: 0 0 12px #f87171;
+  min-width: 0;
 }
 
 .heroTextGroup {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .heroTitle {
@@ -124,241 +86,8 @@
   letter-spacing: -0.6px;
   margin: 0;
   line-height: 1.2;
-}
-
-.heroMetaRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 2px;
-}
-
-.heroTag {
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  letter-spacing: 0.2px;
-}
-
-.heroTagPrimary {
-  font-family: var(--font-mono, monospace);
-  background: rgba(129, 140, 248, 0.15);
-  color: #a5b4fc;
-  border: 1px solid rgba(129, 140, 248, 0.3);
-}
-
-.heroTagSuccess {
-  background: rgba(52, 211, 153, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(52, 211, 153, 0.3);
-}
-
-.heroTagWarning {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.3);
-}
-
-.heroTagDanger {
-  background: rgba(248, 113, 113, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.3);
-}
-
-.heroTagMuted {
-  background: rgba(255, 255, 255, 0.06);
-  color: #94a3b8;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.heroActionsRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  z-index: 1;
-}
-
-.actionBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 16px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  border: none;
-  text-decoration: none;
-}
-
-.actionBtnPrimary {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(79, 70, 229, 0.35) 100%);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.2);
-}
-.actionBtnPrimary:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(79, 70, 229, 0.5) 100%);
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
-}
-
-.actionBtnWhatsapp {
-  background: rgba(37, 211, 102, 0.15);
-  color: #25D366;
-  border: 1px solid rgba(37, 211, 102, 0.35);
-  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.15);
-}
-.actionBtnWhatsapp:hover {
-  background: rgba(37, 211, 102, 0.3);
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.3);
-}
-
-.actionBtnPurple {
-  background: rgba(192, 132, 252, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(192, 132, 252, 0.35);
-}
-.actionBtnPurple:hover {
-  background: rgba(192, 132, 252, 0.3);
-  color: #ffffff;
-  transform: translateY(-2px);
-}
-
-.actionBtnSecondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-.actionBtnSecondary:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  transform: translateY(-2px);
-}
-
-/* ==========================================================================
-   Quick KPI Stat Cards Grid
-   ========================================================================== */
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.statCard {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  padding: 18px 20px;
-  backdrop-filter: blur(16px);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-.statCard:hover {
-  border-color: rgba(99, 102, 241, 0.35);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-}
-
-.statIconBox {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.statContent {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.statLabel {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.statVal {
-  font-size: 15.5px;
-  font-weight: 800;
-  color: #ffffff;
-  margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.statSubtext {
-  font-size: 11px;
-  color: #64748b;
-  margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ==========================================================================
-   Navigation Tabs Bar
-   ========================================================================== */
-.tabsBar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.7);
-  padding: 6px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow-x: auto;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-.tabButton {
-  padding: 11px 20px;
-  font-size: 13.5px;
-  font-weight: 700;
-  border-radius: 12px;
-  border: none;
-  background: transparent;
-  color: #94a3b8;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-.tabButton:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.tabButtonActive {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(79, 70, 229, 0.35) 100%) !important;
-  color: #a5b4fc !important;
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.2);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ==========================================================================
@@ -366,14 +95,16 @@
    ========================================================================== */
 .gridTwoCol {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+  width: 100%;
 }
 
 .gridMainSide {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 20px;
+  width: 100%;
 }
 
 .cardSection {
@@ -386,43 +117,25 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.cardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.cardTitle {
-  font-size: 16.5px;
-  font-weight: 800;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  letter-spacing: -0.3px;
-}
-
-.cardHeaderAction {
-  flex-shrink: 0;
-}
-
-/* Data Lists & Details */
 .infoGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 18px;
+  width: 100%;
 }
 
 .infoItem {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .infoLabel {
@@ -437,6 +150,8 @@
   font-size: 14.5px;
   font-weight: 700;
   color: #ffffff;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .techBadge {

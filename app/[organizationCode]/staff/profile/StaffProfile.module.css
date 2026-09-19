@@ -1,204 +1,257 @@
+/* =================================================================────────────
+   Staff Profile Page - Ultra Responsive Glassmorphic Layout
+   ============================================================================= */
+
 .profileContainer {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   width: 100%;
-  padding: 20px 24px 80px 24px;
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 20px 24px 90px 24px;
+  box-sizing: border-box;
   overflow-x: hidden;
 }
 
+@media (max-width: 768px) {
+  .profileContainer {
+    padding: 14px 12px 100px 12px;
+    gap: 16px;
+  }
+}
+
 .headerBar {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(12px);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.85) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 20px 24px;
+  border-radius: 20px;
+  padding: 24px 28px;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .headerBar h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.35rem;
+  font-weight: 800;
   color: #ffffff;
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
 }
 
 .headerBar p {
-  font-size: 0.8125rem;
+  font-size: 0.84rem;
   color: #94a3b8;
   margin: 0;
+  line-height: 1.45;
 }
 
-/* Avatar Preview Circle */
+/* Glass Card Foundation */
+.card {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.82) 0%, rgba(10, 14, 25, 0.9) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 24px 28px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 18px 16px;
+    border-radius: 16px;
+  }
+}
+
 .avatarSection {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  margin-bottom: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
 }
 
 .avatarCircle {
-  width: 70px;
-  height: 70px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-  position: relative;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
 }
 
 .avatarUploadBtn {
-  margin-top: 8px;
-  padding: 4px 12px;
-  border-radius: 14px;
+  margin-top: 10px;
+  padding: 5px 14px;
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  transition: all 0.2s ease;
 }
 
-.card {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+.avatarUploadBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .cardTitle {
-  font-size: 1.0625rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
   color: #ffffff;
   margin: 0 0 20px 0;
   display: flex;
   align-items: center;
   gap: 10px;
+  letter-spacing: -0.01em;
 }
 
+/* Info Grid - Responsive & Overflow Protected */
 .infoGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  width: 100%;
 }
 
 .infoItem {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-weight: 700;
 }
 
 .value {
-  font-size: 0.9375rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: #ffffff;
   overflow-wrap: anywhere;
   word-break: break-word;
+  white-space: normal;
 }
 
-/* Hardware & Security String Style */
 .hardwareString {
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
   color: #cbd5e1;
   word-break: break-all;
   overflow-wrap: anywhere;
-  white-space: pre-wrap;
+  white-space: normal;
 }
 
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .infoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .infoGrid,
+  .formGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Sign Out Card Section */
 .signOutSection {
-  margin-top: 10px;
-  padding: 20px;
-  background: rgba(239, 68, 68, 0.05);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 14px;
+  margin-top: 8px;
+  padding: 22px 26px;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
 }
 
 .signOutText h4 {
-  font-size: 0.9375rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
   color: #ffffff;
-  margin: 0 0 2px 0;
+  margin: 0 0 3px 0;
 }
 
 .signOutText p {
-  font-size: 0.8125rem;
+  font-size: 0.81rem;
   color: #f87171;
   margin: 0;
+  line-height: 1.4;
 }
 
 .signOutBtn {
-  padding: 10px 20px;
+  padding: 11px 22px;
   background: #ef4444;
   color: #ffffff;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+  flex-shrink: 0;
 }
 
 .signOutBtn:hover {
   background: #dc2626;
+  transform: translateY(-1px);
 }
 
-@media (max-width: 1023px) {
-  .infoGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 767px) {
-  .profileContainer {
-    padding: 14px 12px 90px 12px;
-  }
-  .infoGrid {
-    grid-template-columns: 1fr;
-  }
-  .card {
-    padding: 16px;
-    border-radius: 14px;
-  }
+@media (max-width: 640px) {
   .signOutSection {
     flex-direction: column;
     align-items: flex-start;
+    padding: 18px;
   }
   .signOutBtn {
     width: 100%;
     justify-content: center;
   }
 }
-

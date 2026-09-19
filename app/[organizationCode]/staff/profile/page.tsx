@@ -257,7 +257,7 @@ export default function StaffProfilePage() {
               Your identity card details have not been registered by administrator yet. Please submit your identity card details below:
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className={styles.formGrid}>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
                   Identity Document Type
