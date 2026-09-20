@@ -722,24 +722,24 @@ export default function ShiftPatternsPage() {
           {/* ACTIVE ADDITIONAL SHIFTS LIST SECTION */}
           {additionalShifts.length > 0 && (
             <div style={{ marginTop: '40px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'nowrap', marginBottom: '14px' }}>
-                <div>
-                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                    Assigned Additional Shifts ({additionalShifts.length})
-                  </h2>
-                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px', margin: 0 }}>
+              <div style={{ marginBottom: '14px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: '0 0 4px 0' }}>
+                  Assigned Additional Shifts ({additionalShifts.length})
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, flex: 1 }}>
                     Overtime and special holiday shift assignments for staff members.
                   </p>
-                </div>
 
-                <Link
-                  href={`/${organizationCode}/admin/shifts/additional`}
-                  className="btn btn-ghost btn-sm"
-                  style={{ fontSize: '12px', fontWeight: 700, color: '#818cf8', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '3px', borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 'auto' }}
-                >
-                  <span>View More</span>
-                  <ChevronRight size={14} />
-                </Link>
+                  <Link
+                    href={`/${organizationCode}/admin/shifts/additional`}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '12px', fontWeight: 700, color: '#818cf8', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '3px', borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 'auto' }}
+                  >
+                    <span>View More</span>
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
               </div>
 
               {/* HORIZONTALLY SCROLLABLE TABLE VIEW ON ALL DEVICES */}
@@ -825,35 +825,9 @@ export default function ShiftPatternsPage() {
 
       {/* ASSIGN / EDIT ADDITIONAL SHIFT MODAL */}
       {additionalModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-          }}
-        >
-          <div
-            className="glass-card"
-            style={{
-              width: '100%',
-              maxWidth: '560px',
-              backgroundColor: '#0d121f',
-              border: '1px solid var(--border-medium)',
-              borderRadius: '16px',
-              padding: '24px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.9)',
-              boxSizing: 'border-box',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.stickyModalHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24', flexShrink: 0 }}>
                   ⚡
@@ -901,13 +875,50 @@ export default function ShiftPatternsPage() {
             )}
 
             <form onSubmit={handleCreateOrUpdateAdditionalShift} noValidate>
-              {/* Target Staff Selection Dropdown with Search & Pinned Selected */}
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label className="form-label" style={{ margin: 0, fontSize: '12px', color: '#ffffff', fontWeight: 700 }}>
-                    {editingAdditionalShift ? 'Staff Member' : 'Select Staff Member(s)'}
+              {/* Target Staff Selection */}
+              {editingAdditionalShift ? (
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" style={{ marginBottom: '6px', fontSize: '12px', color: '#ffffff', fontWeight: 700 }}>
+                    Staff Member
                   </label>
-                  {!editingAdditionalShift && (
+                  {(() => {
+                    const staffMember = staffList.find((s) => s.id === editingAdditionalShift.staffProfileId) || {
+                      id: editingAdditionalShift.staffProfileId,
+                      name: editingAdditionalShift.staffName,
+                      staffId: editingAdditionalShift.staffId,
+                      avatarUrl: (editingAdditionalShift as any).avatarUrl,
+                    };
+                    return (
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: '10px',
+                          backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                          border: '1px solid rgba(99, 102, 241, 0.35)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                        }}
+                      >
+                        <StaffAvatar name={staffMember.name} avatarUrl={staffMember.avatarUrl} size="md" />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
+                            {staffMember.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>
+                            ID: {staffMember.staffId}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0, fontSize: '12px', color: '#ffffff', fontWeight: 700 }}>
+                      Select Staff Member(s)
+                    </label>
                     <button
                       type="button"
                       onClick={() => {
@@ -921,175 +932,171 @@ export default function ShiftPatternsPage() {
                     >
                       {selectedStaffIds.length === staffList.length ? 'Deselect All' : `Select All (${staffList.length})`}
                     </button>
-                  )}
-                </div>
-
-                {/* Search Input for Staff Member(s) */}
-                <div style={{ position: 'relative', marginBottom: '8px' }}>
-                  <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                  <input
-                    type="text"
-                    placeholder="Search staff by name, branch, or shift..."
-                    value={staffSearchQuery}
-                    onChange={(e) => setStaffSearchQuery(e.target.value)}
-                    className="form-input"
-                    style={{
-                      width: '100%',
-                      height: '38px',
-                      paddingLeft: '32px',
-                      paddingRight: staffSearchQuery ? '30px' : '10px',
-                      fontSize: '12.5px',
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                      color: '#ffffff',
-                    }}
-                  />
-                  {staffSearchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setStaffSearchQuery('')}
-                      style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <X size={13} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Selected Chips Bar */}
-                {selectedStaffIds.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px', maxHeight: '60px', overflowY: 'auto' }}>
-                    {selectedStaffIds.map((id) => {
-                      const st = staffList.find((s) => s.id === id);
-                      if (!st) return null;
-                      return (
-                        <span
-                          key={id}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '2px 8px',
-                            borderRadius: '9999px',
-                            backgroundColor: 'rgba(99, 102, 241, 0.25)',
-                            color: '#818cf8',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            border: '1px solid rgba(99, 102, 241, 0.4)',
-                          }}
-                        >
-                          {st.name}
-                          <X
-                            size={12}
-                            style={{ cursor: 'pointer' }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedStaffIds(selectedStaffIds.filter((sId) => sId !== id));
-                            }}
-                          />
-                        </span>
-                      );
-                    })}
                   </div>
-                )}
 
-                {/* Staff Items List (Sorted with Selected Pinned to the TOP) */}
-                <div
-                  style={{
-                    maxHeight: '170px',
-                    overflowY: 'auto',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '10px',
-                    padding: '6px',
-                    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                  }}
-                >
-                  {(() => {
-                    const filtered = staffList.filter((s) => {
-                      const q = staffSearchQuery.trim().toLowerCase();
-                      if (!q) return true;
-                      const nameMatch = s.name.toLowerCase().includes(q);
-                      const idMatch = s.staffId.toLowerCase().includes(q);
-                      const branchMatch = s.branchNames?.some((b: string) => b.toLowerCase().includes(q));
-                      const shiftMatch = s.shiftNames?.some((sh: string) => sh.toLowerCase().includes(q));
-                      return nameMatch || idMatch || branchMatch || shiftMatch;
-                    });
+                  {/* Search Input for Staff Member(s) */}
+                  <div style={{ position: 'relative', marginBottom: '8px' }}>
+                    <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input
+                      type="text"
+                      placeholder="Search staff by name, branch, or shift..."
+                      value={staffSearchQuery}
+                      onChange={(e) => setStaffSearchQuery(e.target.value)}
+                      className="form-input"
+                      style={{
+                        width: '100%',
+                        height: '38px',
+                        paddingLeft: '32px',
+                        paddingRight: staffSearchQuery ? '30px' : '10px',
+                        fontSize: '12.5px',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        color: '#ffffff',
+                      }}
+                    />
+                    {staffSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setStaffSearchQuery('')}
+                        style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
 
-                    // Pin selected staff to the TOP
-                    const sorted = [...filtered].sort((a, b) => {
-                      const aSel = selectedStaffIds.includes(a.id);
-                      const bSel = selectedStaffIds.includes(b.id);
-                      if (aSel && !bSel) return -1;
-                      if (!aSel && bSel) return 1;
-                      return a.name.localeCompare(b.name);
-                    });
+                  {/* Selected Chips Bar */}
+                  {selectedStaffIds.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px', maxHeight: '60px', overflowY: 'auto' }}>
+                      {selectedStaffIds.map((id) => {
+                        const st = staffList.find((s) => s.id === id);
+                        if (!st) return null;
+                        return (
+                          <span
+                            key={id}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '2px 8px',
+                              borderRadius: '9999px',
+                              backgroundColor: 'rgba(99, 102, 241, 0.25)',
+                              color: '#818cf8',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              border: '1px solid rgba(99, 102, 241, 0.4)',
+                            }}
+                          >
+                            {st.name}
+                            <X
+                              size={12}
+                              style={{ cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedStaffIds(selectedStaffIds.filter((sId) => sId !== id));
+                              }}
+                            />
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                    if (sorted.length === 0) {
-                      return (
-                        <div style={{ padding: '16px', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
-                          No staff members found matching &quot;{staffSearchQuery}&quot;
-                        </div>
-                      );
-                    }
+                  {/* Staff Items List (Sorted with Selected Pinned to the TOP) */}
+                  <div
+                    style={{
+                      maxHeight: '170px',
+                      overflowY: 'auto',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: '10px',
+                      padding: '6px',
+                      backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    {(() => {
+                      const filtered = staffList.filter((s) => {
+                        const q = staffSearchQuery.trim().toLowerCase();
+                        if (!q) return true;
+                        const nameMatch = s.name.toLowerCase().includes(q);
+                        const idMatch = s.staffId.toLowerCase().includes(q);
+                        const branchMatch = s.branchNames?.some((b: string) => b.toLowerCase().includes(q));
+                        const shiftMatch = s.shiftNames?.some((sh: string) => sh.toLowerCase().includes(q));
+                        return nameMatch || idMatch || branchMatch || shiftMatch;
+                      });
 
-                    return sorted.map((s) => {
-                      const isSel = selectedStaffIds.includes(s.id);
-                      return (
-                        <div
-                          key={s.id}
-                          onClick={() => {
-                            if (editingAdditionalShift) {
-                              setSelectedStaffIds([s.id]);
-                            } else {
+                      // Pin selected staff to the TOP
+                      const sorted = [...filtered].sort((a, b) => {
+                        const aSel = selectedStaffIds.includes(a.id);
+                        const bSel = selectedStaffIds.includes(b.id);
+                        if (aSel && !bSel) return -1;
+                        if (!aSel && bSel) return 1;
+                        return a.name.localeCompare(b.name);
+                      });
+
+                      if (sorted.length === 0) {
+                        return (
+                          <div style={{ padding: '16px', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
+                            No staff members found matching &quot;{staffSearchQuery}&quot;
+                          </div>
+                        );
+                      }
+
+                      return sorted.map((s) => {
+                        const isSel = selectedStaffIds.includes(s.id);
+                        return (
+                          <div
+                            key={s.id}
+                            onClick={() => {
                               if (isSel) setSelectedStaffIds(selectedStaffIds.filter((id) => id !== s.id));
                               else setSelectedStaffIds([...selectedStaffIds, s.id]);
-                            }
-                          }}
-                          style={{
-                            padding: '7px 10px',
-                            borderRadius: '8px',
-                            backgroundColor: isSel ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.02)',
-                            border: `1px solid ${isSel ? 'rgba(99, 102, 241, 0.45)' : 'transparent'}`,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '8px',
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                            <input
-                              type={editingAdditionalShift ? 'radio' : 'checkbox'}
-                              checked={isSel}
-                              readOnly
-                              style={{ accentColor: '#4f46e5', width: '15px', height: '15px', flexShrink: 0 }}
-                            />
-                            <StaffAvatar name={s.name} avatarUrl={s.avatarUrl} size="xs" />
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {s.name}
-                              </div>
-                              {(s.branchNames?.length || s.shiftNames?.length) ? (
-                                <div style={{ fontSize: '10.5px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {s.branchNames?.length ? s.branchNames.join(', ') : ''}
-                                  {s.branchNames?.length && s.shiftNames?.length ? ' • ' : ''}
-                                  {s.shiftNames?.length ? s.shiftNames.join(', ') : ''}
+                            }}
+                            style={{
+                              padding: '7px 10px',
+                              borderRadius: '8px',
+                              backgroundColor: isSel ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.02)',
+                              border: `1px solid ${isSel ? 'rgba(99, 102, 241, 0.45)' : 'transparent'}`,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '8px',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={isSel}
+                                readOnly
+                                style={{ accentColor: '#4f46e5', width: '15px', height: '15px', flexShrink: 0 }}
+                              />
+                              <StaffAvatar name={s.name} avatarUrl={s.avatarUrl} size="xs" />
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {s.name}
                                 </div>
-                              ) : null}
+                                {(s.branchNames?.length || s.shiftNames?.length) ? (
+                                  <div style={{ fontSize: '10.5px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {s.branchNames?.length ? s.branchNames.join(', ') : ''}
+                                    {s.branchNames?.length && s.shiftNames?.length ? ' • ' : ''}
+                                    {s.shiftNames?.length ? s.shiftNames.join(', ') : ''}
+                                  </div>
+                                ) : null}
+                              </div>
                             </div>
+                            <span style={{ fontSize: '10.5px', color: '#818cf8', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
+                              {s.staffId}
+                            </span>
                           </div>
-                          <span style={{ fontSize: '10.5px', color: '#818cf8', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
-                            {s.staffId}
-                          </span>
-                        </div>
-                      );
-                    });
-                  })()}
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Target Date */}
               <div className="form-group" style={{ marginBottom: '16px' }}>

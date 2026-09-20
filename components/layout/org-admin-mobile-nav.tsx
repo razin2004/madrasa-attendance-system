@@ -99,7 +99,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
       label: 'Shifts & Roster',
       href: `/${organizationCode}/admin/shifts`,
       icon: Clock,
-      exact: true,
+      exact: false,
       subtext: 'Create recurring schedules & staff assignments',
     },
     {
@@ -206,7 +206,7 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
                 const Icon = item.icon;
                 const isActive = item.exact
                   ? pathname === item.href
-                  : pathname.startsWith(item.href);
+                  : (pathname.startsWith(item.href) && (!item.href.endsWith('/shifts') || !pathname.includes('/shifts/swaps')));
 
                 return (
                   <Link
@@ -368,7 +368,9 @@ export function OrgAdminMobileNav({ organizationCode }: OrgAdminMobileNavProps) 
             item.exact ? pathname === item.href : pathname.startsWith(item.href)
           );
           const isSecondaryActive = secondaryItems.some((item) =>
-            item.exact ? pathname === item.href : pathname.startsWith(item.href)
+            item.exact
+              ? pathname === item.href
+              : (pathname.startsWith(item.href) && (!item.href.endsWith('/shifts') || !pathname.includes('/shifts/swaps')))
           );
           const isMoreActive = drawerOpen || (!isPrimaryActive && isSecondaryActive);
           return (
