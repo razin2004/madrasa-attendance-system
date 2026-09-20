@@ -668,10 +668,26 @@ input[type="button"]:active:not(:disabled) {
   input[type="number"],
   input[type="date"],
   input[type="time"],
+  input[type="datetime-local"],
   select,
   textarea {
     font-size: 16px !important;
     min-height: 44px;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    font-size: 14px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 8px 10px !important;
   }
 
   .btn {

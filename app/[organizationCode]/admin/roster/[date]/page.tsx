@@ -83,6 +83,7 @@ export default function RosterDayDetailPage() {
 
   // Override Modal State
   const [overrideModalStaff, setOverrideModalStaff] = useState<StaffDetailItem | null>(null);
+  const [selectedShiftTarget, setSelectedShiftTarget] = useState<any | null>(null);
   const [isHolidayOverride, setIsHolidayOverride] = useState(false);
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('17:00');
@@ -117,12 +118,20 @@ export default function RosterDayDetailPage() {
     }
   };
 
-  const openOverrideModal = (staff: StaffDetailItem) => {
+  const openOverrideModal = (staff: StaffDetailItem, targetShift?: any) => {
     setOverrideModalStaff(staff);
+    setSelectedShiftTarget(targetShift || null);
     setIsHolidayOverride(staff.schedule.isHoliday);
-    setStartTime(staff.schedule.startTime || '08:00');
-    setEndTime(staff.schedule.endTime || '17:00');
-    setReason(staff.schedule.overrideReason || '');
+
+    if (targetShift) {
+      setStartTime(targetShift.startTime || '08:00');
+      setEndTime(targetShift.endTime || '17:00');
+      setReason(targetShift.name ? `Override [${targetShift.name}]` : (staff.schedule.overrideReason || ''));
+    } else {
+      setStartTime(staff.schedule.startTime || '08:00');
+      setEndTime(staff.schedule.endTime || '17:00');
+      setReason(staff.schedule.overrideReason || '');
+    }
   };
 
   const handleSaveOverride = async (e: React.FormEvent) => {
@@ -298,52 +307,65 @@ export default function RosterDayDetailPage() {
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           {staff.schedule.shifts && staff.schedule.shifts.length > 1 ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
                               {staff.schedule.shifts.map((s, sIdx) => (
-                                <span
-                                  key={sIdx}
-                                  style={{
-                                    fontFamily: 'var(--font-mono)',
-                                    fontSize: '12px',
-                                    fontWeight: 700,
-                                    color: s.isOvernight ? '#c084fc' : '#818cf8',
-                                    backgroundColor: s.isOvernight ? 'rgba(168, 85, 247, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                                    padding: '3px 8px',
-                                    borderRadius: '6px',
-                                    border: '1px solid rgba(99, 102, 241, 0.3)',
-                                  }}
-                                >
-                                  {s.startTime} – {s.endTime}
-                                  {s.name && <span style={{ opacity: 0.8, fontSize: '10px', marginLeft: '6px' }}>({s.name})</span>}
-                                </span>
+                                <div key={sIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span
+                                    style={{
+                                      fontFamily: 'var(--font-mono)',
+                                      fontSize: '12px',
+                                      fontWeight: 700,
+                                      color: s.isOvernight ? '#c084fc' : '#818cf8',
+                                      backgroundColor: s.isOvernight ? 'rgba(168, 85, 247, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      border: '1px solid rgba(99, 102, 241, 0.3)',
+                                    }}
+                                  >
+                                    {s.startTime} – {s.endTime}
+                                    {s.name && <span style={{ opacity: 0.8, fontSize: '10px', marginLeft: '6px' }}>({s.name})</span>}
+                                  </span>
+
+                                  <button
+                                    onClick={() => openOverrideModal(staff, s)}
+                                    className="btn btn-secondary btn-sm"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', fontSize: '11px' }}
+                                    title={`Override ${s.name || `Shift ${sIdx + 1}`}`}
+                                  >
+                                    <Edit2 size={11} />
+                                    <span>Override</span>
+                                  </button>
+                                </div>
                               ))}
                             </div>
                           ) : (
-                            <span
-                              style={{
-                                fontFamily: 'var(--font-mono)',
-                                fontSize: '13px',
-                                fontWeight: 700,
-                                color: staff.schedule.isOvernight ? '#c084fc' : '#818cf8',
-                                backgroundColor: staff.schedule.isOvernight ? 'rgba(168, 85, 247, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                border: `1px solid ${staff.schedule.hasOverride ? '#fbbf24' : 'rgba(99, 102, 241, 0.3)'}`,
-                              }}
-                            >
-                              {staff.schedule.startTime} – {staff.schedule.endTime}
-                              {staff.schedule.isOvernight && ' (Overnight)'}
-                            </span>
-                          )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span
+                                style={{
+                                  fontFamily: 'var(--font-mono)',
+                                  fontSize: '13px',
+                                  fontWeight: 700,
+                                  color: staff.schedule.isOvernight ? '#c084fc' : '#818cf8',
+                                  backgroundColor: staff.schedule.isOvernight ? 'rgba(168, 85, 247, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  border: `1px solid ${staff.schedule.hasOverride ? '#fbbf24' : 'rgba(99, 102, 241, 0.3)'}`,
+                                }}
+                              >
+                                {staff.schedule.startTime} – {staff.schedule.endTime}
+                                {staff.schedule.isOvernight && ' (Overnight)'}
+                              </span>
 
-                          <button
-                            onClick={() => openOverrideModal(staff)}
-                            className="btn btn-secondary btn-sm"
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <Edit2 size={12} />
-                            <span>{staff.schedule.hasOverride ? 'Edit Override' : 'Override'}</span>
-                          </button>
+                              <button
+                                onClick={() => openOverrideModal(staff)}
+                                className="btn btn-secondary btn-sm"
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <Edit2 size={12} />
+                                <span>{staff.schedule.hasOverride ? 'Edit Override' : 'Override'}</span>
+                              </button>
+                            </div>
+                          )}
 
                           {staff.schedule.hasOverride && staff.schedule.overrideId && (
                             <button
@@ -429,6 +451,46 @@ export default function RosterDayDetailPage() {
                   Day Off / Holiday
                 </button>
               </div>
+
+              {/* Shift Selector Dropdown for Multi-Shift Staff */}
+              {overrideModalStaff.schedule.shifts && overrideModalStaff.schedule.shifts.length > 1 && !isHolidayOverride && (
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label" style={{ fontSize: '12.5px', color: '#ffffff', fontWeight: 600 }}>
+                    Select Shift to Override
+                  </label>
+                  <select
+                    value={selectedShiftTarget ? (selectedShiftTarget.id || selectedShiftTarget.name) : 'ALL'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'ALL') {
+                        setSelectedShiftTarget(null);
+                        setStartTime(overrideModalStaff.schedule.startTime || '08:00');
+                        setEndTime(overrideModalStaff.schedule.endTime || '17:00');
+                        setReason(overrideModalStaff.schedule.overrideReason || '');
+                      } else {
+                        const found = overrideModalStaff.schedule.shifts?.find(
+                          (s) => (s.id && s.id === val) || s.name === val
+                        );
+                        if (found) {
+                          setSelectedShiftTarget(found);
+                          setStartTime(found.startTime || '08:00');
+                          setEndTime(found.endTime || '17:00');
+                          setReason(found.name ? `Override [${found.name}]` : '');
+                        }
+                      }
+                    }}
+                    className="form-input"
+                    style={{ height: '42px', fontSize: '13px', backgroundColor: 'rgba(15, 23, 42, 0.95)', color: '#ffffff' }}
+                  >
+                    <option value="ALL">All Shifts / Combined Day Override</option>
+                    {overrideModalStaff.schedule.shifts.map((s, idx) => (
+                      <option key={idx} value={s.id || s.name}>
+                        Shift {idx + 1}: {s.name || 'Shift'} ({s.startTime} – {s.endTime})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {!isHolidayOverride && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>

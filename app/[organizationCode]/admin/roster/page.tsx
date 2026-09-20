@@ -111,7 +111,9 @@ export default function RosterCalendarPage() {
 
   const [branding, setBranding] = useState<any>(null);
   const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [shiftPatterns, setShiftPatterns] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const [selectedShiftPatternId, setSelectedShiftPatternId] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
@@ -174,6 +176,10 @@ export default function RosterCalendarPage() {
       const branchRes = await fetch(`/api/org/${organizationCode}/branches`);
       const branchData = await branchRes.json();
       if (branchData.success) setBranches(branchData.branches);
+
+      const shiftRes = await fetch(`/api/org/${organizationCode}/shift-patterns`);
+      const shiftData = await shiftRes.json();
+      if (shiftData.success) setShiftPatterns(shiftData.shiftPatterns || []);
     } catch {}
   };
 
@@ -256,14 +262,20 @@ export default function RosterCalendarPage() {
   const monthLabel = currentMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const periodLabel = viewMode === 'WEEK' ? weekLabel : monthLabel;
 
-  // Filtered Staff Rows for Search Query
+  // Filtered Staff Rows for Search Query & Shift Pattern
   const filteredStaffRows = rosterData?.staffRows.filter((staff) => {
     const query = search.trim().toLowerCase();
-    if (!query) return true;
-    return (
-      staff.name.toLowerCase().includes(query) ||
-      staff.staffId.toLowerCase().includes(query)
+    const matchesSearch = !query || staff.name.toLowerCase().includes(query) || staff.staffId.toLowerCase().includes(query);
+    const selectedShiftObj = shiftPatterns.find((sp) => sp.id === selectedShiftPatternId);
+
+    const matchesShift = !selectedShiftPatternId || staff.days.some((d) =>
+      d.isScheduled && (
+        (d.shifts && d.shifts.some((s) => s.id === selectedShiftPatternId || (selectedShiftObj && s.name === selectedShiftObj.name))) ||
+        (selectedShiftObj && d.shiftPatternName === selectedShiftObj.name)
+      )
     );
+
+    return matchesSearch && matchesShift;
   }) || [];
 
   return (
@@ -344,8 +356,8 @@ export default function RosterCalendarPage() {
           <div className={styles.controlsBar}>
             {/* View Mode Toggle & Period Navigator */}
             <div className={styles.weekNavigator} style={{ flexWrap: 'wrap', gap: '8px' }}>
-              {/* View Toggle */}
-              <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.85)', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-medium, rgba(255,255,255,0.12))' }}>
+              {/* Desktop View Toggle */}
+              <div className={styles.desktopViewToggle} style={{ alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.85)', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-medium, rgba(255,255,255,0.12))' }}>
                 <button
                   type="button"
                   onClick={() => setViewMode('WEEK')}
@@ -383,7 +395,7 @@ export default function RosterCalendarPage() {
               </div>
 
               {/* Prev / Next / Today */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <div className={styles.periodNavGroup}>
                 <button
                   onClick={handlePrevPeriod}
                   className="btn btn-ghost btn-sm"
@@ -396,7 +408,7 @@ export default function RosterCalendarPage() {
                 <button
                   onClick={handleCurrentPeriod}
                   className="btn btn-ghost btn-sm"
-                  style={{ fontSize: '12.5px', fontWeight: 700, color: '#f8fafc', padding: '5px 8px' }}
+                  style={{ fontSize: '12.5px', fontWeight: 700, color: '#f8fafc', padding: '5px 8px', flex: 1, textAlign: 'center' }}
                 >
                   {periodLabel}
                 </button>
@@ -412,7 +424,7 @@ export default function RosterCalendarPage() {
 
                 <button
                   onClick={handleCurrentPeriod}
-                  className="btn btn-secondary btn-sm"
+                  className={`btn btn-secondary btn-sm ${styles.desktopCurrentBtn}`}
                   style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', marginLeft: '4px' }}
                 >
                   Current
@@ -956,6 +968,50 @@ export default function RosterCalendarPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+              {/* View Mode Filter */}
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                  Roster View Mode
+                </label>
+                <div style={{ display: 'flex', gap: '6px', backgroundColor: 'rgba(255,255,255,0.05)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-medium)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('WEEK')}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      border: 'none',
+                      backgroundColor: viewMode === 'WEEK' ? '#4f46e5' : 'transparent',
+                      color: viewMode === 'WEEK' ? '#ffffff' : '#94a3b8',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Week View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('MONTH')}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      border: 'none',
+                      backgroundColor: viewMode === 'MONTH' ? '#4f46e5' : 'transparent',
+                      color: viewMode === 'MONTH' ? '#ffffff' : '#94a3b8',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Month View
+                  </button>
+                </div>
+              </div>
+
+              {/* Branch Location Filter */}
               <div>
                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
                   Branch Location
@@ -983,12 +1039,68 @@ export default function RosterCalendarPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Shift Schedule Filter */}
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                  Shift Schedule Pattern
+                </label>
+                <select
+                  value={selectedShiftPatternId}
+                  onChange={(e) => setSelectedShiftPatternId(e.target.value)}
+                  className="form-input"
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    padding: '0 12px',
+                    fontSize: '13px',
+                    color: '#ffffff',
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '10px',
+                  }}
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Shifts</option>
+                  {shiftPatterns.map((s) => (
+                    <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Staff Member Search */}
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                  Staff Search
+                </label>
+                <input
+                  type="text"
+                  placeholder="Search staff by name or ID..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="form-input"
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    padding: '0 12px',
+                    fontSize: '13px',
+                    color: '#ffffff',
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '10px',
+                  }}
+                />
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 onClick={() => {
                   setSelectedBranchId('');
+                  setSelectedShiftPatternId('');
+                  setSearch('');
+                  setViewMode('WEEK');
                   setShowMobileFilters(false);
                 }}
                 className="btn btn-secondary"

@@ -854,29 +854,30 @@ export default function StaffDashboardPage() {
                 {currentDateStr}
               </div>
 
-              {todayStatus?.schedule?.allShifts && todayStatus.schedule.allShifts.length > 0 ? (
-                <div style={{ position: 'relative', display: 'inline-block', marginTop: '14px' }}>
+              {todayStatus?.schedule?.allShifts && todayStatus.schedule.allShifts.length > 1 ? (
+                <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px', maxWidth: '100%', boxSizing: 'border-box' }}>
                   <button
                     type="button"
                     onClick={() => setShiftDropdownOpen(!shiftDropdownOpen)}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '10px',
-                      padding: '8px 18px',
-                      borderRadius: '20px',
+                      gap: '6px',
+                      padding: '5px 12px',
+                      borderRadius: '16px',
                       background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(168, 85, 247, 0.15) 100%)',
                       border: '1px solid rgba(129, 140, 248, 0.45)',
                       color: '#ffffff',
-                      fontSize: '13.5px',
+                      fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
-                      boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
                     }}
                   >
-                    <Calendar size={15} color="#818cf8" />
-                    <span>
+                    <Calendar size={13} color="#818cf8" style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
                       {(() => {
                         const allShifts = todayStatus.schedule.allShifts;
                         const currentIdx =
@@ -907,32 +908,33 @@ export default function StaffDashboardPage() {
                         const isDone = shiftEnded && shiftRecs.some((r: any) => r.type === 'CLOCK_OUT');
 
                         let prefix = 'Shift';
-                        if (isClockedInCurrently) prefix = '● Clocked In';
-                        else if (isDone) prefix = '✓ Shift Done';
-                        else if (nowMins < startMins - 30) prefix = 'Upcoming Shift';
-                        else if (nowMins <= endMins || current.isOvernight) prefix = 'Active Shift';
-                        else prefix = 'Shift Ended';
+                        if (isClockedInCurrently) prefix = '● In';
+                        else if (isDone) prefix = '✓ Done';
+                        else if (nowMins < startMins - 30) prefix = 'Upcoming';
+                        else if (nowMins <= endMins || current.isOvernight) prefix = 'Active';
+                        else prefix = 'Ended';
 
-                        return `${prefix}: ${current.name} (${current.startTime} – ${current.endTime})`;
+                        return `${prefix}: ${current.name} (${current.startTime}–${current.endTime})`;
                       })()}
                     </span>
                     <span
                       style={{
-                        fontSize: '11px',
+                        fontSize: '10px',
                         fontWeight: 800,
-                        padding: '3px 9px',
-                        borderRadius: '12px',
+                        padding: '2px 6px',
+                        borderRadius: '10px',
                         backgroundColor: 'rgba(129, 140, 248, 0.3)',
                         color: '#c7d2fe',
                         border: '1px solid rgba(129, 140, 248, 0.5)',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '4px',
+                        gap: '3px',
+                        flexShrink: 0,
                       }}
                     >
                       <span>{todayStatus.schedule.allShifts.length} Shifts</span>
                       <ChevronDown
-                        size={14}
+                        size={12}
                         style={{
                           transform: shiftDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                           transition: 'transform 0.2s ease',
@@ -950,42 +952,42 @@ export default function StaffDashboardPage() {
                       <div
                         style={{
                           position: 'absolute',
-                          top: 'calc(100% + 8px)',
+                          top: 'calc(100% + 6px)',
                           left: '50%',
                           transform: 'translateX(-50%)',
-                          width: '350px',
-                          maxWidth: '92vw',
+                          width: '320px',
+                          maxWidth: '88vw',
                           backgroundColor: '#0f172a',
                           backgroundImage: 'linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.99) 100%)',
                           backdropFilter: 'blur(20px)',
                           WebkitBackdropFilter: 'blur(20px)',
                           border: '1px solid rgba(129, 140, 248, 0.4)',
-                          borderRadius: '18px',
-                          padding: '12px',
-                          boxShadow: '0 20px 45px -10px rgba(0, 0, 0, 0.85), 0 0 25px rgba(99, 102, 241, 0.3)',
+                          borderRadius: '16px',
+                          padding: '10px',
+                          boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.85), 0 0 20px rgba(99, 102, 241, 0.25)',
                           zIndex: 50,
                           textAlign: 'left',
                         }}
                       >
                         <div
                           style={{
-                            padding: '4px 8px 10px 8px',
+                            padding: '4px 6px 8px 6px',
                             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                            marginBottom: '8px',
+                            marginBottom: '6px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
                           }}
                         >
-                          <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                            {`Today's Assigned Shifts (${todayStatus.schedule.allShifts.length})`}
+                          <span style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            {`Assigned Shifts (${todayStatus.schedule.allShifts.length})`}
                           </span>
-                          <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 600 }}>
-                            Select Shift to View
+                          <span style={{ fontSize: '10.5px', color: '#818cf8', fontWeight: 600 }}>
+                            Tap to Switch
                           </span>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '250px', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '220px', overflowY: 'auto' }}>
                           {todayStatus.schedule.allShifts.map((s: any, idx: number) => {
                             const tag = getShiftStatusTag(s, idx);
                             const isSelected =
@@ -1002,32 +1004,32 @@ export default function StaffDashboardPage() {
                                   setShiftDropdownOpen(false);
                                 }}
                                 style={{
-                                  padding: '10px 14px',
-                                  borderRadius: '12px',
+                                  padding: '8px 12px',
+                                  borderRadius: '10px',
                                   backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.03)',
                                   border: isSelected ? '1px solid rgba(129, 140, 248, 0.6)' : '1px solid rgba(255, 255, 255, 0.06)',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
-                                  gap: '12px',
+                                  gap: '10px',
                                   transition: 'all 0.15s ease',
                                 }}
                               >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: isSelected ? '#ffffff' : '#cbd5e1' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: isSelected ? '#ffffff' : '#cbd5e1' }}>
                                     {s.name}
                                   </div>
-                                  <div style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
+                                  <div style={{ fontSize: '11.5px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
                                     {s.startTime} – {s.endTime}
                                   </div>
                                 </div>
                                 <span
                                   style={{
-                                    fontSize: '10.5px',
+                                    fontSize: '10px',
                                     fontWeight: 800,
-                                    padding: '3px 9px',
-                                    borderRadius: '8px',
+                                    padding: '2px 7px',
+                                    borderRadius: '6px',
                                     backgroundColor: tag.bg,
                                     color: tag.color,
                                     border: `1px solid ${tag.border}`,
@@ -1045,34 +1047,48 @@ export default function StaffDashboardPage() {
                   )}
                 </div>
               ) : (
-                <span className={styles.shiftBadge}>
-                  <Calendar size={14} color="#818cf8" />
-                  <span>
-                    {(() => {
-                      const active = todayStatus?.schedule?.activeShift;
-                      if (active && active.name && active.startTime && active.endTime) {
-                        const now = new Date();
-                        const nowMins = now.getHours() * 60 + now.getMinutes();
-                        const [sh, sm] = active.startTime.split(':').map(Number);
-                        const startMins = sh * 60 + sm;
-                        const [eh, em] = active.endTime.split(':').map(Number);
-                        const endMins = eh * 60 + em;
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', width: '100%' }}>
+                  <span
+                    className={styles.shiftBadge}
+                    style={{
+                      fontSize: '12px',
+                      padding: '5px 14px',
+                      margin: 0,
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Calendar size={13} color="#818cf8" style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {(() => {
+                        const active = todayStatus?.schedule?.activeShift;
+                        if (active && active.name && active.startTime && active.endTime) {
+                          const now = new Date();
+                          const nowMins = now.getHours() * 60 + now.getMinutes();
+                          const [sh, sm] = active.startTime.split(':').map(Number);
+                          const startMins = sh * 60 + sm;
+                          const [eh, em] = active.endTime.split(':').map(Number);
+                          const endMins = eh * 60 + em;
 
-                        if (nowMins < startMins) {
-                          return `Upcoming Shift: ${active.name} (${active.startTime} – ${active.endTime})`;
-                        } else if (nowMins <= endMins || active.isOvernight) {
-                          return `Active Shift: ${active.name} (${active.startTime} – ${active.endTime})`;
-                        } else {
-                          return `Shift Ended: ${active.name} (${active.startTime} – ${active.endTime})`;
+                          if (nowMins < startMins) {
+                            return `Upcoming: ${active.name} (${active.startTime}–${active.endTime})`;
+                          } else if (nowMins <= endMins || active.isOvernight) {
+                            return `Active: ${active.name} (${active.startTime}–${active.endTime})`;
+                          } else {
+                            return `Ended: ${active.name} (${active.startTime}–${active.endTime})`;
+                          }
                         }
-                      }
-                      if (todayStatus?.schedule?.shiftPatternName && todayStatus.schedule.startTime) {
-                        return `${todayStatus.schedule.shiftPatternName} (${todayStatus.schedule.startTime} – ${todayStatus.schedule.endTime})`;
-                      }
-                      return 'Off Duty Today (No Shift Scheduled)';
-                    })()}
+                        if (todayStatus?.schedule?.shiftPatternName && todayStatus.schedule.startTime) {
+                          return `${todayStatus.schedule.shiftPatternName} (${todayStatus.schedule.startTime}–${todayStatus.schedule.endTime})`;
+                        }
+                        return 'Off Duty (No Shift Scheduled)';
+                      })()}
+                    </span>
                   </span>
-                </span>
+                </div>
               )}
             </div>
 

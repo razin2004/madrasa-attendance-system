@@ -207,12 +207,18 @@
   gap: 12px;
 }
 
-.desktopBranchFilter {
-  display: flex;
+.desktopViewToggle {
+  display: inline-flex;
 }
 
-.mobileFilterBtn {
-  display: none !important;
+.desktopCurrentBtn {
+  display: inline-flex;
+}
+
+.periodNavGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 @media (max-width: 768px) {
@@ -230,6 +236,16 @@
   .weekNavigator {
     justify-content: space-between;
     width: 100%;
+  }
+  .desktopViewToggle {
+    display: none !important;
+  }
+  .desktopCurrentBtn {
+    display: none !important;
+  }
+  .periodNavGroup {
+    width: 100%;
+    justify-content: space-between;
   }
   .filterSection {
     flex-direction: row;
