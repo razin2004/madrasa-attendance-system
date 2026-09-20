@@ -177,6 +177,14 @@
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
+    position: sticky;
+    top: 56px;
+    z-index: 40;
+    background-color: rgba(3, 7, 18, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 8px 0;
+    margin-bottom: 16px;
   }
   .filterToggleBtn {
     display: flex;
@@ -203,6 +211,41 @@
   .searchInputWrapper {
     width: 100%;
   }
+  .dropdownsGroup {
+    width: 100%;
+    display: none;
+  }
+  .dropdownsGroupOpen {
+    display: flex !important;
+  }
+  .selectInput {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+.dropdownsGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.selectInput {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background-color: rgba(3, 7, 18, 0.6);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  height: 34px;
+}
+
+.selectInput:focus {
+  border-color: #818cf8;
 }
 
 @media (max-width: 480px) {
@@ -213,4 +256,5 @@
     padding: 14px;
   }
 }
+
 

@@ -63,7 +63,7 @@ export function LeaveShiftsGraph({
 
   impactData.forEach((item) => {
     // Exclude off-duty or general non-shift items if unassigned
-    const name = item.shiftName || 'Standard Shift';
+    const name = item.shiftName || 'General Shift';
     const hours = item.shiftHours || '';
 
     const isOffDuty = item.status === 'OFF_DUTY' || name === 'Off Duty';

@@ -93,6 +93,10 @@ export default function StaffDirectoryPage() {
 
   const [branding, setBranding] = useState<OrgBranding | null>(null);
   const [staffList, setStaffList] = useState<StaffItem[]>([]);
+  const [branchList, setBranchList] = useState<Array<{ id: string; name: string }>>([]);
+  const [shiftPatternList, setShiftPatternList] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const [selectedShiftPatternId, setSelectedShiftPatternId] = useState<string>('');
   const [counts, setCounts] = useState({
     total: 0,
     active: 0,
@@ -287,13 +291,18 @@ export default function StaffDirectoryPage() {
       if (!quiet) setLoading(true);
       setHasError(false);
 
-      const brandRes = await fetch(`/api/org/${organizationCode}/branding`);
+      const [brandRes, staffRes, branchRes, shiftRes] = await Promise.all([
+        fetch(`/api/org/${organizationCode}/branding`),
+        fetch(`/api/org/${organizationCode}/staff`),
+        fetch(`/api/org/${organizationCode}/branches`),
+        fetch(`/api/org/${organizationCode}/shift-patterns`),
+      ]);
+
       const brandData = await brandRes.json();
       if (brandData.success) {
         setBranding(brandData.organization);
       }
 
-      const staffRes = await fetch(`/api/org/${organizationCode}/staff`);
       const staffData = await staffRes.json();
       if (staffData.success) {
         setStaffList(staffData.staff);
@@ -301,6 +310,16 @@ export default function StaffDirectoryPage() {
       } else {
         setHasError(true);
         toast.error(staffData.error || 'Failed to load staff list.');
+      }
+
+      const branchData = await branchRes.json();
+      if (branchData.success) {
+        setBranchList(branchData.branches || []);
+      }
+
+      const shiftData = await shiftRes.json();
+      if (shiftData.success) {
+        setShiftPatternList(shiftData.shiftPatterns || []);
       }
     } catch {
       setHasError(true);
@@ -342,6 +361,20 @@ export default function StaffDirectoryPage() {
     if (filter === 'INACTIVE' && s.user?.status !== 'INACTIVE') return false;
     if (filter === 'DEVICE_REGISTERED' && !s.devices?.some((d: any) => d.status === 'REGISTERED')) return false;
     if (filter === 'RESET_REQUIRED' && !s.devices?.some((d: any) => d.status === 'RESET_REQUIRED')) return false;
+
+    if (selectedBranchId) {
+      const hasBranch = s.branchAssignments?.some(
+        (ba: any) => ba.branch?.id === selectedBranchId || ba.branchId === selectedBranchId
+      );
+      if (!hasBranch) return false;
+    }
+
+    if (selectedShiftPatternId) {
+      const hasShift = s.shiftAssignments?.some(
+        (sa: any) => sa.shiftPattern?.id === selectedShiftPatternId || sa.shiftPatternId === selectedShiftPatternId
+      );
+      if (!hasShift) return false;
+    }
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -524,8 +557,37 @@ export default function StaffDirectoryPage() {
                 className={styles.filterToggleBtn}
                 title="Toggle Filters"
               >
-                <Filter size={15} color={filter !== 'ALL' ? '#818cf8' : 'currentColor'} />
+                <Filter size={15} color={(filter !== 'ALL' || selectedBranchId || selectedShiftPatternId) ? '#818cf8' : 'currentColor'} />
               </button>
+            </div>
+
+            {/* Branch and Shift Filters */}
+            <div className={`${styles.dropdownsGroup} ${filterDrawerOpen ? styles.dropdownsGroupOpen : ''}`}>
+              <select
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                className={styles.selectInput}
+              >
+                <option value="" style={{ background: '#0d121f', color: '#fff' }}>All Branches</option>
+                {branchList.map((b) => (
+                  <option key={b.id} value={b.id} style={{ background: '#0d121f', color: '#fff' }}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedShiftPatternId}
+                onChange={(e) => setSelectedShiftPatternId(e.target.value)}
+                className={styles.selectInput}
+              >
+                <option value="" style={{ background: '#0d121f', color: '#fff' }}>All Shifts</option>
+                {shiftPatternList.map((sp) => (
+                  <option key={sp.id} value={sp.id} style={{ background: '#0d121f', color: '#fff' }}>
+                    {sp.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Filter Tabs (Collapsible on mobile) */}

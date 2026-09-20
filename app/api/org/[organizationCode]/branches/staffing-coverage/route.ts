@@ -59,8 +59,8 @@ async function getCoverageForDate(auth: any, dateObj: Date) {
   for (const b of branches) {
     let workingStaffCount = 0;
     const workingStaffIds: string[] = [];
-    let minRequired = 3;
-    let shiftName = '';
+    let minRequired = 0;
+    const shiftNamesSet = new Set<string>();
 
     for (const sa of b.staffAssignments) {
       const activeShiftA = sa.staffProfile.shiftAssignments[0];
@@ -71,9 +71,9 @@ async function getCoverageForDate(auth: any, dateObj: Date) {
         if (dayRule && !dayRule.isHoliday) {
           workingStaffCount++;
           workingStaffIds.push(sa.staffProfile.id);
-          minRequired = Math.max(minRequired, pattern.minimumStaffingThreshold);
+          minRequired = Math.max(minRequired, pattern.minimumStaffingThreshold || 1);
           const hours = dayRule.startTime && dayRule.endTime ? ` (${dayRule.startTime} – ${dayRule.endTime})` : '';
-          shiftName = `${pattern.name}${hours}`;
+          shiftNamesSet.add(`${pattern.name}${hours}`);
         }
       } else {
         // Fallback: If no shift assigned, assume default weekday work (Mon-Fri)
@@ -101,15 +101,17 @@ async function getCoverageForDate(auth: any, dateObj: Date) {
     }
 
     const availableStaff = Math.max(0, workingStaffCount - onLeaveStaff);
-    const isUnderstaffed = isWorkingDay && availableStaff < minRequired;
+    const isUnderstaffed = isWorkingDay && minRequired > 0 && availableStaff < minRequired;
     const shortageCount = isUnderstaffed ? minRequired - availableStaff : 0;
 
     if (isUnderstaffed) understaffedBranchesCount++;
 
+    const displayShiftName = Array.from(shiftNamesSet).join(', ') || 'General Shift';
+
     branchResults.push({
       branchId: b.id,
       branchName: b.name,
-      shiftName: shiftName || 'Standard Shift',
+      shiftName: displayShiftName,
       isWorkingDay,
       totalStaff: b.staffAssignments.length,
       workingStaff: workingStaffCount,

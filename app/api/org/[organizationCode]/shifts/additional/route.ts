@@ -343,3 +343,92 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PUT /api/org/[organizationCode]/shifts/additional
+ * Update an existing additional shift
+ */
+export async function PUT(
+  request: Request,
+  { params }: { params: { organizationCode: string } }
+) {
+  try {
+    const auth = await requireOrgAdmin(params.organizationCode);
+    if (!auth.authorized || !auth.organization || !auth.session) {
+      return NextResponse.json(
+        { success: false, error: auth.errorMessage || 'Unauthorized.' },
+        { status: auth.errorStatus || 401 }
+      );
+    }
+
+    const org = auth.organization;
+    const body = await request.json().catch(() => ({}));
+    const { id, staffProfileId, date, startTime, endTime, title, notes } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Additional shift ID is required.' }, { status: 400 });
+    }
+
+    const existingShift = await prisma.additionalShift.findFirst({
+      where: { id, organizationId: org.id },
+    });
+
+    if (!existingShift) {
+      return NextResponse.json({ success: false, error: 'Additional shift not found.' }, { status: 404 });
+    }
+
+    const targetStaffId = staffProfileId || existingShift.staffProfileId;
+    const targetDateStr = date || existingShift.date.toISOString().split('T')[0];
+    const targetStartTime = startTime || existingShift.startTime;
+    const targetEndTime = endTime || existingShift.endTime;
+    const targetTitle = title !== undefined ? title.trim() : existingShift.title;
+
+    const [year, month, day] = targetDateStr.split('-').map(Number);
+    const targetDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+
+    const [startH, startM] = targetStartTime.split(':').map(Number);
+    const [endH, endM] = targetEndTime.split(':').map(Number);
+    const isOvernight = endH * 60 + endM <= startH * 60 + startM;
+
+    // Check intersection excluding this current additional shift ID
+    const check = await checkStaffShiftIntersection({
+      staffProfileId: targetStaffId,
+      date: targetDate,
+      startTime: targetStartTime,
+      endTime: targetEndTime,
+      excludeAdditionalShiftId: id,
+    });
+
+    if (check.intersects) {
+      return NextResponse.json(
+        { success: false, error: check.reason || 'Shift time intersects with an existing schedule.' },
+        { status: 400 }
+      );
+    }
+
+    const updated = await prisma.additionalShift.update({
+      where: { id },
+      data: {
+        staffProfileId: targetStaffId,
+        date: targetDate,
+        startTime: targetStartTime,
+        endTime: targetEndTime,
+        isOvernight,
+        title: targetTitle || 'Additional Shift',
+        notes: notes !== undefined ? (notes ? notes.trim() : null) : existingShift.notes,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Additional shift updated successfully.',
+      additionalShift: updated,
+    });
+  } catch (error: any) {
+    console.error('Update additional shift error:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to update additional shift.' },
+      { status: 500 }
+    );
+  }
+}

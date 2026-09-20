@@ -611,6 +611,8 @@ export default function AdminAttendancePage() {
                         color: '#ffffff',
                         colorScheme: 'dark',
                         width: '100%',
+                        maxWidth: '100%',
+                        boxSizing: 'border-box',
                         borderRadius: '8px',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         padding: '0 12px',
@@ -841,16 +843,22 @@ export default function AdminAttendancePage() {
                       return (
                         <tr
                           key={idx}
-                          onClick={() => {
-                            if (row.staffProfileId || row.staffId) {
-                              router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
-                            }
-                          }}
-                          style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                          style={{ borderBottom: '1px solid var(--border-subtle)' }}
                         >
                           <td className={styles.td}>
-                            <div style={{ fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
-                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (row.staffProfileId || row.staffId) {
+                                  router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
+                                }
+                              }}
+                              style={{ cursor: 'pointer', display: 'inline-block' }}
+                              title="View staff profile"
+                            >
+                              <div style={{ fontWeight: 700, color: '#ffffff', display: 'inline-block' }}>{row.staffName}</div>
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
+                            </div>
                           </td>
 
                           <td className={styles.td}>
@@ -938,15 +946,19 @@ export default function AdminAttendancePage() {
                       <div
                         key={idx}
                         className={styles.feedCard}
-                        onClick={() => {
-                          if (row.staffProfileId || row.staffId) {
-                            router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
-                          }
-                        }}
-                        style={{ cursor: 'pointer', flexDirection: 'column', gap: '10px', alignItems: 'stretch' }}
+                        style={{ flexDirection: 'column', gap: '10px', alignItems: 'stretch' }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (row.staffProfileId || row.staffId) {
+                                router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
+                              }
+                            }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                            title="View staff profile"
+                          >
                             <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontWeight: 800, fontSize: '13px' }}>
                               {row.staffName ? row.staffName.slice(0, 2).toUpperCase() : 'ST'}
                             </div>

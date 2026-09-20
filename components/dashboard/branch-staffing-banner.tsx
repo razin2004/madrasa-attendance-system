@@ -152,27 +152,41 @@ export function BranchStaffingBanner({ organizationCode }: BranchStaffingBannerP
           boxShadow: '0 4px 16px rgba(239, 68, 68, 0.1)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <AlertTriangle size={20} color="#f87171" style={{ flexShrink: 0 }} />
-            <div>
-              <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                Staff Shortage: {activeTab === 'TODAY' ? 'Today' : 'Tomorrow'} ({understaffedBranches.length} {understaffedBranches.length === 1 ? 'Branch' : 'Branches'})
-              </h4>
-              <p style={{ fontSize: '11.5px', color: '#fca5a5', margin: '2px 0 0 0' }}>
-                Shift staffing minimums not met due to leaves or missing roster assignments.
-              </p>
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {/* Main Heading on a single line */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertTriangle size={18} color="#f87171" style={{ flexShrink: 0 }} />
+            <h4 style={{ fontSize: '13.5px', fontWeight: 800, color: '#ffffff', margin: 0, lineHeight: 1.2 }}>
+              Staff Shortage: {activeTab === 'TODAY' ? 'Today' : 'Tomorrow'} ({understaffedBranches.length} {understaffedBranches.length === 1 ? 'Branch' : 'Branches'})
+            </h4>
           </div>
 
-          <Link
-            href={`/${organizationCode}/admin/leave`}
-            className="btn btn-danger btn-xs"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '11.5px', whiteSpace: 'nowrap', flexShrink: 0, fontWeight: 700 }}
-          >
-            <span>Quick Fill</span>
-            <ArrowRight size={13} />
-          </Link>
+          {/* Subheading starting with 'Shift staffing minimums...' with small Quick Fill button at right end */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+            <p style={{ fontSize: '11.5px', color: '#fca5a5', margin: 0, flex: 1, minWidth: '160px', lineHeight: 1.3 }}>
+              Shift staffing minimums not met due to leaves or missing roster assignments.
+            </p>
+
+            <Link
+              href={`/${organizationCode}/admin/leave`}
+              className="btn btn-danger btn-xs"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                padding: '3px 8px',
+                fontSize: '11px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                fontWeight: 700,
+                borderRadius: '6px',
+                marginLeft: 'auto',
+              }}
+            >
+              <span>Quick Fill</span>
+              <ArrowRight size={11} />
+            </Link>
+          </div>
         </div>
 
         {understaffedBranches.length > 0 && (

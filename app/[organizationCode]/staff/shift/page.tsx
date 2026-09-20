@@ -382,7 +382,7 @@ export default function StaffShiftPage() {
             <div className={styles.shiftInfoGrid}>
               <div className={styles.infoBox}>
                 <span className={styles.infoLabel}>Shift Pattern</span>
-                <span className={styles.infoVal}>{pattern?.name || 'Standard Shift'}</span>
+                <span className={styles.infoVal}>{pattern?.name || 'General Shift'}</span>
               </div>
               <div className={styles.infoBox}>
                 <span className={styles.infoLabel}>Effective From</span>
