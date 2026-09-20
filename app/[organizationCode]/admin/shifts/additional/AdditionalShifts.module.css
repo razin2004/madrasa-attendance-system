@@ -22,38 +22,29 @@
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   box-sizing: border-box;
 }
 
 .controlsBar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
-.searchFilterGroup {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  flex: 1;
-}
-
-.searchInputWrapper {
+.searchBarWrapper {
   position: relative;
-  flex: 1 1 240px;
+  flex: 1;
   min-width: 200px;
 }
 
 .searchInput {
   width: 100%;
-  height: 40px;
-  padding: 8px 36px 8px 38px;
-  border-radius: 10px;
+  height: 42px;
+  padding: 8px 46px 8px 38px;
+  border-radius: 12px;
   background-color: rgba(15, 23, 42, 0.85);
   border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
   color: #ffffff;
@@ -76,30 +67,32 @@
   pointer-events: none;
 }
 
-.selectFilter {
-  height: 40px;
-  padding: 0 12px 0 34px;
-  border-radius: 10px;
-  background-color: rgba(15, 23, 42, 0.85);
+.filterToggleBtn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
   color: #ffffff;
-  font-size: 12.5px;
   cursor: pointer;
-  min-width: 160px;
-  box-sizing: border-box;
+  transition: all 0.15s ease;
 }
 
-.dateFilter {
-  height: 40px;
-  padding: 0 12px 0 34px;
-  border-radius: 10px;
-  background-color: rgba(15, 23, 42, 0.85);
-  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
-  color: #ffffff;
-  font-size: 12.5px;
-  cursor: pointer;
-  min-width: 150px;
-  box-sizing: border-box;
+.desktopFilters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btnTextDesktop {
+  display: inline;
 }
 
 .desktopTable {
@@ -115,33 +108,34 @@
 .mobileCardsGrid {
   display: none;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .shiftCard {
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(15, 23, 42, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .shiftCardHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .staffInfoRow {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .shiftCardMeta {
@@ -149,7 +143,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: 11.5px;
 }
 
 .shiftCardActions {
@@ -157,8 +151,18 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.actionBtnIconOnly {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
 }
 
 @media (max-width: 768px) {
@@ -167,18 +171,13 @@
     gap: 14px;
   }
   .controlsBar {
-    flex-direction: column;
-    align-items: stretch;
+    gap: 8px;
   }
-  .searchFilterGroup {
-    flex-direction: column;
-    align-items: stretch;
+  .desktopFilters {
+    display: none !important;
   }
-  .searchInputWrapper {
-    width: 100%;
-  }
-  .selectFilter, .dateFilter {
-    width: 100%;
+  .btnTextDesktop {
+    display: none !important;
   }
   .desktopTable {
     display: none;

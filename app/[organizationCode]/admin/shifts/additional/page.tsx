@@ -15,7 +15,6 @@ import {
   Trash2,
   Pencil,
   AlertCircle,
-  ChevronLeft,
   FileText,
 } from 'lucide-react';
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
@@ -58,6 +57,7 @@ export default function DedicatedAdditionalShiftsPage() {
   const [search, setSearch] = useState('');
   const [selectedStaffFilter, setSelectedStaffFilter] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState('');
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
   // Modal State for Add / Edit
   const [additionalModalOpen, setAdditionalModalOpen] = useState(false);
@@ -258,6 +258,8 @@ export default function DedicatedAdditionalShiftsPage() {
     router.push(`/${organizationCode}/admin/shifts`);
   };
 
+  const hasActiveFilters = Boolean(search || selectedStaffFilter || selectedDateFilter);
+
   return (
     <div className={styles.container}>
       <OrgAdminSidebar
@@ -271,73 +273,80 @@ export default function DedicatedAdditionalShiftsPage() {
           organizationCode={organizationCode}
           logoUrl={branding?.logoUrl}
           panelTitle="Assigned Additional Shifts"
-          panelSubtitle="Overtime and special holiday shift assignments for staff members"
+          panelSubtitle="Overtime & special holiday shift assignments"
           onBack={handleBack}
         />
 
         <main className={styles.pageContainer}>
-          {/* Controls Bar: Search, Staff Filter, Date Filter & Action */}
+          {/* Controls Bar: Search Input with Pinned Filter Drawer Button & Add Button */}
           <div className={styles.controlsBar}>
-            <div className={styles.searchFilterGroup}>
-              {/* Search Bar */}
-              <div className={styles.searchInputWrapper}>
-                <Search size={15} className={styles.searchIcon} />
-                <input
-                  type="text"
-                  placeholder="Search staff, ID, title, or notes..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className={styles.searchInput}
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch('')}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-
-              {/* Staff Member Filter Dropdown */}
-              <div style={{ position: 'relative' }}>
-                <Users size={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }} />
-                <select
-                  value={selectedStaffFilter}
-                  onChange={(e) => setSelectedStaffFilter(e.target.value)}
-                  className={styles.selectFilter}
+            <div className={styles.searchBarWrapper}>
+              <Search size={15} className={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="Search staff, ID, title, notes..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={styles.searchInput}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  style={{
+                    position: 'absolute',
+                    right: '44px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                  }}
                 >
-                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Staff Members</option>
-                  {staffList.map((s) => (
-                    <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
-                      {s.name} ({s.staffId})
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <X size={14} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowFilterDrawer(true)}
+                className={styles.filterToggleBtn}
+                style={{
+                  backgroundColor: hasActiveFilters ? 'rgba(99, 102, 241, 0.2)' : undefined,
+                  borderColor: hasActiveFilters ? 'rgba(99, 102, 241, 0.5)' : undefined,
+                  color: hasActiveFilters ? '#818cf8' : '#ffffff',
+                }}
+                title="Filter Shifts"
+              >
+                <Filter size={15} color={hasActiveFilters ? '#818cf8' : 'currentColor'} />
+              </button>
+            </div>
 
-              {/* Date Filter */}
-              <div style={{ position: 'relative' }}>
-                <Calendar size={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }} />
-                <input
-                  type="date"
-                  value={selectedDateFilter}
-                  onChange={(e) => setSelectedDateFilter(e.target.value)}
-                  className={styles.dateFilter}
-                />
-              </div>
+            {/* Desktop Filters Bar */}
+            <div className={styles.desktopFilters}>
+              <select
+                value={selectedStaffFilter}
+                onChange={(e) => setSelectedStaffFilter(e.target.value)}
+                className="form-input"
+                style={{ height: '42px', padding: '0 12px', fontSize: '12.5px', borderRadius: '12px', minWidth: '160px', color: '#ffffff', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}
+              >
+                <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Staff Members</option>
+                {staffList.map((s) => (
+                  <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                    {s.name} ({s.staffId})
+                  </option>
+                ))}
+              </select>
 
-              {(search || selectedStaffFilter || selectedDateFilter) && (
+              <input
+                type="date"
+                value={selectedDateFilter}
+                onChange={(e) => setSelectedDateFilter(e.target.value)}
+                className="form-input"
+                style={{ height: '42px', padding: '0 10px', fontSize: '12.5px', borderRadius: '12px', color: '#ffffff', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}
+              />
+
+              {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={() => {
@@ -346,20 +355,33 @@ export default function DedicatedAdditionalShiftsPage() {
                     setSelectedDateFilter('');
                   }}
                   className="btn btn-secondary btn-sm"
-                  style={{ height: '40px', padding: '0 12px', fontSize: '12px' }}
+                  style={{ height: '42px', padding: '0 12px', fontSize: '12px', borderRadius: '10px' }}
                 >
-                  Clear Filters
+                  Reset
                 </button>
               )}
             </div>
 
+            {/* Assign Shift Button (Icon only on mobile) */}
             <button
               onClick={handleOpenCreateModal}
               className="btn btn-primary"
-              style={{ backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#000000', fontWeight: 700, height: '40px', padding: '0 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              style={{
+                backgroundColor: '#f59e0b',
+                borderColor: '#f59e0b',
+                color: '#000000',
+                fontWeight: 700,
+                height: '42px',
+                padding: '0 14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                borderRadius: '12px',
+                flexShrink: 0,
+              }}
             >
               <Plus size={16} />
-              <span>Assign Additional Shift</span>
+              <span className={styles.btnTextDesktop}>Assign Shift</span>
             </button>
           </div>
 
@@ -403,9 +425,9 @@ export default function DedicatedAdditionalShiftsPage() {
           {!loading && !hasError && additionalShifts.length > 0 && filteredShifts.length === 0 && (
             <div className="glass-card" style={{ padding: '40px', textAlign: 'center' }}>
               <Search size={32} color="var(--text-muted)" style={{ margin: '0 auto 12px auto' }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No matching additional shifts</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>No matching shifts found</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
-                Try adjusting your search criteria or clearing active filters.
+                Try adjusting your search query or clearing active filters.
               </p>
               <button onClick={() => { setSearch(''); setSelectedStaffFilter(''); setSelectedDateFilter(''); }} className="btn btn-secondary btn-sm">
                 Clear Filters
@@ -478,16 +500,31 @@ export default function DedicatedAdditionalShiftsPage() {
                 </table>
               </div>
 
-              {/* DATA LIST: MOBILE CARDS */}
+              {/* DATA LIST: MOBILE CARDS WITH ICON-ONLY ACTIONS */}
               <div className={styles.mobileCardsGrid}>
                 {filteredShifts.map((shift) => (
                   <div key={shift.id} className={styles.shiftCard}>
                     <div className={styles.shiftCardHeader}>
                       <div className={styles.staffInfoRow}>
                         <StaffAvatar name={shift.staffName} size="sm" />
-                        <div>
-                          <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '13.5px' }}>{shift.staffName}</div>
-                          <div style={{ fontSize: '11px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>{shift.staffId}</div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {shift.staffName}
+                          </div>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 800,
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                              color: '#818cf8',
+                              border: '1px solid rgba(99, 102, 241, 0.25)',
+                              fontFamily: 'var(--font-mono)',
+                            }}
+                          >
+                            {shift.staffId}
+                          </span>
                         </div>
                       </div>
 
@@ -497,38 +534,37 @@ export default function DedicatedAdditionalShiftsPage() {
                     </div>
 
                     <div className={styles.shiftCardMeta}>
-                      <span style={{ color: '#f1f5f9', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: '#cbd5e1', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <Calendar size={13} color="#818cf8" />
                         <span>{shift.date}</span>
                       </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700, fontSize: '11.5px' }}>
-                        <Clock size={12} />
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700, fontSize: '11px' }}>
+                        <Clock size={11} />
                         <span>{shift.startTime} – {shift.endTime}</span>
                       </span>
                     </div>
 
                     {shift.notes && (
-                      <div style={{ fontSize: '11.5px', color: '#94a3b8', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: '6px' }}>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', background: 'rgba(0,0,0,0.3)', padding: '5px 8px', borderRadius: '6px' }}>
                         {shift.notes}
                       </div>
                     )}
 
+                    {/* Icon-Only Action Buttons on Mobile View */}
                     <div className={styles.shiftCardActions}>
                       <button
                         onClick={() => handleOpenEditModal(shift)}
-                        className="btn btn-secondary btn-sm"
-                        style={{ fontSize: '11.5px', padding: '5px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        className={`btn btn-secondary ${styles.actionBtnIconOnly}`}
+                        title="Edit Shift"
                       >
-                        <Pencil size={13} color="#818cf8" />
-                        <span>Edit</span>
+                        <Pencil size={14} color="#818cf8" />
                       </button>
                       <button
                         onClick={() => setDeleteShiftId(shift.id)}
-                        className="btn btn-danger-subtle btn-sm"
-                        style={{ fontSize: '11.5px', padding: '5px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        className={`btn btn-danger-subtle ${styles.actionBtnIconOnly}`}
+                        title="Remove Shift"
                       >
-                        <Trash2 size={13} />
-                        <span>Remove</span>
+                        <Trash2 size={14} color="#f87171" />
                       </button>
                     </div>
                   </div>
@@ -538,6 +574,107 @@ export default function DedicatedAdditionalShiftsPage() {
           )}
         </main>
       </div>
+
+      {/* MOBILE FILTER DRAWER BOTTOM SHEET MODAL */}
+      {showFilterDrawer && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowFilterDrawer(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              backgroundColor: '#0f172a',
+              borderTopLeftRadius: '20px',
+              borderTopRightRadius: '20px',
+              border: '1px solid var(--border-medium)',
+              borderBottom: 'none',
+              padding: '20px',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Filter size={16} color="#818cf8" />
+                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Filter Additional Shifts</h3>
+              </div>
+              <button
+                onClick={() => setShowFilterDrawer(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                  Filter by Staff Member
+                </label>
+                <select
+                  value={selectedStaffFilter}
+                  onChange={(e) => setSelectedStaffFilter(e.target.value)}
+                  className="form-input"
+                  style={{ width: '100%', height: '42px', padding: '0 12px', fontSize: '13px', color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Staff Members</option>
+                  {staffList.map((s) => (
+                    <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {s.name} ({s.staffId})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                  Filter by Specific Date
+                </label>
+                <input
+                  type="date"
+                  value={selectedDateFilter}
+                  onChange={(e) => setSelectedDateFilter(e.target.value)}
+                  className="form-input"
+                  style={{ width: '100%', height: '42px', padding: '0 12px', fontSize: '13px', color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  setSelectedStaffFilter('');
+                  setSelectedDateFilter('');
+                  setSearch('');
+                  setShowFilterDrawer(false);
+                }}
+                className="btn btn-secondary"
+                style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+              >
+                Reset Filters
+              </button>
+              <button
+                onClick={() => setShowFilterDrawer(false)}
+                className="btn btn-primary"
+                style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px' }}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CREATE / EDIT MODAL */}
       {additionalModalOpen && (
