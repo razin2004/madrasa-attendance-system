@@ -49,6 +49,7 @@ export interface AttendanceReportRow {
   staffId: string;
   staffName: string;
   staffPhone: string;
+  avatarUrl?: string | null;
   accountStatus: string;
   date: string; // "YYYY-MM-DD"
   dayOfWeek: string;
@@ -629,6 +630,7 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
       staffId: profile.staffId,
       staffName: profile.name,
       staffPhone: profile.phone || '',
+      avatarUrl: (profile as any).profilePictureUrl || null,
       accountStatus: profile.user.status,
       date: dateStr,
       dayOfWeek,

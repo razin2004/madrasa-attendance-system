@@ -58,13 +58,14 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      additionalShifts: additionalShifts.map((s) => ({
+      additionalShifts: additionalShifts.map((s: any) => ({
         id: s.id,
         staffProfileId: s.staffProfileId,
-        staffName: s.staffProfile.name,
-        staffId: s.staffProfile.staffId,
-        staffEmail: s.staffProfile.user?.email,
-        branchIds: (s.staffProfile.branchAssignments || []).map((ba) => ba.branchId),
+        staffName: s.staffProfile?.name || 'Staff Member',
+        staffId: s.staffProfile?.staffId || '',
+        staffEmail: s.staffProfile?.user?.email,
+        avatarUrl: null,
+        branchIds: (s.staffProfile?.branchAssignments || []).map((ba: any) => ba.branchId),
         date: s.date.toISOString().split('T')[0],
         startTime: s.startTime,
         endTime: s.endTime,

@@ -20,6 +20,7 @@ import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { formatTimeInTimezone, formatDateInTimezone } from '@/lib/timezone';
 import { useToast } from '@/components/feedback/toast-provider';
 import { cleanStaffJustification } from '@/lib/reason-parser';
+import { StaffAvatar } from '@/components/ui/staff-avatar';
 import styles from './Corrections.module.css';
 
 interface CorrectionRequest {
@@ -36,11 +37,13 @@ interface CorrectionRequest {
     id: string;
     name: string;
     staffId: string;
+    avatarUrl?: string | null;
   };
   staff?: {
     id: string;
     name: string;
     staffId: string;
+    avatarUrl?: string | null;
   };
 }
 
@@ -696,10 +699,19 @@ export default function AdminAttendanceCorrectionsPage() {
                               style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
                               title="View Staff Profile"
                             >
-                              <div className={styles.staffName} style={{ color: '#818cf8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
-                                {getStaffName(item)}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <StaffAvatar
+                                  name={getStaffName(item)}
+                                  avatarUrl={item.staffProfile?.avatarUrl || item.staff?.avatarUrl}
+                                  size="sm"
+                                />
+                                <div>
+                                  <div className={styles.staffName} style={{ color: '#818cf8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                                    {getStaffName(item)}
+                                  </div>
+                                  <div className={styles.staffId}>ID: {getStaffId(item)}</div>
+                                </div>
                               </div>
-                              <div className={styles.staffId}>ID: {getStaffId(item)}</div>
                             </td>
                             <td className={styles.td} style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                               {formatDateString(item.date)}
@@ -815,10 +827,17 @@ export default function AdminAttendanceCorrectionsPage() {
                                 e.stopPropagation();
                                 if (profileId) router.push(`/${organizationCode}/admin/staff/${profileId}`);
                               }}
-                              style={{ cursor: 'pointer' }}
+                              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                             >
-                              <div className={styles.staffName} style={{ color: '#818cf8' }}>{getStaffName(item)}</div>
-                              <div className={styles.staffId}>ID: {getStaffId(item)}</div>
+                              <StaffAvatar
+                                name={getStaffName(item)}
+                                avatarUrl={item.staffProfile?.avatarUrl || item.staff?.avatarUrl}
+                                size="sm"
+                              />
+                              <div>
+                                <div className={styles.staffName} style={{ color: '#818cf8' }}>{getStaffName(item)}</div>
+                                <div className={styles.staffId}>ID: {getStaffId(item)}</div>
+                              </div>
                             </div>
                           </div>
                           <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>

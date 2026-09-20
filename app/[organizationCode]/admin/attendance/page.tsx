@@ -25,6 +25,7 @@ import { OrgAdminSidebar } from '../../../../components/layout/org-admin-sidebar
 import { OrgAdminMobileNav } from '../../../../components/layout/org-admin-mobile-nav';
 import { OrgAdminHeader } from '@/components/layout/org-admin-header';
 import { BreakPopover } from '@/components/attendance/break-popover';
+import { StaffAvatar } from '@/components/ui/staff-avatar';
 import { formatTimeInTimezone, getTodayInTimezone } from '@/lib/timezone';
 import { cleanStaffJustification } from '@/lib/reason-parser';
 import { useToast } from '../../../../components/feedback/toast-provider';
@@ -853,11 +854,14 @@ export default function AdminAttendancePage() {
                                   router.push(`/${organizationCode}/admin/staff/${row.staffProfileId || row.staffId}`);
                                 }
                               }}
-                              style={{ cursor: 'pointer', display: 'inline-block' }}
+                              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
                               title="View staff profile"
                             >
-                              <div style={{ fontWeight: 700, color: '#ffffff', display: 'inline-block' }}>{row.staffName}</div>
-                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
+                              <StaffAvatar name={row.staffName} avatarUrl={row.avatarUrl} size="sm" />
+                              <div>
+                                <div style={{ fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
+                              </div>
                             </div>
                           </td>
 
@@ -959,9 +963,7 @@ export default function AdminAttendancePage() {
                             style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
                             title="View staff profile"
                           >
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontWeight: 800, fontSize: '13px' }}>
-                              {row.staffName ? row.staffName.slice(0, 2).toUpperCase() : 'ST'}
-                            </div>
+                            <StaffAvatar name={row.staffName} avatarUrl={row.avatarUrl} size="sm" />
                             <div>
                               <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
                               <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>

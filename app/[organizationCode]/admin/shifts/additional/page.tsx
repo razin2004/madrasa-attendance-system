@@ -48,7 +48,7 @@ export default function DedicatedAdditionalShiftsPage() {
 
   const [branding, setBranding] = useState<any>(null);
   const [additionalShifts, setAdditionalShifts] = useState<AdditionalShiftItem[]>([]);
-  const [staffList, setStaffList] = useState<{ id: string; name: string; staffId: string }[]>([]);
+  const [staffList, setStaffList] = useState<{ id: string; name: string; staffId: string; avatarUrl?: string | null; branchNames?: string[]; shiftNames?: string[] }[]>([]);
   const [shiftPatterns, setShiftPatterns] = useState<any[]>([]);
   const [branchList, setBranchList] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +66,7 @@ export default function DedicatedAdditionalShiftsPage() {
   const [additionalModalOpen, setAdditionalModalOpen] = useState(false);
   const [editingShift, setEditingShift] = useState<AdditionalShiftItem | null>(null);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [selectedShiftPatternId, setSelectedShiftPatternId] = useState<string>('');
   const [addDate, setAddDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [addStartTime, setAddStartTime] = useState('11:00');
@@ -116,6 +117,9 @@ export default function DedicatedAdditionalShiftsPage() {
             id: s.id,
             name: s.name,
             staffId: s.staffId,
+            avatarUrl: s.profilePictureUrl || s.avatarUrl || s.user?.avatarUrl || null,
+            branchNames: (s.branchAssignments || []).map((ba: any) => ba.branch?.name).filter(Boolean),
+            shiftNames: (s.shiftAssignments || []).map((sa: any) => sa.shiftPattern?.name).filter(Boolean),
           }))
         );
       }
@@ -140,6 +144,7 @@ export default function DedicatedAdditionalShiftsPage() {
   const handleOpenCreateModal = () => {
     setEditingShift(null);
     setSelectedStaffIds([]);
+    setStaffSearchQuery('');
     setSelectedShiftPatternId('');
     setAddDate(new Date().toISOString().split('T')[0]);
     setAddStartTime('11:00');
@@ -153,6 +158,7 @@ export default function DedicatedAdditionalShiftsPage() {
   const handleOpenEditModal = (shift: AdditionalShiftItem) => {
     setEditingShift(shift);
     setSelectedStaffIds([shift.staffProfileId]);
+    setStaffSearchQuery('');
     setSelectedShiftPatternId('');
     setAddDate(shift.date);
     setAddStartTime(shift.startTime);
@@ -504,7 +510,7 @@ export default function DedicatedAdditionalShiftsPage() {
                       <tr key={shift.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
                         <td style={{ padding: '14px 18px' }}>
                           <div className={styles.staffInfoRow}>
-                            <StaffAvatar name={shift.staffName} size="sm" />
+                            <StaffAvatar name={shift.staffName} avatarUrl={(shift as any).avatarUrl} size="sm" />
                             <div>
                               <div style={{ fontWeight: 800, color: '#ffffff' }}>{shift.staffName}</div>
                               <div style={{ fontSize: '11.5px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>{shift.staffId}</div>
@@ -556,7 +562,7 @@ export default function DedicatedAdditionalShiftsPage() {
                   <div key={shift.id} className={styles.shiftCard}>
                     <div className={styles.shiftCardHeader}>
                       <div className={styles.staffInfoRow}>
-                        <StaffAvatar name={shift.staffName} size="sm" />
+                        <StaffAvatar name={shift.staffName} avatarUrl={(shift as any).avatarUrl} size="sm" />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {shift.staffName}
@@ -757,7 +763,7 @@ export default function DedicatedAdditionalShiftsPage() {
             className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div className={styles.stickyModalHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24', flexShrink: 0 }}>
                   <Clock size={20} color="#fbbf24" />
@@ -788,56 +794,194 @@ export default function DedicatedAdditionalShiftsPage() {
             )}
 
             <form onSubmit={handleCreateOrUpdateShift} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Staff Member Selection */}
+              {/* Staff Member Selection Dropdown with Search & Pinned Selected Items */}
               <div>
-                <label className="form-label" style={{ fontSize: '12px', color: '#ffffff', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
-                  {editingShift ? 'Staff Member *' : 'Select Staff Member(s) *'}
-                </label>
-                {editingShift ? (
-                  <select
-                    value={selectedStaffIds[0] || ''}
-                    onChange={(e) => setSelectedStaffIds([e.target.value])}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', color: '#ffffff', fontWeight: 700, margin: 0 }}>
+                    {editingShift ? 'Staff Member *' : 'Select Staff Member(s) *'}
+                  </label>
+                  {!editingShift && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedStaffIds.length === staffList.length) {
+                          setSelectedStaffIds([]);
+                        } else {
+                          setSelectedStaffIds(staffList.map((s) => s.id));
+                        }
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      {selectedStaffIds.length === staffList.length ? 'Deselect All' : `Select All (${staffList.length})`}
+                    </button>
+                  )}
+                </div>
+
+                {/* Search Input for Staff Member(s) */}
+                <div style={{ position: 'relative', marginBottom: '8px' }}>
+                  <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input
+                    type="text"
+                    placeholder="Search staff by name, branch, or shift..."
+                    value={staffSearchQuery}
+                    onChange={(e) => setStaffSearchQuery(e.target.value)}
                     className="form-input"
-                    style={{ width: '100%', height: '42px', fontSize: '13px' }}
-                  >
-                    {staffList.map((s) => (
-                      <option key={s.id} value={s.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
-                        {s.name} ({s.staffId})
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid var(--border-medium)', borderRadius: '10px', padding: '8px', backgroundColor: 'rgba(15, 23, 42, 0.6)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {staffList.map((s) => {
+                    style={{
+                      width: '100%',
+                      height: '38px',
+                      paddingLeft: '32px',
+                      paddingRight: staffSearchQuery ? '30px' : '10px',
+                      fontSize: '12.5px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                      color: '#ffffff',
+                    }}
+                  />
+                  {staffSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setStaffSearchQuery('')}
+                      style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Selected Chips Bar */}
+                {selectedStaffIds.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px', maxHeight: '60px', overflowY: 'auto' }}>
+                    {selectedStaffIds.map((id) => {
+                      const st = staffList.find((s) => s.id === id);
+                      if (!st) return null;
+                      return (
+                        <span
+                          key={id}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 8px',
+                            borderRadius: '9999px',
+                            backgroundColor: 'rgba(99, 102, 241, 0.25)',
+                            color: '#818cf8',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            border: '1px solid rgba(99, 102, 241, 0.4)',
+                          }}
+                        >
+                          {st.name}
+                          <X
+                            size={12}
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStaffIds(selectedStaffIds.filter((sId) => sId !== id));
+                            }}
+                          />
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Staff Items List (Sorted with Selected Pinned to the TOP) */}
+                <div
+                  style={{
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '10px',
+                    padding: '6px',
+                    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  {(() => {
+                    const filtered = staffList.filter((s) => {
+                      const q = staffSearchQuery.trim().toLowerCase();
+                      if (!q) return true;
+                      const nameMatch = s.name.toLowerCase().includes(q);
+                      const idMatch = s.staffId.toLowerCase().includes(q);
+                      const branchMatch = s.branchNames?.some((b: string) => b.toLowerCase().includes(q));
+                      const shiftMatch = s.shiftNames?.some((sh: string) => sh.toLowerCase().includes(q));
+                      return nameMatch || idMatch || branchMatch || shiftMatch;
+                    });
+
+                    // Pin selected staff to the TOP
+                    const sorted = [...filtered].sort((a, b) => {
+                      const aSel = selectedStaffIds.includes(a.id);
+                      const bSel = selectedStaffIds.includes(b.id);
+                      if (aSel && !bSel) return -1;
+                      if (!aSel && bSel) return 1;
+                      return a.name.localeCompare(b.name);
+                    });
+
+                    if (sorted.length === 0) {
+                      return (
+                        <div style={{ padding: '16px', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
+                          No staff members found matching &quot;{staffSearchQuery}&quot;
+                        </div>
+                      );
+                    }
+
+                    return sorted.map((s) => {
                       const isSel = selectedStaffIds.includes(s.id);
                       return (
                         <div
                           key={s.id}
                           onClick={() => {
-                            if (isSel) setSelectedStaffIds(selectedStaffIds.filter((id) => id !== s.id));
-                            else setSelectedStaffIds([...selectedStaffIds, s.id]);
+                            if (editingShift) {
+                              setSelectedStaffIds([s.id]);
+                            } else {
+                              if (isSel) setSelectedStaffIds(selectedStaffIds.filter((id) => id !== s.id));
+                              else setSelectedStaffIds([...selectedStaffIds, s.id]);
+                            }
                           }}
                           style={{
-                            padding: '8px 12px',
+                            padding: '7px 10px',
                             borderRadius: '8px',
-                            backgroundColor: isSel ? 'rgba(99, 102, 241, 0.18)' : 'transparent',
-                            border: `1px solid ${isSel ? 'rgba(99, 102, 241, 0.4)' : 'transparent'}`,
+                            backgroundColor: isSel ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.02)',
+                            border: `1px solid ${isSel ? 'rgba(99, 102, 241, 0.45)' : 'transparent'}`,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
+                            gap: '8px',
+                            transition: 'all 0.15s ease',
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <input type="checkbox" checked={isSel} readOnly style={{ accentColor: '#4f46e5' }} />
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>{s.name}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                            <input
+                              type={editingShift ? 'radio' : 'checkbox'}
+                              checked={isSel}
+                              readOnly
+                              style={{ accentColor: '#4f46e5', width: '15px', height: '15px', flexShrink: 0 }}
+                            />
+                            <StaffAvatar name={s.name} avatarUrl={s.avatarUrl} size="xs" />
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {s.name}
+                              </div>
+                              {(s.branchNames?.length || s.shiftNames?.length) ? (
+                                <div style={{ fontSize: '10.5px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {s.branchNames?.length ? s.branchNames.join(', ') : ''}
+                                  {s.branchNames?.length && s.shiftNames?.length ? ' • ' : ''}
+                                  {s.shiftNames?.length ? s.shiftNames.join(', ') : ''}
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
-                          <span style={{ fontSize: '11px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>{s.staffId}</span>
+                          <span style={{ fontSize: '10.5px', color: '#818cf8', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
+                            {s.staffId}
+                          </span>
                         </div>
                       );
-                    })}
-                  </div>
-                )}
+                    });
+                  })()}
+                </div>
               </div>
 
               {/* Preset Shift Pattern Selector */}
@@ -859,6 +1003,8 @@ export default function DedicatedAdditionalShiftsPage() {
                           setAddStartTime(workDay.startTime);
                           setAddEndTime(workDay.endTime);
                         }
+                      } else {
+                        setAddTitle('Overtime Shift');
                       }
                     }}
                     className="form-input"
@@ -928,7 +1074,13 @@ export default function DedicatedAdditionalShiftsPage() {
                   type="text"
                   required
                   value={addTitle}
-                  onChange={(e) => setAddTitle(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setAddTitle(val);
+                    if (selectedShiftPatternId !== '') {
+                      setSelectedShiftPatternId(''); // Automatically change to Custom Shift Time!
+                    }
+                  }}
                   placeholder="e.g. Overtime Shift, Special Duty"
                   className="form-input"
                   style={{ width: '100%', height: '42px', fontSize: '13px' }}

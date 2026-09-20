@@ -24,6 +24,7 @@ import {
 import { OrgAdminSidebar } from '@/components/layout/org-admin-sidebar';
 import { OrgAdminMobileNav } from '@/components/layout/org-admin-mobile-nav';
 import { useToast } from '@/components/feedback/toast-provider';
+import { StaffAvatar } from '@/components/ui/staff-avatar';
 import styles from './DailyReport.module.css';
 
 interface StaffOption {
@@ -707,8 +708,13 @@ export default function DailyReportPage() {
                             style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
                           >
                             <td className={styles.td}>
-                              <div style={{ fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
-                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <StaffAvatar name={row.staffName} avatarUrl={row.avatarUrl} size="sm" />
+                                <div>
+                                  <div style={{ fontWeight: 700, color: '#ffffff' }}>{row.staffName}</div>
+                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#818cf8' }}>ID: {row.staffId}</div>
+                                </div>
+                              </div>
                             </td>
 
                             <td className={styles.td}>
@@ -811,31 +817,34 @@ export default function DailyReportPage() {
                       >
                         {/* Header: Name + Staff ID + Status */}
                         <div className={styles.cardHeader}>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                              <strong style={{ color: '#ffffff', fontSize: '14px' }}>{row.staffName}</strong>
-                              <span
-                                style={{
-                                  fontFamily: 'var(--font-mono)',
-                                  fontSize: '10.5px',
-                                  fontWeight: 800,
-                                  padding: '1px 6px',
-                                  borderRadius: '4px',
-                                  backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                                  color: '#818cf8',
-                                  border: '1px solid rgba(99, 102, 241, 0.25)',
-                                }}
-                              >
-                                {row.staffId}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                                <MapPin size={11} color="#38bdf8" />
-                                <span>{row.branchName}</span>
-                              </span>
-                              <span>•</span>
-                              <span style={{ color: '#cbd5e1', fontWeight: 600 }}>{row.shiftPatternName}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <StaffAvatar name={row.staffName} avatarUrl={row.avatarUrl} size="sm" />
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <strong style={{ color: '#ffffff', fontSize: '14px' }}>{row.staffName}</strong>
+                                <span
+                                  style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '10.5px',
+                                    fontWeight: 800,
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                    color: '#818cf8',
+                                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                                  }}
+                                >
+                                  {row.staffId}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                  <MapPin size={11} color="#38bdf8" />
+                                  <span>{row.branchName}</span>
+                                </span>
+                                <span>•</span>
+                                <span style={{ color: '#cbd5e1', fontWeight: 600 }}>{row.shiftPatternName}</span>
+                              </div>
                             </div>
                           </div>
 
