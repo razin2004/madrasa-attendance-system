@@ -221,6 +221,10 @@
   gap: 2px;
 }
 
+.desktopOnlyFilter {
+  display: block;
+}
+
 @media (max-width: 768px) {
   .header {
     padding: 12px 16px;
@@ -252,6 +256,9 @@
     align-items: center;
     width: 100%;
     gap: 8px;
+  }
+  .desktopOnlyFilter {
+    display: none !important;
   }
   .desktopBranchFilter {
     display: none !important;

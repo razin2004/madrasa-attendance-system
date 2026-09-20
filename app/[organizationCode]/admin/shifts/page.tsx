@@ -359,7 +359,8 @@ export default function ShiftPatternsPage() {
                   right: 0,
                   top: 'calc(100% + 8px)',
                   zIndex: 1000,
-                  minWidth: '210px',
+                  minWidth: '245px',
+                  maxWidth: 'calc(100vw - 32px)',
                   padding: '6px',
                   backgroundColor: '#0d121f',
                   border: '1px solid var(--border-medium)',
@@ -385,15 +386,16 @@ export default function ShiftPatternsPage() {
                     color: '#fbbf24',
                     border: 'none',
                     backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     width: '100%',
                     textAlign: 'left',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  <Plus size={15} color="#fbbf24" />
-                  <span>⚡ Assign Additional Shift</span>
+                  <Plus size={15} color="#fbbf24" style={{ flexShrink: 0 }} />
+                  <span style={{ whiteSpace: 'nowrap' }}>⚡ Assign Additional Shift</span>
                 </button>
 
                 <Link
@@ -677,7 +679,7 @@ export default function ShiftPatternsPage() {
                       borderTop: '1px solid var(--border-subtle)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div className={styles.cardActionsLeft}>
                       <button
                         onClick={() => setTogglePattern(pattern)}
                         className={`btn btn-sm ${pattern.isActive ? 'btn-danger-subtle' : 'btn-success-subtle'}`}
@@ -699,8 +701,7 @@ export default function ShiftPatternsPage() {
 
                     <Link
                       href={`/${organizationCode}/admin/shifts/${pattern.id}`}
-                      className="btn btn-secondary btn-sm"
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                      className={`${styles.managePatternBtn} btn btn-secondary btn-sm`}
                     >
                       <span>Manage Pattern</span>
                       <ChevronRight size={14} />
@@ -724,13 +725,25 @@ export default function ShiftPatternsPage() {
                     Overtime and special holiday shift assignments for staff members.
                   </p>
                 </div>
-                <button
-                  onClick={handleOpenCreateAdditionalShift}
-                  className="btn btn-primary btn-sm"
-                  style={{ backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#000000', fontWeight: 700 }}
-                >
-                  + Assign Additional Shift
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    onClick={handleOpenCreateAdditionalShift}
+                    className="btn btn-primary btn-sm"
+                    style={{ backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#000000', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Plus size={16} />
+                    <span className={styles.btnTextDesktop}>Assign Additional Shift</span>
+                  </button>
+
+                  <Link
+                    href={`/${organizationCode}/admin/shifts/additional`}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '12px', padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
+                  >
+                    <span>View More</span>
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
               </div>
 
               {/* DESKTOP TABLE VIEW */}
@@ -746,7 +759,7 @@ export default function ShiftPatternsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {additionalShifts.map((shift) => (
+                    {additionalShifts.slice(0, 5).map((shift) => (
                       <tr key={shift.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ fontWeight: 700, color: '#ffffff' }}>{shift.staffName}</div>
@@ -795,7 +808,7 @@ export default function ShiftPatternsPage() {
 
               {/* MOBILE CARDS VIEW */}
               <div className={styles.additionalCardsMobile}>
-                {additionalShifts.map((shift) => (
+                {additionalShifts.slice(0, 5).map((shift) => (
                   <div key={shift.id} className={styles.additionalCard}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
                       <div>
@@ -845,6 +858,18 @@ export default function ShiftPatternsPage() {
                   </div>
                 ))}
               </div>
+
+              {additionalShifts.length > 5 && (
+                <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                  <Link
+                    href={`/${organizationCode}/admin/shifts/additional`}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '13px', padding: '8px 20px', borderRadius: '10px' }}
+                  >
+                    View All ({additionalShifts.length}) Additional Shifts →
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </main>

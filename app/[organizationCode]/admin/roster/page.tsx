@@ -512,7 +512,7 @@ export default function RosterCalendarPage() {
             {/* Filters Bar: Staff, Shift, Branch & Search */}
             <div className={styles.filterSection}>
               {/* Staff Select Dropdown */}
-              <div style={{ position: 'relative', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
+              <div className={styles.desktopOnlyFilter} style={{ position: 'relative', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
                 <Users
                   size={14}
                   style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }}
@@ -545,7 +545,7 @@ export default function RosterCalendarPage() {
               </div>
 
               {/* Shift Filter Dropdown */}
-              <div style={{ position: 'relative', minWidth: '140px', maxWidth: '200px' }}>
+              <div className={styles.desktopOnlyFilter} style={{ position: 'relative', minWidth: '140px', maxWidth: '200px' }}>
                 <Clock
                   size={14}
                   style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }}
@@ -576,7 +576,7 @@ export default function RosterCalendarPage() {
               </div>
 
               {/* Desktop Branch Filter Dropdown */}
-              <div style={{ position: 'relative', minWidth: '140px', maxWidth: '200px' }}>
+              <div className={styles.desktopOnlyFilter} style={{ position: 'relative', minWidth: '140px', maxWidth: '200px' }}>
                 <MapPin
                   size={14}
                   style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }}

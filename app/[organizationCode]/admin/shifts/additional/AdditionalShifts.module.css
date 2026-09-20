@@ -1,0 +1,189 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #030712);
+  color: var(--text-primary, #f9fafb);
+  overflow-x: hidden;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: 80px;
+  overflow-x: hidden;
+}
+
+.pageContainer {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+.controlsBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.searchFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.searchInputWrapper {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.searchInput {
+  width: 100%;
+  height: 40px;
+  padding: 8px 36px 8px 38px;
+  border-radius: 10px;
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
+  font-size: 13px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+.searchInput:focus {
+  outline: none;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #64748b);
+  pointer-events: none;
+}
+
+.selectFilter {
+  height: 40px;
+  padding: 0 12px 0 34px;
+  border-radius: 10px;
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
+  font-size: 12.5px;
+  cursor: pointer;
+  min-width: 160px;
+  box-sizing: border-box;
+}
+
+.dateFilter {
+  height: 40px;
+  padding: 0 12px 0 34px;
+  border-radius: 10px;
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+  color: #ffffff;
+  font-size: 12.5px;
+  cursor: pointer;
+  min-width: 150px;
+  box-sizing: border-box;
+}
+
+.desktopTable {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  background: var(--bg-card, rgba(15, 23, 42, 0.75));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.mobileCardsGrid {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shiftCard {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.shiftCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.staffInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shiftCardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.shiftCardActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 14px;
+    gap: 14px;
+  }
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchFilterGroup {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchInputWrapper {
+    width: 100%;
+  }
+  .selectFilter, .dateFilter {
+    width: 100%;
+  }
+  .desktopTable {
+    display: none;
+  }
+  .mobileCardsGrid {
+    display: flex;
+  }
+}
