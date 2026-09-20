@@ -50,6 +50,7 @@ export default function DedicatedAdditionalShiftsPage() {
   const [additionalShifts, setAdditionalShifts] = useState<AdditionalShiftItem[]>([]);
   const [staffList, setStaffList] = useState<{ id: string; name: string; staffId: string }[]>([]);
   const [shiftPatterns, setShiftPatterns] = useState<any[]>([]);
+  const [branchList, setBranchList] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -57,6 +58,8 @@ export default function DedicatedAdditionalShiftsPage() {
   const [search, setSearch] = useState('');
   const [selectedStaffFilter, setSelectedStaffFilter] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState('');
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState('');
+  const [selectedShiftPatternFilter, setSelectedShiftPatternFilter] = useState('');
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
   // Modal State for Add / Edit
@@ -87,11 +90,12 @@ export default function DedicatedAdditionalShiftsPage() {
       setLoading(true);
       setHasError(false);
 
-      const [brandRes, addRes, staffRes, patternRes] = await Promise.all([
+      const [brandRes, addRes, staffRes, patternRes, branchRes] = await Promise.all([
         fetch(`/api/org/${organizationCode}/branding`),
         fetch(`/api/org/${organizationCode}/shifts/additional`),
         fetch(`/api/org/${organizationCode}/staff`),
         fetch(`/api/org/${organizationCode}/shift-patterns`),
+        fetch(`/api/org/${organizationCode}/branches`),
       ]);
 
       const brandData = await brandRes.json();
@@ -119,6 +123,11 @@ export default function DedicatedAdditionalShiftsPage() {
       const patternData = await patternRes.json();
       if (patternData.success && (patternData.shiftPatterns || patternData.patterns)) {
         setShiftPatterns(patternData.shiftPatterns || patternData.patterns || []);
+      }
+
+      const branchData = await branchRes.json();
+      if (branchData.success && Array.isArray(branchData.branches)) {
+        setBranchList(branchData.branches.map((b: any) => ({ id: b.id, name: b.name })));
       }
     } catch {
       setHasError(true);
@@ -250,15 +259,25 @@ export default function DedicatedAdditionalShiftsPage() {
 
     const matchesStaff = !selectedStaffFilter || shift.staffProfileId === selectedStaffFilter;
     const matchesDate = !selectedDateFilter || shift.date === selectedDateFilter;
+    const matchesBranch = !selectedBranchFilter || ((shift as any).branchIds && (shift as any).branchIds.includes(selectedBranchFilter));
+    const matchesShiftPattern = !selectedShiftPatternFilter || shift.title.toLowerCase().includes(selectedShiftPatternFilter.toLowerCase());
 
-    return matchesSearch && matchesStaff && matchesDate;
+    return matchesSearch && matchesStaff && matchesDate && matchesBranch && matchesShiftPattern;
   });
 
   const handleBack = () => {
     router.push(`/${organizationCode}/admin/shifts`);
   };
 
-  const hasActiveFilters = Boolean(search || selectedStaffFilter || selectedDateFilter);
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedStaffFilter('');
+    setSelectedDateFilter('');
+    setSelectedBranchFilter('');
+    setSelectedShiftPatternFilter('');
+  };
+
+  const hasActiveFilters = Boolean(search || selectedStaffFilter || selectedDateFilter || selectedBranchFilter || selectedShiftPatternFilter);
 
   return (
     <div className={styles.container}>
@@ -295,13 +314,16 @@ export default function DedicatedAdditionalShiftsPage() {
                   onClick={() => setSearch('')}
                   style={{
                     position: 'absolute',
-                    right: '44px',
+                    right: '42px',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none',
                     border: 'none',
                     color: 'var(--text-muted)',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
                   <X size={14} />
@@ -324,6 +346,38 @@ export default function DedicatedAdditionalShiftsPage() {
 
             {/* Desktop Filters Bar */}
             <div className={styles.desktopFilters}>
+              {branchList.length > 0 && (
+                <select
+                  value={selectedBranchFilter}
+                  onChange={(e) => setSelectedBranchFilter(e.target.value)}
+                  className="form-input"
+                  style={{ height: '42px', padding: '0 12px', fontSize: '12.5px', borderRadius: '12px', minWidth: '150px', color: '#ffffff', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
+                  {branchList.map((b) => (
+                    <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {shiftPatterns.length > 0 && (
+                <select
+                  value={selectedShiftPatternFilter}
+                  onChange={(e) => setSelectedShiftPatternFilter(e.target.value)}
+                  className="form-input"
+                  style={{ height: '42px', padding: '0 12px', fontSize: '12.5px', borderRadius: '12px', minWidth: '150px', color: '#ffffff', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Shift Patterns</option>
+                  {shiftPatterns.map((p) => (
+                    <option key={p.id} value={p.name} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
               <select
                 value={selectedStaffFilter}
                 onChange={(e) => setSelectedStaffFilter(e.target.value)}
@@ -349,11 +403,7 @@ export default function DedicatedAdditionalShiftsPage() {
               {hasActiveFilters && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSearch('');
-                    setSelectedStaffFilter('');
-                    setSelectedDateFilter('');
-                  }}
+                  onClick={handleResetFilters}
                   className="btn btn-secondary btn-sm"
                   style={{ height: '42px', padding: '0 12px', fontSize: '12px', borderRadius: '10px' }}
                 >
@@ -429,7 +479,7 @@ export default function DedicatedAdditionalShiftsPage() {
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
                 Try adjusting your search query or clearing active filters.
               </p>
-              <button onClick={() => { setSearch(''); setSelectedStaffFilter(''); setSelectedDateFilter(''); }} className="btn btn-secondary btn-sm">
+              <button onClick={handleResetFilters} className="btn btn-secondary btn-sm">
                 Clear Filters
               </button>
             </div>
@@ -470,7 +520,7 @@ export default function DedicatedAdditionalShiftsPage() {
                         </td>
                         <td style={{ padding: '14px 18px' }}>
                           <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '9999px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11px', fontWeight: 700 }}>
-                            ⚡ {shift.title}
+                            {shift.title}
                           </span>
                           {shift.notes && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{shift.notes}</div>}
                         </td>
@@ -529,7 +579,7 @@ export default function DedicatedAdditionalShiftsPage() {
                       </div>
 
                       <span style={{ padding: '3px 8px', borderRadius: '9999px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '10.5px', fontWeight: 700, flexShrink: 0 }}>
-                        ⚡ {shift.title}
+                        {shift.title}
                       </span>
                     </div>
 
@@ -578,30 +628,11 @@ export default function DedicatedAdditionalShiftsPage() {
       {/* MOBILE FILTER DRAWER BOTTOM SHEET MODAL */}
       {showFilterDrawer && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 1100,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-          }}
+          className={styles.filterSheetOverlay}
           onClick={() => setShowFilterDrawer(false)}
         >
           <div
-            style={{
-              width: '100%',
-              maxWidth: '500px',
-              backgroundColor: '#0f172a',
-              borderTopLeftRadius: '20px',
-              borderTopRightRadius: '20px',
-              border: '1px solid var(--border-medium)',
-              borderBottom: 'none',
-              padding: '20px',
-              boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
-            }}
+            className={styles.filterSheetContent}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -618,6 +649,48 @@ export default function DedicatedAdditionalShiftsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+              {branchList.length > 0 && (
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                    Filter by Branch Location
+                  </label>
+                  <select
+                    value={selectedBranchFilter}
+                    onChange={(e) => setSelectedBranchFilter(e.target.value)}
+                    className="form-input"
+                    style={{ width: '100%', height: '42px', padding: '0 12px', fontSize: '13px', color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}
+                  >
+                    <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
+                    {branchList.map((b) => (
+                      <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {shiftPatterns.length > 0 && (
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                    Filter by Shift Pattern
+                  </label>
+                  <select
+                    value={selectedShiftPatternFilter}
+                    onChange={(e) => setSelectedShiftPatternFilter(e.target.value)}
+                    className="form-input"
+                    style={{ width: '100%', height: '42px', padding: '0 12px', fontSize: '13px', color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}
+                  >
+                    <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Shift Patterns</option>
+                    {shiftPatterns.map((p) => (
+                      <option key={p.id} value={p.name} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
                   Filter by Staff Member
@@ -654,9 +727,7 @@ export default function DedicatedAdditionalShiftsPage() {
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 onClick={() => {
-                  setSelectedStaffFilter('');
-                  setSelectedDateFilter('');
-                  setSearch('');
+                  handleResetFilters();
                   setShowFilterDrawer(false);
                 }}
                 className="btn btn-secondary"
@@ -679,39 +750,17 @@ export default function DedicatedAdditionalShiftsPage() {
       {/* CREATE / EDIT MODAL */}
       {additionalModalOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-          }}
+          className={styles.modalOverlay}
           onClick={() => setAdditionalModalOpen(false)}
         >
           <div
-            className="glass-card"
-            style={{
-              width: '100%',
-              maxWidth: '540px',
-              backgroundColor: '#0d121f',
-              border: '1px solid var(--border-medium)',
-              borderRadius: '16px',
-              padding: '24px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.9)',
-              boxSizing: 'border-box',
-            }}
+            className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24', flexShrink: 0 }}>
-                  ⚡
+                  <Clock size={20} color="#fbbf24" />
                 </div>
                 <div>
                   <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', margin: 0 }}>

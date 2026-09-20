@@ -715,11 +715,10 @@ export default function ShiftPatternsPage() {
           {/* ACTIVE ADDITIONAL SHIFTS LIST SECTION */}
           {additionalShifts.length > 0 && (
             <div style={{ marginTop: '40px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'nowrap', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'nowrap', marginBottom: '14px' }}>
                 <div>
-                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                    <span style={{ color: '#fbbf24' }}>⚡</span>
-                    <span>Assigned Additional Shifts ({additionalShifts.length})</span>
+                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                    Assigned Additional Shifts ({additionalShifts.length})
                   </h2>
                   <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px', margin: 0 }}>
                     Overtime and special holiday shift assignments for staff members.
@@ -728,8 +727,8 @@ export default function ShiftPatternsPage() {
 
                 <Link
                   href={`/${organizationCode}/admin/shifts/additional`}
-                  className="btn btn-secondary btn-sm"
-                  style={{ fontSize: '12px', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: '12px', fontWeight: 700, color: '#818cf8', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '3px', borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0 }}
                 >
                   <span>View More</span>
                   <ChevronRight size={14} />
@@ -737,33 +736,33 @@ export default function ShiftPatternsPage() {
               </div>
 
               {/* HORIZONTALLY SCROLLABLE TABLE VIEW ON ALL DEVICES */}
-              <div className={`${styles.additionalTableContainer} glass-card`} style={{ padding: '0' }}>
+              <div className={styles.additionalTableContainer}>
                 <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-medium)', backgroundColor: 'rgba(15, 23, 42, 0.6)' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Staff Member</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Date</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Shift Hours</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Shift Title</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>Actions</th>
+                    <tr style={{ borderBottom: '1px solid var(--border-medium)', backgroundColor: '#0f172a' }}>
+                      <th style={{ padding: '14px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Staff Member</th>
+                      <th style={{ padding: '14px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Date</th>
+                      <th style={{ padding: '14px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Shift Hours</th>
+                      <th style={{ padding: '14px 16px', textAlign: 'left', color: '#94a3b8', fontWeight: 700 }}>Shift Title</th>
+                      <th style={{ padding: '14px 16px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {additionalShifts.slice(0, 5).map((shift) => (
-                      <tr key={shift.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <tr key={shift.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ fontWeight: 700, color: '#ffffff' }}>{shift.staffName}</div>
                           <div style={{ fontSize: '11.5px', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>{shift.staffId}</div>
                         </td>
                         <td style={{ padding: '14px 16px', color: '#f1f5f9', fontWeight: 600, whiteSpace: 'nowrap' }}>{shift.date}</td>
                         <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700, fontSize: '12px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700, fontSize: '12px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
                             <Clock size={12} />
                             <span>{shift.startTime} – {shift.endTime}</span>
                           </span>
                         </td>
                         <td style={{ padding: '14px 16px' }}>
-                          <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '9999px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '9999px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>
                             {shift.title}
                           </span>
                           {shift.notes && <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '3px' }}>{shift.notes}</div>}
@@ -773,20 +772,20 @@ export default function ShiftPatternsPage() {
                             <button
                               onClick={() => handleOpenEditAdditionalShift(shift)}
                               className="btn btn-secondary btn-sm"
-                              style={{ fontSize: '11.5px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              style={{ fontSize: '11.5px', padding: '5px 9px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                               title="Edit Additional Shift"
                             >
                               <Pencil size={13} color="#818cf8" />
-                              <span>Edit</span>
+                              <span className={styles.tableBtnTextDesktop}>Edit</span>
                             </button>
                             <button
                               onClick={() => handleDeleteAdditionalShift(shift.id)}
                               className="btn btn-danger-subtle btn-sm"
-                              style={{ fontSize: '11.5px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              style={{ fontSize: '11.5px', padding: '5px 9px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                               title="Remove Additional Shift"
                             >
                               <Trash2 size={13} />
-                              <span>Remove</span>
+                              <span className={styles.tableBtnTextDesktop}>Remove</span>
                             </button>
                           </div>
                         </td>
