@@ -230,8 +230,14 @@ export function calculateAttendanceMetricsForPunches(params: {
   let lateInMinutes = 0;
 
   if (schedStartMins !== null) {
-    if (actualInMins > schedStartMins) {
-      lateInMinutes = actualInMins - schedStartMins;
+    let effectiveInMins = actualInMins;
+    // Handle overnight shift late clock-in after midnight (e.g. shift 22:00 -> 1320m, clock-in 00:15 -> 15m => 1455m)
+    if (schedStartMins > 12 * 60 && actualInMins < 12 * 60) {
+      effectiveInMins += 24 * 60;
+    }
+
+    if (effectiveInMins > schedStartMins) {
+      lateInMinutes = effectiveInMins - schedStartMins;
     }
   }
 
@@ -560,10 +566,39 @@ export async function getDailyAttendanceReport(params: DailyReportFilterParams) 
     else if (status === 'NOT YET CLOCKED IN') metrics.notYetClockedInCount++;
     else if (status === 'IN PROGRESS') metrics.inProgressCount++;
 
+    let evalStart = schedule.startTime;
+    let evalEnd = schedule.endTime;
+
+    if (schedule.shifts && schedule.shifts.length > 1 && clockInRecord) {
+      const inHhmm = formatTimeToHHMM(clockInRecord.timestamp, branchTimezone);
+      const [inH, inM] = inHhmm.split(':').map(Number);
+      const actualInMins = inH * 60 + inM;
+
+      let minDiff = Infinity;
+      let bestShift = schedule.shifts[0];
+
+      for (const s of schedule.shifts) {
+        if (s.startTime && s.startTime.includes(':')) {
+          const [sh, sm] = s.startTime.split(':').map(Number);
+          const sMins = sh * 60 + sm;
+          const diff = Math.abs(actualInMins - sMins);
+          if (diff < minDiff) {
+            minDiff = diff;
+            bestShift = s;
+          }
+        }
+      }
+
+      if (bestShift) {
+        evalStart = bestShift.startTime;
+        evalEnd = bestShift.endTime;
+      }
+    }
+
     const metricsCalc = calculateAttendanceMetricsForPunches({
       records: staffRecords,
-      scheduledStart: schedule.startTime,
-      scheduledEnd: schedule.endTime,
+      scheduledStart: evalStart,
+      scheduledEnd: evalEnd,
       timezone: branchTimezone,
     });
 

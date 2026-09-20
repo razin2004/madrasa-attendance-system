@@ -328,26 +328,35 @@ export default function RosterDayDetailPage() {
 
                                   <button
                                     onClick={() => openOverrideModal(staff, s)}
-                                    className="btn btn-secondary btn-sm"
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', fontSize: '11px' }}
+                                    className="btn btn-secondary btn-xs"
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '4px',
+                                      padding: '3px 8px',
+                                      fontSize: '11px',
+                                      borderRadius: '6px',
+                                      height: '26px',
+                                    }}
                                     title={`Override ${s.name || `Shift ${sIdx + 1}`}`}
                                   >
                                     <Edit2 size={11} />
-                                    <span>Override</span>
+                                    <span style={{ fontSize: '10.5px' }}>Override</span>
                                   </button>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span
                                 style={{
                                   fontFamily: 'var(--font-mono)',
-                                  fontSize: '13px',
+                                  fontSize: '12px',
                                   fontWeight: 700,
                                   color: staff.schedule.isOvernight ? '#c084fc' : '#818cf8',
                                   backgroundColor: staff.schedule.isOvernight ? 'rgba(168, 85, 247, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                                  padding: '4px 10px',
+                                  padding: '3px 8px',
                                   borderRadius: '6px',
                                   border: `1px solid ${staff.schedule.hasOverride ? '#fbbf24' : 'rgba(99, 102, 241, 0.3)'}`,
                                 }}
@@ -358,11 +367,21 @@ export default function RosterDayDetailPage() {
 
                               <button
                                 onClick={() => openOverrideModal(staff)}
-                                className="btn btn-secondary btn-sm"
-                                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                                className="btn btn-secondary btn-xs"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px',
+                                  padding: '3px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '6px',
+                                  height: '26px',
+                                }}
+                                title={staff.schedule.hasOverride ? 'Edit Override' : 'Override'}
                               >
-                                <Edit2 size={12} />
-                                <span>{staff.schedule.hasOverride ? 'Edit Override' : 'Override'}</span>
+                                <Edit2 size={11} />
+                                <span style={{ fontSize: '10.5px' }}>{staff.schedule.hasOverride ? 'Edit' : 'Override'}</span>
                               </button>
                             </div>
                           )}
@@ -370,11 +389,11 @@ export default function RosterDayDetailPage() {
                           {staff.schedule.hasOverride && staff.schedule.overrideId && (
                             <button
                               onClick={() => setDeleteOverrideId(staff.schedule.overrideId!)}
-                              className="btn btn-ghost btn-sm"
-                              style={{ color: 'var(--danger-text)', padding: '6px' }}
+                              className="btn btn-ghost btn-xs"
+                              style={{ color: '#f87171', padding: '3px 6px', borderRadius: '6px', height: '26px' }}
                               title="Delete override"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={13} />
                             </button>
                           )}
                         </div>
@@ -405,10 +424,11 @@ export default function RosterDayDetailPage() {
                           <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>HOLIDAY</span>
                           <button
                             onClick={() => openOverrideModal(staff)}
-                            className="btn btn-secondary btn-sm"
-                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                            className="btn btn-secondary btn-xs"
+                            style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', height: '26px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           >
-                            Add Work Override
+                            <Plus size={11} />
+                            <span>Add Override</span>
                           </button>
                         </div>
                       </div>

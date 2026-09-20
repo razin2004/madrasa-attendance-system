@@ -112,8 +112,10 @@ export default function RosterCalendarPage() {
   const [branding, setBranding] = useState<any>(null);
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [shiftPatterns, setShiftPatterns] = useState<Array<{ id: string; name: string }>>([]);
+  const [allStaffList, setAllStaffList] = useState<any[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   const [selectedShiftPatternId, setSelectedShiftPatternId] = useState<string>('');
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
@@ -180,6 +182,12 @@ export default function RosterCalendarPage() {
       const shiftRes = await fetch(`/api/org/${organizationCode}/shift-patterns`);
       const shiftData = await shiftRes.json();
       if (shiftData.success) setShiftPatterns(shiftData.shiftPatterns || []);
+
+      const staffRes = await fetch(`/api/org/${organizationCode}/staff`);
+      const staffData = await staffRes.json();
+      if (staffData.success && (staffData.staff || staffData.staffMembers)) {
+        setAllStaffList(staffData.staff || staffData.staffMembers || []);
+      }
     } catch {}
   };
 
@@ -262,10 +270,79 @@ export default function RosterCalendarPage() {
   const monthLabel = currentMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const periodLabel = viewMode === 'WEEK' ? weekLabel : monthLabel;
 
-  // Filtered Staff Rows for Search Query & Shift Pattern
+  // Compute Available Staff Options filtered by Branch & Shift Pattern selections
+  const availableStaffOptions = React.useMemo(() => {
+    let list: Array<{
+      id: string;
+      staffId: string;
+      name: string;
+      branchIds: string[];
+      shiftPatternIds: string[];
+    }> = [];
+
+    if (allStaffList.length > 0) {
+      list = allStaffList.map((s: any) => ({
+        id: s.id,
+        staffId: s.staffId,
+        name: s.name,
+        branchIds: (s.branchAssignments || []).map((ba: any) => ba.branchId || ba.branch?.id).filter(Boolean),
+        shiftPatternIds: (s.shiftAssignments || []).map((sa: any) => sa.shiftPatternId || sa.shiftPattern?.id).filter(Boolean),
+      }));
+    } else if (rosterData?.staffRows) {
+      list = rosterData.staffRows.map((s) => {
+        const shiftPatternIdsFromDays = new Set<string>();
+        s.days.forEach((d) => {
+          if (d.shifts) {
+            d.shifts.forEach((sh) => {
+              if (sh.id) shiftPatternIdsFromDays.add(sh.id);
+            });
+          }
+          if (d.shiftPatternName) {
+            const matchedSp = shiftPatterns.find((sp) => sp.name === d.shiftPatternName);
+            if (matchedSp) shiftPatternIdsFromDays.add(matchedSp.id);
+          }
+        });
+
+        return {
+          id: s.profileId,
+          staffId: s.staffId,
+          name: s.name,
+          branchIds: s.branches.map((b) => b.id),
+          shiftPatternIds: Array.from(shiftPatternIdsFromDays),
+        };
+      });
+    }
+
+    // Filter by selected branch
+    if (selectedBranchId) {
+      list = list.filter((s) => s.branchIds.includes(selectedBranchId));
+    }
+
+    // Filter by selected shift pattern
+    if (selectedShiftPatternId) {
+      list = list.filter((s) => s.shiftPatternIds.includes(selectedShiftPatternId));
+    }
+
+    return list;
+  }, [allStaffList, rosterData, selectedBranchId, selectedShiftPatternId, shiftPatterns]);
+
+  // Reset selectedStaffId if selected staff is no longer in availableStaffOptions
+  useEffect(() => {
+    if (selectedStaffId) {
+      const exists = availableStaffOptions.some(
+        (s) => s.id === selectedStaffId || s.staffId === selectedStaffId
+      );
+      if (!exists) {
+        setSelectedStaffId('');
+      }
+    }
+  }, [availableStaffOptions, selectedStaffId]);
+
+  // Filtered Staff Rows for Search Query, Selected Staff Dropdown & Shift Pattern
   const filteredStaffRows = rosterData?.staffRows.filter((staff) => {
     const query = search.trim().toLowerCase();
     const matchesSearch = !query || staff.name.toLowerCase().includes(query) || staff.staffId.toLowerCase().includes(query);
+    const matchesStaffId = !selectedStaffId || staff.profileId === selectedStaffId || staff.staffId === selectedStaffId;
     const selectedShiftObj = shiftPatterns.find((sp) => sp.id === selectedShiftPatternId);
 
     const matchesShift = !selectedShiftPatternId || staff.days.some((d) =>
@@ -275,7 +352,7 @@ export default function RosterCalendarPage() {
       )
     );
 
-    return matchesSearch && matchesShift;
+    return matchesSearch && matchesStaffId && matchesShift;
   }) || [];
 
   return (
@@ -432,17 +509,112 @@ export default function RosterCalendarPage() {
               </div>
             </div>
 
-            {/* Filters Bar: Search & Branch */}
+            {/* Filters Bar: Staff, Shift, Branch & Search */}
             <div className={styles.filterSection}>
-              {/* Search Bar with Pinned Filter Icon (Staff Panel Style) */}
-              <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
+              {/* Staff Select Dropdown */}
+              <div style={{ position: 'relative', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
+                <Users
+                  size={14}
+                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }}
+                />
+                <select
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  className="form-input"
+                  style={{
+                    height: '38px',
+                    padding: '4px 28px 4px 30px',
+                    fontSize: '12.5px',
+                    width: '100%',
+                    color: '#ffffff',
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                    All Staff ({availableStaffOptions.length})
+                  </option>
+                  {availableStaffOptions.map((s: any) => (
+                    <option key={s.id || s.staffId} value={s.id || s.staffId} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {s.name} ({s.staffId})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Shift Filter Dropdown */}
+              <div style={{ position: 'relative', minWidth: '140px', maxWidth: '200px' }}>
+                <Clock
+                  size={14}
+                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }}
+                />
+                <select
+                  value={selectedShiftPatternId}
+                  onChange={(e) => setSelectedShiftPatternId(e.target.value)}
+                  className="form-input"
+                  style={{
+                    height: '38px',
+                    padding: '4px 28px 4px 30px',
+                    fontSize: '12.5px',
+                    width: '100%',
+                    color: '#ffffff',
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Shifts</option>
+                  {shiftPatterns.map((sp) => (
+                    <option key={sp.id} value={sp.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {sp.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Desktop Branch Filter Dropdown */}
+              <div style={{ position: 'relative', minWidth: '140px', maxWidth: '200px' }}>
+                <MapPin
+                  size={14}
+                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }}
+                />
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  className="form-input"
+                  style={{
+                    height: '38px',
+                    padding: '4px 28px 4px 30px',
+                    fontSize: '12.5px',
+                    width: '100%',
+                    color: '#ffffff',
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Quick Text Search Bar with Pinned Filter Icon */}
+              <div style={{ position: 'relative', flex: '1 1 180px', minWidth: '160px' }}>
                 <Search
                   size={15}
                   style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}
                 />
                 <input
                   type="text"
-                  placeholder="Search staff name or ID..."
+                  placeholder="Search staff..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="form-input"
@@ -493,50 +665,17 @@ export default function RosterCalendarPage() {
                     width: '30px',
                     height: '30px',
                     borderRadius: '6px',
-                    background: selectedBranchId ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.06)',
-                    border: selectedBranchId ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--border-medium, rgba(255, 255, 255, 0.12))',
-                    color: selectedBranchId ? '#818cf8' : '#ffffff',
+                    background: (selectedBranchId || selectedShiftPatternId || selectedStaffId) ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                    border: (selectedBranchId || selectedShiftPatternId || selectedStaffId) ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--border-medium, rgba(255, 255, 255, 0.12))',
+                    color: (selectedBranchId || selectedShiftPatternId || selectedStaffId) ? '#818cf8' : '#ffffff',
                     cursor: 'pointer',
                     zIndex: 10,
                     touchAction: 'manipulation',
                   }}
                   title="Toggle Filters"
                 >
-                  <Filter size={15} color={selectedBranchId ? '#818cf8' : 'currentColor'} style={{ pointerEvents: 'none' }} />
+                  <Filter size={15} color={(selectedBranchId || selectedShiftPatternId || selectedStaffId) ? '#818cf8' : 'currentColor'} style={{ pointerEvents: 'none' }} />
                 </button>
-              </div>
-
-              {/* Desktop Branch Filter Dropdown */}
-              <div className={styles.desktopBranchFilter} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <MapPin
-                    size={14}
-                    style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#818cf8', pointerEvents: 'none' }}
-                  />
-                  <select
-                    value={selectedBranchId}
-                    onChange={(e) => setSelectedBranchId(e.target.value)}
-                    className="form-input"
-                    style={{
-                      height: '38px',
-                      padding: '4px 28px 4px 30px',
-                      fontSize: '12.5px',
-                      minWidth: '160px',
-                      color: '#ffffff',
-                      backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                      border: '1px solid var(--border-medium)',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>All Branches</option>
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
             </div>
           </div>
@@ -1069,16 +1208,14 @@ export default function RosterCalendarPage() {
                 </select>
               </div>
 
-              {/* Staff Member Search */}
+              {/* Staff Member Filter Dropdown */}
               <div>
                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-                  Staff Search
+                  Staff Member
                 </label>
-                <input
-                  type="text"
-                  placeholder="Search staff by name or ID..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                <select
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
                   className="form-input"
                   style={{
                     width: '100%',
@@ -1090,7 +1227,16 @@ export default function RosterCalendarPage() {
                     border: '1px solid var(--border-medium)',
                     borderRadius: '10px',
                   }}
-                />
+                >
+                  <option value="" style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                    All Staff ({availableStaffOptions.length})
+                  </option>
+                  {availableStaffOptions.map((s: any) => (
+                    <option key={s.id || s.staffId} value={s.id || s.staffId} style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                      {s.name} ({s.staffId})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -1099,6 +1245,7 @@ export default function RosterCalendarPage() {
                 onClick={() => {
                   setSelectedBranchId('');
                   setSelectedShiftPatternId('');
+                  setSelectedStaffId('');
                   setSearch('');
                   setViewMode('WEEK');
                   setShowMobileFilters(false);

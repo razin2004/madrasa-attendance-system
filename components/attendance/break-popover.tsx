@@ -17,7 +17,17 @@ interface BreakPopoverProps {
 
 export function BreakPopover({ totalBreakMinutes, breaks }: BreakPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -91,22 +101,53 @@ export function BreakPopover({ totalBreakMinutes, breaks }: BreakPopoverProps) {
       </button>
 
       {isOpen && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            bottom: 'calc(100% + 6px)',
-            right: 0,
-            zIndex: 99999,
-            width: '220px',
-            padding: '10px',
-            backgroundColor: '#0f172a',
-            border: '1px solid var(--border-medium, rgba(255, 255, 255, 0.18))',
-            borderRadius: '10px',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.75)',
-            boxSizing: 'border-box',
-          }}
-        >
+        <>
+          {isMobile && (
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                backdropFilter: 'blur(3px)',
+                zIndex: 99998,
+              }}
+              onClick={handleClose}
+            />
+          )}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={
+              isMobile
+                ? {
+                    position: 'fixed',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 99999,
+                    width: 'calc(100vw - 32px)',
+                    maxWidth: '310px',
+                    padding: '14px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid var(--border-medium, rgba(255, 255, 255, 0.2))',
+                    borderRadius: '16px',
+                    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.85)',
+                    boxSizing: 'border-box',
+                  }
+                : {
+                    position: 'absolute',
+                    bottom: 'calc(100% + 6px)',
+                    right: 0,
+                    zIndex: 99999,
+                    width: '220px',
+                    padding: '10px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid var(--border-medium, rgba(255, 255, 255, 0.18))',
+                    borderRadius: '10px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.75)',
+                    boxSizing: 'border-box',
+                  }
+            }
+          >
           <div
             style={{
               display: 'flex',
@@ -193,6 +234,7 @@ export function BreakPopover({ totalBreakMinutes, breaks }: BreakPopoverProps) {
             </span>
           </div>
         </div>
+      </>
       )}
     </div>
   );

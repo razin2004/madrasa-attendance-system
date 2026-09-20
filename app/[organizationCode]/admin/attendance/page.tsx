@@ -89,6 +89,32 @@ export default function AdminAttendancePage() {
     }
   }, [organizationCode]);
 
+  // Compute available staff options filtered by branch selection
+  const availableStaffOptions = React.useMemo(() => {
+    if (!branchId) return staffList;
+    return staffList.filter((s: any) => {
+      if (s.branchAssignments && s.branchAssignments.length > 0) {
+        return s.branchAssignments.some((ba: any) => ba.branchId === branchId || ba.branch?.id === branchId);
+      }
+      if (s.branches && s.branches.length > 0) {
+        return s.branches.some((b: any) => b.id === branchId);
+      }
+      return true;
+    });
+  }, [staffList, branchId]);
+
+  // Reset selected staffId if not present in branch
+  useEffect(() => {
+    if (staffId) {
+      const exists = availableStaffOptions.some(
+        (s: any) => s.id === staffId || s.staffId === staffId
+      );
+      if (!exists) {
+        setStaffId('');
+      }
+    }
+  }, [availableStaffOptions, staffId]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -434,6 +460,32 @@ export default function AdminAttendancePage() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Staff:</span>
+                <select
+                  className="form-input"
+                  style={{
+                    height: '38px',
+                    fontSize: '12.5px',
+                    backgroundColor: '#131b2e',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    padding: '0 10px',
+                    maxWidth: '180px',
+                  }}
+                  value={staffId}
+                  onChange={(e) => setStaffId(e.target.value)}
+                >
+                  <option value="">All Staff ({availableStaffOptions.length})</option>
+                  {availableStaffOptions.map((s: any) => (
+                    <option key={s.id || s.staffId} value={s.id}>
+                      {s.name} ({s.staffId})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>Status:</span>
                 <select
                   className="form-input"
@@ -588,6 +640,32 @@ export default function AdminAttendancePage() {
                       <option value="">All Branches</option>
                       {branchList.map((b) => (
                         <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>Staff Member</label>
+                    <select
+                      className="form-input"
+                      style={{
+                        height: '40px',
+                        fontSize: '13px',
+                        backgroundColor: '#131b2e',
+                        color: '#ffffff',
+                        width: '100%',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        padding: '0 12px',
+                      }}
+                      value={staffId}
+                      onChange={(e) => setStaffId(e.target.value)}
+                    >
+                      <option value="">All Staff ({availableStaffOptions.length})</option>
+                      {availableStaffOptions.map((s: any) => (
+                        <option key={s.id || s.staffId} value={s.id}>
+                          {s.name} ({s.staffId})
+                        </option>
                       ))}
                     </select>
                   </div>
