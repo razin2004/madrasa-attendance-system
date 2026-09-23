@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 let dbUrl = process.env.DATABASE_URL || '';
 
+
 if (dbUrl) {
   // Automatically convert Render internal hostname (dpg-xxx) to external hostname (dpg-xxx.oregon-postgres.render.com)
   if (dbUrl.includes('dpg-') && !dbUrl.includes('.render.com')) {
