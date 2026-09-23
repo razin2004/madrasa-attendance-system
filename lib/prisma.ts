@@ -3,6 +3,11 @@ import { PrismaClient } from '@prisma/client';
 let dbUrl = process.env.DATABASE_URL || '';
 
 if (dbUrl) {
+  // Automatically convert Render internal hostname (dpg-xxx) to external hostname (dpg-xxx.oregon-postgres.render.com)
+  if (dbUrl.includes('dpg-') && !dbUrl.includes('.render.com')) {
+    dbUrl = dbUrl.replace(/@dpg-([a-z0-9-]+)(:\d+)?\//, '@dpg-$1.oregon-postgres.render.com/');
+  }
+
   // Ensure sslmode=require for Render PostgreSQL connections if not already present
   if ((dbUrl.includes('render.com') || dbUrl.includes('dpg-')) && !dbUrl.includes('sslmode=')) {
     dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'sslmode=require';
